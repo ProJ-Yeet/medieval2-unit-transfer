@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit Transfer</title>
+<style>
+  :root{--bg:#14171c;--panel:#1c2128;--panel2:#232a33;--edge:#333c47;--ink:#e6e9ee;--dim:#98a3b3;
+    --accent:#c8a45c;--accent2:#5b8def;--good:#5cc98a;--warn:#e0b341;--bad:#e06c6c;}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;gap:10px;align-items:center;padding:8px 14px;background:var(--panel);
+    border-bottom:1px solid var(--edge);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  header h1{font-size:15px;margin:0;color:var(--accent);letter-spacing:.5px;font-weight:600;white-space:nowrap}
+  .sep{width:1px;height:22px;background:var(--edge);margin:0 3px}
+  .lbl{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  select,input,button,textarea{background:var(--panel2);color:var(--ink);border:1px solid var(--edge);
+    border-radius:6px;padding:6px 9px;font-size:13px;font-family:inherit}
+  input[type=search]{min-width:150px}
+  button{cursor:pointer} button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:600}
+  button.on{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  button.danger{border-color:var(--bad);color:var(--bad)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  label.chk{display:inline-flex;gap:5px;align-items:center;color:var(--dim);font-size:12px;cursor:pointer}
+  .count{color:var(--dim);font-size:12px}
+  .layout{display:flex;height:calc(100vh - 50px)}
+  .filters{width:210px;flex:0 0 210px;padding:12px;overflow:auto;border-right:1px solid var(--edge);background:var(--panel)}
+  .filters h3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:16px 0 6px}
+  .filters h3:first-child{margin-top:0}
+  .filters .opt{display:block;padding:2px 0;font-size:13px;cursor:pointer}
+  .filters .opt input{vertical-align:middle;margin-right:6px}
+  /* NB: no top padding on the scroll container — a scroll-container's top padding
+     stays inside the scrollport and shows as a gap above a top:0 sticky header.
+     Breathing room comes from the first group's margin, which scrolls away. */
+  main{flex:1;overflow:auto;padding:0 16px 16px}
+  .faction-group{margin-bottom:24px}
+  .faction-group:first-child{margin-top:12px}
+  .faction-head{display:flex;align-items:baseline;gap:10px;position:sticky;top:0;background:var(--bg);
+    padding:8px 0 6px;border-bottom:1px solid var(--edge);margin-bottom:10px;z-index:1}
+  .faction-head h2{margin:0;font-size:15px;color:var(--accent)}
+  .faction-head .n{color:var(--dim);font-size:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px}
+  .card{position:relative;background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:8px;
+    display:flex;gap:8px;align-items:center;cursor:pointer;transition:border-color .1s}
+  .card:hover{border-color:var(--accent2)}
+  .card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .card img{width:48px;height:64px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 48px}
+  .card .meta{min-width:0}
+  .card .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .sub{color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .tick{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:4px;border:1px solid var(--edge);
+    background:var(--panel2);display:none;align-items:center;justify-content:center;font-size:12px}
+  body.selmode .card .tick{display:flex}
+  .card.sel .tick{background:var(--accent);color:#1a1a1a;border-color:var(--accent)}
+  .badge{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--panel2);
+    color:var(--dim);border:1px solid var(--edge);margin-right:3px}
+  .badge.merc{color:var(--warn);border-color:var(--warn)}
+  /* class badge sits next to the category one — dimmer so category reads first */
+  .badge.cls{background:transparent}
+  .chip{display:inline-block;background:var(--panel2);border:1px solid var(--edge);border-radius:5px;
+    padding:2px 7px;margin:2px 3px 2px 0;font-size:12px}
+  .empty{color:var(--dim);padding:40px;text-align:center}
+  .projline{margin-top:4px;font-size:12px;color:var(--dim)}
+  .warnbox{background:#3a2a10;border:1px solid var(--warn);color:#f4d9a0;border-radius:8px;
+    padding:9px 11px;margin:0 0 12px;font-size:12.5px;line-height:1.5}
+  .warnbox code{background:#00000030;padding:0 4px;border-radius:3px}
+  .drawer{position:fixed;top:0;right:0;width:380px;max-width:92vw;height:100vh;background:var(--panel);
+    border-left:1px solid var(--edge);box-shadow:-8px 0 24px #0008;transform:translateX(100%);
+    transition:transform .16s ease;overflow:auto;z-index:20}
+  .drawer.open{transform:translateX(0)}
+  .drawer .dh{display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--edge);align-items:center}
+  .drawer .dh img{width:72px;height:96px;object-fit:contain;background:#0d0f13;border-radius:6px}
+  .drawer .dh h2{margin:0 0 4px;font-size:16px}
+  .drawer .body{padding:14px}
+  .drawer .row{margin-bottom:12px}
+  .drawer .row .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:3px}
+  .drawer .close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer}
+  .overlay{position:fixed;inset:0;background:#000a;z-index:30;display:none;align-items:center;justify-content:center}
+  .overlay.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--edge);border-radius:10px;width:640px;max-width:95vw;
+    max-height:92vh;overflow:auto;box-shadow:0 12px 40px #000b}
+  .modal h2{margin:0;padding:14px 16px;border-bottom:1px solid var(--edge);font-size:16px}
+  .modal .mbody{padding:16px}
+  .modal .foot{padding:12px 16px;border-top:1px solid var(--edge);display:flex;gap:8px;justify-content:flex-end;
+    position:sticky;bottom:0;background:var(--panel)}
+  fieldset{border:1px solid var(--edge);border-radius:8px;margin:0 0 14px;padding:10px 12px}
+  legend{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:0 6px}
+  .radio-row label{display:block;margin:4px 0;cursor:pointer}
+  .rename-fields{margin-top:8px;padding-left:22px}
+  .rename-fields label{display:block;font-size:12px;color:var(--dim);margin:6px 0}
+  .rename-fields input{width:100%}
+  .preview{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:10px;
+    font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;max-height:220px;overflow:auto}
+  /* structured plan summary — each row keeps its own indent column so wrapped
+     text aligns under itself instead of snapping back to the left margin */
+  .sum{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;
+    padding:9px 11px;max-height:280px;overflow:auto;font-size:12px;line-height:1.5}
+  .srow{display:flex;gap:7px;align-items:flex-start;padding:1px 0}
+  .srow .sicon{flex:0 0 12px;text-align:center;color:var(--dim);font-size:11px}
+  .srow .stext{flex:1;min-width:0;overflow-wrap:anywhere}
+  .srow.lvl2{margin-left:14px} .srow.lvl3{margin-left:30px}
+  .srow.warn .stext{color:var(--warn)} .srow.warn .sicon{color:var(--warn)}
+  .srow.good .stext{color:var(--good)} .srow.bad .stext{color:var(--bad)}
+  .srow.shead{margin-bottom:3px;padding-bottom:4px;border-bottom:1px solid var(--edge)}
+  .srow.shead .stext{font-weight:600;color:var(--ink)}
+  .srow .path{font-family:ui-monospace,Consolas,monospace;color:var(--dim)}
+  .srow .num{color:var(--accent);font-weight:600}
+  .w-warn{color:var(--warn)} .w-bad{color:var(--bad)} .w-good{color:var(--good)}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--panel);
+    border:1px solid var(--edge);border-radius:8px;padding:10px 16px;z-index:50;box-shadow:0 6px 20px #000a;display:none}
+  .toast.show{display:block}
+  .log-item{border:1px solid var(--edge);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--panel2)}
+  .log-item .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .log-item .when{color:var(--dim);font-size:11px}
+  .log-item pre{font:11px/1.35 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:8px 0 0;color:var(--dim);max-height:130px;overflow:auto}
+  .undone{opacity:.5}
+  .pill{font-size:10px;padding:1px 6px;border-radius:10px;border:1px solid var(--edge);color:var(--dim)}
+  /* base picker */
+  .basepick{display:flex;gap:10px;align-items:flex-start}
+  .baseimg{width:56px;height:74px;object-fit:contain;background:#0d0f13;border-radius:5px;flex:0 0 56px}
+  .baselist{max-height:190px;overflow:auto;border:1px solid var(--edge);border-radius:6px;margin-top:6px}
+  .baserow{display:flex;gap:8px;align-items:center;padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--edge)}
+  .baserow:hover{background:var(--panel2)} .baserow.sel{background:#2a3340}
+  .baserow img{width:32px;height:42px;object-fit:contain;background:#0d0f13;border-radius:3px}
+  .baserow .bn{font-size:12px} .baserow .bs{font-size:10px;color:var(--dim)}
+  /* batch */
+  .batchstrip{display:flex;gap:6px;overflow:auto;padding-bottom:8px;margin-bottom:10px}
+  .bchip{flex:0 0 auto;border:1px solid var(--edge);border-radius:8px;padding:6px;text-align:center;cursor:pointer;width:92px;background:var(--panel2)}
+  .bchip.sel{border-color:var(--accent)}
+  .bchip img{width:40px;height:52px;object-fit:contain;background:#0d0f13;border-radius:3px;display:block;margin:0 auto 3px}
+  .bchip .t{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bchip .base{font-size:9px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fieldrow{display:flex;gap:6px;margin:4px 0}
+  .fieldrow select{flex:0 0 200px} .fieldrow input{flex:1}
+  .ovr{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:3px 6px;border:1px solid var(--edge);border-radius:5px;margin:3px 0}
+  .ovr code{color:var(--accent)}
+  /* disabled include-option (officer/mount/crew absent) */
+  label.chk.off{opacity:.4;cursor:not-allowed}
+  label.chk.off input{cursor:not-allowed}
+  /* 500 unit-limit warning banner */
+  .limitwarn{border:1px solid var(--warn);background:#2a2410;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+  .limitwarn b{color:var(--warn)}
+  .limitwarn .sub{color:var(--dim);font-size:12px;margin-top:4px}
+  .limitwarn .acts{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .limitwarn button{font-size:12px;padding:4px 8px}
+  /* all-EDU-fields editor (matches ModdingTool's unit edit screen: every field at once) */
+  .allfields{max-height:320px;overflow:auto;border:1px solid var(--edge);border-radius:6px;padding:6px;background:var(--panel2)}
+  .afrow{display:flex;gap:8px;align-items:center;margin:2px 0}
+  .afrow label{flex:0 0 200px;font-size:12px;color:var(--dim);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .afrow input{flex:1;min-width:0;padding:3px 6px;font-size:12px}
+  .afrow input.changed{border-color:var(--accent);background:#241f0d;color:var(--ink)}
+  .afrow.dup input{opacity:.5}
+  .fieldbar{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .fieldbar input{flex:1} .fieldbar .count{white-space:nowrap}
+  /* officer / mount / crew name lists in the transfer menu */
+  .optnames{margin-top:6px;font-size:12px}
+  .optnames .k{color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px;margin-right:6px}
+  label.chk.mini{background:var(--panel2);border:1px solid var(--edge);border-radius:5px;
+    padding:2px 7px;margin:2px 4px 2px 0}
+  .frombase{color:var(--accent);font-size:11px;margin-left:6px}
+  /* per-group "source or base" toggles, directly above the field editor */
+  .basefrom{margin-bottom:8px;padding:7px 9px;border:1px solid var(--edge);
+    border-radius:6px;background:var(--panel2)}
+  .basefrom.off{opacity:.5}
+  .basefrom .bftitle{font-size:11px;color:var(--dim);margin-bottom:5px}
+  .basefrom .bftitle b{color:var(--accent)}
+  .sbrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:2px 0}
+  .sbrow .k{flex:0 0 66px;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+  .sbrow label{font-size:12px;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+  .sbrow .count{font-size:11px}
+  /* base picker faction filter */
+  .basebar{display:flex;gap:6px} .basebar input{flex:1;min-width:0} .basebar select{flex:0 0 150px}
+  /* "inherited from base" badge in the field editor */
+  .ibadge{display:inline-block;margin-left:5px;font-size:9px;background:var(--accent);color:#1a1a1a;
+    border-radius:3px;padding:0 4px;font-weight:700;vertical-align:middle}
+  /* reroute folder browser */
+  .brbar{display:flex;gap:6px;align-items:center} .brbar input{flex:1;min-width:0}
+  .brlist{max-height:140px;overflow:auto;border:1px solid var(--edge);border-radius:6px;margin-top:6px;background:var(--panel2)}
+  .brrow{padding:4px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--edge)}
+  .brrow:hover{background:#2a3340}
+  /* asset (texture/mesh) conflict resolver */
+  .assetconf{margin-top:10px;border-color:var(--warn)}
+  .assetconf .radio-row label{margin:5px 0}
+  .assetconf code{color:var(--accent)}
+  /* one file per row, path on its own line so sizes stay readable */
+  .assetconf .flist{max-height:140px;overflow:auto;font-size:11px;color:var(--dim);
+    margin-top:6px;border-top:1px solid var(--edge);padding-top:6px}
+  .assetconf .frow{padding:3px 0;border-bottom:1px solid var(--edge)}
+  .assetconf .frow:last-child{border-bottom:none}
+  .assetconf .frow .fp{font-family:ui-monospace,Consolas,monospace;color:var(--ink);
+    overflow-wrap:anywhere;display:block}
+  .assetconf .frow .fs{color:var(--dim);font-size:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚔ UNIT TRANSFER</h1>
+  <div class="sep"></div>
+  <span class="lbl">From</span><select id="srcSel"></select>
+  <span class="lbl">→ To</span><select id="dstSel"></select>
+  <div class="sep"></div>
+  <input type="search" id="search" placeholder="Search…">
+  <label class="chk"><input type="checkbox" id="mercOnly"> mercs</label>
+  <button id="selBtn" title="Select multiple units">☑ Select</button>
+  <button id="batchBtn" class="primary" style="display:none">Transfer selected (0)</button>
+  <button id="settingsBtn" title="MED II root">⚙ Root</button>
+  <button id="logBtn" title="Log + undo">🕑 Log</button>
+  <span class="count" id="count"></span>
+</header>
+
+<div class="layout">
+  <aside class="filters">
+    <h3>Group by</h3>
+    <select id="groupBy" style="width:100%">
+      <option value="faction">Faction (ownership)</option>
+      <option value="kind">Category</option>
+      <option value="class">Class</option>
+      <option value="none">Nothing (flat)</option>
+    </select>
+    <h3>Faction</h3><div id="factionFilter"></div>
+    <h3>Category</h3><div id="categoryFilter"></div>
+    <h3>Class</h3><div id="classFilter"></div>
+    <h3>Era</h3>
+    <div id="eraFilter">
+      <label class="opt"><input type="checkbox" value="0" class="era"> Early</label>
+      <label class="opt"><input type="checkbox" value="1" class="era"> High</label>
+      <label class="opt"><input type="checkbox" value="2" class="era"> Late</label>
+    </div>
+  </aside>
+  <main id="main"><div class="empty">Loading…</div></main>
+</div>
+
+<div class="drawer" id="drawer"></div>
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const state={mods:[],src:null,dst:null,data:null,destData:null,factionNames:{},
+  sel:{faction:new Set(),category:new Set(),class:new Set(),era:new Set()},
+  selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{}};
+
+const VANILLA_UNIT_LIMIT=500;   // M2TW vanilla EDU cap; M2TWEOP/EOP raise it.
+
+// GET with a few automatic retries — a page's request can be dropped transiently
+// (e.g. during an icon burst, or if the tab was open across a server restart),
+// and we must never hang forever on such a blip.
+const api={
+  get:async(u,tries=4)=>{let err;
+    for(let i=0;i<tries;i++){
+      try{const r=await fetch(u,{cache:'no-store'});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return await r.json();}
+      catch(e){err=e; if(i<tries-1) await new Promise(res=>setTimeout(res,200*(i+1)));}
+    }
+    throw err;},
+  post:async(u,b)=>(await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json()};
+const esc=s=>(s==null?'':''+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const q1=v=>v.replace(/'/g,"\\'");
+function toast(m,ms=2800){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms);}
+const facLabel=f=>{const n=state.factionNames[f];return n?`${n} (${f})`:f;};
+const iconUrl=(mod,type,kind)=>`/icon?mod=${encodeURIComponent(mod)}&type=${encodeURIComponent(type)}&kind=${kind||'card'}`;
+// Icon requests can be dropped when a page fires dozens at once (connection
+// bursts). A missing icon returns a valid blank PNG (onload), so onerror only
+// fires on a genuine connection failure — retry it a few times with backoff.
+function iconRetry(img){
+  const n=(+img.dataset.try||0)+1; img.dataset.try=n;
+  if(n>4) return;                       // give up quietly after 4 tries
+  const base=img.src.split('#')[0];
+  setTimeout(()=>{img.src=base+'#r'+n;}, 120*n*n);
+}
+
+// Keep the server alive while this tab is open; tell it to stop when the tab closes
+// (so a windowless server doesn't linger holding the port). A refresh sends 'bye'
+// too, but the reloaded page resumes heartbeats within the server's grace window.
+let _hbStarted=false;
+function startHeartbeat(){
+  if(_hbStarted)return; _hbStarted=true;
+  const beat=()=>{try{fetch('/api/heartbeat',{method:'POST',keepalive:true});}catch(e){}};
+  beat(); setInterval(beat,4000);
+  const bye=()=>{try{navigator.sendBeacon('/api/bye');}catch(e){}};
+  window.addEventListener('pagehide',bye);
+  window.addEventListener('beforeunload',bye);
+}
+async function init(){
+  try{
+    startHeartbeat();
+    const s=await api.get('/api/settings');state.settings=s;
+    await refreshMods(s.last_source,s.last_dest);
+    wire();
+  }catch(e){
+    main.innerHTML=`<div class="empty">Couldn't reach the Unit Transfer server.<br>
+      <span class="count">Is <code>Launch-Unit-Transfer.bat</code> (python app.py) still running?</span><br><br>
+      <button class="primary" onclick="init()">Retry</button></div>`;
+  }
+}
+
+async function refreshMods(pSrc,pDst){
+  state.mods=await api.get('/api/mods');
+  const opts=state.mods.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join('');
+  srcSel.innerHTML=opts; dstSel.innerHTML=opts;
+  if(!state.mods.length){main.innerHTML='<div class="empty">No mods found. Click ⚙ Root to point at your Medieval II folder.</div>';return;}
+  state.src=pSrc&&state.mods.some(m=>m.name===pSrc)?pSrc:state.mods[0].name;
+  state.dst=pDst&&state.mods.some(m=>m.name===pDst)?pDst:(state.mods[1]?.name||state.mods[0].name);
+  srcSel.value=state.src; dstSel.value=state.dst;
+  state.destData=null;
+  await loadSource();
+}
+async function loadSource(){
+  main.innerHTML='<div class="empty">Loading '+esc(state.src)+'…</div>';
+  try{
+    state.data=await api.get('/api/units?mod='+encodeURIComponent(state.src));
+  }catch(e){
+    main.innerHTML=`<div class="empty">Couldn't load “${esc(state.src)}”.<br>
+      <span class="count">${esc(''+e)}</span><br><br>
+      <button class="primary" onclick="loadSource()">Retry</button></div>`;
+    return;
+  }
+  state.factionNames=state.data.faction_names||{};
+  state.sel={faction:new Set(),category:new Set(),class:new Set(),era:new Set()};
+  buildFilter('factionFilter',state.data.factions,'faction',true);
+  buildFilter('categoryFilter',state.data.categories,'category');
+  buildFilter('classFilter',state.data.classes,'class');
+  render();
+}
+async function ensureDest(){ if(!state.destData||state.destData.mod!==state.dst){state.destData=await api.get('/api/units?mod='+encodeURIComponent(state.dst));} return state.destData; }
+
+function buildFilter(id,values,key,useLabel){
+  const box=document.getElementById(id);
+  box.innerHTML=(values||[]).map(v=>`<label class="opt"><input type="checkbox" value="${esc(v)}">${esc(useLabel?facLabel(v):v)}</label>`).join('')||'<span class="count">—</span>';
+  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);render();});
+}
+function wire(){
+  // Picking the mod that's already on the other side swaps the pair rather than
+  // leaving a pointless A -> A: with A -> B, choosing A as the dest gives B -> A.
+  srcSel.onchange=async e=>{
+    const v=e.target.value;
+    if(v===state.dst){state.dst=state.src;dstSel.value=state.dst;state.destData=null;}
+    state.src=v;srcSel.value=v;state.cfg={};
+    await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
+    loadSource();};
+  dstSel.onchange=async e=>{
+    const v=e.target.value;
+    const srcChanged=(v===state.src);
+    if(srcChanged){state.src=state.dst;srcSel.value=state.src;}
+    state.dst=v;dstSel.value=v;state.destData=null;state.cfg={};
+    await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
+    if(srcChanged)loadSource();};
+  search.oninput=render; mercOnly.onchange=render; groupBy.onchange=render;
+  document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);render();});
+  settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
+  selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch;
+  overlay.onclick=e=>{if(e.target.id==='overlay')closeModal();};
+}
+function toggleSelMode(){state.selMode=!state.selMode;document.body.classList.toggle('selmode',state.selMode);
+  selBtn.classList.toggle('on',state.selMode);
+  if(!state.selMode){
+    state.selected.clear();updateBatchBtn();
+    // clear the highlight too — clearing the set alone left cards looking selected
+    main.querySelectorAll('.card.sel').forEach(c=>c.classList.remove('sel'));
+  }
+  batchBtn.style.display=state.selMode?'inline-block':'none';}
+function updateBatchBtn(){batchBtn.textContent=`Transfer selected (${state.selected.size})`;batchBtn.disabled=state.selected.size===0;}
+
+function unitMatches(u){
+  const qq=search.value.trim().toLowerCase();
+  if(qq&&!(u.name.toLowerCase().includes(qq)||u.type.toLowerCase().includes(qq)||u.dictionary.toLowerCase().includes(qq)))return false;
+  if(mercOnly.checked&&!u.mercenary)return false;
+  const S=state.sel;
+  if(S.faction.size&&!u.ownership.some(f=>S.faction.has(f)))return false;
+  if(S.category.size&&!S.category.has(u.kind))return false;
+  if(S.class.size&&!S.class.has(u.class))return false;
+  if(S.era.size&&![...S.era].some(e=>(u.eras[e]||[]).length>0))return false;
+  return true;
+}
+function render(){
+  if(!state.data)return;
+  const units=state.data.units.filter(unitMatches);
+  count.textContent=`${units.length}/${state.data.units.length}`;
+  const gb=groupBy.value;
+  if(!units.length){main.innerHTML='<div class="empty">No units match.</div>';return;}
+  let groups;
+  if(gb==='none')groups=[['All units',units]];
+  else if(gb==='faction'){const map=new Map();for(const u of units){for(const f of (u.ownership.length?u.ownership:['(none)']))(map.get(f)||map.set(f,[]).get(f)).push(u);}
+    groups=[...map.entries()].sort((a,b)=>facLabel(a[0]).localeCompare(facLabel(b[0]))).map(([f,us])=>[gb==='faction'?facLabel(f):f,us]);}
+  else{const map=new Map();for(const u of units){const k=u[gb]||'(none)';(map.get(k)||map.set(k,[]).get(k)).push(u);}groups=[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));}
+  main.innerHTML=groups.map(([g,us])=>`<section class="faction-group">
+    <div class="faction-head"><h2>${esc(g)}</h2><span class="n">${us.length} units</span></div>
+    <div class="grid">${us.map(cardHtml).join('')}</div></section>`).join('');
+  main.querySelectorAll('.card').forEach(c=>c.onclick=()=>onCard(c.dataset.type));
+}
+function cardHtml(u){
+  const s=state.selected.has(u.type)?'sel':'';
+  return `<div class="card ${s}" data-type="${esc(u.type)}">
+    <div class="tick">✓</div>
+    <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}" alt="">
+    <div class="meta"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.type)}</div>
+    <div>${u.mercenary?'<span class="badge merc">merc</span>':''}<span class="badge">${esc(u.kind||u.category||'?')}</span>${u.class?`<span class="badge cls">${esc(u.class)}</span>`:''}</div></div></div>`;
+}
+function onCard(type){
+  if(state.selMode){ if(state.selected.has(type))state.selected.delete(type); else state.selected.add(type);
+    updateBatchBtn(); const c=main.querySelector(`.card[data-type="${cssq(type)}"]`); if(c)c.classList.toggle('sel',state.selected.has(type)); return; }
+  openDrawer(type);
+}
+const cssq=s=>s.replace(/"/g,'\\"');
+
+function openDrawer(type){
+  const u=state.data.units.find(x=>x.type===type); if(!u)return;
+  const d=document.getElementById('drawer');
+  const eras=['0','1','2'].filter(e=>(u.eras[e]||[]).length).map(e=>({0:'Early',1:'High',2:'Late'}[e])).join(', ')||'—';
+  d.innerHTML=`<button class="close" onclick="drawer.classList.remove('open')">×</button>
+    <div class="dh"><img onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}"><div><h2>${esc(u.name)}</h2><div class="sub">${esc(u.type)}</div></div></div>
+    <div class="body">
+      ${row('Dictionary',esc(u.dictionary))}
+      ${row('Ownership',u.ownership.map(f=>`<span class="chip">${esc(facLabel(f))}</span>`).join('')||'—')}
+      ${row('Category / Class',esc(u.kind||u.category||'—')+' / '+esc(u.class||'—'))}
+      ${row('Eras',eras)}
+      ${row('Battle models',u.models.map(m=>`<span class="chip">${esc(m)}</span>`).join('')||'—')}
+      ${row('Officers / Mount',(u.officers.map(o=>`<span class="chip">${esc(o)}</span>`).join('')||'—')+(u.mount?`  mount: <span class="chip">${esc(u.mount)}</span>`:''))}
+      ${(u.engine||u.mounted_engine)?row('Siege engine',`<span class="chip">${esc(u.engine||u.mounted_engine)}</span>${u.mounted_engine&&!u.engine?' <span class="count">(mounted)</span>':''}${(u.engine_groups||[]).length?`<span class="count"> · groups: ${(u.engine_groups||[]).map(esc).join(', ')}</span>`:''}`):''}
+      <button class="primary" style="width:100%;margin-top:6px" onclick="drawer.classList.remove('open');openComposer(['${q1(esc(u.type))}'])">Transfer to “${esc(state.dst)}” →</button>
+    </div>`;
+  d.classList.add('open');
+}
+const row=(k,v)=>`<div class="row"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+
+/* ---------- per-unit config ---------- */
+function cfgFor(type){
+  if(!state.cfg[type]) state.cfg[type]={include_officers:true,include_mount:true,include_crew:true,include_projectile:true,include_engine:true,engine_conflict:'use_existing',
+    base_type:'',soldier_from:(state.settings&&state.settings.soldier_from_base)?'base':'source',
+    officer_from:'source',mount_from:'source',crew_from:'source',
+    field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,exclude_models:[],
+    asset_conflict:'mod_folder',asset_reroute_dir:'',icon_conflict:'use_existing',
+    base_fac:'',_conflict:null,_fields:null,_orig:null,_fieldsKey:null,_inherited:null};
+  return state.cfg[type];
+}
+
+/* ---------- composer (single or batch) ---------- */
+let composerList=[];
+async function openComposer(types){
+  composerList=types.slice(); state.editing=types[0];
+  overlay.classList.add('open');
+  await ensureDest();           // needed for the unit-limit projection + base picker
+  renderComposer();
+}
+async function renderComposer(){
+  const batch=composerList.length>1;
+  const type=state.editing; const u=state.data.units.find(x=>x.type===type);
+  const c=cfgFor(type);
+  const m=document.getElementById('modal');
+  const strip = batch ? `<div class="batchstrip">${composerList.map(t=>{const cc=cfgFor(t);
+      const bimg=cc.base_type?`<img onerror="iconRetry(this)" src="${iconUrl(state.dst,cc.base_type)}">`:'';
+      return `<div class="bchip ${t===type?'sel':''}" onclick="switchUnit('${q1(esc(t))}')">
+        <img onerror="iconRetry(this)" src="${iconUrl(state.src,t)}"><div class="t">${esc(t)}</div>
+        <div class="base">${cc.base_type?('base: '+esc(cc.base_type)):'no base'}</div></div>`;}).join('')}</div>` : '';
+  const hasOff=u.officers.length>0, hasMount=!!u.mount, hasCrew=!!(u.crew&&u.crew.length);
+  const proj=u.projectiles||[]; const hasProj=proj.length>0;
+  // siege engine: descr_engines.txt entry + its skeletons/meshes/baked textures
+  const eng=u.engine||u.mounted_engine||''; const hasEng=!!eng;
+  const engMounted=!u.engine&&!!u.mounted_engine;
+  const engGroups=u.engine_groups||[];
+  // a group supplied by the base makes its "include the source's" box moot
+  const offBase=c.officer_from==='base'&&!!c.base_type;
+  const mntBase=c.mount_from==='base'&&!!c.base_type;
+  const crwBase=c.crew_from==='base'&&!!c.base_type;
+  // projectile physics live in stat_pri/stat_sec, which the base supplies wholesale,
+  // so with a base the projectile is the base's (already in dest) and porting is moot
+  const projBase=!!c.base_type;
+  const offOn=hasOff&&!offBase, mntOn=hasMount&&!mntBase, crwOn=hasCrew&&!crwBase;
+  const projOn=hasProj&&!projBase;
+  // the engine is named by the `engine` field, which the base supplies when the
+  // crew group is taken from it
+  const engBase=crwBase; const engOn=hasEng&&!engBase;
+  m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`:`Transfer “${esc(u.name)}”`} <span class="pill">${esc(state.src)} → ${esc(state.dst)}</span></h2>
+   <div class="mbody">
+     ${unitLimitBanner()}
+     ${strip}
+     <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+       <img class="baseimg" src="${iconUrl(state.src,type)}">
+       <div><b>${esc(u.name)}</b><div class="count">${esc(type)} · ${esc(u.kind||u.category||'?')}/${esc(u.class||'?')}</div>
+         ${hasProj?`<div class="projline">🏹 projectile: ${proj.map(p=>`<span class="chip">${esc(p)}</span>`).join('')}</div>`:''}
+         ${hasEng?`<div class="projline">🏰 siege engine: <span class="chip">${esc(eng)}</span>${engMounted?'<span class="count"> (mounted)</span>':''}${engGroups.length?`<span class="count"> · ${engGroups.map(esc).join(' / ')}</span>`:''}</div>`:''}</div>
+     </div>
+     ${projOn?`<div class="warnbox">⚠ <b>Projectile import won't import the special effects.</b> The projectile
+       definition (damage, velocity, angles…) is copied, but its visual effect/impact lines are pointed at
+       <code>invisible_placeholder_set</code> wherever ${esc(state.dst)} doesn't already define them. Re-add the
+       real effects manually in <code>descr_effect_impacts.txt</code> / the arrow-trail files.</div>`:''}
+     <fieldset><legend>Include secondary models</legend>
+       <label class="chk${offOn?'':' off'}"><input type="checkbox" id="optOff" ${offOn&&c.include_officers?'checked':''} ${offOn?'':'disabled'}> Officers ${!hasOff?'(none)':offBase?'(from base)':`(${u.officers.length})`}</label>
+       <label class="chk${mntOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optMount" ${mntOn&&c.include_mount?'checked':''} ${mntOn?'':'disabled'}> Mount${!hasMount?' (none)':mntBase?' (from base)':` (${esc(u.mount)})`}</label>
+       <label class="chk${crwOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optCrew" ${crwOn&&c.include_crew?'checked':''} ${crwOn?'':'disabled'}> Crew${!hasCrew?' (none)':crwBase?' (from base)':` (${u.crew.length})`}</label>
+       <label class="chk${projOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optProj" ${projOn&&c.include_projectile?'checked':''} ${projOn?'':'disabled'}> Projectile${!hasProj?' (none)':projBase?' (from base)':` (${proj.map(esc).join(', ')})`}</label>
+       <label class="chk${engOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optEngine" ${engOn&&c.include_engine!==false?'checked':''} ${engOn?'':'disabled'}> Siege engine${!hasEng?' (none)':engBase?' (from base)':` (${esc(eng)})`}</label>
+       ${hasOff?`<div class="optnames"><span class="k">Officers</span>${offBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:modelChecks(u.officers,offOn,c)}</div>`:''}
+       ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${mntBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:''}</div>`:''}
+       ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
+       ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">→ using ${esc(c.base_type)}’s stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
+       ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:`→ added to ${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'} + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
+       <div class="count" style="margin-top:5px">Unticked groups keep their source name and must already exist in the destination — or switch them to the base above.</div>
+     </fieldset>
+     ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine — <code>${esc(eng)}</code></legend>
+       <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''},
+         ${engGroups.length?`each group's <code>descr_engine_skeleton.txt</code> entry with its <code>animations/engine/</code> files, and `:''}every
+         <code>reference_points</code> / <code>engine_bone_map</code> / <code>engine_collision</code> / <code>engine_mesh</code>
+         file it names${engGroups.length?' — plus <b>the textures read straight out of each mesh binary</b> (no text file names them)':''}.</div>
+       <div class="count" style="margin-top:5px">Engine files can't be relocated into a mod folder the way battle models are:
+         each mesh has its texture paths <b>baked into the binary</b>. Overwriting a shared file (say
+         <code>siege_engines/textures/mangonel.texture</code>) also re-skins ${esc(state.dst)}'s own engines that use it,
+         so keeping the destination's is the safe default — the imported engine may then wear the destination's skin.
+         <b>Preview</b> lists any such file and lets you flip that choice.</div>
+       <div class="count" style="margin-top:5px"><b>Watch for overrides:</b> engines usually reference vanilla files without
+         overriding them. Those aren't copied — but if ${esc(state.dst)} overrides one, its version wins and may not match.
+         The preview flags every such file.</div>
+       <div class="count" style="margin-top:5px">Not ported: the block's effect/particle/sound references
+         (<code>fire_effect</code>, <code>shot_pfx_*</code>, <code>shot_sfx</code>, <code>area_effect</code>) and the crew
+         animation names in <code>crew_animations</code> — verify those exist in ${esc(state.dst)}.</div>
+     </fieldset>`:''}
+     <fieldset><legend>Use another unit as base (optional)</legend>
+       <label class="chk"><input type="checkbox" id="useBase" ${c.base_type?'checked':''} onchange="toggleBase()"> Inherit stats/attributes/cost/formation/ownership/era from a destination unit</label>
+       <div id="baseArea" style="margin-top:8px;${c.base_type?'':'display:none'}">
+         <div class="basepick">
+           <img class="baseimg" id="baseImg" src="${c.base_type?iconUrl(state.dst,c.base_type):''}" style="${c.base_type?'':'visibility:hidden'}">
+           <div style="flex:1">
+             <div class="basebar">
+               <input id="baseSearch" value="${esc(c.base_q||'')}" placeholder="Filter ${esc(u.kind||u.category||'')} units in ${esc(state.dst)}…" oninput="renderBaseList()">
+               <select id="baseFac" onchange="renderBaseList()"><option value="">All factions</option></select>
+             </div>
+             <div class="baselist" id="baseList"></div>
+           </div>
+         </div>
+       </div>
+     </fieldset>
+     <fieldset><legend>Mercenary</legend>
+       <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
+       <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute, gives the battle
+         models a <code>merc</code> texture record, and puts the icons in
+         <code>ui/units/mercs/</code> + <code>ui/unit_info/merc/</code> (pinned via
+         <code>card_pic_dir</code>/<code>info_pic_dir</code>).
+         ${u.mercenary?'<b class="w-good">This unit is already a mercenary in the source.</b>':''}
+         <br>Recruitment still needs a pool entry in <code>descr_mercenaries.txt</code> — not written by this tool.</div>
+     </fieldset>
+     <fieldset><legend>Edit fields — every EDU field (edits apply as overrides)</legend>
+       ${fromBasePanel(c,u)}
+       <div class="fieldbar">
+         <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
+         <span class="count" id="fieldChanged"></span>
+       </div>
+       <div class="allfields" id="allFields"><div class="count" style="padding:6px">Loading fields…</div></div>
+     </fieldset>
+     <div id="previewBox"></div>
+   </div>
+   <div class="foot">
+     <button onclick="closeModal()">Cancel</button>
+     <button onclick="doPreview()">Preview${batch?' this unit':''}</button>
+     <button class="primary" onclick="doApply()">${batch?'Apply all':'Apply'}</button>
+   </div>`;
+  // wire per-unit option persistence (disabled inputs — absent models — never fire)
+  // with a base, toggling an include box changes which unit supplies that group
+  // group toggles re-render so the per-model checkboxes enable/disable in step
+  optOff.onchange=()=>{c.include_officers=optOff.checked; renderComposer();};
+  optMount.onchange=()=>{c.include_mount=optMount.checked; doPreview();};
+  optCrew.onchange=()=>{c.include_crew=optCrew.checked; renderComposer();};
+  if(window.optProj)optProj.onchange=()=>{c.include_projectile=optProj.checked; doPreview();};
+  // re-render: the engine fieldset appears/disappears with the checkbox
+  if(window.optEngine)optEngine.onchange=()=>{c.include_engine=optEngine.checked; renderComposer();};
+  optMerc.onchange=()=>{c.make_mercenary=optMerc.checked; doPreview();};
+  // per-group source/base toggles — re-render so the include boxes grey out
+  ['soldier_from','officer_from','mount_from','crew_from'].forEach(k=>
+    document.querySelectorAll(`input[name=${k}]`).forEach(r=>r.onchange=()=>{
+      c[k]=r.value; renderComposer();}));
+  loadFields(type); if(c.base_type)renderBaseList();
+  doPreview();   // auto-plan so limit / asset-conflict warnings surface immediately
+}
+// The destination unit currently chosen as base (has its officers/mount/crew).
+function baseUnitOf(c){
+  return (c.base_type&&state.destData)
+    ? state.destData.units.find(x=>x.type===c.base_type) : null;}
+// "Take from base" toggles — one row per group, shown only when the BASE has it.
+function fromBasePanel(c,u){
+  const b=baseUnitOf(c), on=!!c.base_type;
+  const row=(key,label,detail)=>`<div class="sbrow"><span class="k">${label}</span>
+    <label><input type="radio" name="${key}" value="source" ${c[key]!=='base'?'checked':''} ${on?'':'disabled'}> Source</label>
+    <label><input type="radio" name="${key}" value="base" ${c[key]==='base'?'checked':''} ${on?'':'disabled'}> Base</label>
+    <span class="count">${detail}</span></div>`;
+  let rows=row('soldier_from','Soldier', on?'the soldier line only':'');
+  if(b&&b.officers.length) rows+=row('officer_from','Officers',`base has ${b.officers.length}: ${esc(b.officers.join(', '))}`);
+  if(b&&b.mount)           rows+=row('mount_from','Mount',`base: ${esc(b.mount)}`);
+  if(b&&b.crew&&b.crew.length) rows+=row('crew_from','Crew',`base has ${b.crew.length}: ${esc(b.crew.join(', '))}`);
+  return `<div class="basefrom${on?'':' off'}">
+    <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`:'base unit'}${on?'':' — pick a base unit to enable'}</div>
+    ${rows}</div>`;
+}
+function switchUnit(t){state.editing=t;renderComposer();}
+function toggleBase(){const c=cfgFor(state.editing);
+  if(!useBase.checked){c.base_type='';baseArea.style.display='none';renderComposer();return;}
+  baseArea.style.display='';renderBaseList();}
+// faction label using the DESTINATION mod's names (base units live in the dest)
+const destFacLabel=f=>{const n=(state.destData?.faction_names||{})[f];return n?`${n} (${f})`:f;};
+function renderBaseList(){
+  const u=state.data.units.find(x=>x.type===state.editing); const c=cfgFor(state.editing);
+  const dd=state.destData; if(!dd){baseList.innerHTML='<div class="count" style="padding:8px">loading destination…</div>';return;}
+  const rawQ=document.getElementById('baseSearch')?.value||'';
+  c.base_q=rawQ;                       // survive composer re-renders
+  const qq=rawQ.toLowerCase();
+  const facSel=document.getElementById('baseFac');
+  // same *kind*: cavalry only bases on cavalry of the same weapon layout
+  // (Cavalry / Cavalry_Lance / Cavalry_Archer)
+  const sameCat=dd.units.filter(x=>x.kind===u.kind);
+  // populate the faction filter with the factions that actually own a candidate
+  if(facSel&&facSel.options.length<=1){
+    const facs=[...new Set(sameCat.flatMap(x=>x.ownership))].sort((a,b)=>destFacLabel(a).localeCompare(destFacLabel(b)));
+    facSel.innerHTML='<option value="">All factions</option>'+
+      facs.map(f=>`<option value="${esc(f)}">${esc(destFacLabel(f))}</option>`).join('');
+    if(c.base_fac)facSel.value=c.base_fac;
+  }
+  const fac=facSel?facSel.value:''; c.base_fac=fac;
+  const cands=sameCat.filter(x=>(!fac||x.ownership.includes(fac))
+    && (!qq||x.name.toLowerCase().includes(qq)||x.type.toLowerCase().includes(qq))).slice(0,120);
+  baseList.innerHTML=cands.map(x=>`<div class="baserow ${x.type===c.base_type?'sel':''}" onclick="pickBase('${q1(esc(x.type))}')">
+    <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.dst,x.type)}"><div><div class="bn">${esc(x.name)}</div><div class="bs">${esc(x.type)}</div></div></div>`).join('')
+    ||`<div class="count" style="padding:8px">No ${esc(u.kind||u.category||'')} units in destination match.</div>`;
+}
+function pickBase(t){const c=cfgFor(state.editing);c.base_type=t;
+  // full re-render: the soldier toggle and the "using base's" hints only become
+  // live once a base exists (search text + faction filter are kept in cfg)
+  renderComposer();}
+async function loadFields(type){
+  const c=cfgFor(type);
+  // The baseline depends on whether a base unit is inherited from: with a base,
+  // show the fields the unit will ACTUALLY have after inheriting its stats.
+  // the composed result depends on the base AND on which groups come from it
+  const froms=['soldier_from','officer_from','mount_from','crew_from'];
+  const key=c.base_type?[c.base_type,...froms.map(k=>c[k]||'source')].join('|'):'';
+  if(!c._fields || c._fieldsKey!==key){
+    const url=c.base_type
+      ? `/api/base_fields?source=${encodeURIComponent(state.src)}&unit=${encodeURIComponent(type)}`
+        +`&dest=${encodeURIComponent(state.dst)}&base=${encodeURIComponent(c.base_type)}`
+        +froms.map(k=>`&${k}=${encodeURIComponent(c[k]||'source')}`).join('')
+      : `/api/unit_fields?mod=${encodeURIComponent(state.src)}&type=${encodeURIComponent(type)}`;
+    let r;
+    try{ r=await api.get(url); }catch(e){ r={error:''+e}; }
+    if(r.error){ if(state.editing===type){const b=document.getElementById('allFields');
+        if(b)b.innerHTML=`<div class="count w-bad" style="padding:6px">${esc(r.error)}</div>`;} return; }
+    c._fields=r.fields||[]; c._inherited=r.inherited||[];
+    c._orig={}; for(const [label,val] of c._fields) c._orig[label]=val;   // baseline for diffing
+    c._fieldsKey=key;
+    // an override that now matches the new baseline is no longer an override
+    for(const k of Object.keys(c.field_overrides))
+      if(c.field_overrides[k]===c._orig[k]) delete c.field_overrides[k];
+  }
+  if(state.editing!==type)return;
+  renderAllFields(type);
+}
+// Show EVERY EDU field of the unit at once (like ModdingTool's unit edit screen).
+// Any value changed from its original becomes a field override.
+function renderAllFields(type){
+  const c=cfgFor(type); const box=document.getElementById('allFields'); if(!box)return;
+  if(!c._fields.length){box.innerHTML='<div class="count" style="padding:6px">No editable fields.</div>';updateFieldChanged();return;}
+  const inh=new Set(c.base_type?(c._inherited||[]):[]);
+  box.innerHTML=c._fields.map(([label,val])=>{
+    const dup=/#\d+$/.test(label);
+    const cur=(label in c.field_overrides)?c.field_overrides[label]:val;
+    const changed=(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
+    const isInh=inh.has(label.replace(/#\d+$/,''));
+    return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
+      <label title="${esc(label)}${isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${isInh?'<span class="ibadge" title="from base">B</span>':''}</label>
+      <input data-k="${esc(label)}" value="${esc(cur)}" class="${changed?'changed':''}"
+        ${dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
+  }).join('');
+  box.querySelectorAll('input[data-k]').forEach(inp=>{
+    inp.oninput=()=>{const k=inp.dataset.k, v=inp.value;
+      if(v!==c._orig[k]) c.field_overrides[k]=v; else delete c.field_overrides[k];
+      inp.classList.toggle('changed', v!==c._orig[k]); updateFieldChanged();};
+  });
+  updateFieldChanged(); filterFields();
+}
+function updateFieldChanged(){const c=cfgFor(state.editing);const n=Object.keys(c.field_overrides).length;
+  const el=document.getElementById('fieldChanged'); if(el)el.textContent=n?`${n} changed`:'';}
+function filterFields(){const qq=(document.getElementById('fieldFilter')?.value||'').toLowerCase();
+  document.querySelectorAll('#allFields .afrow').forEach(r=>{
+    const l=(r.dataset.label||'').toLowerCase(); r.style.display=(!qq||l.includes(qq))?'':'none';});}
+function closeModal(){overlay.classList.remove('open');}
+
+// per-model checkboxes for a secondary group (officers / crew), so models can be
+// picked individually rather than all-or-none. Disabled when the group is off.
+function modelChecks(models,groupOn,c){
+  const ex=new Set((c.exclude_models||[]).map(s=>s.toLowerCase()));
+  return models.map(m=>{
+    const on=groupOn&&!ex.has(m.toLowerCase());
+    return `<label class="chk mini${groupOn?'':' off'}"><input type="checkbox" ${on?'checked':''} ${groupOn?'':'disabled'} onchange="toggleModel('${q1(esc(m))}',this.checked)"> ${esc(m)}</label>`;
+  }).join('');
+}
+function toggleModel(name,on){
+  const c=cfgFor(state.editing);
+  const ex=new Set((c.exclude_models||[]).map(s=>s.toLowerCase()));
+  if(on)ex.delete(name.toLowerCase()); else ex.add(name.toLowerCase());
+  c.exclude_models=[...ex]; doPreview();
+}
+function optsPayload(type){const c=cfgFor(type);
+  return {include_officers:c.include_officers,include_mount:c.include_mount,include_crew:c.include_crew,
+    include_projectile:c.include_projectile!==false,include_engine:c.include_engine!==false,
+    exclude_models:c.exclude_models||[],
+    base_type:c.base_type||null,field_overrides:c.field_overrides,
+    soldier_from:c.soldier_from||'source',officer_from:c.officer_from||'source',
+    mount_from:c.mount_from||'source',crew_from:c.crew_from||'source',
+    on_conflict:c.on_conflict,new_type:c.new_type||null,new_dictionary:c.new_dictionary||null,
+    asset_conflict:c.asset_conflict||'mod_folder',
+    asset_reroute_dir:c.asset_reroute_dir||null,
+    icon_conflict:c.icon_conflict||'use_existing',
+    engine_conflict:c.engine_conflict||'use_existing',
+    make_mercenary:!!c.make_mercenary};}
+// Render the plan summary as indented rows. Each row's text sits in its own
+// column, so a long path wraps under itself and the structure stays readable.
+function renderSummary(t){
+  const rows=(t||'').split('\n').map((raw,i)=>{
+    const m=raw.match(/^(\s*)(.*?)\s*$/); const indent=m[1].length; let body=m[2];
+    if(!body)return '';
+    const lvl=indent>=6?3:(indent>=2?2:1);
+    let sev='';
+    if(/ERROR/.test(body))sev='bad';
+    else if(/^!/.test(body)||/WARNING|EXCLUDED|NOT found|SKIPPED|differ\b/.test(body))sev='warn';
+    else if(/RELOCATED|OVERWRITE|RENAMED|renamed bmdb|reuse existing|base template|byte-identical|supplies them/.test(body))sev='good';
+    let icon='';
+    if(/^!/.test(body))icon='⚠';
+    else if(/^-/.test(body))icon='·';
+    body=body.replace(/^[!\-]\s*/,'');
+    // highlight counts and file paths inside the line
+    let html=esc(body)
+      .replace(/(^|\s)(\d+)(?=\s|$|\))/g,'$1<span class="num">$2</span>')
+      .replace(/([\w./\\-]+\.(?:mesh|texture|tga|dds|spr|txt|modeldb))/g,'<span class="path">$1</span>');
+    return `<div class="srow lvl${lvl}${sev?' '+sev:''}${i===0?' shead':''}">`
+      +`<span class="sicon">${icon}</span><span class="stext">${html}</span></div>`;
+  }).join('');
+  return `<div class="sum">${rows}</div>`;
+}
+
+/* ---------- 500 vanilla unit-limit warning ---------- */
+function projectedDestCount(){
+  const dd=state.destData; if(!dd) return null;
+  const have=new Set(dd.units.map(u=>u.type));
+  let add=0;
+  for(const t of composerList){ const c=cfgFor(t);
+    if(!have.has(t)) add++;                     // brand-new unit type
+    else if(c.on_conflict==='rename') add++;    // copied under a new name
+    // overwrite / skip add no net type
+  }
+  return {current:dd.units.length, add, projected:dd.units.length+add};
+}
+const limitIgnored=mod=>(state.settings.unit_limit_ignored||[]).includes(mod);
+function unitLimitBanner(){
+  const p=projectedDestCount(); if(!p) return '';
+  if(Math.max(p.current,p.projected)<=VANILLA_UNIT_LIMIT || limitIgnored(state.dst)) return '';
+  const now=p.current>VANILLA_UNIT_LIMIT;
+  return `<div class="limitwarn">
+    <b>⚠ Vanilla unit limit exceeded.</b>
+    “${esc(state.dst)}” ${now?`already has ${p.current}`:`will have ${p.projected}`} unit types
+    (vanilla M2TW caps at ${VANILLA_UNIT_LIMIT}${p.add?`; this transfer adds ${p.add}`:''}).
+    <div class="sub">Beyond ${VANILLA_UNIT_LIMIT}, unmodified M2TW crashes — but this is fine with the M2TWEOP / EOP engine extenders.</div>
+    <div class="acts">
+      <button onclick="ignoreLimit()">Ignore for “${esc(state.dst)}” (using m2ex/eop)</button>
+      <span class="count">Re-enable anytime in ⚙ Root settings.</span>
+    </div></div>`;
+}
+async function ignoreLimit(){
+  const cur=(state.settings.unit_limit_ignored||[]).slice();
+  if(!cur.includes(state.dst)) cur.push(state.dst);
+  state.settings=await api.post('/api/settings',{unit_limit_ignored:cur});
+  renderComposer();
+  toast(`Unit-limit warning ignored for “${state.dst}”.`);
+}
+async function saveConsole(){
+  const on=document.getElementById('consoleChk').checked;
+  state.settings=await api.post('/api/settings',{show_console:on});
+  toast(on?'Console will show on the next launch.':'Console hidden from the next launch.');}
+async function quitServer(){
+  if(!confirm('Stop the Unit Transfer server?\n\nThe page will stop working until you launch it again.'))return;
+  try{await api.post('/api/quit',{});}catch(e){}
+  document.body.innerHTML='<div class="empty" style="padding:60px">Unit Transfer server stopped.<br>'
+    +'<span class="count">Run Launch-Unit-Transfer.bat to start it again.</span></div>';}
+async function saveCleaner(){
+  const on=document.getElementById('cleanerChk').checked;
+  state.settings=await api.post('/api/settings',{run_full_cleaner:on});
+  toast(on?'Full Cleaner will run after each transfer.':'Full Cleaner disabled.');}
+async function saveSoldierBase(){
+  const on=document.getElementById('soldierBaseChk').checked;
+  state.settings=await api.post('/api/settings',{soldier_from_base:on});
+  toast(on?'New base picks will default the soldier to the base.':'Soldier defaults to the source unit.');}
+async function reenableLimit(mod){
+  const cur=(state.settings.unit_limit_ignored||[]).filter(m=>m!==mod);
+  state.settings=await api.post('/api/settings',{unit_limit_ignored:cur});
+  toast(`Unit-limit warning re-enabled for “${mod}”.`); openSettings();
+}
+
+/* ---------- asset (texture/mesh) conflict resolver ---------- */
+const modFolderName=()=>'unit_models/'+(state.src||'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'');
+function assetConflictUI(type,r){
+  const c=cfgFor(type);
+  const list=r.asset_conflicts||[];
+  // three buckets, each with its own resolution mode: battle-model assets (which
+  // can be relocated), icons (located by name, can't be) and siege-engine files
+  // (can't be either — their textures are baked into the mesh binaries).
+  const aConf=list.filter(x=>x.kind!=='icon'&&x.kind!=='engine');
+  const iConf=list.filter(x=>x.kind==='icon');
+  const eConf=list.filter(x=>x.kind==='engine');
+  const aDiff=aConf.filter(x=>!x.identical), aIdent=aConf.filter(x=>x.identical);
+  const iDiff=iConf.filter(x=>!x.identical);
+  const eDiff=eConf.filter(x=>!x.identical);
+  const reloc=(c.asset_conflict==='reroute'||c.asset_conflict==='mod_folder');
+  let html='';
+  // --- meshes / textures: keep, overwrite, or relocate (which avoids conflicts entirely)
+  if(aConf.length||reloc){
+    const warn=aDiff.length&&!reloc;
+    html+=`<fieldset class="assetconf" ${warn?'':'style="border-color:var(--edge)"'}>
+      <legend class="${warn?'w-warn':''}">Textures / meshes</legend>
+      <div class="count">${aConf.length} file(s) share a name &amp; path with the destination —
+        <b class="w-good">${aIdent.length}</b> byte-identical (reused),
+        <b class="${aDiff.length?'w-warn':''}">${aDiff.length}</b> differ.
+        ${r.reroute_dir?`<br><span class="w-good">Relocating ${r.relocated_count} file(s) → <code>${esc(r.reroute_dir)}/</code> — no conflicts.</span>`:''}</div>
+      <div class="radio-row" style="margin-top:6px">
+        <label><input type="radio" name="ac" value="mod_folder" ${c.asset_conflict==='mod_folder'?'checked':''}> New folder named after the mod — <code>${esc(modFolderName())}/</code> <b class="w-good">(default)</b></label>
+        <label><input type="radio" name="ac" value="reroute" ${c.asset_conflict==='reroute'?'checked':''}> Reroute — pick/type a folder under <code>unit_models/</code></label>
+        <label><input type="radio" name="ac" value="use_existing" ${c.asset_conflict==='use_existing'?'checked':''}> Use existing — keep the destination’s files</label>
+        <label><input type="radio" name="ac" value="overwrite" ${c.asset_conflict==='overwrite'?'checked':''}> Overwrite — replace with the source’s files (backed up, undoable)</label>
+      </div>
+      <div id="rerouteBox" style="${c.asset_conflict==='reroute'?'':'display:none'};margin-top:8px">
+        <div class="brbar">
+          <input id="rrPath" value="${esc(c.asset_reroute_dir||'')}" placeholder="unit_models/MyFolder">
+          <button onclick="brToggle()">Browse…</button>
+        </div>
+        <div id="brBox" style="${state.brOpen?'':'display:none'}">
+          <div class="brbar" style="margin-top:6px">
+            <button onclick="brUp()">↑ Up</button><span class="count" id="brNow"></span>
+          </div>
+          <div class="brlist" id="brList"></div>
+          <div class="brbar" style="margin-top:6px">
+            <input id="brNew" placeholder="new sub-folder name">
+            <button onclick="brMakeSub()">Use new sub-folder</button>
+          </div>
+        </div>
+      </div>
+      ${reloc?`<div class="count" style="margin-top:6px">Files keep their structure below <code>unit_models/</code>, and the added <code>battle_models.modeldb</code> entries are rewritten to the new paths.</div>`:''}
+      ${aDiff.length&&!reloc?`<div class="flist">${aDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B${x.src_size===x.dst_size?' — same size, different bytes':''}</span></div>`).join('')}</div>`:''}
+    </fieldset>`;
+  }
+  // --- icons: located by faction folder + dictionary, so they can't be relocated
+  if(iConf.length){
+    html+=`<fieldset class="assetconf" ${iDiff.length?'':'style="border-color:var(--edge)"'}>
+      <legend class="${iDiff.length?'w-warn':''}">Unit card / info icons</legend>
+      <div class="count">${iConf.length} icon(s) already exist — <b class="w-good">${iConf.length-iDiff.length}</b> identical,
+        <b class="${iDiff.length?'w-warn':''}">${iDiff.length}</b> differ.
+        The game finds icons by faction folder + dictionary name, so these <b>cannot be rerouted</b>.</div>
+      ${iDiff.length?`<div class="radio-row" style="margin-top:6px">
+        <label><input type="radio" name="ic" value="use_existing" ${c.icon_conflict!=='overwrite'?'checked':''}> Use existing icon</label>
+        <label><input type="radio" name="ic" value="overwrite" ${c.icon_conflict==='overwrite'?'checked':''}> Overwrite with the source’s icon</label>
+      </div>
+      <div class="flist">${iDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B</span></div>`).join('')}</div>`:''}
+    </fieldset>`;
+  }
+  // --- siege-engine files: texture paths are baked into each mesh, so no relocation
+  if(eConf.length){
+    html+=`<fieldset class="assetconf" ${eDiff.length?'':'style="border-color:var(--edge)"'}>
+      <legend class="${eDiff.length?'w-warn':''}">Siege-engine files</legend>
+      <div class="count">${eConf.length} engine file(s) already exist — <b class="w-good">${eConf.length-eDiff.length}</b> identical,
+        <b class="${eDiff.length?'w-warn':''}">${eDiff.length}</b> differ.
+        Each mesh carries its texture paths <b>inside the binary</b>, so these <b>cannot be relocated</b>.</div>
+      ${eDiff.length?`<div class="radio-row" style="margin-top:6px">
+        <label><input type="radio" name="ec" value="use_existing" ${c.engine_conflict!=='overwrite'?'checked':''}> Keep the destination’s <b class="w-good">(default)</b> — the imported engine may wear its skin</label>
+        <label><input type="radio" name="ec" value="overwrite" ${c.engine_conflict==='overwrite'?'checked':''}> Overwrite — also re-skins ${esc(state.dst)}’s own engines using these files</label>
+      </div>
+      <div class="flist">${eDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B</span></div>`).join('')}</div>`:''}
+    </fieldset>`;
+  }
+  // --- vanilla files the engine needs that the DESTINATION overrides
+  const ovr=r.engine_dest_overrides||[];
+  if(ovr.length){
+    html+=`<fieldset class="assetconf"><legend class="w-warn">Engine override warning</legend>
+      <div class="count">The engine references ${ovr.length} vanilla file(s) that <b>${esc(state.src)} does not override
+        but ${esc(state.dst)} does</b>. Nothing is copied for them — ${esc(state.dst)}’s version wins, and it may not be
+        what this engine expects. Check these by hand:</div>
+      <div class="flist">${ovr.map(p=>`<div class="frow"><span class="fp">${esc(p)}</span></div>`).join('')}</div>
+    </fieldset>`;
+  }
+  return html;
+}
+function wireAssetConflict(type){const c=cfgFor(type);
+  document.querySelectorAll('input[name=ac]').forEach(r=>r.onchange=()=>{c.asset_conflict=r.value;doPreview();});
+  document.querySelectorAll('input[name=ic]').forEach(r=>r.onchange=()=>{c.icon_conflict=r.value;doPreview();});
+  document.querySelectorAll('input[name=ec]').forEach(r=>r.onchange=()=>{c.engine_conflict=r.value;doPreview();});
+  const rr=document.getElementById('rrPath');
+  if(rr){rr.oninput=()=>{c.asset_reroute_dir=rr.value;};
+         rr.onchange=()=>{c.asset_reroute_dir=rr.value;doPreview();};}
+  if(state.brOpen&&c.asset_conflict==='reroute')brLoad(state.brPath||'unit_models');}
+
+/* ---------- destination folder browser (for Reroute) ---------- */
+function brToggle(){state.brOpen=!state.brOpen;
+  const b=document.getElementById('brBox'); if(b)b.style.display=state.brOpen?'':'none';
+  if(state.brOpen)brLoad(state.brPath||'unit_models');}
+async function brLoad(path){
+  let r; try{r=await api.get(`/api/dirs?mod=${encodeURIComponent(state.dst)}&path=${encodeURIComponent(path)}`);}
+  catch(e){return;}
+  if(r.error)return;
+  state.brPath=r.path;
+  const now=document.getElementById('brNow'); if(now)now.textContent=r.path+'/';
+  const list=document.getElementById('brList'); if(!list)return;
+  list.innerHTML=(r.dirs||[]).map(d=>`<div class="brrow" onclick="brEnter('${q1(esc(d))}')">📁 ${esc(d)}</div>`).join('')
+    ||'<div class="count" style="padding:6px">(no sub-folders here)</div>';
+  brSetPath(r.path);
+}
+function brSetPath(p){const rr=document.getElementById('rrPath');
+  cfgFor(state.editing).asset_reroute_dir=p; if(rr)rr.value=p;}
+function brEnter(name){brLoad((state.brPath||'unit_models')+'/'+name);}
+function brUp(){const p=(state.brPath||'unit_models').split('/'); if(p.length>1){p.pop();brLoad(p.join('/'));}}
+function brMakeSub(){const n=(document.getElementById('brNew')?.value||'').trim();
+  if(!n){toast('Type a folder name first');return;}
+  brSetPath((state.brPath||'unit_models')+'/'+n.replace(/[\\/]+/g,'_'));
+  doPreview();}
+
+async function doPreview(){
+  const type=state.editing; const box=document.getElementById('previewBox'); if(!box)return null;
+  box.innerHTML='<div class="preview">Planning…</div>';
+  const r=await api.post('/api/plan',{source:state.src,dest:state.dst,unit:type,options:optsPayload(type)});
+  if(state.editing!==type) return r;          // user switched units mid-plan
+  if(r.error){box.innerHTML=`<div class="preview w-bad">${esc(r.error)}</div>`;return null;}
+  let html=renderSummary(r.summary);
+  cfgFor(type)._conflict=r.unit_conflict;
+  if(r.unit_conflict) html+=conflictUI(type);
+  html+=assetConflictUI(type,r);
+  box.innerHTML=html; wireConflict(type); wireAssetConflict(type);
+  return r;
+}
+function conflictUI(type){const c=cfgFor(type);const u=state.data.units.find(x=>x.type===type);
+  if(!c.new_type)c.new_type=type+' (copy)'; if(!c.new_dictionary)c.new_dictionary=u.dictionary+'_copy';
+  return `<fieldset style="margin-top:10px;border-color:var(--warn)"><legend class="w-warn">Unit already exists in destination</legend>
+    <div class="radio-row">
+      <label><input type="radio" name="cf" value="rename" ${c.on_conflict==='rename'?'checked':''}> Rename</label>
+      <label><input type="radio" name="cf" value="overwrite" ${c.on_conflict==='overwrite'?'checked':''}> Overwrite existing</label>
+      <label><input type="radio" name="cf" value="skip" ${c.on_conflict==='skip'?'checked':''}> Skip</label>
+    </div>
+    <div class="rename-fields" id="rf">
+      <label>New type<input id="nt" value="${esc(c.new_type)}"></label>
+      <label>New dictionary<input id="nd" value="${esc(c.new_dictionary)}"></label>
+    </div></fieldset>`;
+}
+function wireConflict(type){const c=cfgFor(type);
+  document.querySelectorAll('input[name=cf]').forEach(r=>r.onchange=()=>{c.on_conflict=r.value;document.getElementById('rf').style.display=r.value==='rename'?'':'none';});
+  const nt=document.getElementById('nt'),nd=document.getElementById('nd');
+  if(nt)nt.oninput=()=>c.new_type=nt.value; if(nd)nd.oninput=()=>c.new_dictionary=nd.value;
+  const rf=document.getElementById('rf'); if(rf)rf.style.display=c.on_conflict==='rename'?'':'none';
+}
+
+async function doApply(){
+  const types=composerList.length?composerList:[state.editing];
+  // ensure conflicts are resolved: preview each; if conflict and not yet resolved, focus it
+  for(const t of types){
+    const r=await api.post('/api/plan',{source:state.src,dest:state.dst,unit:t,options:optsPayload(t)});
+    if(r.error){toast(`${t}: ${r.error}`);state.editing=t;renderComposer();await doPreview();return;}
+    if(r.base_error){toast(`${t}: ${r.base_error}`);state.editing=t;renderComposer();return;}
+    if(r.option_error){toast(`${t}: ${r.option_error}`);state.editing=t;renderComposer();return;}
+    if(r.unit_conflict && !cfgFor(t)._resolved){ state.editing=t;renderComposer();await doPreview();
+      toast(`“${t}” exists in destination — choose rename / overwrite / skip, then Apply again.`);
+      cfgFor(t)._resolved=true; return; }
+  }
+  let ok=0,skip=0,cleaner=null;
+  for(let i=0;i<types.length;i++){
+    const t=types[i];
+    const res=await api.post('/api/apply',{source:state.src,dest:state.dst,unit:t,
+      options:optsPayload(t),
+      run_cleaner:i===types.length-1});   // once per batch, after the last unit
+    if(res.error){toast(`${t}: ${res.error}`);return;}
+    if(res.cleaner)cleaner=res.cleaner;
+    if(res.plan&&res.plan.skipped)skip++; else ok++;
+  }
+  closeModal();
+  const cmsg=cleaner?(cleaner.ran?'  · cleaner ran'+(cleaner.copied?' (copied in)':''):`  · cleaner failed: ${cleaner.error||'?'}`):'';
+  toast(`Transferred ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${cmsg}  (undo in 🕑 Log)`,4200);
+  if(state.selMode)toggleSelMode();
+  state.cfg={};
+  if(state.dst===state.src)loadSource();
+}
+
+/* ---------- batch open ---------- */
+function openBatch(){ if(!state.selected.size)return; openComposer([...state.selected]); }
+
+/* ---------- settings ---------- */
+async function openSettings(){
+  const s=await api.get('/api/settings'); state.settings=s;
+  const ign=s.unit_limit_ignored||[];
+  const ignHtml=ign.length
+    ? ign.map(m=>`<div class="ovr"><span><code>${esc(m)}</code></span><button onclick="reenableLimit('${q1(esc(m))}')">Re-enable warning</button></div>`).join('')
+    : '<div class="count">None — the 500-unit-limit warning is active for every mod.</div>';
+  document.getElementById('modal').innerHTML=`<h2>Settings</h2>
+    <div class="mbody">
+      <fieldset><legend>Medieval II root folder</legend>
+        <div class="count" style="margin-bottom:8px">Point to your Medieval II install (contains <b>mods</b>) or a mods folder directly. Remembered next time.</div>
+        <input id="rootInput" style="width:100%" value="${esc(s.med2_root||'')}" placeholder="C:\\...\\Total War MEDIEVAL II Definitive Edition">
+        <div id="rootStatus" class="count" style="margin-top:8px"></div>
+      </fieldset>
+      <fieldset><legend>Launcher</legend>
+        <label class="chk"><input type="checkbox" id="consoleChk" ${s.show_console?'checked':''} onchange="saveConsole()">
+          Keep the console window open</label>
+        <div class="count" style="margin-top:6px"><code>Launch-Unit-Transfer.bat</code> <b>always</b> opens a console so a failed
+          start is readable instead of a window that flashes and vanishes. It shows the startup checks, then the unit-card
+          TGA→PNG conversions as they run. Off (default): it hides itself once that's done. On: it stays, showing every
+          request and transfer. <b>Applies from the next launch.</b></div>
+        <div class="count" style="margin-top:6px">If anything fails — before or after startup — the console comes back with the
+          reason and stays put. Everything is also written to <code>config\\server.log</code>, console or not.
+          To re-run just the checks: <code>py app.py --check</code></div>
+        <div style="margin-top:8px"><button class="danger" onclick="quitServer()">⏻ Quit server</button>
+          <span class="count">stops the tool (needed when running silently)</span></div>
+      </fieldset>
+      <fieldset><legend>Transfer defaults</legend>
+        <label class="chk"><input type="checkbox" id="soldierBaseChk" ${s.soldier_from_base?'checked':''} onchange="saveSoldierBase()">
+          Use the base unit's <b>soldier</b> line by default</label>
+        <div class="count" style="margin-top:6px">When you pick a “use another unit as base”, default the <b>Soldier</b> source to the base (so the base's soldier model &amp; projectile are used) instead of the transferred unit's. You can still flip it per unit in the composer.</div>
+      </fieldset>
+      <fieldset><legend>After every transfer</legend>
+        <label class="chk"><input type="checkbox" id="cleanerChk" ${s.run_full_cleaner===false?'':'checked'} onchange="saveCleaner()">
+          Run <b>Full Cleaner.bat</b> in the destination mod</label>
+        <div class="count" style="margin-top:6px">Copies <code>Full Cleaner.bat</code> into the destination mod folder (if not already there) and runs it, deleting the caches M2TW regenerates — notably <code>export_units.txt.strings.bin</code>, which otherwise keeps showing the OLD unit text in game.</div>
+        <div class="count w-warn" style="margin-top:6px">Note: the cleaner deletes files beyond what this tool backs up, so <b>Undo will not restore them</b> (they are regenerated by the game on next launch).</div>
+      </fieldset>
+      <fieldset><legend>Unit-limit warning (500 vanilla cap)</legend>
+        <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>
+        ${ignHtml}
+      </fieldset>
+    </div>
+    <div class="foot"><button onclick="closeModal()">Close</button><button class="primary" onclick="saveRoot()">Save & scan</button></div>`;
+  overlay.classList.add('open');
+}
+async function saveRoot(){const root=document.getElementById('rootInput').value.trim();
+  rootStatus.textContent='Scanning…'; await api.post('/api/settings',{med2_root:root});
+  const mods=await api.get('/api/mods');
+  rootStatus.innerHTML=mods.length?`Found ${mods.length}: ${mods.map(m=>esc(m.name)).join(', ')}`:'<span class="w-bad">No mods under that folder.</span>';
+  if(mods.length){await refreshMods(state.src,state.dst);setTimeout(closeModal,700);}
+}
+
+/* ---------- log ---------- */
+function newerSameDest(log,e){const idx=log.indexOf(e);
+  return log.slice(idx+1).filter(x=>x.dest_root===e.dest_root&&x.applied&&!x.undone);}
+async function openLog(){
+  const log=await api.get('/api/log'); state.logCache=log;
+  const items=[...log].reverse().map(e=>{
+    const newer=newerSameDest(log,e);
+    const id=q1(esc(e.id));
+    const undoBtn=e.applied&&!e.undone?`<button class="danger" onclick="doUndo('${id}')">Undo</button>`:'';
+    const revBtn=e.applied&&!e.undone
+      ?`<button onclick="doRevert('${id}')" title="Restore “${esc(e.dest)}” to its state at this point (undo everything newer)">⟲ Revert to here${newer.length?` (${newer.length})`:''}</button>`
+      :'';
+    return `<div class="log-item ${e.undone?'undone':''}">
+    <div class="top"><div><b>${esc(e.resolved_type||e.unit_type)}</b> <span class="pill">${esc(e.source)} → ${esc(e.dest)}</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="when">${esc(e.when)}</span>
+      ${undoBtn}${revBtn}
+      ${e.undone?'<span class="pill">undone</span>':(!e.applied?'<span class="pill">not applied</span>':'')}</div></div>
+    ${renderSummary(e.summary||'')}</div>`;}).join('')||'<div class="empty">No transfers yet.</div>';
+  document.getElementById('modal').innerHTML=`<h2>Transfer log</h2>
+    <div class="mbody"><div class="count" style="margin-bottom:8px">“Undo” reverts just that transfer. “Revert to here” rolls the destination back to its state at that point, undoing every newer transfer to it (backups restored byte-exact).</div>${items}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`;
+  overlay.classList.add('open');
+}
+async function doUndo(id){const r=await api.post('/api/undo',{id});if(r.error){toast('Undo error: '+r.error);return;}
+  toast('Undone ✓');state.destData=null;openLog();if(state.data)loadSource();}
+async function doRevert(id){
+  const log=state.logCache||await api.get('/api/log');
+  const e=log.find(x=>x.id===id); if(!e){toast('Log entry not found');return;}
+  const newer=newerSameDest(log,e);
+  if(!newer.length){toast('Already at this stage — nothing newer to undo.');return;}
+  if(!confirm(`Revert “${e.dest}” to its state right after this transfer?\n\n`+
+      `This undoes ${newer.length} newer transfer(s) to “${e.dest}” (newest first). `+
+      `All backed-up files (EDU, localisation, modeldb, overwritten textures) are restored byte-exact and moved-in files are removed.`)) return;
+  const r=await api.post('/api/revert',{id});
+  if(r.error){toast('Revert error: '+r.error);return;}
+  toast(`Reverted to this stage — undid ${r.count} transfer(s) ✓`);
+  state.destData=null; openLog(); if(state.data)loadSource();}
+
+init();
+</script>
+</body>
+</html>

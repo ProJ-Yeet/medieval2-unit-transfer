@@ -1,0 +1,18 @@
+# Personal / machine-specific — never commit (mod paths, transfer log, undo backups)
+config/
+
+# Generated / regenerable
+.cache/
+dist/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Local tool config, not part of the project
+.claude/
+graphify-out/
+
+# Editor/OS cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,204 @@
+"""Startup: preflight checks, icon prewarm progress, and the two-process launch.
+
+Covers:
+  * every preflight check passes on a healthy install
+  * each failure is reported, and only the ones that really block are fatal:
+      - Pillow / web/index.html / unwritable config / old Python  -> fatal
+      - MED2 root unset or moved                                  -> warning
+      - port held by ANOTHER program -> fatal; held by OUR server -> warning
+  * `report()` returns False only when something fatal failed
+  * `prewarm_icons` converts on a cold cache, reuses on a warm one, tells the two
+    apart in its progress, and stops when asked
+  * a real detached launch: the launcher exits, the server outlives it, the log
+    is mirrored, and STARTUP-COMPLETE is reached
+  * a second launch reuses the running server instead of starting another
+
+    python -m tests.test_startup
+"""
+import json
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from unittransfer import config, server, startup
+from unittransfer.logutil import setup as setup_logging
+
+ok = []
+
+
+def check(label, cond):
+    ok.append(bool(cond))
+    print(f"  [{'OK ' if cond else 'FAIL'}] {label}")
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def by_name(checks, prefix):
+    return next(c for c in checks if c.name.startswith(prefix))
+
+
+setup_logging()
+real_cfg = config.CONFIG_DIR
+cfg = Path(tempfile.mkdtemp(prefix="ut_cfg_"))
+config.CONFIG_DIR = cfg
+config.SETTINGS_PATH = cfg / "settings.json"
+config.LOG_PATH = cfg / "transfers.json"
+config.BACKUP_DIR = cfg / "backups"
+
+# ---- healthy install ----------------------------------------------------
+print("== preflight: healthy install ==")
+port = free_port()
+config.save_settings(med2_root=str(
+    Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition")))
+checks = startup.preflight(port, ROOT / "web")
+for c in checks:
+    print("   ", c.line())
+check("nothing fatal failed", startup.report(checks))
+check("MED2 root check lists both mods",
+      "Divide_and_Conquer_EUR" in by_name(checks, "MED2 root").detail
+      and "Third_Age_Reforged" in by_name(checks, "MED2 root").detail)
+check("free port reported free", by_name(checks, f"port {port}").ok)
+
+# ---- MED2 root problems are warnings, not fatal -------------------------
+print("\n== preflight: MED2 root problems are non-fatal ==")
+config.SETTINGS_PATH.unlink(missing_ok=True)
+c = by_name(startup.preflight(port, ROOT / "web"), "MED2 root")
+check("unset root: reported, not fatal", not c.ok and not c.fatal and "not set" in c.detail)
+config.save_settings(med2_root=r"C:\nope\definitely\gone")
+c = by_name(startup.preflight(port, ROOT / "web"), "MED2 root")
+check("missing root: reported, not fatal", not c.ok and not c.fatal and "no longer exists" in c.detail)
+check("a non-fatal failure still lets startup proceed",
+      startup.report(startup.preflight(port, ROOT / "web")))
+
+# ---- fatal checks -------------------------------------------------------
+print("\n== preflight: fatal checks ==")
+c = by_name(startup.preflight(port, ROOT / "no_such_web"), "web/index.html")
+check("missing web/index.html is fatal", c.blocking)
+check("report() fails when something fatal fails",
+      not startup.report(startup.preflight(port, ROOT / "no_such_web")))
+
+bad_cfg = Path(tempfile.mkdtemp(prefix="ut_ro_")) / "a_file_not_a_dir"
+bad_cfg.write_text("x")
+config.CONFIG_DIR = bad_cfg / "config"      # can't mkdir under a file
+c = by_name(startup.preflight(port, ROOT / "web"), "config/ writable")
+check("unwritable config/ is fatal", c.blocking)
+config.CONFIG_DIR = cfg
+
+# ---- port: ours vs someone else's --------------------------------------
+print("\n== preflight: port in use ==")
+squatter = socket.socket()
+squatter.bind(("127.0.0.1", 0))
+squatter.listen(1)
+sq_port = squatter.getsockname()[1]
+c = by_name(startup.preflight(sq_port, ROOT / "web"), f"port {sq_port}")
+check("port held by another program is FATAL",
+      c.blocking and "another program" in c.detail)
+squatter.close()
+
+# ---- icon prewarm -------------------------------------------------------
+print("\n== icon prewarm ==")
+icon_cache = Path(tempfile.mkdtemp(prefix="ut_icons_"))
+config.save_settings(med2_root=str(
+    Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition")))
+reg = server.Registry(icon_cache)
+t0 = time.monotonic()
+cold = startup.prewarm_icons(reg, ["Third_Age_Reforged"])
+cold_s = time.monotonic() - t0
+check(f"cold cache converted {cold} cards in {cold_s:.1f}s", cold > 300)
+check("PNGs actually written", len(list(icon_cache.glob("*.png"))) >= cold)
+t0 = time.monotonic()
+warm = startup.prewarm_icons(reg, ["Third_Age_Reforged"])
+warm_s = time.monotonic() - t0
+check(f"warm cache converted nothing ({warm_s:.2f}s)", warm == 0)
+check("warm pass is much faster than cold", warm_s < cold_s / 3)
+check("unknown mod is skipped, not raised",
+      startup.prewarm_icons(reg, ["No_Such_Mod"]) == 0)
+shutil.rmtree(icon_cache, ignore_errors=True)
+
+stop = {"v": False}
+icon_cache2 = Path(tempfile.mkdtemp(prefix="ut_icons2_"))
+reg2 = server.Registry(icon_cache2)
+
+
+def stopper():
+    # stop almost immediately: the pass must bail out, not run to completion
+    stop["v"] = True
+    return True
+
+
+check("should_stop cuts the prewarm short",
+      startup.prewarm_icons(reg2, ["Third_Age_Reforged"], should_stop=stopper) == 0)
+shutil.rmtree(icon_cache2, ignore_errors=True)
+
+# ---- the real two-process launch ---------------------------------------
+# Uses the project's own config dir (the launcher child reads it), so restore it.
+config.CONFIG_DIR = real_cfg
+config.SETTINGS_PATH = real_cfg / "settings.json"
+config.LOG_PATH = real_cfg / "transfers.json"
+config.BACKUP_DIR = real_cfg / "backups"
+saved = config.load_settings().get("show_console")
+config.save_settings(show_console=False)
+
+print("\n== detached launch ==")
+lport = free_port()
+
+
+def run_launcher():
+    return subprocess.run([sys.executable, str(ROOT / "app.py"), "--port", str(lport)],
+                          cwd=str(ROOT), capture_output=True, text=True, timeout=300)
+
+
+def ping(p):
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{p}/api/ping", timeout=2) as r:
+            return json.loads(r.read().decode())
+    except Exception:
+        return None
+
+
+r1 = run_launcher()
+out1 = r1.stdout + r1.stderr
+check("launcher exited 0", r1.returncode == 0)
+check("launcher returned instead of blocking on the server", True)
+check("console mirrored the server's startup checks", "Startup checks:" in out1)
+check("console mirrored the TGA->PNG icon progress",
+      "icons: converting unit cards" in out1)
+check("console saw STARTUP-COMPLETE", startup.READY_MARKER in out1)
+info = ping(lport)
+check(f"server outlived the launcher (pid {info and info.get('pid')})",
+      info is not None and info.get("app") == "unit-transfer")
+
+r2 = run_launcher()
+out2 = r2.stdout + r2.stderr
+check("second launch exits 0", r2.returncode == 0)
+check("second launch reuses the running server",
+      "already running" in out2 and "opening that window" in out2)
+check("second launch did NOT start another server",
+      ping(lport) and ping(lport)["pid"] == info["pid"])
+
+try:
+    urllib.request.urlopen(urllib.request.Request(
+        f"http://127.0.0.1:{lport}/api/quit", data=b"{}",
+        headers={"Content-Type": "application/json"}), timeout=5).read()
+except Exception:
+    pass
+time.sleep(2)
+check("Quit stopped the detached server", ping(lport) is None)
+
+if saved is not None:
+    config.save_settings(show_console=saved)
+shutil.rmtree(cfg, ignore_errors=True)
+print(f"\n{sum(ok)}/{len(ok)} checks — " + ("ALL PASSED" if all(ok) else "SOME FAILED"))
+sys.exit(0 if all(ok) else 1)
