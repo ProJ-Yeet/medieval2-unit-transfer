@@ -42,6 +42,17 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 # tab closes, so the (often windowless) server shuts down instead of lingering and
 # holding the port. A watchdog thread does the actual shutdown.
 _LIVENESS: Dict[str, Optional[float]] = {"last_beat": None, "pending_close": None}
+
+
+def page_ever_loaded() -> bool:
+    """True once a browser has actually rendered the UI and started heartbeating.
+
+    The one trustworthy "did a browser really open?" signal. ``webbrowser.open()``
+    returns True on Windows even when nothing opens (no default browser, a broken
+    file association, a blocked handler), so the launcher can't rely on it — but a
+    heartbeat can only come from a real page that really loaded.
+    """
+    return _LIVENESS["last_beat"] is not None
 _BYE_GRACE = 8.0          # seconds after a tab-close beacon before we stop (survives a refresh)
 _DEAD_MAN = 150.0         # seconds without any heartbeat before we stop (backgrounded tabs throttle)
 

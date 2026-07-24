@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import sys
 import threading
+import time
 import traceback
 import webbrowser
 from pathlib import Path
@@ -114,12 +115,19 @@ def _launch_detached(log, port: int, passthrough) -> int:
     except OSError as exc:
         log.error("Could not start the server process: %s", exc)
         return 1
-    ok, reason = startup.follow_until_ready(proc, offset)
+    ok, reason, browser_ok = startup.follow_until_ready(proc, offset)
     if not ok:
         log.error("STARTUP FAILED — %s", reason)
         log.error("Full log: %s", startup.server_log_path())
         return 1
-    log.info("Server is up on port %d. Stop it with Quit in the UI.", port)
+    log.info("Server is up: http://127.0.0.1:%d/", port)
+    log.info("Stop the tool with Quit in the UI. Log: %s", startup.server_log_path())
+    if not browser_ok:
+        # Exit code 3 tells the .bat to KEEP this window: the server is running
+        # but nothing appeared on screen, so this console is the user's only clue.
+        log.error("No browser opened — leaving this window up so the address "
+                  "above stays readable.")
+        return 3
     return 0
 
 
@@ -155,6 +163,7 @@ def _run_server(log, port: int, verbose: bool, keep_console: bool) -> int:
                 log.warning("icon prewarm failed (continuing)", exc_info=True)
             if stopping.is_set():
                 return
+            _watch_for_page(log, port, stopping)
             log.info("%s — server ready on port %d.%s", startup.READY_MARKER, port,
                      "  Ctrl+C here, or Quit in the UI, to stop."
                      if keep_console else "  Stop it with Quit in the UI.")
@@ -187,19 +196,45 @@ def _run_server(log, port: int, verbose: bool, keep_console: bool) -> int:
     return 0
 
 
+def _watch_for_page(log, port: int, stopping: threading.Event,
+                    wait: float = 8.0) -> None:
+    """Give the browser a moment to actually load, and shout if it never does.
+
+    The UI heartbeats within a few seconds of loading. If none arrives, no page
+    is on screen — almost always a browser that didn't open — so we emit the
+    marker that tells the launcher to KEEP its window (the address there is then
+    the user's only way in). Emitted BEFORE the ready marker so the launcher sees
+    it in the same batch.
+    """
+    from unittransfer.server import page_ever_loaded
+    deadline = time.monotonic() + wait
+    while time.monotonic() < deadline:
+        if stopping.is_set() or page_ever_loaded():
+            return
+        time.sleep(0.25)
+    if page_ever_loaded() or stopping.is_set():
+        return
+    url = f"http://127.0.0.1:{port}/"
+    log.error("%s — no browser has loaded the tool. It IS running; open this "
+              "address yourself: %s", startup.BROWSER_FAILED_MARKER, url)
+
+
 def _open_browser(log, port: int) -> None:
     """Open the UI in the system DEFAULT browser.
 
     ``webbrowser.open()`` hands the URL to whatever Windows has registered
     (Brave, Edge, Firefox...). The tool never picks a specific browser.
+
+    Its return value is NOT trustworthy on Windows — it reports success even when
+    no browser appears — so whether a page really loaded is confirmed separately
+    by waiting for the UI's heartbeat (see ``_watch_for_page``).
     """
     url = f"http://127.0.0.1:{port}/"
     log.info("Opening %s in your default browser…", url)
     try:
-        if not webbrowser.open(url):
-            log.warning("Could not launch a browser — open %s yourself.", url)
+        webbrowser.open(url)
     except Exception:
-        log.warning("Could not launch a browser — open %s yourself.", url, exc_info=True)
+        log.debug("webbrowser.open raised", exc_info=True)
 
 
 def _already_ours(port: int) -> bool:

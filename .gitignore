@@ -14,6 +14,11 @@ __pycache__/
 .claude/
 graphify-out/
 
+# Runtime logs (server.log.sample IS committed as a reference; real logs are not)
+server.log
+launcher-output.txt
+troubleshoot-output.txt
+
 # Editor/OS cruft
 .DS_Store
 Thumbs.db

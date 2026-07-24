@@ -181,6 +181,8 @@ def smoke_test(stage: Path, portable: bool) -> None:
 #: builder's own mod paths, transfer log and backups.
 FORBIDDEN_DIRS = ("config", "__pycache__", ".cache", "dist", "tests", "graphify-out")
 FORBIDDEN_SUFFIXES = (".log", ".pyc", ".pyo")
+#: transcripts the launcher/troubleshooter write next to themselves at runtime
+FORBIDDEN_NAMES = ("launcher-output.txt", "troubleshoot-output.txt")
 
 
 def clean_stage(stage: Path) -> None:
@@ -192,7 +194,8 @@ def clean_stage(stage: Path) -> None:
                 shutil.rmtree(d, ignore_errors=True)
                 removed += 1
     for p in list(stage.rglob("*")):
-        if p.is_file() and p.suffix.lower() in FORBIDDEN_SUFFIXES:
+        if p.is_file() and (p.suffix.lower() in FORBIDDEN_SUFFIXES
+                            or p.name in FORBIDDEN_NAMES):
             p.unlink(missing_ok=True)
             removed += 1
     if removed:
@@ -205,7 +208,8 @@ def assert_clean(stage: Path) -> None:
     for p in stage.rglob("*"):
         rel = p.relative_to(stage)
         if any(part in FORBIDDEN_DIRS for part in rel.parts) or (
-                p.is_file() and p.suffix.lower() in FORBIDDEN_SUFFIXES):
+                p.is_file() and (p.suffix.lower() in FORBIDDEN_SUFFIXES
+                                 or p.name in FORBIDDEN_NAMES)):
             bad.append(str(rel))
     if bad:
         raise SystemExit("refusing to package — these must not ship:\n  "
@@ -222,12 +226,18 @@ cd /d "%~dp0"
 rem Everything needed is in this folder - no Python install required. The window
 rem shows the startup checks and the unit-card conversions, then closes itself
 rem once the server is up (turn on Settings -> Show console window to keep it).
-rem If anything fails, the window stays open with the reason.
+rem
+rem It stays open, with the reason, whenever anything is off:
+rem   exit 3 = the server started but no browser opened, so this window is the
+rem            only place the address is visible.
+rem   other  = a real failure.
+rem Either way the full detail is in config\server.log.
 
 if not exist "runtime\python.exe" (
     echo.
     echo The bundled Python runtime is missing.
     echo Unzip the WHOLE folder somewhere first - don't run this from inside the zip.
+    echo Right-click the .zip -^> "Extract All...", then run this from the extracted folder.
     echo.
     pause
     exit /b 1
@@ -236,23 +246,91 @@ if not exist "runtime\python.exe" (
 "runtime\python.exe" app.py %*
 set "RC=%errorlevel%"
 
-if not "%RC%"=="0" (
+if "%RC%"=="0" (
     echo.
+    echo  Started. This window closes in a few seconds.
+    timeout /t 6 >nul 2>&1
+    goto :done
+)
+
+echo.
+if "%RC%"=="3" (
+    echo ============================================================
+    echo  Unit Transfer IS RUNNING - but no browser opened by itself.
+    echo ============================================================
+    echo.
+    echo  Open this address in your browser:   http://127.0.0.1:8756/
+    echo.
+    echo  Keep this window open while you use the tool, or use the Quit
+    echo  button in the tool's settings to stop it.
+) else (
     echo ============================================================
     echo  Unit Transfer exited with an error ^(code %RC%^).
     echo ============================================================
     echo.
     echo  * Port 8756 taken?   run:  "Unit Transfer.bat" --port 8757
     echo  * Wrong mods folder? set it in the tool's settings ^(gear icon^)
+    echo  * Blocked by antivirus/SmartScreen? unblock the folder and retry.
     echo.
-    echo  Full log: config\server.log
-    echo  Re-run just the checks:  runtime\python.exe app.py --check
-    echo.
-    pause
+    echo  Full log:  config\server.log
+    echo  For a diagnostic you can share, run:  Troubleshoot.bat
 )
+echo.
+pause
 
+:done
 endlocal
 exit /b %RC%
+"""
+
+TROUBLESHOOT_BAT = r"""@echo off
+setlocal
+title Unit Transfer - Troubleshoot
+cd /d "%~dp0"
+
+rem Run this when "Unit Transfer.bat" doesn't work. It never closes on its own,
+rem and writes everything to troubleshoot-output.txt to send on for help.
+
+echo ============================================================
+echo  Unit Transfer - diagnostic
+echo ============================================================
+echo.
+
+echo ==== %DATE% %TIME% ==== > "troubleshoot-output.txt"
+
+echo [1/4] Folder contents >> "troubleshoot-output.txt"
+dir /b >> "troubleshoot-output.txt" 2>&1
+
+echo [2/4] Bundled runtime >> "troubleshoot-output.txt"
+if exist "runtime\python.exe" (
+    echo runtime\python.exe FOUND >> "troubleshoot-output.txt"
+    "runtime\python.exe" -c "import sys;print(sys.version);print(sys.executable)" >> "troubleshoot-output.txt" 2>&1
+    "runtime\python.exe" -c "import PIL;print('Pillow',PIL.__version__)" >> "troubleshoot-output.txt" 2>&1
+) else (
+    echo runtime\python.exe MISSING - the folder was not fully extracted >> "troubleshoot-output.txt"
+)
+
+echo [3/4] Startup checks >> "troubleshoot-output.txt"
+if exist "runtime\python.exe" (
+    "runtime\python.exe" app.py --check >> "troubleshoot-output.txt" 2>&1
+)
+
+echo [4/4] Recent server log >> "troubleshoot-output.txt"
+if exist "config\server.log" (
+    powershell -NoProfile -Command "Get-Content 'config\server.log' -Tail 60" >> "troubleshoot-output.txt" 2>&1
+) else (
+    echo config\server.log does not exist >> "troubleshoot-output.txt"
+)
+
+type "troubleshoot-output.txt"
+
+echo.
+echo ============================================================
+echo  Saved to troubleshoot-output.txt - send that file on for help.
+echo ============================================================
+echo.
+pause
+endlocal
 """
 
 README = """Unit Transfer — move Medieval II: Total War units between mods
@@ -297,7 +375,22 @@ Close the browser tab, or use the Quit button in the tool's settings.
 
 Something went wrong?
 ---------------------
-`config\\server.log` has the full story. To re-run just the startup checks:
+**The window opened and closed and nothing happened.**
+That usually means the tool started fine but your browser didn't open by
+itself. The tool is still running — open this address manually:
+
+    http://127.0.0.1:8756/
+
+If that page loads, everything is working. (Newer builds keep the window open
+and tell you when this happens.)
+
+**Still stuck?** Run **Troubleshoot.bat**. It never closes on its own, prints
+what it finds, and saves `troubleshoot-output.txt` — send that file on for help.
+
+Every run is logged in detail to `config\\server.log` (or, if this folder can't
+be written, to `%LOCALAPPDATA%\\UnitTransfer\\server.log`).
+
+To re-run just the startup checks:
 
     {check_cmd}
 """
@@ -308,6 +401,8 @@ def write_docs(stage: Path, portable: bool) -> None:
         PORTABLE_BAT if portable else (ROOT / "Launch-Unit-Transfer.bat").read_text(
             encoding="utf-8"),
         encoding="utf-8")
+    if portable:
+        (stage / "Troubleshoot.bat").write_text(TROUBLESHOOT_BAT, encoding="utf-8")
     note = ("Nothing else to install — Python and the image library are already\n"
             "inside this folder (`runtime\\`)."
             if portable else

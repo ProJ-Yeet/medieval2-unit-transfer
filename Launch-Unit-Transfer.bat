@@ -37,8 +37,27 @@ if %errorlevel%==0 (
 %PY% app.py %*
 set "RC=%errorlevel%"
 
-if not "%RC%"=="0" (
+rem A successful launch prints the URL and then closes this window. That happens
+rem fast on a warm cache, so hold it briefly - long enough to read the address if
+rem the browser didn't open on its own, short enough not to be in the way.
+if "%RC%"=="0" (
     echo.
+    echo  Started. This window closes in a few seconds.
+    timeout /t 6 >nul 2>&1
+    goto :done
+)
+
+echo.
+if "%RC%"=="3" (
+    echo ============================================================
+    echo  Unit Transfer IS RUNNING - but no browser opened by itself.
+    echo ============================================================
+    echo.
+    echo  Open this address in your browser:   http://127.0.0.1:8756/
+    echo.
+    echo  Keep this window open while you use the tool, or use the Quit
+    echo  button in the tool's settings to stop it.
+) else (
     echo ============================================================
     echo  Unit Transfer exited with an error ^(code %RC%^).
     echo ============================================================
@@ -50,9 +69,10 @@ if not "%RC%"=="0" (
     echo.
     echo  Full log: config\server.log
     echo  Re-run just the checks:  %PY% app.py --check
-    echo.
-    pause
 )
+echo.
+pause
 
+:done
 endlocal
 exit /b %RC%

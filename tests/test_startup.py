@@ -12,6 +12,9 @@ Covers:
   * a real detached launch: the launcher exits, the server outlives it, the log
     is mirrored, and STARTUP-COMPLETE is reached
   * a second launch reuses the running server instead of starting another
+  * the log falls back out of an unwritable config/ instead of vanishing
+  * "did a browser really load?" is answered by the page heartbeat, not by
+    webbrowser.open()'s unreliable Windows return value
 
     python -m tests.test_startup
 """
@@ -141,6 +144,51 @@ def stopper():
 check("should_stop cuts the prewarm short",
       startup.prewarm_icons(reg2, ["Third_Age_Reforged"], should_stop=stopper) == 0)
 shutil.rmtree(icon_cache2, ignore_errors=True)
+
+# ---- log always lands somewhere, even when config/ is unwritable --------
+print("\n== log location fallback ==")
+from unittransfer import logutil
+
+blocker = Path(tempfile.mkdtemp(prefix="ut_ro_")) / "not_a_dir"
+blocker.write_text("x")
+saved_cfg = config.CONFIG_DIR
+config.CONFIG_DIR = blocker / "config"          # cannot mkdir under a file
+# reset the one-shot logging setup so it re-resolves a location
+for h in list(logutil.log.handlers):
+    logutil.log.removeHandler(h)
+logutil.log._ut_configured = False
+logutil._log_path = None
+logutil.setup()
+logutil.log.info("fallback probe line")
+lp = logutil.log_path()
+check("a log file is created even when config/ is unwritable",
+      lp is not None and lp.exists())
+check("the fallback is NOT under the unwritable config/",
+      lp is not None and lp.parent != config.CONFIG_DIR)
+check("startup.server_log_path() points at the real location", startup.server_log_path() == lp)
+# clean up the fallback we just created, and restore normal logging
+if lp is not None and "UnitTransfer" in str(lp):
+    try:
+        lp.unlink()
+        lp.parent.rmdir()
+    except OSError:
+        pass
+config.CONFIG_DIR = saved_cfg
+for h in list(logutil.log.handlers):
+    logutil.log.removeHandler(h)
+logutil.log._ut_configured = False
+logutil._log_path = None
+setup_logging()
+
+# ---- browser-loaded detection uses the heartbeat, not webbrowser's lie ---
+print("\n== browser-loaded detection ==")
+server._LIVENESS["last_beat"] = None
+check("page_ever_loaded() is False before any heartbeat", not server.page_ever_loaded())
+server._LIVENESS["last_beat"] = time.time()
+check("page_ever_loaded() is True once a heartbeat arrives", server.page_ever_loaded())
+server._LIVENESS["last_beat"] = None
+check("BROWSER_FAILED_MARKER is defined for the launcher to key on",
+      bool(getattr(startup, "BROWSER_FAILED_MARKER", "")))
 
 # ---- the real two-process launch ---------------------------------------
 # Uses the project's own config dir (the launcher child reads it), so restore it.

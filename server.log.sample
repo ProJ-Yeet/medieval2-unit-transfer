@@ -1,0 +1,51 @@
+2026-07-24 09:23:37  INFO    Unit Transfer starting — C:\Games\UnitTransfer
+2026-07-24 09:23:37  INFO    Startup checks:
+2026-07-24 09:23:37  INFO      [ok  ] Python 3.12.10
+2026-07-24 09:23:37  INFO      [ok  ] Pillow (unit icons) — version 12.0.0
+2026-07-24 09:23:37  INFO      [ok  ] web/index.html
+2026-07-24 09:23:37  INFO      [ok  ] config/ writable — C:\Games\UnitTransfer\config
+2026-07-24 09:23:37  INFO      [ok  ] MED2 root — C:\Games\Medieval II Total War\mods — 2 mod(s): Divide_and_Conquer_EUR, Third_Age_Reforged
+2026-07-24 09:23:37  INFO      [ok  ] port 8756 — free
+2026-07-24 09:23:37  INFO    Unit Transfer UI  ->  http://127.0.0.1:8756/
+2026-07-24 09:23:37  INFO    MED2 root: C:\Games\Medieval II Total War
+2026-07-24 09:23:37  INFO    Mods found: Divide_and_Conquer_EUR, Third_Age_Reforged
+2026-07-24 09:23:37  INFO    Opening http://127.0.0.1:8756/ in your default browser…
+2026-07-24 09:23:38  INFO    icons: converting unit cards for Third_Age_Reforged (427 units)…
+2026-07-24 09:23:38  INFO    icons: Third_Age_Reforged  116/427 (27%) — 116 converted, 0 already cached
+2026-07-24 09:23:39  INFO    icons: Third_Age_Reforged  256/427 (59%) — 256 converted, 0 already cached
+2026-07-24 09:23:39  INFO    icons: Third_Age_Reforged  380/427 (88%) — 380 converted, 0 already cached
+2026-07-24 09:23:39  INFO    icons: Third_Age_Reforged  427/427 (100%) — 417 converted, 0 already cached
+2026-07-24 09:23:39  INFO    icons: Third_Age_Reforged done — 417 converted, 0 cached, 1.8s
+2026-07-24 09:23:39  INFO    icons: converting unit cards for Divide_and_Conquer_EUR (916 units)…
+2026-07-24 09:23:39  INFO    icons: Divide_and_Conquer_EUR  916/916 (100%) — 0 converted, 0 already cached
+2026-07-24 09:23:39  INFO    icons: Divide_and_Conquer_EUR done — 0 converted, 0 cached, 0.0s
+2026-07-24 09:23:39  INFO    STARTUP-COMPLETE — server ready on port 8756.  Stop it with Quit in the UI.
+2026-07-24 09:23:41  INFO    APPLY  'Erebor Ballista'  Third_Age_Reforged -> Divide_and_Conquer_EUR
+2026-07-24 09:23:41  INFO       models: 0 add, 0 reuse-identical, 3 renamed
+2026-07-24 09:23:41  INFO       renamed bmdb 'hobbit_crew' -> 'hobbit_crew_thir' (name collision, different content)
+2026-07-24 09:23:41  INFO       renamed bmdb 'dwarves_elites' -> 'dwarves_elites_thir' (name collision, different content)
+2026-07-24 09:23:41  INFO       renamed bmdb 'dwarf_captain_early_flag' -> 'dwarf_captain_early_flag_thir' (name collision, different content)
+2026-07-24 09:23:41  INFO       projectile 'isengard_ballista' -> RENAMED in descr_projectile.txt (name collision -> 'isengard_ballista_thir')
+2026-07-24 09:23:41  INFO       3 effect line(s) -> 'invisible_placeholder_set' (effects not ported — re-add by hand)
+2026-07-24 09:23:41  INFO       siege engine 'erebor_ballista' -> ADDED to descr_engines.txt (new engine (1 block))
+2026-07-24 09:23:41  INFO       engine skeleton 'isengard_ballista' -> reused in descr_engine_skeleton.txt (identical in destination)
+2026-07-24 09:23:41  INFO       engine skeleton 'isengard_ballista_dying' -> left to VANILLA in descr_engine_skeleton.txt (not in the source descr_engine_skeleton.txt (inherited from the base game) — and ABSENT from the destination's)
+2026-07-24 09:23:41  INFO       engine files copied: 5 (meshes, bone maps, collision, reference points, baked textures, engine animations)
+2026-07-24 09:23:41  INFO       3 referenced file(s) are VANILLA (not overridden by the source) — not copied:
+2026-07-24 09:23:41  INFO       - siege_engines/BoneMaps/ballista.xml  (referenced by engine 'erebor_ballista')
+2026-07-24 09:23:41  INFO       - siege_engines/collision_models/ballista_collision.CAS  (referenced by engine 'erebor_ballista')
+2026-07-24 09:23:41  INFO       - siege_engines/BoneMaps/ballista_destruct.xml  (referenced by engine 'erebor_ballista')
+2026-07-24 09:23:41  INFO       asset files: 24   icon files: 1
+2026-07-24 09:23:41  INFO       RELOCATED assets -> unit_models/Third_Age_Reforged/  (15 file(s), bmdb paths rewritten)
+2026-07-24 09:23:41  INFO       ! 1 referenced files not found on disk (skipped)
+2026-07-24 09:23:41  INFO       - engine skeleton 'isengard_ballista_dying' is defined in NEITHER mod's descr_engine_skeleton.txt — it must exist in the base game or that model group will have no animation. Add the entry by hand if not.
+2026-07-24 09:23:41  INFO       - ENGINE IMPORT: effect/particle/sound references in the engine block (fire_effect, shot_pfx_*, shot_sfx, area_effect) and the crew animation names in its `crew_animations` block are NOT ported — verify they exist in the destination.
+2026-07-24 09:23:41  INFO       - PROJECTILE IMPORT: special effects are NOT imported — the projectile's effect/impact lines were pointed at 'invisible_placeholder_set' where the destination lacks them. Re-add the real effects manually in descr_effect_impacts.txt / the arrow-trail files.
+2026-07-24 09:23:41  INFO       - projectile model (.cas) files were copied, but their textures under data/models_missile/textures/ are not chased — verify the missile model renders and copy its texture if it's missing in the destination.
+2026-07-24 09:23:41  INFO       - assets relocated to 'unit_models/Third_Age_Reforged/' (15 file(s)); the added battle_models.modeldb entries point at the new paths.
+2026-07-24 09:23:41  INFO       - 9 file(s) outside unit_models/ were left where they are (only unit_models paths can be relocated).
+2026-07-24 09:23:41  INFO    APPLY  done id=20260724-092341-731e7e  (type='Erebor Ballista')
+2026-07-24 09:23:42  INFO    CLEANER ran in Divide_and_Conquer_EUR (rc=0, copied in)
+2026-07-24 09:23:42  INFO    UNDO   id=20260724-092341-731e7e
+2026-07-24 09:23:42  INFO    UNDO   restored 'Erebor Ballista' in Divide_and_Conquer_EUR
+2026-07-24 09:23:42  INFO    QUIT requested from the UI — shutting down

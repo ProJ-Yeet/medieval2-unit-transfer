@@ -40,6 +40,10 @@ MIN_PYTHON = (3, 9)
 #: logged by the server once it is listening, the tab is open and the icons are
 #: warm — the launcher waits for this line, then closes the console.
 READY_MARKER = "STARTUP-COMPLETE"
+#: logged when the server came up fine but no browser could be opened. The
+#: launcher must then KEEP its window, because auto-closing it would leave the
+#: user with no window and no tab — indistinguishable from "nothing happened".
+BROWSER_FAILED_MARKER = "BROWSER-NOT-OPENED"
 
 
 # --------------------------------------------------------------------------
@@ -205,7 +209,9 @@ def prewarm_icons(registry, mod_names: List[str], every: float = 0.5,
 
 # --------------------------------------------------------------------------
 def server_log_path() -> Path:
-    return config.CONFIG_DIR / "server.log"
+    """Where the log is actually being written (may not be config/ — see logutil)."""
+    from .logutil import log_path
+    return log_path() or (config.CONFIG_DIR / "server.log")
 
 
 def _pythonw() -> str:
@@ -235,18 +241,30 @@ def spawn_server(app_path: Path, args: List[str]) -> subprocess.Popen:
 
 
 def follow_until_ready(proc: subprocess.Popen, offset: int,
-                       timeout: float = 300.0) -> Tuple[bool, str]:
+                       timeout: float = 300.0) -> Tuple[bool, str, bool]:
     """Mirror the server's log to this console until it reports ready.
 
     ``offset`` is the size of ``server.log`` at spawn time, so only the child's
     lines are echoed (not the launcher's own preflight, already on screen).
-    Returns (ok, reason); ok=False means the child died or timed out, and the
-    caller should leave the console up.
+
+    Returns (ok, reason, browser_ok). ok=False means the child died or timed out.
+    browser_ok=False means the server is fine but nothing opened on screen, which
+    the caller must treat as "keep this window" — otherwise the user is left with
+    no console and no tab and no idea the tool is running.
     """
     path = server_log_path()
     deadline = time.monotonic() + timeout
     pos = offset
     pending = ""
+    browser_ok = True
+
+    def emit(line: str) -> None:
+        nonlocal browser_ok
+        if line.strip():
+            print(line, flush=True)
+        if BROWSER_FAILED_MARKER in line:
+            browser_ok = False
+
     while True:
         try:
             with open(path, "r", encoding="utf-8", errors="replace") as fh:
@@ -259,10 +277,9 @@ def follow_until_ready(proc: subprocess.Popen, offset: int,
             pending += chunk
             *lines, pending = pending.split("\n")
             for line in lines:
-                if line.strip():
-                    print(line, flush=True)
+                emit(line)
                 if READY_MARKER in line:
-                    return True, "ready"
+                    return True, "ready", browser_ok
         rc = proc.poll()
         if rc is not None:
             time.sleep(0.3)                    # let the last lines land
@@ -270,11 +287,10 @@ def follow_until_ready(proc: subprocess.Popen, offset: int,
                 with open(path, "r", encoding="utf-8", errors="replace") as fh:
                     fh.seek(pos)
                     for line in fh.read().splitlines():
-                        if line.strip():
-                            print(line, flush=True)
+                        emit(line)
             except OSError:
                 pass
-            return (rc == 0), f"server exited with code {rc}"
+            return (rc == 0), f"server exited with code {rc}", browser_ok
         if time.monotonic() > deadline:
-            return False, f"server did not report ready within {timeout:.0f}s"
+            return False, f"server did not report ready within {timeout:.0f}s", browser_ok
         time.sleep(0.15)

@@ -105,6 +105,21 @@ python -m tests.test_transfer_v2
 Each suite is self-contained and safe to run against real mod installs — all
 writes happen in temp directories or through the backup/undo path.
 
+## Logs & troubleshooting
+
+Every run is logged to `config/server.log` (and, if that folder isn't writable,
+to `%LOCALAPPDATA%\UnitTransfer\server.log`). The portable build also tees the
+launcher window to `launcher-output.txt` and ships a **Troubleshoot.bat** that
+collects a diagnostic without closing on its own.
+
+`server.log.sample` in this repo shows what a normal session looks like — startup
+checks, icon conversion progress, and a unit transfer with undo.
+
+If the launcher window opens and closes with nothing visible, the tool usually
+started fine but your browser didn't open on its own — go to
+`http://127.0.0.1:8756/` manually. Newer builds detect this, keep the window
+open, and print the address.
+
 ## Project layout
 
 - `unittransfer/` — parsers and writers for each file format (EDU, localisation,
