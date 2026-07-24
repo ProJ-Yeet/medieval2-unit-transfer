@@ -992,7 +992,11 @@ async function openSettings(){
     <div class="mbody">
       <fieldset><legend>Medieval II root folder</legend>
         <div class="count" style="margin-bottom:8px">Point to your Medieval II install (contains <b>mods</b>) or a mods folder directly. Remembered next time.</div>
-        <input id="rootInput" style="width:100%" value="${esc(s.med2_root||'')}" placeholder="C:\\...\\Total War MEDIEVAL II Definitive Edition">
+        <div style="display:flex;gap:6px">
+          <input id="rootInput" style="width:100%" value="${esc(s.med2_root||'')}" placeholder="C:\\...\\Total War MEDIEVAL II Definitive Edition">
+          <button onclick="autoDetectRoot()">Auto-detect</button>
+          <button onclick="browseRoot()">Browse…</button>
+        </div>
         <div id="rootStatus" class="count" style="margin-top:8px"></div>
       </fieldset>
       <fieldset><legend>Launcher</legend>
@@ -1032,6 +1036,20 @@ async function saveRoot(){const root=document.getElementById('rootInput').value.
   const mods=await api.get('/api/mods');
   rootStatus.innerHTML=mods.length?`Found ${mods.length}: ${mods.map(m=>esc(m.name)).join(', ')}`:'<span class="w-bad">No mods under that folder.</span>';
   if(mods.length){await refreshMods(state.src,state.dst);setTimeout(closeModal,700);}
+}
+async function autoDetectRoot(){
+  rootStatus.textContent='Looking up the registry…';
+  const r=await api.get('/api/detect_med2_root');
+  if(!r.path){rootStatus.innerHTML='<span class="w-bad">Not found in the registry — install not detected. Type or paste the path instead.</span>';return;}
+  document.getElementById('rootInput').value=r.path;
+  await saveRoot();
+}
+async function browseRoot(){
+  rootStatus.textContent='Opening folder browser…';
+  const r=await api.post('/api/browse_folder',{title:'Select your Medieval II Total War folder'});
+  if(!r.path){rootStatus.textContent='Cancelled.';return;}
+  document.getElementById('rootInput').value=r.path;
+  await saveRoot();
 }
 
 /* ---------- log ---------- */

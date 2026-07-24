@@ -9,6 +9,8 @@ API
   GET  /                         -> SPA
   GET  /api/settings             -> {med2_root, last_source, last_dest}
   POST /api/settings             -> set {med2_root,...} (persisted)
+  GET  /api/detect_med2_root     -> {path}  (registry lookup, not persisted)
+  POST /api/browse_folder        -> {title} -> {path}  (native OS folder dialog)
   GET  /api/mods                 -> [{name, root}]  (scanned under med2_root/mods)
   GET  /api/units?mod=NAME       -> {mod, factions, categories, classes, units}
   GET  /icon?mod=&type=&kind=    -> image/png
@@ -344,6 +346,10 @@ class Handler(BaseHTTPRequestHandler):
                 # unsaved yet -> offer the registry-detected install as a prefill
                 s["med2_root"] = s.get("med2_root") or config.detect_med2_root()
                 return self._json(s)
+            if u.path == "/api/detect_med2_root":
+                # explicit re-lookup for the Settings "Auto-detect" button, on
+                # demand rather than only as an initial prefill.
+                return self._json({"path": config.detect_med2_root()})
             if u.path == "/api/mods":
                 return self._json([{"name": n, "root": str(p)}
                                    for n, p in self.registry.discover().items()])
@@ -397,6 +403,13 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/settings":
                 s = config.save_settings(**body)
                 return self._json(s)
+            if u.path == "/api/browse_folder":
+                # a browser page can't hand back a real filesystem path from its
+                # own file input, so pop the OS's native folder dialog instead —
+                # the server IS this machine, unlike a normal web app.
+                from .folder_dialog import browse_for_folder
+                path = browse_for_folder(body.get("title") or "Select a folder")
+                return self._json({"path": path})
             if u.path == "/api/plan":
                 return self._json(self._plan(body))
             if u.path == "/api/apply":
