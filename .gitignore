@@ -1,5 +1,6 @@
 # Personal / machine-specific — never commit (mod paths, transfer log, undo backups)
 config/
+HANDOFF.md
 
 # Generated / regenerable
 .cache/

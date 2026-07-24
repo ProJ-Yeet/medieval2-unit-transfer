@@ -105,10 +105,11 @@ python -m tests.test_transfer_v2
 Each suite is self-contained and safe to run against real mod installs — all
 writes happen in temp directories or through the backup/undo path.
 
-## How it works, in more detail
+## Project layout
 
-See [HANDOFF.md](HANDOFF.md) for the full internals: file formats (EDU,
-localisation, `battle_models.modeldb`, `descr_mount`, `descr_projectile`,
-`descr_engines`/`descr_engine_skeleton`), the dependency-resolution pipeline,
-and the design decisions behind conflict handling, asset relocation, and the
-undo system.
+- `unittransfer/` — parsers and writers for each file format (EDU, localisation,
+  `battle_models.modeldb`, `descr_mount`, `descr_projectile`,
+  `descr_engines`/`descr_engine_skeleton`), the dependency-resolution and
+  transfer engine, and the local HTTP server
+- `web/` — the browser UI
+- `tests/` — one module per area, runnable individually
