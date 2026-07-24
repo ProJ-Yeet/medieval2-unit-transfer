@@ -1,6 +1,7 @@
 # Personal / machine-specific — never commit (mod paths, transfer log, undo backups)
 config/
 HANDOFF.md
+med2_mod_installer.iss
 
 # Generated / regenerable
 .cache/

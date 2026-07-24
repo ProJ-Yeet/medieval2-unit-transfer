@@ -10,6 +10,7 @@ Backups for in-place transfers live under ``config/backups/<transfer_id>/``.
 from __future__ import annotations
 
 import json
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -46,8 +47,32 @@ def save_settings(**kw) -> Dict[str, Any]:
     return s
 
 
+def detect_med2_root() -> Optional[str]:
+    """Look up the install path from the registry, same key + value the game's own
+    installers write (`med2_mod_installer.iss` reads it as ``AppPath`` under
+    ``SOFTWARE\\SEGA\\Medieval II Total War``). A 32-bit installer's writes land in
+    the WOW6432Node view on 64-bit Windows, so both views are tried explicitly
+    rather than relying on this process's own bitness.
+    """
+    if sys.platform != "win32":
+        return None
+    import winreg
+    key_path = r"SOFTWARE\SEGA\Medieval II Total War"
+    for flags in (winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY, 0):
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path, 0,
+                                 winreg.KEY_READ | flags) as key:
+                value, _ = winreg.QueryValueEx(key, "AppPath")
+        except OSError:
+            continue
+        if value and Path(value).is_dir():
+            return value
+    return None
+
+
 def get_med2_root() -> Optional[str]:
-    return load_settings().get("med2_root")
+    """The saved root, falling back to a registry-detected install when unset."""
+    return load_settings().get("med2_root") or detect_med2_root()
 
 
 # ---- transfer log -------------------------------------------------------

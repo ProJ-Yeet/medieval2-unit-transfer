@@ -340,7 +340,10 @@ class Handler(BaseHTTPRequestHandler):
                 import os as _os
                 return self._json({"app": "unit-transfer", "pid": _os.getpid()})
             if u.path == "/api/settings":
-                return self._json(config.load_settings())
+                s = config.load_settings()
+                # unsaved yet -> offer the registry-detected install as a prefill
+                s["med2_root"] = s.get("med2_root") or config.detect_med2_root()
+                return self._json(s)
             if u.path == "/api/mods":
                 return self._json([{"name": n, "root": str(p)}
                                    for n, p in self.registry.discover().items()])
