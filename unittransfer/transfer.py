@@ -1047,9 +1047,10 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                 parts[2] = folder
                 rel = "/".join(parts)
             plan.icon_dir_overrides[pic_dir_key] = folder
-        elif plan.base_unit is not None:
-            # a base changes ownership to the base's factions; pin the icon folder
-            # via *_pic_dir so the game still finds the copied icon.
+        elif plan.base_unit is not None or ov:
+            # ownership changed (base template, or an explicit ownership override)
+            # while the icon file itself stays under the SOURCE's faction folder;
+            # pin *_pic_dir there so the game still finds it under the new ownership.
             if len(parts) >= 4:
                 plan.icon_dir_overrides[pic_dir_key] = parts[2]
         plan.icon_files.append((icon, rel))
