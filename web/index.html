@@ -399,9 +399,15 @@ function cardHtml(u){
 }
 function onCard(type){
   if(state.selMode){ if(state.selected.has(type))state.selected.delete(type); else state.selected.add(type);
-    updateBatchBtn(); const c=main.querySelector(`.card[data-type="${cssq(type)}"]`); if(c)c.classList.toggle('sel',state.selected.has(type)); return; }
+    updateBatchBtn(); markCardSel(type); return; }
   openDrawer(type);
 }
+// A unit owned by several factions renders one card per faction group (and the
+// same goes for the other group-by modes), so EVERY copy has to reflect the
+// selection — querySelector would only ever find the first, making a selected
+// unit look unselected under its other factions.
+function markCardSel(type){const on=state.selected.has(type);
+  main.querySelectorAll(`.card[data-type="${cssq(type)}"]`).forEach(c=>c.classList.toggle('sel',on));}
 const cssq=s=>s.replace(/"/g,'\\"');
 
 function openDrawer(type){

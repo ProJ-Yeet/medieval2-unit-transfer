@@ -162,7 +162,7 @@ class ModelDb:
     entries: List[ModelEntry]
     body_start: int = 0                  # offset in source where the body begins
     trailing: str = ""                   # bytes after the last entry (usually "\n")
-    header_raw: str = ""                 # verbatim original header line (incl newline)
+    header_raw: str = ""                 # verbatim original header (incl trailing whitespace)
 
     def by_name(self) -> Dict[str, ModelEntry]:
         return {e.name: e for e in self.entries}
@@ -236,10 +236,14 @@ def parse_text(text: str) -> ModelDb:
     header_ints = [r.get_int() for _ in range(8)]
     count = header_ints[5]
 
-    body_start = text.find("\n") + 1
+    # The body starts at the first token AFTER the header ints. Locating it by
+    # the first newline instead would assume the header is exactly one line —
+    # true for most mods, but some wrap it (`...0 0 \n595 \n0 0 \n5 blank`),
+    # and reading from mid-header makes the next int look like a string length
+    # and swallows the first entry.
+    r._skip_ws()
+    body_start = r.i
     prev_end = body_start
-    # Skip the reader up to body_start so the first string read is the blank name.
-    r.i = body_start
 
     blank_raw = ""
     entries: List[ModelEntry] = []
