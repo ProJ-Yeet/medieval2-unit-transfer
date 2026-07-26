@@ -568,6 +568,56 @@ def set_field(block: str, key: str, value: str) -> str:
     return "".join(out)
 
 
+def strip_trailing_filler(block: str) -> str:
+    """Drop trailing blank lines and comment-only lines from a unit block.
+
+    A parsed block runs up to the next ``type`` line (see ``parse_text``), so it
+    can end with blank lines and a decorative section-banner comment that
+    actually introduces the NEXT unit in that file — noise that shouldn't be
+    dragged along when this one unit is copied alone into a different file.
+    """
+    lines = block.splitlines(keepends=True)
+    cut = 0
+    for i in range(len(lines) - 1, -1, -1):
+        s = lines[i].strip()
+        if s and not s.startswith(";"):
+            cut = i + 1
+            break
+    kept = "".join(lines[:cut])
+    if kept and not kept.endswith("\n"):
+        kept += "\n"
+    return kept
+
+
+def set_field_before(block: str, key: str, value: str, anchor_keys: tuple) -> str:
+    """Like :func:`set_field`, but a NEWLY-added field is inserted right before
+    the first line matching one of ``anchor_keys`` (falling back to right after
+    the block's last real field line when none of them are present).
+
+    Updating an already-present ``key`` behaves exactly like ``set_field`` —
+    only the append path gets positioned.
+    """
+    if any(line_key(l) == key for l in block.splitlines(keepends=True)):
+        return set_field(block, key, value)
+    lines = block.splitlines(keepends=True)
+    new_line = f"{key}\t\t\t{value}\n"
+    for i, l in enumerate(lines):
+        if line_key(l) in anchor_keys:
+            if i > 0 and lines[i - 1] and not lines[i - 1].endswith("\n"):
+                lines[i - 1] += "\n"
+            lines.insert(i, new_line)
+            return "".join(lines)
+    # no anchor present — append right after the last real field line
+    cut = len(lines)
+    for i in range(len(lines) - 1, -1, -1):
+        s = lines[i].strip()
+        if s and not s.startswith(";"):
+            cut = i + 1
+            break
+    lines[cut:cut] = [new_line]
+    return "".join(lines)
+
+
 def rewrite_stat_projectile(block: str, name_map: dict) -> str:
     """Rewrite the projectile token (3rd CSV value) of stat_pri / stat_sec lines.
 

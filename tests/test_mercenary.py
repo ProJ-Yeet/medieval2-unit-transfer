@@ -109,6 +109,25 @@ if any(r.startswith("ui/unit_info/") for r in icon_rels):
 check("EDU re-parses cleanly (unit count grew by 1)",
       len(parsed.units) == len(dest.edu.units))
 
+# info_pic_dir/card_pic_dir must sit right before recruit_priority_offset, in
+# that order (not trailing at the very end of the block, and not after a leaked
+# decorative section-banner comment carried over from the SOURCE file's next unit).
+raw_lines = [l.strip() for l in new_unit.raw.splitlines()]
+keys = [edu.line_key(l) for l in new_unit.raw.splitlines()]
+if "recruit_priority_offset" in keys:
+    rpo_i = keys.index("recruit_priority_offset")
+    ci = keys.index("card_pic_dir") if "card_pic_dir" in keys else None
+    ii = keys.index("info_pic_dir") if "info_pic_dir" in keys else None
+    if ci is not None:
+        check("card_pic_dir sits directly before recruit_priority_offset",
+              ci == rpo_i - 1)
+    if ii is not None and ci is not None:
+        check("info_pic_dir comes before card_pic_dir", ii == ci - 1)
+check("no decorative comment banner leaked into the appended block",
+      not any(l.startswith(";") and "#" in l for l in raw_lines))
+check("no run of blank lines inside the appended block",
+      not any(a == "" and b == "" for a, b in zip(raw_lines, raw_lines[1:])))
+
 # --- bmdb ---
 db = modeldb.parse_file(data / "unit_models/battle_models.modeldb")
 by_name = db.by_name()

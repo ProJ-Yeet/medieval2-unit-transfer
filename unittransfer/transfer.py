@@ -1151,13 +1151,24 @@ def _tag(mod: Mod) -> str:
 # --------------------------------------------------------------------------
 def _build_unit_block(plan: TransferPlan, unit) -> str:
     """Compose the EDU block to write: base template + rename/model rewrites + overrides."""
-    block = unit.raw
+    # A parsed block runs up to the next `type` line in the SOURCE file, so it can
+    # drag along blank lines and a decorative section-banner comment that actually
+    # introduces the NEXT source unit — meaningless (and confusing) once copied
+    # alone into the destination file.
+    block = edu_mod.strip_trailing_filler(unit.raw)
     # 1) inherit stats/attrs/ownership/era from the base unit, if any
     if plan.base_unit is not None:
         block = compose_with_base(block, plan.base_unit.raw, plan.base_field_groups)
-    # pin the icon folders (base ownership change, or the merc folders)
-    for key, folder in plan.icon_dir_overrides.items():
-        block = edu_mod.set_field(block, key, folder)
+    # pin the icon folders (base ownership change, or the merc folders) — placed
+    # right before recruit_priority_offset, matching where mods conventionally
+    # keep these fields, instead of always trailing at the very end of the block.
+    # Reversed so each insert lands right before the anchor: dict order is
+    # card_pic_dir then info_pic_dir, and inserting info_pic_dir FIRST (right
+    # before recruit_priority_offset) then card_pic_dir (also right before it,
+    # pushing info_pic_dir down) yields the conventional info/card/recruit order.
+    for key, folder in reversed(list(plan.icon_dir_overrides.items())):
+        block = edu_mod.set_field_before(block, key, folder,
+                                         anchor_keys=("recruit_priority_offset",))
     # 2) apply conflict rename + bmdb model-ref renames
     type_new = plan.resolved_type if plan.resolved_type != plan.unit_type else None
     dict_new = plan.resolved_dict if plan.resolved_dict != unit.dictionary else None

@@ -97,6 +97,15 @@
   .rename-fields input{width:100%}
   .preview{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:10px;
     font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;max-height:220px;overflow:auto}
+  .progress-track{background:var(--panel2);border:1px solid var(--edge);border-radius:6px;height:10px;overflow:hidden}
+  .progress-fill{background:var(--accent);height:100%;transition:width .15s ease}
+  .proglist{max-height:260px;overflow:auto;border:1px solid var(--edge);border-radius:8px}
+  .proglist-row{display:flex;gap:8px;align-items:center;padding:6px 10px;font-size:12.5px;
+    border-bottom:1px solid var(--edge)}
+  .proglist-row:last-child{border-bottom:none}
+  .proglist-row .pi{width:14px;text-align:center;flex:0 0 auto}
+  .proglist-row.w-warn .pi{animation:spin 1s linear infinite;display:inline-block}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   /* structured plan summary — each row keeps its own indent column so wrapped
      text aligns under itself instead of snapping back to the left margin */
   .sum{background:var(--panel2);border:1px solid var(--edge);border-radius:8px;
@@ -945,6 +954,10 @@ async function doPreview(){
   if(r.error){box.innerHTML=`<div class="preview w-bad">${esc(r.error)}</div>`;return null;}
   let html=renderSummary(r.summary);
   cfgFor(type)._conflict=r.unit_conflict;
+  // Having rendered the conflict fieldset (with its pre-filled rename defaults, editable
+  // right here) IS the review step — don't also force a redundant "Apply again" pause in
+  // doApply() for a unit whose resolution the user already saw and could adjust.
+  if(r.unit_conflict) cfgFor(type)._resolved=true;
   if(r.unit_conflict) html+=conflictUI(type);
   html+=assetConflictUI(type,r);
   box.innerHTML=html; wireConflict(type); wireAssetConflict(type);
@@ -970,6 +983,24 @@ function wireConflict(type){const c=cfgFor(type);
   const rf=document.getElementById('rf'); if(rf)rf.style.display=c.on_conflict==='rename'?'':'none';
 }
 
+const PROG_ICON={pending:'·',current:'⟳',done:'✓',error:'✗',skipped:'–'};
+const PROG_CLS={current:'w-warn',done:'w-good',error:'w-bad',skipped:''};
+function renderProgress(types,status){
+  const done=status.filter(s=>s==='done'||s==='error'||s==='skipped').length;
+  const curIdx=status.indexOf('current');
+  const pct=types.length?Math.round((done/types.length)*100):0;
+  const rows=types.map((t,i)=>{
+    const st=status[i];
+    return `<div class="proglist-row ${PROG_CLS[st]||''}"><span class="pi">${PROG_ICON[st]}</span> ${esc(t)}</div>`;
+  }).join('');
+  document.getElementById('modal').innerHTML=`<h2>Transferring…</h2>
+    <div class="mbody">
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="count" style="margin:8px 0 12px">${done} of ${types.length} done
+        ${curIdx>=0?` — <b>${esc(types[curIdx])}</b>`:''}</div>
+      <div class="proglist">${rows}</div>
+    </div>`;
+}
 async function doApply(){
   const types=composerList.length?composerList:[state.editing];
   // ensure conflicts are resolved: preview each; if conflict and not yet resolved, focus it
@@ -983,14 +1014,17 @@ async function doApply(){
       cfgFor(t)._resolved=true; return; }
   }
   let ok=0,skip=0,cleaner=null;
+  const status=types.map(()=>'pending');
   for(let i=0;i<types.length;i++){
     const t=types[i];
+    status[i]='current'; renderProgress(types,status);
     const res=await api.post('/api/apply',{source:state.src,dest:state.dst,unit:t,
       options:optsPayload(t),
       run_cleaner:i===types.length-1});   // once per batch, after the last unit
-    if(res.error){toast(`${t}: ${res.error}`);return;}
+    if(res.error){status[i]='error';renderProgress(types,status);toast(`${t}: ${res.error}`);return;}
     if(res.cleaner)cleaner=res.cleaner;
-    if(res.plan&&res.plan.skipped)skip++; else ok++;
+    if(res.plan&&res.plan.skipped){skip++;status[i]='skipped';} else {ok++;status[i]='done';}
+    renderProgress(types,status);
   }
   closeModal();
   const cmsg=cleaner?(cleaner.ran?'  · cleaner ran'+(cleaner.copied?' (copied in)':''):`  · cleaner failed: ${cleaner.error||'?'}`):'';
