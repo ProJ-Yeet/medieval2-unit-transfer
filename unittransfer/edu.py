@@ -156,19 +156,34 @@ class Unit:
         ps = self.projectiles()
         return ps[0] if ps else ""
 
-    def icon_factions(self) -> List[str]:
-        """Faction folders to search for this unit's icons, best-first."""
-        if self.card_pic_dir:
-            base = [self.card_pic_dir]
+    def _icon_dirs(self, pic_dir: Optional[str], merc_default: str,
+                   other_merc: str) -> List[str]:
+        """Faction folders to search for one icon kind, best-first.
+
+        ``card_pic_dir`` and ``info_pic_dir`` are INDEPENDENT EDU fields — a unit
+        can pin its card to ``mercs`` while leaving ``info_pic_dir`` unset (so the
+        info card is looked up under its ownership faction instead). Each kind
+        therefore needs its OWN pic_dir here, not the card's.
+        """
+        if pic_dir:
+            base = [pic_dir]
         elif self.mercenary_unit:
-            base = ["mercs"]
+            base = [merc_default]
         else:
             base = [f for f in self.ownership if f != "slave"] or list(self.ownership)
-        # merc folders are the universal fallback
-        for fb in ("mercs", "merc"):
+        # merc folders are the universal fallback (this kind's own merc folder first)
+        for fb in (merc_default, other_merc):
             if fb not in base:
                 base.append(fb)
         return base
+
+    def card_dirs(self) -> List[str]:
+        """Faction folders to search for the unit CARD, best-first."""
+        return self._icon_dirs(self.card_pic_dir, "mercs", "merc")
+
+    def info_dirs(self) -> List[str]:
+        """Faction folders to search for the INFO card, best-first."""
+        return self._icon_dirs(self.info_pic_dir, "merc", "mercs")
 
 
 @dataclass

@@ -194,6 +194,7 @@ def _unit_payload(m: Mod, u) -> dict:
         # projectile(s) the unit fires (stat_pri/stat_sec slot 3); [] for melee.
         "projectiles": u.projectiles(),
         "has_card": m.find_unit_card(u) is not None,
+        "has_info": m.find_unit_info(u) is not None,
     }
 
 

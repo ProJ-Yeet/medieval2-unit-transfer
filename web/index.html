@@ -72,6 +72,11 @@
   .drawer .dh{display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--edge);align-items:center}
   .drawer .dh img{width:72px;height:96px;object-fit:contain;background:#0d0f13;border-radius:6px}
   .drawer .dh h2{margin:0 0 4px;font-size:16px}
+  .drawer .infowrap{padding:14px 14px 0}
+  .drawer .infowrap img{display:block;width:100%;height:auto;object-fit:contain;
+    background:#0d0f13;border-radius:8px;border:1px solid var(--edge)}
+  .drawer .infowrap .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--dim);margin-bottom:5px}
   .drawer .body{padding:14px}
   .drawer .row{margin-bottom:12px}
   .drawer .row .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:3px}
@@ -416,6 +421,7 @@ function openDrawer(type){
   const eras=['0','1','2'].filter(e=>(u.eras[e]||[]).length).map(e=>({0:'Early',1:'High',2:'Late'}[e])).join(', ')||'—';
   d.innerHTML=`<button class="close" onclick="drawer.classList.remove('open')">×</button>
     <div class="dh"><img onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}"><div><h2>${esc(u.name)}</h2><div class="sub">${esc(u.type)}</div></div></div>
+    ${u.has_info?`<div class="infowrap"><div class="k">Info card</div><img onerror="this.parentElement.style.display='none'" src="${iconUrl(state.src,u.type,'info')}"></div>`:''}
     <div class="body">
       ${row('Dictionary',esc(u.dictionary))}
       ${row('Ownership',u.ownership.map(f=>`<span class="chip">${esc(facLabel(f))}</span>`).join('')||'—')}

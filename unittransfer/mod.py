@@ -199,14 +199,18 @@ class Mod:
     # ---- icon resolution -----------------------------------------------
     def find_unit_card(self, unit: "edu.Unit") -> Optional[Path]:
         """Locate the in-game unit card: data/ui/units/<faction>/#<dict>.tga."""
-        return self._find_icon(self.ui_units_dir, unit.icon_factions(),
+        return self._find_icon(self.ui_units_dir, unit.card_dirs(),
                                f"#{unit.dictionary}", (".tga", ".dds"))
 
     def find_unit_info(self, unit: "edu.Unit") -> Optional[Path]:
-        """Locate the info card: data/ui/unit_info/<faction>/<dict>_info.tga."""
-        # info cards prefer the 'merc' folder as universal fallback (not 'mercs')
-        facs = unit.icon_factions()
-        return self._find_icon(self.ui_unit_info_dir, facs,
+        """Locate the info card: data/ui/unit_info/<faction>/<dict>_info.tga.
+
+        Uses ``info_pic_dir`` (falling back to ownership / mercenary status), NOT
+        ``card_pic_dir`` — a unit can pin its card to ``mercs`` while its info
+        card stays looked up under its ownership faction, and conflating the two
+        made the info card silently unfindable for exactly that (common) case.
+        """
+        return self._find_icon(self.ui_unit_info_dir, unit.info_dirs(),
                                f"{unit.dictionary}_info", (".tga", ".dds"))
 
     def _find_icon(self, base: Path, factions: List[str], stem: str,
