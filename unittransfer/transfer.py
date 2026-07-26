@@ -1050,12 +1050,18 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                        or [f for f in unit.ownership if f != "slave"] or list(unit.ownership))
     card = source.find_unit_card(unit)
     info = source.find_unit_info(unit)
-    for kind, icon, pic_dir_key, merc_folder, base_dir in (
-            ("card", card, "card_pic_dir", MERC_CARD_DIR, "ui/units"),
-            ("info", info, "info_pic_dir", MERC_INFO_DIR, "ui/unit_info")):
+    # A rename conflict points the EDU/loc entry at `resolved_dict`, and the game
+    # looks up the card/info card BY THAT DICTIONARY NAME (`#<dict>.tga` /
+    # `<dict>_info.tga`) — so a renamed unit's icons must land under the NEW name,
+    # not the source's filename, or they'd silently fail to show in-game (and a
+    # stale conflict would be reported against the old unit's icon instead).
+    dict_renamed = plan.resolved_dict != unit.dictionary
+    for kind, icon, pic_dir_key, merc_folder, base_dir, stem_fmt in (
+            ("card", card, "card_pic_dir", MERC_CARD_DIR, "ui/units", "#{}"),
+            ("info", info, "info_pic_dir", MERC_INFO_DIR, "ui/unit_info", "{}_info")):
         if icon is None:
             continue
-        fname = icon.name
+        fname = (stem_fmt.format(plan.resolved_dict) + icon.suffix) if dict_renamed else icon.name
         if opts.merc_icons:
             # a mercenary's icons live in the merc folders only, pinned with *_pic_dir
             plan.icon_dir_overrides[pic_dir_key] = merc_folder

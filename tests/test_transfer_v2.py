@@ -117,6 +117,15 @@ def main():
                           TransferOptions(on_conflict="rename", new_type="Zzz Renamed",
                                           new_dictionary="zzz_renamed"))
     check("conflict rename -> new resolved type", p_ren.resolved_type == "Zzz Renamed")
+    # icons must be copied under the NEW dictionary name, not the source unit's
+    # filename, or the renamed unit's card/info card silently fail to show and a
+    # stale "already exists" conflict is reported against the OLD unit's icon.
+    if p_ren.icon_files:
+        check("renamed icon targets use the new dictionary, not the old one",
+              all("zzz_renamed" in rel and dup_type.lower() not in rel.lower()
+                  for _, rel in p_ren.icon_files))
+        check("no icon conflicts reported for the old (pre-existing) unit's icon path",
+              not any(c.kind == "icon" for c in p_ren.asset_conflicts))
     rec = apply_transfer(p_ren)
     dest2 = Mod(dest_root)
     check("renamed unit present in dest EDU", "Zzz Renamed" in dest2.edu.by_type())
