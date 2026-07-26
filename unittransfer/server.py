@@ -234,6 +234,7 @@ def _options_from(d: dict) -> TransferOptions:
         icon_conflict=d.get("icon_conflict", "use_existing"),
         engine_conflict=d.get("engine_conflict", "use_existing"),
         make_mercenary=bool(d.get("make_mercenary", False)),
+        merc_icons=bool(d.get("merc_icons", False)),
     )
 
 

@@ -435,7 +435,7 @@ function cfgFor(type){
   if(!state.cfg[type]) state.cfg[type]={include_officers:true,include_mount:true,include_crew:true,include_projectile:true,include_engine:true,engine_conflict:'use_existing',
     base_type:'',soldier_from:(state.settings&&state.settings.soldier_from_base)?'base':'source',
     officer_from:'source',mount_from:'source',crew_from:'source',
-    field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,exclude_models:[],
+    field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,merc_icons:false,exclude_models:[],
     asset_conflict:'mod_folder',asset_reroute_dir:'',icon_conflict:'use_existing',
     base_fac:'',_conflict:null,_fields:null,_orig:null,_fieldsKey:null,_inherited:null};
   return state.cfg[type];
@@ -536,14 +536,23 @@ async function renderComposer(){
          </div>
        </div>
      </fieldset>
-     <fieldset><legend>Mercenary</legend>
+     <fieldset><legend>Mercenary attribute</legend>
        <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
-       <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute, gives the battle
-         models a <code>merc</code> texture record, and puts the icons in
-         <code>ui/units/mercs/</code> + <code>ui/unit_info/merc/</code> (pinned via
-         <code>card_pic_dir</code>/<code>info_pic_dir</code>).
+       <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute and gives the battle
+         models a <code>merc</code> texture record.
          ${u.mercenary?'<b class="w-good">This unit is already a mercenary in the source.</b>':''}
          <br>Recruitment still needs a pool entry in <code>descr_mercenaries.txt</code> — not written by this tool.</div>
+     </fieldset>
+     <fieldset><legend>Mercenary icons</legend>
+       <label class="chk"><input type="checkbox" id="optMercIcons" ${c.merc_icons?'checked':''}> Put the unit card and info card in the merc folders ONLY</label>
+       <div class="count" style="margin-top:5px">Checked: puts the unit card in <code>ui/units/mercs/</code> and the info
+         card in <code>ui/unit_info/merc/</code> ONLY, pinning
+         <code>card_pic_dir</code> to <code>mercs</code> and <code>info_pic_dir</code> to
+         <code>merc</code> on the unit (added at the end of its EDU block if not already set).
+         <br>Unchecked (default): the card/info card are copied into EVERY faction folder the
+         unit ends up owned by, plus the mercs/merc folders as a fallback — no pinning needed.
+         Any target that already exists in the destination shows up below under
+         "Unit card / info icons" so you can choose to keep it or overwrite it.</div>
      </fieldset>
      <fieldset><legend>Edit fields — every EDU field (edits apply as overrides)</legend>
        ${fromBasePanel(c,u)}
@@ -570,6 +579,7 @@ async function renderComposer(){
   // re-render: the engine fieldset appears/disappears with the checkbox
   if(window.optEngine)optEngine.onchange=()=>{c.include_engine=optEngine.checked; renderComposer();};
   optMerc.onchange=()=>{c.make_mercenary=optMerc.checked; doPreview();};
+  optMercIcons.onchange=()=>{c.merc_icons=optMercIcons.checked; doPreview();};
   // per-group source/base toggles — re-render so the include boxes grey out
   ['soldier_from','officer_from','mount_from','crew_from'].forEach(k=>
     document.querySelectorAll(`input[name=${k}]`).forEach(r=>r.onchange=()=>{
@@ -714,7 +724,7 @@ function optsPayload(type){const c=cfgFor(type);
     asset_reroute_dir:c.asset_reroute_dir||null,
     icon_conflict:c.icon_conflict||'use_existing',
     engine_conflict:c.engine_conflict||'use_existing',
-    make_mercenary:!!c.make_mercenary};}
+    make_mercenary:!!c.make_mercenary,merc_icons:!!c.merc_icons};}
 // Render the plan summary as indented rows. Each row's text sits in its own
 // column, so a long path wraps under itself and the structure stays readable.
 function renderSummary(t){

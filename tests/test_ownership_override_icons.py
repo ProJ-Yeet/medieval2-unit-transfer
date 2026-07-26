@@ -1,13 +1,12 @@
-"""Ownership-override icon-folder pinning (no base template).
+"""Ownership-override icon placement (no base template, no merc_icons).
 
 Reported bug: overriding `ownership` via TransferOptions.field_overrides
 (rather than via a base-unit template) changed the unit's faction, but the
-copied unit card / info card icons kept their SOURCE faction's *_pic_dir
-lookup unpinned -- so in-game the icon vanished (game looks for it under the
-new ownership faction's ui/units folder, but the file was only ever copied
-under the source faction's folder). This mirrors the fix already in place
-for the base-template case (test_base_ownership.py) and checks the same
-pinning now also fires for a plain ownership override.
+copied unit card / info card icon was only ever copied under the SOURCE
+faction's folder -- so in-game the icon vanished (the game looks under the
+NEW ownership faction's ui/units folder). The fix copies the icon into every
+faction the unit ends up owned by (plus the mercs/merc fallback), so no
+*_pic_dir pin is needed at all -- each faction finds its own copy.
 """
 import shutil, sys, tempfile
 from pathlib import Path
@@ -17,7 +16,8 @@ sys.path.insert(0, str(ROOT))
 
 from unittransfer import config, edu
 from unittransfer.mod import Mod
-from unittransfer.transfer import TransferOptions, plan_transfer, apply_transfer
+from unittransfer.transfer import (MERC_CARD_DIR, MERC_INFO_DIR,
+                                   TransferOptions, plan_transfer, apply_transfer)
 
 MODS = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
 TATR, DAC = MODS / "Third_Age_Reforged", MODS / "Divide_and_Conquer_EUR"
@@ -49,10 +49,19 @@ print(f"unit={UNIT!r} source ownership={unit.ownership} icon folder={src_faction
 opts = TransferOptions(field_overrides={"ownership": NEW_OWNER})
 plan = plan_transfer(src, UNIT, dest, opts)
 check("plan has no option error", not plan.option_error)
-check("icon_dir_overrides pins card_pic_dir to the source faction folder",
-      plan.icon_dir_overrides.get("card_pic_dir") == src_faction)
-check("icon_dir_overrides pins info_pic_dir to the source faction folder",
-      plan.icon_dir_overrides.get("info_pic_dir") == src_faction)
+check("no *_pic_dir pin needed (icon copied straight into the new faction's folder)",
+      not plan.icon_dir_overrides)
+icon_rels = [r for _, r in plan.icon_files]
+print("     icon targets:", icon_rels)
+check(f"card copied into ui/units/{NEW_OWNER}/",
+      any(r.startswith(f"ui/units/{NEW_OWNER}/") for r in icon_rels))
+check("card ALSO copied into the mercs/ fallback folder",
+      any(r.startswith(f"ui/units/{MERC_CARD_DIR}/") for r in icon_rels))
+if any(r.startswith("ui/unit_info/") for r in icon_rels):
+    check(f"info copied into ui/unit_info/{NEW_OWNER}/",
+          any(r.startswith(f"ui/unit_info/{NEW_OWNER}/") for r in icon_rels))
+    check("info ALSO copied into the merc/ fallback folder",
+          any(r.startswith(f"ui/unit_info/{MERC_INFO_DIR}/") for r in icon_rels))
 
 apply_transfer(plan)
 text = (data / "export_descr_unit.txt").read_text(encoding=edu.ENCODING)
@@ -60,8 +69,10 @@ parsed = edu.parse_text(text)
 new_unit = parsed.units[-1]
 check(f"appended unit parses as {plan.resolved_type!r}", new_unit.type == plan.resolved_type)
 check("ownership rewritten to the override", new_unit.ownership == [NEW_OWNER])
-check("card_pic_dir written into the EDU block", new_unit.card_pic_dir == src_faction)
-check("info_pic_dir written into the EDU block", new_unit.info_pic_dir == src_faction)
+check("no card_pic_dir written into the EDU block", new_unit.card_pic_dir is None)
+check("no info_pic_dir written into the EDU block", new_unit.info_pic_dir is None)
+check(f"card actually landed on disk under ui/units/{NEW_OWNER}/",
+      (data / "ui/units" / NEW_OWNER).is_dir() and any((data / "ui/units" / NEW_OWNER).iterdir()))
 
 shutil.rmtree(dest_root, ignore_errors=True); shutil.rmtree(cfg, ignore_errors=True)
 print("\n" + ("ALL PASSED" if all(ok) else "SOME FAILED"))

@@ -24,14 +24,51 @@ if %errorlevel%==0 (
         set "PY=python"
     ) else (
         echo.
-        echo Unit Transfer could not start: Python was not found on PATH.
+        echo ============================================================
+        echo  Unit Transfer could not start: Python was not found.
+        echo ============================================================
         echo.
+        echo Python is not installed, or was installed without being added to PATH.
         echo Install Python 3.9+ from https://www.python.org/downloads/ and tick
-        echo "Add python.exe to PATH", then run this launcher again.
+        echo "Add python.exe to PATH" during setup, then run this launcher again.
+        echo.
+        echo ^(Tip: the portable download from the Releases page needs none of this
+        echo  - it bundles its own Python. This is only needed when running from source.^)
         echo.
         pause
         exit /b 9009
     )
+)
+
+rem Pillow is the one third-party dependency (unit-card TGA<->PNG conversion).
+rem Rather than failing with a cryptic import error, check for it up front and
+rem try to install it automatically before the user ever sees a traceback.
+%PY% -c "import PIL" >nul 2>nul
+if not %errorlevel%==0 (
+    echo.
+    echo Pillow ^(the image library this tool needs^) is not installed yet.
+    echo Installing it now with:  %PY% -m pip install pillow
+    echo.
+    %PY% -m pip install --disable-pip-version-check pillow
+    if not %errorlevel%==0 (
+        echo.
+        echo ============================================================
+        echo  Could not install Pillow automatically.
+        echo ============================================================
+        echo.
+        echo This usually means there is no internet connection, or pip is
+        echo missing/broken for this Python install. Try:
+        echo    1. Run Install-Dependencies.bat, or
+        echo    2. Open a command prompt and run:  %PY% -m pip install pillow
+        echo    3. Or download the portable build from the Releases page, which
+        echo       bundles Python + Pillow and needs no installation at all.
+        echo.
+        pause
+        exit /b 9010
+    )
+    echo.
+    echo Pillow installed successfully.
+    echo.
 )
 
 %PY% app.py %*

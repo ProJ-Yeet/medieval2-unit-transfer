@@ -1,7 +1,7 @@
-"""'Make this a mercenary unit' option.
+"""'Make this a mercenary unit' options.
 
-Transfers a non-merc unit with make_mercenary=True into a temp copy of DaC and
-checks the three things the flag is supposed to do:
+Transfers a non-merc unit with make_mercenary=True and merc_icons=True into a
+temp copy of DaC and checks the three things the flags are supposed to do:
   * EDU gains the `mercenary_unit` attribute (and keeps its other attributes),
     with card_pic_dir=mercs / info_pic_dir=merc pinned
   * the copied bmdb entries gain a `merc` texture record
@@ -77,8 +77,9 @@ print("\n== make_mercenary=True ==")
 dest_root = fresh_dest()
 data = dest_root / "data"
 dest = Mod(dest_root)
-plan = plan_transfer(src, UNIT, dest, TransferOptions(make_mercenary=True))
+plan = plan_transfer(src, UNIT, dest, TransferOptions(make_mercenary=True, merc_icons=True))
 check("plan flagged mercenary", plan.mercenary)
+check("plan flagged merc icons", plan.merc_icons)
 check("no base/option error", not plan.base_error and not plan.option_error)
 check(f"'{MERC_TEX_FACTION}' in texture factions", MERC_TEX_FACTION in plan.texture_factions)
 icon_rels = [r for _, r in plan.icon_files]
@@ -145,8 +146,13 @@ dest = Mod(dest_root)
 plan2 = plan_transfer(src, UNIT, dest, TransferOptions())
 check("default is NOT mercenary", not plan2.mercenary)
 check("no merc texture faction added", MERC_TEX_FACTION not in plan2.texture_factions)
-check("icons keep their source folder",
-      all(not r.startswith(f"ui/units/{MERC_CARD_DIR}/") for _, r in plan2.icon_files))
+icon_rels2 = [r for _, r in plan2.icon_files]
+print("     icon targets:", icon_rels2)
+src_folder = _card_folder(unit)
+check("card kept in its own source faction folder",
+      any(r.startswith(f"ui/units/{src_folder}/") for r in icon_rels2))
+check("card ALSO copied into the mercs/ fallback folder (merc_icons is off, not make_mercenary)",
+      any(r.startswith(f"ui/units/{MERC_CARD_DIR}/") for r in icon_rels2))
 apply_transfer(plan2)
 p2 = edu.parse_text((data / "export_descr_unit.txt").read_text(encoding=edu.ENCODING))
 u2 = p2.by_type()[plan2.resolved_type]

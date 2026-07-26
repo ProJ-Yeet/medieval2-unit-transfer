@@ -88,10 +88,12 @@ class TransferOptions:
     # engines, so "use_existing" is the default — keep the destination's version
     # and report the difference.  "overwrite" | "use_existing"
     engine_conflict: str = "use_existing"
-    # Turn the transferred unit into a mercenary: adds the `mercenary_unit`
-    # attribute, gives the bmdb entries a `merc` texture record, and puts the
-    # icons in the mercs/merc folders (pinned via card_pic_dir/info_pic_dir).
+    # Mercenary attribute: adds the `mercenary_unit` attribute to the EDU block
+    # and gives the copied bmdb entries a `merc` texture record.
     make_mercenary: bool = False
+    # Mercenary icon folders: puts the unit card / info card in the mercs/merc
+    # folders (pinned via card_pic_dir/info_pic_dir), independent of the flag above.
+    merc_icons: bool = False
 
 
 @dataclass
@@ -181,6 +183,7 @@ class TransferPlan:
     texture_factions: List[str] = field(default_factory=list)
     texture_donor: str = ""          # faction whose skin the new records clone
     mercenary: bool = False          # unit is being turned into a mercenary
+    merc_icons: bool = False         # card/info card pinned to the mercs/merc folders
     # 1 if this transfer adds a NEW unit type to the destination EDU, else 0
     # (overwrite/skip add none) — drives the 500 vanilla unit-limit warning.
     dest_new_units: int = 1
@@ -202,8 +205,9 @@ class TransferPlan:
         if self.base_unit is not None:
             L.append(f"  base template: '{self.options.base_type}' (stats/attrs/ownership/era inherited)")
         if self.mercenary:
-            L.append(f"  MERCENARY: +{MERC_ATTR} attribute, +'{MERC_TEX_FACTION}' bmdb skin, "
-                     f"icons -> {MERC_CARD_DIR}/ + {MERC_INFO_DIR}/")
+            L.append(f"  MERCENARY ATTRIBUTE: +{MERC_ATTR} attribute, +'{MERC_TEX_FACTION}' bmdb skin")
+        if self.merc_icons:
+            L.append(f"  MERCENARY ICONS: -> {MERC_CARD_DIR}/ + {MERC_INFO_DIR}/")
         if self.options.field_overrides:
             L.append("  field overrides: " + ", ".join(sorted(self.options.field_overrides)))
         if self.skipped:
@@ -1032,42 +1036,55 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                     "where they are (only unit_models paths can be relocated).")
 
     # ---- icons ----
+    # Without merc_icons, every faction the unit ends up owned by needs its OWN
+    # copy of the card/info file (the game looks in ui/units/<player's faction>/,
+    # not just wherever the source happened to keep it) — this is what a unit
+    # shared between several factions (e.g. two factions both fielding the same
+    # mercenary-flavoured troop) needs, and it's also what makes an ownership
+    # change (base template / `ownership` override) land the icon where the
+    # destination faction will actually look, instead of pinning *_pic_dir back
+    # at the source's folder. The mercs/merc fallback folder is always included
+    # too, since a unit with `mercenary_unit` set (already, or via make_mercenary)
+    # falls back to it whenever *_pic_dir isn't pinned.
+    final_ownership = ([f for f in final_own if f != "slave"] or final_own
+                       or [f for f in unit.ownership if f != "slave"] or list(unit.ownership))
     card = source.find_unit_card(unit)
     info = source.find_unit_info(unit)
-    for kind, icon, pic_dir_key in (("card", card, "card_pic_dir"),
-                                    ("info", info, "info_pic_dir")):
+    for kind, icon, pic_dir_key, merc_folder, base_dir in (
+            ("card", card, "card_pic_dir", MERC_CARD_DIR, "ui/units"),
+            ("info", info, "info_pic_dir", MERC_INFO_DIR, "ui/unit_info")):
         if icon is None:
             continue
-        rel = icon.relative_to(source.data).as_posix()
-        parts = rel.split("/")                # ui/units/<folder>/<file>
-        if opts.make_mercenary:
-            # a mercenary's icons live in the merc folders, pinned with *_pic_dir
-            folder = MERC_CARD_DIR if kind == "card" else MERC_INFO_DIR
-            if len(parts) >= 4:
-                parts[2] = folder
-                rel = "/".join(parts)
-            plan.icon_dir_overrides[pic_dir_key] = folder
-        elif plan.base_unit is not None or ov:
-            # ownership changed (base template, or an explicit ownership override)
-            # while the icon file itself stays under the SOURCE's faction folder;
-            # pin *_pic_dir there so the game still finds it under the new ownership.
-            if len(parts) >= 4:
-                plan.icon_dir_overrides[pic_dir_key] = parts[2]
-        plan.icon_files.append((icon, rel))
+        fname = icon.name
+        if opts.merc_icons:
+            # a mercenary's icons live in the merc folders only, pinned with *_pic_dir
+            plan.icon_dir_overrides[pic_dir_key] = merc_folder
+            plan.icon_files.append((icon, f"{base_dir}/{merc_folder}/{fname}"))
+        else:
+            # one copy per owning faction, plus the mercs/merc fallback — no
+            # *_pic_dir pin needed since every faction finds its own copy
+            for folder in dict.fromkeys(final_ownership + [merc_folder]):
+                plan.icon_files.append((icon, f"{base_dir}/{folder}/{fname}"))
     if card is None:
         plan.warnings.append("no unit card icon found in source")
+    if info is None:
+        plan.warnings.append("no unit info icon found in source")
 
     # ---- mercenary ----
     if opts.make_mercenary:
         plan.mercenary = True
         plan.warnings.append(
-            f"mercenary: '{MERC_ATTR}' attribute added, bmdb entries get a "
-            f"'{MERC_TEX_FACTION}' skin, icons go to ui/units/{MERC_CARD_DIR}/ + "
-            f"ui/unit_info/{MERC_INFO_DIR}/ (pinned via card_pic_dir/info_pic_dir).")
+            f"mercenary attribute: '{MERC_ATTR}' attribute added, bmdb entries "
+            f"get a '{MERC_TEX_FACTION}' skin.")
         plan.warnings.append(
             "mercenary: to actually recruit it, add a pool entry in "
             "data/world/maps/campaign/imperial_campaign/descr_mercenaries.txt — "
             "this tool does not write that file.")
+    if opts.merc_icons:
+        plan.merc_icons = True
+        plan.warnings.append(
+            f"mercenary icons: card/info card go to ui/units/{MERC_CARD_DIR}/ + "
+            f"ui/unit_info/{MERC_INFO_DIR}/ (pinned via card_pic_dir/info_pic_dir).")
 
     # ---- asset name/path conflicts (byte comparison) ----
     # For every file we'd copy, if the destination already has a file with the

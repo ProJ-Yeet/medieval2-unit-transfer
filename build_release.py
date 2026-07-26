@@ -403,11 +403,20 @@ def write_docs(stage: Path, portable: bool) -> None:
         encoding="utf-8")
     if portable:
         (stage / "Troubleshoot.bat").write_text(TROUBLESHOOT_BAT, encoding="utf-8")
+    else:
+        # no bundled runtime -> the target PC needs its own Python + Pillow;
+        # Launch-Unit-Transfer.bat (copied above as "Unit Transfer.bat") already
+        # tries to auto-install Pillow, but ship the standalone installer too as
+        # a fallback / clearer diagnostic.
+        (stage / "Install-Dependencies.bat").write_text(
+            (ROOT / "Install-Dependencies.bat").read_text(encoding="utf-8"),
+            encoding="utf-8")
     note = ("Nothing else to install — Python and the image library are already\n"
             "inside this folder (`runtime\\`)."
             if portable else
             "This build does NOT include Python. The PC needs Python 3.9+ from\n"
-            "python.org (tick \"Add python.exe to PATH\"), then: pip install pillow")
+            "python.org (tick \"Add python.exe to PATH\"). Unit Transfer.bat will then\n"
+            "auto-install Pillow on first run; or run Install-Dependencies.bat yourself.")
     cmd = ("runtime\\python.exe app.py --check" if portable else "py app.py --check")
     (stage / "README.txt").write_text(
         README.format(runtime_note=note, check_cmd=cmd), encoding="utf-8")
