@@ -1270,11 +1270,12 @@ def apply_transfer(plan: TransferPlan) -> Dict:
                    if final_name != entry.name else entry.raw)
             # point the entry at the relocated files (re-emits correct length
             # prefixes); a no-op when nothing was rerouted
-            raw = modeldb.rewrite_entry_paths(raw, plan.path_map)
+            raw = modeldb.rewrite_entry_paths(raw, plan.path_map, pad=entry.first_entry_pad)
             # give every faction the unit now belongs to a texture record
             if plan.texture_factions:
                 raw = modeldb.add_texture_factions(
-                    raw, plan.texture_factions, prefer=plan.texture_donor or None)
+                    raw, plan.texture_factions, prefer=plan.texture_donor or None,
+                    pad=entry.first_entry_pad)
             new_entry = modeldb.ModelEntry(
                 name=final_name, scale=entry.scale, lods=entry.lods,
                 main_textures=entry.main_textures, attach_textures=entry.attach_textures,

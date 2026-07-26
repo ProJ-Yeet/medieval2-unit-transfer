@@ -59,6 +59,7 @@ class ModelEntry:
     torch_index: int
     torch: List[float]                   # 6 floats
     raw: str = ""                        # verbatim source text for this entry
+    first_entry_pad: bool = False        # see _read_entry's ``pad`` argument
 
     def skeletons(self) -> List[str]:
         out: List[str] = []
@@ -178,7 +179,10 @@ class ModelDb:
         return out
 
     def to_text(self) -> str:
-        count = len(self.entries) + 1  # +1 for the blank entry
+        # +1 for the blank sentinel entry, but only if the source file had one
+        # -- some mods (e.g. those lacking the vanilla "blank" padding entry)
+        # count every entry as real.
+        count = len(self.entries) + (1 if self.blank_raw else 0)
         if self.header_raw and count == self.header_ints[5]:
             # No entries added/removed: emit the original header byte-for-byte.
             header = self.header_raw
@@ -194,14 +198,31 @@ class ModelDb:
         Path(path).write_text(self.to_text(), encoding=ENCODING)
 
 
-def _read_entry(r: _Reader) -> ModelEntry:
+def _read_entry(r: _Reader, pad: bool = False) -> ModelEntry:
+    """Read one entry. ``pad`` reproduces a vanilla M2TW quirk: when a
+    modeldb has no leading ``blank`` sentinel entry, the game pads the very
+    first real entry with 8 extra reserved int-pairs threaded through the
+    body (confirmed against the reference C# ModdingTool's ``FirstEntryPad``
+    calls). Every other entry, and every entry in a file that does have a
+    ``blank`` sentinel, is unpadded.
+    """
+    def firstpad() -> None:
+        if pad:
+            r.get_int()
+            r.get_int()
+
     name = r.get_string().lower()
     scale = r.get_float()
+    firstpad()
     lod_count = r.get_int()
+    firstpad()
     lods = [(r.get_string(), r.get_int()) for _ in range(lod_count)]
+    firstpad()
 
-    def read_textures() -> List[Texture]:
+    def read_textures(pad_after_count: bool) -> List[Texture]:
         cnt = r.get_int()
+        if pad_after_count:
+            firstpad()
         out = []
         for _ in range(cnt):
             fac = r.get_string().lower()
@@ -209,10 +230,12 @@ def _read_entry(r: _Reader) -> ModelEntry:
             out.append(Texture(fac, tex, nrm, spr))
         return out
 
-    main_tex = read_textures()
-    attach_tex = read_textures()
+    main_tex = read_textures(pad_after_count=True)
+    attach_tex = read_textures(pad_after_count=False)   # no padding around this count
+    firstpad()
 
     mount_n = r.get_int()
+    firstpad()
     anims: List[Animation] = []
     for _ in range(mount_n):
         mt = r.get_string().lower()
@@ -221,11 +244,13 @@ def _read_entry(r: _Reader) -> ModelEntry:
         priw = [r.get_string() for _ in range(r.get_int())]
         secw = [r.get_string() for _ in range(r.get_int())]
         anims.append(Animation(mt, pri, sec, priw, secw))
+    firstpad()
 
     torch_idx = r.get_int()
     torch = [r.get_float() for _ in range(6)]
+    firstpad()
     return ModelEntry(name, scale, lods, main_tex, attach_tex, anims,
-                      torch_idx, torch)
+                      torch_idx, torch, first_entry_pad=pad)
 
 
 def parse_text(text: str) -> ModelDb:
@@ -248,6 +273,7 @@ def parse_text(text: str) -> ModelDb:
     blank_raw = ""
     entries: List[ModelEntry] = []
     for n in range(count):
+        pad = False
         if n == 0:
             name = r.get_string().lower()
             if name == "blank":
@@ -257,8 +283,11 @@ def parse_text(text: str) -> ModelDb:
                 prev_end = r.i
                 continue
             # No blank entry: rewind and treat as a normal first entry.
+            # Vanilla M2TW pads this specific entry with extra reserved
+            # ints (see _read_entry's ``pad`` docstring).
             r.i = prev_end
-        entry = _read_entry(r)
+            pad = True
+        entry = _read_entry(r, pad=pad)
         entry.raw = text[prev_end:r.i]
         entries.append(entry)
         prev_end = r.i
@@ -293,39 +322,59 @@ class _SpanReader(_Reader):
         return (start, self.i, val)
 
 
-def entry_path_spans(raw: str) -> List[Tuple[int, int, str, str]]:
+def entry_path_spans(raw: str, pad: bool = False) -> List[Tuple[int, int, str, str]]:
     """Locate every mesh/texture *file path* string inside one entry's raw text.
 
     Returns (start, end, value, kind) tuples where kind is
     ``mesh`` | ``texture`` | ``normal`` | ``sprite``. Faction names, skeletons and
     weapon names are deliberately excluded — they are not file paths.
+
+    ``pad`` must be True when ``raw`` came from a :class:`ModelEntry` with
+    ``first_entry_pad`` set (see ``_read_entry``) — otherwise this walk
+    desyncs on the extra reserved ints and misidentifies path spans.
     """
     r = _SpanReader(raw)
     out: List[Tuple[int, int, str, str]] = []
 
+    def firstpad() -> None:
+        if pad:
+            r.get_int()
+            r.get_int()
+
     r.get_string()                      # name
     r.get_float()                       # scale
-    for _ in range(r.get_int()):        # LODs
+    firstpad()
+    lod_n = r.get_int()
+    firstpad()
+    for _ in range(lod_n):              # LODs
         s, e, v = r.get_string_span()
         out.append((s, e, v, "mesh"))
         r.get_int()                     # distance
+    firstpad()
 
-    def textures():
-        for _ in range(r.get_int()):
+    def textures(pad_after_count: bool):
+        cnt = r.get_int()
+        if pad_after_count:
+            firstpad()
+        for _ in range(cnt):
             r.get_string()              # faction (not a path)
             for kind in ("texture", "normal", "sprite"):
                 s, e, v = r.get_string_span()
                 out.append((s, e, v, kind))
 
-    textures()                          # main textures
-    textures()                          # attach textures
+    textures(pad_after_count=True)      # main textures
+    textures(pad_after_count=False)     # attach textures (no padding around this count)
+    firstpad()
 
-    for _ in range(r.get_int()):        # animations
+    anim_n = r.get_int()
+    firstpad()
+    for _ in range(anim_n):             # animations
         r.get_string(); r.get_string(); r.get_string()   # mount type, pri/sec skeleton
         for _ in range(r.get_int()):
             r.get_string()              # primary weapons
         for _ in range(r.get_int()):
             r.get_string()              # secondary weapons
+    firstpad()
 
     r.get_int()                         # torch index
     for _ in range(6):
@@ -333,17 +382,17 @@ def entry_path_spans(raw: str) -> List[Tuple[int, int, str, str]]:
     return out
 
 
-def rewrite_entry_paths(raw: str, path_map: Dict[str, str]) -> str:
+def rewrite_entry_paths(raw: str, path_map: Dict[str, str], pad: bool = False) -> str:
     """Return ``raw`` with mesh/texture paths remapped via ``path_map``.
 
     Only the path strings are touched, and each replacement re-emits its own
     ``<len> <chars>`` prefix so the length numbering stays correct. Every other
     byte (floats, counts, whitespace) is preserved verbatim, which keeps entries
-    that we did not reroute byte-identical.
+    that we did not reroute byte-identical. ``pad`` — see ``entry_path_spans``.
     """
     if not path_map:
         return raw
-    spans = entry_path_spans(raw)
+    spans = entry_path_spans(raw, pad=pad)
     out: List[str] = []
     pos = 0
     for start, end, val, _kind in spans:
@@ -357,25 +406,39 @@ def rewrite_entry_paths(raw: str, path_map: Dict[str, str]) -> str:
     return "".join(out)
 
 
-def _texture_group_spans(raw: str) -> List[dict]:
+def _texture_group_spans(raw: str, pad: bool = False) -> List[dict]:
     """Span info for an entry's two texture groups (main, then attach).
 
     Each group reports its count token span, every record's span, and where the
     group ends, so records can be appended and the count fixed in place.
+    ``pad`` — see ``entry_path_spans``.
     """
     r = _SpanReader(raw)
+
+    def firstpad() -> None:
+        if pad:
+            r.get_int()
+            r.get_int()
+
     r.get_string()                       # name
     r.get_float()                        # scale
-    for _ in range(r.get_int()):         # LODs
+    firstpad()
+    lod_n = r.get_int()
+    firstpad()
+    for _ in range(lod_n):               # LODs
         r.get_string_span()
         r.get_int()
+    firstpad()
 
     groups: List[dict] = []
-    for _ in range(2):                   # main textures, then attach textures
+    for is_main in (True, False):        # main textures, then attach textures
         r._skip_ws()
         cnt_start = r.i
         count = int(r.token())
         cnt_end = r.i
+        if is_main:
+            firstpad()                   # no padding around the attach count
+        records_start = r.i             # after any padding -- where a new record inserts
         records = []
         for _ in range(count):
             f_start, f_end, fac = r.get_string_span()
@@ -385,22 +448,24 @@ def _texture_group_spans(raw: str) -> List[dict]:
             records.append({"fac": fac, "start": f_start, "fac_end": f_end, "end": s_end})
         groups.append({"cnt_start": cnt_start, "cnt_end": cnt_end, "count": count,
                        "records": records,
-                       "group_end": records[-1]["end"] if records else cnt_end})
+                       "group_end": records[-1]["end"] if records else records_start})
     return groups
 
 
-def add_texture_factions(raw: str, factions, prefer: Optional[str] = None) -> str:
+def add_texture_factions(raw: str, factions, prefer: Optional[str] = None,
+                          pad: bool = False) -> str:
     """Ensure the entry has a texture record for every faction in ``factions``.
 
     A faction with no record has no skin, so the game fails to show the unit.
     Missing factions are given a clone of an existing record (same texture /
     normal / sprite paths), and each group's count token is bumped to match —
     this is what makes a transfer valid after a base unit changes ownership.
+    ``pad`` — see ``entry_path_spans``.
     """
     wanted = [f for f in dict.fromkeys(factions) if f]
     if not wanted:
         return raw
-    groups = _texture_group_spans(raw)
+    groups = _texture_group_spans(raw, pad=pad)
     edits: List[Tuple[int, int, str]] = []          # (start, end, replacement)
     for g in groups:
         if not g["records"]:
