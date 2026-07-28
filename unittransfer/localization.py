@@ -137,6 +137,32 @@ def upsert_record(text: str, key: str, name: str, descr: str = "",
     return text + nl.join(out) + nl
 
 
+def remove_record(text: str, key: str) -> str:
+    """Delete a unit's three keys (and the record separator above them).
+
+    Used when a unit is deleted, or when its ``dictionary`` is renamed and the
+    old record would otherwise be left orphaned in export_units.txt.
+    """
+    nl = "\r\n" if "\r\n" in text else "\n"
+    lines = text.split("\n")
+    trimmed = [ln[:-1] if ln.endswith("\r") else ln for ln in lines]
+    spans = []
+    for marker in ("{" + key + "}", "{" + key + "_descr}",
+                   "{" + key + "_descr_short}"):
+        span = _key_span(trimmed, marker)
+        if span:
+            spans.append(span)
+    if not spans:
+        return text
+    start = min(s for s, _ in spans)
+    end = max(e for _, e in spans)
+    # swallow a separator line sitting directly above the record
+    while start > 0 and trimmed[start - 1].strip().startswith(SEPARATOR):
+        start -= 1
+    del trimmed[start:end]
+    return nl.join(trimmed)
+
+
 def _emit(key: str, value: Optional[str], inline: bool = False) -> List[str]:
     """Lines for one keyed entry.
 

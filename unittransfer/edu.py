@@ -656,3 +656,143 @@ def rewrite_stat_projectile(block: str, name_map: dict) -> str:
         else:
             out.append(line)
     return "".join(out)
+
+
+# --- edit mode: in-place field editing -----------------------------------
+# The order M2TW's own EDU files (and ModdingTool's UnitDb.AssignFields) keep
+# fields in. Used to place a field the unit doesn't have yet in the slot a
+# modder would expect, instead of dumping it at the bottom of the block.
+CANONICAL_ORDER = [
+    "type", "dictionary", "category", "class", "voice_type", "accent",
+    "banner faction", "banner holy", "soldier", "officer", "ship", "engine",
+    "mounted_engine", "animal", "mount", "mount_effect", "attributes",
+    "move_speed_mod", "formation", "stat_health", "stat_pri", "stat_pri_ex",
+    "stat_pri_attr", "stat_sec", "stat_sec_ex", "stat_sec_attr", "stat_ter",
+    "stat_ter_ex", "stat_ter_attr", "stat_pri_armour", "stat_armour_ex",
+    "stat_sec_armour", "stat_heat", "stat_ground", "stat_mental",
+    "stat_charge_dist", "stat_fire_delay", "stat_food", "stat_cost", "stat_stl",
+    "armour_ug_levels", "armour_ug_models", "ownership", "era 0", "era 1", "era 2",
+    "recruit_priority_offset", "info_pic_dir", "card_pic_dir",
+    "crusading_upkeep_modifier", "unit_info",
+]
+
+
+def split_label(label: str) -> tuple[str, int]:
+    """``'officer#2'`` -> ``('officer', 2)``; a plain key -> ``(key, 1)``.
+
+    ``block_fields`` numbers repeated keys this way, so the editor can address
+    each individual ``officer`` / ``era`` line.
+    """
+    if "#" in label:
+        head, _, tail = label.rpartition("#")
+        if tail.isdigit():
+            return head, int(tail)
+    return label, 1
+
+
+def _line_indices(block: str, key: str) -> List[int]:
+    lines = block.splitlines(keepends=True)
+    return [i for i, l in enumerate(lines) if line_key(l) == key]
+
+
+def set_field_indexed(block: str, key: str, occurrence: int, value: str) -> str:
+    """Replace the value of the ``occurrence``-th ``key`` line (1-based).
+
+    Unlike :func:`set_field` this reaches repeated fields (``officer`` #2/#3).
+    Indent, the whitespace after the key and any trailing comment are preserved;
+    an absent field is added via :func:`add_field`.
+    """
+    lines = block.splitlines(keepends=True)
+    idxs = _line_indices(block, key)
+    if occurrence < 1 or occurrence > len(idxs):
+        return add_field(block, key, value)
+    i = idxs[occurrence - 1]
+    body = lines[i].rstrip("\r\n")
+    eol = lines[i][len(body):] or "\n"
+    stripped = body.lstrip()
+    indent = body[:len(body) - len(stripped)]
+    after_key = stripped[len(key):]
+    ws = after_key[:len(after_key) - len(after_key.lstrip())] or "\t"
+    _, comment = _split_comment(after_key[len(ws):])
+    lines[i] = f"{indent}{key}{ws}{value}{(' ' + comment) if comment else ''}{eol}"
+    return "".join(lines)
+
+
+def remove_field(block: str, key: str, occurrence: int = 1) -> str:
+    """Delete the ``occurrence``-th ``key`` line outright (no-op if absent).
+
+    Blanking a field's value is NOT the same as removing it — the game still
+    parses the empty line — so the editor needs a real delete.
+    """
+    lines = block.splitlines(keepends=True)
+    idxs = _line_indices(block, key)
+    if occurrence < 1 or occurrence > len(idxs):
+        return block
+    del lines[idxs[occurrence - 1]]
+    return "".join(lines)
+
+
+def add_field(block: str, key: str, value: str) -> str:
+    """Insert a field the block doesn't have, in its canonical EDU position."""
+    out = block.splitlines(keepends=True)
+    _insert_positioned(out, key, [f"{key}\t\t\t{value}"], CANONICAL_ORDER)
+    return "".join(out)
+
+
+def apply_field_edits(block: str, overrides: Dict[str, str],
+                      removals=()) -> str:
+    """Apply ``{label: value}`` edits and ``[label]`` deletions to one block.
+
+    Labels are the ones :func:`block_fields` produces (``key`` / ``key#2``).
+    Deletions are applied last and highest-occurrence-first, so removing
+    ``officer#2`` can't shift the line ``officer#3`` refers to mid-flight.
+    """
+    out = block
+    for label, value in (overrides or {}).items():
+        key, occ = split_label(label)
+        if not key:
+            continue
+        out = set_field_indexed(out, key, occ, value)
+    for label in sorted(set(removals or ()),
+                        key=lambda l: split_label(l)[1], reverse=True):
+        key, occ = split_label(label)
+        if key:
+            out = remove_field(out, key, occ)
+    return out
+
+
+# Model slots an EDU block can point at a battle-models entry. ``soldier`` and
+# ``armour_ug_models`` hold the model name inside a CSV list; ``officer`` lines
+# hold it bare.
+def set_model_slot(block: str, slot: str, name: str) -> str:
+    """Point one model slot at ``name``.
+
+    ``slot`` is ``soldier``, ``officer`` / ``officer#2``… or
+    ``armour_ug_models#N`` (N = position in the CSV list; a position past the
+    end appends). Everything else on the line is preserved.
+    """
+    key, occ = split_label(slot)
+    if key == "officer":
+        return set_field_indexed(block, "officer", occ, name)
+    idxs = _line_indices(block, key)
+    if not idxs:
+        return add_field(block, key, name)
+    lines = block.splitlines(keepends=True)
+    i = idxs[0]
+    body = lines[i].rstrip("\r\n")
+    eol = lines[i][len(body):] or "\n"
+    stripped = body.lstrip()
+    indent = body[:len(body) - len(stripped)]
+    after_key = stripped[len(key):]
+    ws = after_key[:len(after_key) - len(after_key.lstrip())] or "\t"
+    val, comment = _split_comment(after_key[len(ws):])
+    parts = val.split(",")
+    pos = 0 if key == "soldier" else occ - 1
+    if pos < len(parts):
+        lead = parts[pos][:len(parts[pos]) - len(parts[pos].lstrip())]
+        parts[pos] = lead + name
+    else:
+        parts.append(" " + name)
+    lines[i] = (f"{indent}{key}{ws}{','.join(parts)}"
+                f"{(' ' + comment) if comment else ''}{eol}")
+    return "".join(lines)

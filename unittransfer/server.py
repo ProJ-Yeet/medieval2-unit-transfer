@@ -18,6 +18,22 @@ API
   POST /api/apply                -> {source,dest,unit,options} -> apply + record
   GET  /api/log                  -> transfer log
   POST /api/undo                 -> {id} -> undo a transfer
+
+Unit-editor mode (edits inside ONE mod, see :mod:`unittransfer.edit`)
+  GET  /api/edit/unit?mod=&type= -> fields + localisation + modeldb entries
+  POST /api/edit/model_folder    -> {mod,entry,target} -> where an entry's files
+                                    live + what moving them would touch
+  POST /api/edit/plan            -> preview an edit / delete
+  POST /api/edit/apply           -> apply it (same backups + undo as a transfer)
+  POST /api/browse_file          -> native file dialog (mesh/texture import)
+
+BMDB mode (the whole battle_models.modeldb, see :mod:`unittransfer.bmdb`)
+  GET  /api/bmdb/entries?mod=    -> every entry, light (the browser list)
+  GET  /api/bmdb/entry?mod=&name= -> one entry, in the editor's model-card shape
+  POST /api/bmdb/plan | /apply   -> edit entries that belong to no single unit
+  GET  /api/bmdb/audit?mod=      -> unused entries, soldier-merge twins, orphan files
+  POST /api/bmdb/cleanup_plan    -> what a cleanup would move/remove
+  POST /api/bmdb/cleanup_apply   -> do it (backups + undo, assets exported first)
 """
 from __future__ import annotations
 
@@ -31,7 +47,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import cleaner, config
+from . import bmdb, cleaner, config, edit
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
 from .mod import Mod
@@ -213,6 +229,55 @@ def build_units_response(m: Mod) -> dict:
     }
 
 
+def _edit_payload(plan) -> dict:
+    """Preview shape of an edit plan (never the whole rewritten files —
+    the modeldb alone is 20+ MB on a big mod)."""
+    return {
+        "mod": plan.mod.name,
+        "unit_type": plan.unit_type,
+        "resolved_type": plan.resolved_type,
+        "resolved_dict": plan.resolved_dict,
+        "action": "delete" if plan.request.delete else "edit",
+        "changes": plan.changes,
+        "warnings": plan.warnings,
+        "errors": plan.errors,
+        "files_written": ([f for f, on in (("export_descr_unit.txt", plan.edu_text),
+                                           ("text/export_units.txt", plan.loc_text),
+                                           ("unit_models/battle_models.modeldb",
+                                            plan.modeldb_touched)) if on]),
+        "copies": [rel for _src, rel in plan.copies],
+        "icon_copies": [rel for _src, rel in plan.icon_copies],
+        "deletes": list(plan.deletes),
+        "new_entries": [n for n, _r, _p in plan.new_entries],
+        "entry_updates": sorted(plan.entry_updates.keys()),
+        "entry_renames": plan.entry_renames,
+        "entry_deletes": list(plan.entry_deletes),
+        "summary": plan.summary(),
+    }
+
+
+def _cleanup_payload(plan) -> dict:
+    """Preview shape of a cleanup plan (file lists capped — a big mod exports
+    thousands of files and the browser only needs enough to show the user)."""
+    return {
+        "mod": plan.mod.name,
+        "target": str(plan.target or ""),
+        "entry_deletes": list(plan.entry_deletes),
+        "merges": [{"entry": a, "into": b} for a, b in plan.merges],
+        "edu_rewritten": bool(plan.edu_text),
+        "export_count": len(plan.exports),
+        "exports": [rel for _src, rel in plan.exports[:300]],
+        "kept_files": plan.kept_files[:60],
+        "kept_count": len(plan.kept_files),
+        "orphan_count": plan.orphan_count,
+        "orphan_bytes": plan.orphan_bytes,
+        "changes": plan.changes,
+        "warnings": plan.warnings,
+        "errors": plan.errors,
+        "summary": plan.summary(),
+    }
+
+
 def _options_from(d: dict) -> TransferOptions:
     return TransferOptions(
         include_officers=bool(d.get("include_officers", True)),
@@ -377,11 +442,34 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(self._base_fields(q))
             if u.path == "/api/dirs":
                 return self._json(self._dirs(q))
+            if u.path == "/api/edit/unit":
+                # everything the unit editor needs for one unit: EDU fields,
+                # localisation, and each battle-model entry it points at
+                name = (q.get("mod") or [None])[0]
+                utype = (q.get("type") or [None])[0]
+                if not name or name not in self.registry.names() or not utype:
+                    return self._err(404, "unknown mod/unit")
+                return self._json(edit.unit_detail(self.registry.get(name), utype))
+            if u.path in ("/api/bmdb/entries", "/api/bmdb/entry", "/api/bmdb/audit"):
+                name = (q.get("mod") or [None])[0]
+                if not name or name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                mod = self.registry.get(name)
+                if u.path == "/api/bmdb/entries":
+                    return self._json(bmdb.overview(mod))
+                if u.path == "/api/bmdb/entry":
+                    return self._json(bmdb.entry_detail(mod, (q.get("name") or [""])[0]))
+                log.info("BMDB   audit of %s", name)
+                return self._json(bmdb.audit(mod))
             if u.path == "/api/log":
                 return self._json(config.load_log())
             if u.path == "/icon":
                 return self._icon(q)
             return self._err(404, "not found")
+        except KeyError as e:
+            # an unknown mod / unit / model entry is a 404, not a server fault
+            log.warning("GET %s: not found: %s", u.path, e)
+            return self._err(404, str(e))
         except Exception as e:
             log.exception("GET %s failed: %s", u.path, e)
             return self._err(500, f"{type(e).__name__}: {e}")
@@ -412,6 +500,36 @@ class Handler(BaseHTTPRequestHandler):
                 from .folder_dialog import browse_for_folder
                 path = browse_for_folder(body.get("title") or "Select a folder")
                 return self._json({"path": path})
+            if u.path == "/api/browse_file":
+                # same reason as browse_folder: the editor needs a real path to
+                # the .mesh/.texture being imported, which a file input can't give.
+                from .folder_dialog import browse_for_file
+                path = browse_for_file(body.get("title") or "Select a file",
+                                       body.get("filter") or "",
+                                       body.get("dir") or "")
+                return self._json({"path": path})
+            if u.path == "/api/edit/model_folder":
+                # "do all this entry's files live in one folder, and who else
+                # would a move affect" — answered before the user commits to it.
+                mod = self.registry.get(body.get("mod") or "")
+                return self._json(edit.model_folder_report(
+                    mod, body.get("entry") or "", body.get("target") or ""))
+            if u.path == "/api/edit/plan":
+                return self._json(self._edit_plan(body))
+            if u.path == "/api/edit/apply":
+                return self._json(self._edit_apply(body))
+            if u.path == "/api/bmdb/plan":
+                mod = self.registry.get(body["mod"])
+                return self._json(_edit_payload(
+                    edit.plan_bmdb(mod, edit.bmdb_request_from_dict(body))))
+            if u.path == "/api/bmdb/apply":
+                return self._json(self._bmdb_apply(body))
+            if u.path == "/api/bmdb/cleanup_plan":
+                mod = self.registry.get(body["mod"])
+                return self._json(_cleanup_payload(bmdb.plan_cleanup(
+                    mod, bmdb.cleanup_request_from_dict(body))))
+            if u.path == "/api/bmdb/cleanup_apply":
+                return self._json(self._bmdb_cleanup(body))
             if u.path == "/api/plan":
                 return self._json(self._plan(body))
             if u.path == "/api/apply":
@@ -477,6 +595,66 @@ class Handler(BaseHTTPRequestHandler):
                          res.get("returncode"), ", copied in" if res.get("copied") else "")
             else:
                 log.warning("CLEANER did not run: %s", res.get("error"))
+            config.update_log(rec.get("id", ""), cleaner=res)
+        return out
+
+    # ---- edit mode ----
+    def _edit_plan(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = edit.plan_edit(mod, edit.request_from_dict(body))
+        return _edit_payload(plan)
+
+    def _edit_apply(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = edit.plan_edit(mod, edit.request_from_dict(body))
+        log.info("EDIT   %r in %s (%s)", plan.unit_type, mod.name,
+                 "delete" if plan.request.delete else "edit")
+        rec = edit.apply_edit(plan)
+        self.registry.invalidate(body["mod"])       # files changed on disk
+        for line in plan.summary().splitlines()[1:]:
+            if line.strip():
+                log.info("   %s", line.strip())
+        log.info("EDIT   done id=%s", rec.get("id"))
+        out = {"record": rec, "plan": _edit_payload(plan)}
+        if (config.load_settings().get("run_full_cleaner", True)
+                and body.get("run_cleaner", True)):
+            res = cleaner.run_full_cleaner(mod.root)
+            out["cleaner"] = res
+            if res.get("ran"):
+                log.info("CLEANER ran in %s (rc=%s)", mod.name, res.get("returncode"))
+            else:
+                log.warning("CLEANER did not run: %s", res.get("error"))
+            config.update_log(rec.get("id", ""), cleaner=res)
+        return out
+
+    # ---- bmdb mode ----
+    def _bmdb_apply(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = edit.plan_bmdb(mod, edit.bmdb_request_from_dict(body))
+        log.info("BMDB   edit %s in %s",
+                 ", ".join(sorted(plan.entry_updates) + [n for n, _r, _p in plan.new_entries])
+                 or "(nothing)", mod.name)
+        rec = edit.apply_edit(plan)
+        self.registry.invalidate(body["mod"])
+        log.info("BMDB   done id=%s", rec.get("id"))
+        return {"record": rec, "plan": _edit_payload(plan)}
+
+    def _bmdb_cleanup(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = bmdb.plan_cleanup(mod, bmdb.cleanup_request_from_dict(body))
+        log.info("BMDB   cleanup %s -> %s (%d entries, %d files)", mod.name,
+                 plan.target, len(plan.entry_deletes), len(plan.exports))
+        rec = bmdb.apply_cleanup(plan)
+        self.registry.invalidate(body["mod"])
+        for line in plan.summary().splitlines()[1:]:
+            if line.strip():
+                log.info("   %s", line.strip())
+        out = {"record": rec, "plan": _cleanup_payload(plan)}
+        # the game caches unit models; a removed entry has to be cleared out of them
+        if config.load_settings().get("run_full_cleaner", True) and body.get("run_cleaner", True):
+            res = cleaner.run_full_cleaner(mod.root)
+            out["cleaner"] = res
+            log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)
             config.update_log(rec.get("id", ""), cleaner=res)
         return out
 

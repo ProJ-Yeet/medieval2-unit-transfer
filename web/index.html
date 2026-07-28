@@ -205,19 +205,151 @@
   .assetconf .frow .fp{font-family:ui-monospace,Consolas,monospace;color:var(--ink);
     overflow-wrap:anywhere;display:block}
   .assetconf .frow .fs{color:var(--dim);font-size:10px}
+  /* ---- unit editor (edit mode) ---- */
+  header select.mode{color:var(--accent);font-weight:600;letter-spacing:.4px}
+  .modal.wide{width:1020px}
+  .tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid var(--edge);background:var(--panel2)}
+  .tabs button{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;
+    padding:9px 12px;color:var(--dim);font-size:13px}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+  .ehead{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--edge)}
+  .ehead img{width:56px;height:74px;object-fit:contain;background:#0d0f13;border-radius:5px}
+  .ehead .nm{font-weight:600;font-size:15px}
+  .frm label{display:block;margin:10px 0 0;font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;color:var(--dim)}
+  .frm input,.frm textarea,.frm select{width:100%;margin-top:3px}
+  .frm textarea{min-height:70px;resize:vertical;line-height:1.4}
+  .frm .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .icoprev{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
+  .icoprev img{background:#0d0f13;border:1px solid var(--edge);border-radius:6px}
+  .icoprev .card{width:96px;height:128px;object-fit:contain;padding:0}
+  .icoprev .info{max-width:420px;height:auto;object-fit:contain}
+  .mentry{border:1px solid var(--edge);border-radius:8px;margin-bottom:10px;background:var(--panel2)}
+  .mentry>.mhead{display:flex;gap:8px;align-items:center;padding:9px 11px;cursor:pointer}
+  .mentry>.mhead .mn{font-family:ui-monospace,Consolas,monospace;font-weight:600}
+  .mentry>.mhead .grow{flex:1}
+  .mentry .mbody2{padding:0 11px 11px;border-top:1px solid var(--edge)}
+  .prow{display:grid;grid-template-columns:170px 1fr auto auto;gap:6px;align-items:center;margin-top:5px}
+  .prow .pl{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow input{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;padding:4px 6px}
+  .prow button{padding:3px 7px;font-size:11px}
+  .prow input.changed{border-color:var(--accent);color:var(--accent)}
+  .psec{margin-top:9px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+  .afrow .rm{background:none;border:none;color:var(--dim);padding:0 6px;font-size:14px}
+  .afrow .rm:hover{color:var(--bad)}
+  .afrow.gone label{text-decoration:line-through;opacity:.6}
+  .afrow.gone input{text-decoration:line-through;opacity:.5}
+  .newmodel{border:1px solid var(--accent2);border-radius:8px;padding:11px;margin-bottom:10px;background:var(--panel2)}
+  .newmodel .fbrow{display:grid;grid-template-columns:120px 1fr auto;gap:6px;align-items:center;margin-top:6px}
+  .newmodel .fbrow .k{font-size:11px;color:var(--dim)}
+  .newmodel .fbrow input{font-size:12px;padding:4px 7px}
+  .pending{border:1px dashed var(--accent2);border-radius:8px;padding:8px 11px;margin-bottom:8px;
+    background:#1b2330;font-size:12.5px}
+  .pending .x{float:right;background:none;border:none;color:var(--dim);cursor:pointer}
+  /* ---- editor: shared-with dropdown, folder box, faction checklists ---- */
+  .ulink{color:var(--accent2);cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--accent2)}
+  .ulink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  details.drop{display:inline-block;vertical-align:middle}
+  details.drop>summary{list-style:none;cursor:pointer;display:inline-flex;gap:5px;align-items:center;
+    font-size:11.5px;color:var(--dim);border:1px solid var(--edge);border-radius:6px;padding:2px 8px;
+    background:var(--panel2)}
+  details.drop>summary::-webkit-details-marker{display:none}
+  details.drop>summary:hover{border-color:var(--accent)}
+  details.drop[open]>summary{border-color:var(--accent2);color:var(--ink)}
+  .dropbody{border:1px solid var(--edge);border-radius:6px;background:var(--panel);padding:7px 9px;
+    margin-top:5px;max-height:230px;overflow:auto}
+  .dropbody .urow{padding:2px 0;font-size:12px}
+  .folderbox{border:1px solid var(--edge);border-radius:7px;padding:9px 10px;margin-top:9px;background:var(--panel)}
+  .folderbox.bad{border-color:var(--warn)}
+  .folderbox .fpath{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--ink);
+    overflow-wrap:anywhere}
+  .folderbox .frow2{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin-top:7px}
+  .folderbox .frow2 input{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;padding:4px 6px}
+  .movelist{max-height:150px;overflow:auto;margin-top:6px;font-size:11px;color:var(--dim);
+    font-family:ui-monospace,Consolas,monospace}
+  .movelist div{padding:1px 0;overflow-wrap:anywhere}
+  .faclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:2px 10px;
+    max-height:260px;overflow:auto;border:1px solid var(--edge);border-radius:6px;padding:7px;
+    background:var(--panel);margin-top:6px}
+  .facrow{display:flex;gap:6px;align-items:center;font-size:12px;min-width:0}
+  .facrow label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .facrow .uq{background:none;border:1px solid transparent;color:var(--dim);padding:0 5px;font-size:11px;
+    border-radius:5px;line-height:1.6}
+  .facrow .uq:hover{border-color:var(--accent)}
+  .facrow .uq.on{color:var(--accent);border-color:var(--accent)}
+  .facuniq{grid-column:1/-1;border:1px solid var(--accent);border-radius:6px;padding:7px 9px;margin:3px 0 6px;
+    background:var(--panel2)}
+  .barrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .barrow button{padding:3px 8px;font-size:11px}
+  /* draggable chip lists (ownership, eras, armour upgrade models) */
+  .chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1;min-width:0}
+  .chipd{display:inline-flex;gap:4px;align-items:center;background:var(--panel);border:1px solid var(--edge);
+    border-radius:12px;padding:1px 4px 1px 9px;font-size:11.5px;cursor:grab;user-select:none}
+  .chipd.drag{opacity:.4} .chipd.over{border-color:var(--accent);background:#2c343f}
+  .chipd .g{color:var(--dim);cursor:grab}
+  .chipd button{background:none;border:none;color:var(--dim);padding:0 3px;font-size:12px;line-height:1}
+  .chipd button:hover{color:var(--accent)}
+  .chipd .x:hover{color:var(--bad)}
+  .chipd .first{color:var(--accent);font-weight:600}
+  .afrow.wide{align-items:flex-start;flex-wrap:wrap}
+  .afrow.wide label{padding-top:4px}
+  /* ---- bmdb mode: the whole modeldb as a list ---- */
+  .dblist{border:1px solid var(--edge);border-radius:8px;background:var(--panel);margin-top:12px}
+  .dbrow{display:flex;gap:10px;align-items:center;padding:6px 11px;border-bottom:1px solid var(--edge);
+    cursor:pointer;font-size:13px}
+  .dbrow:last-child{border-bottom:none}
+  .dbrow:hover{background:var(--panel2)}
+  .dbrow .en{font-family:ui-monospace,Consolas,monospace;font-weight:600;flex:0 0 300px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dbrow .use{flex:1;min-width:0;color:var(--dim);font-size:12px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dbrow .nums{flex:0 0 auto;color:var(--dim);font-size:11px}
+  .dbrow.unused .en{color:var(--warn)}
+  .dbhead{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .dbhead h2{margin:0;font-size:15px;color:var(--accent)}
+  /* ---- cleanup dialog ---- */
+  .clsec{border:1px solid var(--edge);border-radius:8px;margin-bottom:12px;background:var(--panel2)}
+  .clsec>.h{display:flex;gap:9px;align-items:center;padding:9px 11px;cursor:pointer}
+  .clsec>.h b{flex:0 0 auto} .clsec>.h .count{flex:1;min-width:0}
+  .clsec>.b{padding:0 11px 11px;border-top:1px solid var(--edge)}
+  .clsec.off{opacity:.55}
+  .cllist{max-height:260px;overflow:auto;border:1px solid var(--edge);border-radius:6px;
+    background:var(--panel);margin-top:7px}
+  .clrow{display:flex;gap:8px;align-items:flex-start;padding:5px 9px;border-bottom:1px solid var(--edge);
+    font-size:12.5px}
+  .clrow:last-child{border-bottom:none}
+  .clrow input[type=checkbox]{margin-top:3px;flex:0 0 auto}
+  .clrow .nm{font-family:ui-monospace,Consolas,monospace;font-weight:600}
+  .clrow .sub{color:var(--dim);font-size:11.5px;margin-top:2px;overflow-wrap:anywhere}
+  .clrow .grow{flex:1;min-width:0}
+  .clrow.risky{background:#2a2410}
+  .clrow select{font-size:11.5px;padding:2px 5px;max-width:230px}
+  .clbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+  .clbar button{padding:3px 9px;font-size:11.5px}
+  .cltarget{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin-top:6px}
+  .cltarget input{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .treebox{font:11.5px/1.5 ui-monospace,Consolas,monospace;color:var(--dim);background:var(--panel);
+    border:1px solid var(--edge);border-radius:6px;padding:8px 10px;margin-top:7px;overflow-x:auto}
 </style>
 </head>
 <body>
 <header>
-  <h1>⚔ UNIT TRANSFER</h1>
+  <select id="modeSel" class="mode" title="Switch between moving units between mods and editing one mod's units">
+    <option value="transfer">⚔ Unit Transfer</option>
+    <option value="edit">✎ Unit Editor</option>
+    <option value="bmdb">🗄 BMDB Editor</option>
+  </select>
   <div class="sep"></div>
-  <span class="lbl">From</span><select id="srcSel"></select>
-  <span class="lbl">→ To</span><select id="dstSel"></select>
+  <span class="lbl" id="srcLbl">From</span><select id="srcSel"></select>
+  <span id="dstWrap"><span class="lbl">→ To</span><select id="dstSel"></select></span>
   <div class="sep"></div>
   <input type="search" id="search" placeholder="Search…">
   <label class="chk"><input type="checkbox" id="mercOnly"> mercs</label>
   <button id="selBtn" title="Select multiple units">☑ Select</button>
   <button id="batchBtn" class="primary" style="display:none">Transfer selected (0)</button>
+  <button id="newUnitBtn" class="primary" style="display:none" title="Create a new unit using an existing one as the base">＋ New unit</button>
+  <button id="cleanBtn" style="display:none" title="Find entries and files nothing uses and move them out of the mod">🧹 Clean up BMDB…</button>
+  <label class="chk" id="unusedWrap" style="display:none"><input type="checkbox" id="unusedOnly"> unused only</label>
   <button id="settingsBtn" title="MED II root">⚙ Root</button>
   <button id="logBtn" title="Log + undo">🕑 Log</button>
   <span class="count" id="count"></span>
@@ -252,7 +384,10 @@
 <script>
 const state={mods:[],src:null,dst:null,data:null,destData:null,factionNames:{},
   sel:{faction:new Set(),category:new Set(),class:new Set(),era:new Set()},
-  selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{}};
+  selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{},
+  // 'transfer' = move units between mods; 'edit' = edit the units of ONE mod;
+  // 'bmdb' = edit / clean up that mod's whole battle_models.modeldb
+  mode:'transfer', ed:null, bmdb:null, clean:null};
 
 const VANILLA_UNIT_LIMIT=500;   // M2TW vanilla EDU cap; M2TWEOP/EOP raise it.
 
@@ -300,8 +435,18 @@ async function init(){
   try{
     startHeartbeat();
     const s=await api.get('/api/settings');state.settings=s;
-    await refreshMods(s.last_source,s.last_dest);
-    wire();
+    // ?mod=&edit= — how "open this unit in a new tab" arrives. It picks the mod
+    // and opens the editor for this tab only; the remembered mod is not changed.
+    const qs=new URLSearchParams(location.search);
+    const qMod=qs.get('mod'),qEdit=qs.get('edit');
+    state.mode=qEdit?'edit':(['edit','bmdb'].includes(s.mode)?s.mode:'transfer');
+    modeSel.value=state.mode;
+    await refreshMods(qMod||s.last_source,qMod||s.last_dest);
+    wire(); applyMode(false);
+    if(qEdit){
+      if(state.data&&state.data.units.some(u=>u.type===qEdit))openEditor(qEdit);
+      else toast(`“${qEdit}” is not a unit in ${state.src}`,4000);
+    }
   }catch(e){
     main.innerHTML=`<div class="empty">Couldn't reach the Unit Transfer server.<br>
       <span class="count">Is <code>Launch-Unit-Transfer.bat</code> (python app.py) still running?</span><br><br>
@@ -345,10 +490,16 @@ function buildFilter(id,values,key,useLabel){
   box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);render();});
 }
 function wire(){
+  modeSel.onchange=()=>{state.mode=modeSel.value;applyMode(true);};
+  newUnitBtn.onclick=openNewUnitPicker;
   // Picking the mod that's already on the other side swaps the pair rather than
   // leaving a pointless A -> A: with A -> B, choosing A as the dest gives B -> A.
   srcSel.onchange=async e=>{
     const v=e.target.value;
+    // Edit / bmdb mode works on a single mod, so both sides follow the picker.
+    if(state.mode!=='transfer'){state.src=state.dst=v;dstSel.value=v;state.destData=null;
+      state.cfg={};state.bmdb=null;
+      await api.post('/api/settings',{last_source:v,last_dest:v});return loadSource();}
     if(v===state.dst){state.dst=state.src;dstSel.value=state.dst;state.destData=null;}
     state.src=v;srcSel.value=v;state.cfg={};
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
@@ -364,8 +515,32 @@ function wire(){
   document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);render();});
   settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
   selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch;
+  cleanBtn.onclick=openCleanup; unusedOnly.onchange=render;
   overlay.onclick=e=>{if(e.target.id==='overlay')closeModal();};
 }
+/* ---------- mode switching ---------- */
+// Edit and bmdb modes work on ONE mod in place, so the destination always mirrors
+// the source: that also lets the "new unit" flow reuse the transfer engine with
+// source == dest.
+function applyMode(persist){
+  const one=state.mode!=='transfer', edit=state.mode==='edit', bm=state.mode==='bmdb';
+  document.getElementById('srcLbl').textContent=one?'Mod':'From';
+  document.getElementById('dstWrap').style.display=one?'none':'';
+  selBtn.style.display=one?'none':'';
+  batchBtn.style.display=(!one&&state.selMode)?'inline-block':'none';
+  newUnitBtn.style.display=edit?'inline-block':'none';
+  cleanBtn.style.display=bm?'inline-block':'none';
+  unusedWrap.style.display=bm?'inline-flex':'none';
+  mercOnly.parentElement.style.display=bm?'none':'inline-flex';
+  document.querySelector('.filters').style.display=bm?'none':'';
+  search.placeholder=bm?'Search entries…':'Search…';
+  document.title=bm?'BMDB Editor':edit?'Unit Editor':'Unit Transfer';
+  if(one&&state.selMode)toggleSelMode();
+  if(one&&state.dst!==state.src){state.dst=state.src;dstSel.value=state.src;state.destData=null;}
+  if(persist)api.post('/api/settings',{mode:state.mode,last_dest:state.dst});
+  render();
+}
+
 function toggleSelMode(){state.selMode=!state.selMode;document.body.classList.toggle('selmode',state.selMode);
   selBtn.classList.toggle('on',state.selMode);
   if(!state.selMode){
@@ -388,6 +563,7 @@ function unitMatches(u){
   return true;
 }
 function render(){
+  if(state.mode==='bmdb')return renderBmdb();
   if(!state.data)return;
   const units=state.data.units.filter(unitMatches);
   count.textContent=`${units.length}/${state.data.units.length}`;
@@ -414,6 +590,7 @@ function cardHtml(u){
 function onCard(type){
   if(state.selMode){ if(state.selected.has(type))state.selected.delete(type); else state.selected.add(type);
     updateBatchBtn(); markCardSel(type); return; }
+  if(state.mode==='edit') return openEditor(type);
   openDrawer(type);
 }
 // A unit owned by several factions renders one card per faction group (and the
@@ -460,6 +637,7 @@ function cfgFor(type){
 let composerList=[];
 async function openComposer(types){
   composerList=types.slice(); state.editing=types[0];
+  document.getElementById('modal').className='modal';
   overlay.classList.add('open');
   await ensureDest();           // needed for the unit-limit projection + base picker
   renderComposer();
@@ -492,7 +670,10 @@ async function renderComposer(){
   // the engine is named by the `engine` field, which the base supplies when the
   // crew group is taken from it
   const engBase=crwBase; const engOn=hasEng&&!engBase;
-  m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`:`Transfer “${esc(u.name)}”`} <span class="pill">${esc(state.src)} → ${esc(state.dst)}</span></h2>
+  const sameMod=state.src===state.dst;      // edit mode's "new unit from this one"
+  m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`
+      :sameMod?`New unit from “${esc(u.name)}”`:`Transfer “${esc(u.name)}”`} <span class="pill">${
+      sameMod?'in '+esc(state.src):esc(state.src)+' → '+esc(state.dst)}</span></h2>
    <div class="mbody">
      ${unitLimitBanner()}
      ${strip}
@@ -502,7 +683,7 @@ async function renderComposer(){
          ${hasProj?`<div class="projline">🏹 projectile: ${proj.map(p=>`<span class="chip">${esc(p)}</span>`).join('')}</div>`:''}
          ${hasEng?`<div class="projline">🏰 siege engine: <span class="chip">${esc(eng)}</span>${engMounted?'<span class="count"> (mounted)</span>':''}${engGroups.length?`<span class="count"> · ${engGroups.map(esc).join(' / ')}</span>`:''}</div>`:''}</div>
      </div>
-     ${projOn?`<div class="warnbox">⚠ <b>Projectile import won't import the special effects.</b> The projectile
+     ${sameMod?'':`${projOn?`<div class="warnbox">⚠ <b>Projectile import won't import the special effects.</b> The projectile
        definition (damage, velocity, angles…) is copied, but its visual effect/impact lines are pointed at
        <code>invisible_placeholder_set</code> wherever ${esc(state.dst)} doesn't already define them. Re-add the
        real effects manually in <code>descr_effect_impacts.txt</code> / the arrow-trail files.</div>`:''}
@@ -550,7 +731,7 @@ async function renderComposer(){
            </div>
          </div>
        </div>
-     </fieldset>
+     </fieldset>`}
      <fieldset><legend>Mercenary attribute</legend>
        <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
        <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute and gives the battle
@@ -570,7 +751,7 @@ async function renderComposer(){
          "Unit card / info icons" so you can choose to keep it or overwrite it.</div>
      </fieldset>
      <fieldset><legend>Edit fields — every EDU field (edits apply as overrides)</legend>
-       ${fromBasePanel(c,u)}
+       ${sameMod?'':fromBasePanel(c,u)}
        <div class="fieldbar">
          <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
          <span class="count" id="fieldChanged"></span>
@@ -587,9 +768,11 @@ async function renderComposer(){
   // wire per-unit option persistence (disabled inputs — absent models — never fire)
   // with a base, toggling an include box changes which unit supplies that group
   // group toggles re-render so the per-model checkboxes enable/disable in step
-  optOff.onchange=()=>{c.include_officers=optOff.checked; renderComposer();};
-  optMount.onchange=()=>{c.include_mount=optMount.checked; doPreview();};
-  optCrew.onchange=()=>{c.include_crew=optCrew.checked; renderComposer();};
+  // the secondary-model / base fieldsets are absent when creating a new unit
+  // inside one mod (nothing to bring across, and the base IS the source unit)
+  if(window.optOff)optOff.onchange=()=>{c.include_officers=optOff.checked; renderComposer();};
+  if(window.optMount)optMount.onchange=()=>{c.include_mount=optMount.checked; doPreview();};
+  if(window.optCrew)optCrew.onchange=()=>{c.include_crew=optCrew.checked; renderComposer();};
   if(window.optProj)optProj.onchange=()=>{c.include_projectile=optProj.checked; doPreview();};
   // re-render: the engine fieldset appears/disappears with the checkbox
   if(window.optEngine)optEngine.onchange=()=>{c.include_engine=optEngine.checked; renderComposer();};
@@ -710,7 +893,9 @@ function updateFieldChanged(){const c=cfgFor(state.editing);const n=Object.keys(
 function filterFields(){const qq=(document.getElementById('fieldFilter')?.value||'').toLowerCase();
   document.querySelectorAll('#allFields .afrow').forEach(r=>{
     const l=(r.dataset.label||'').toLowerCase(); r.style.display=(!qq||l.includes(qq))?'':'none';});}
-function closeModal(){overlay.classList.remove('open');}
+function closeModal(){overlay.classList.remove('open');
+  // the unit editor widens the modal — put it back for the next dialog
+  document.getElementById('modal').className='modal';}
 
 // per-model checkboxes for a secondary group (officers / crew), so models can be
 // picked individually rather than all-or-none. Disabled when the group is off.
@@ -965,6 +1150,15 @@ async function doPreview(){
 }
 function conflictUI(type){const c=cfgFor(type);const u=state.data.units.find(x=>x.type===type);
   if(!c.new_type)c.new_type=type+' (copy)'; if(!c.new_dictionary)c.new_dictionary=u.dictionary+'_copy';
+  // Same mod = the "new unit" flow: the clash with the original is the whole point,
+  // so ask for the new unit's names instead of warning about a conflict.
+  const sameMod=state.src===state.dst;
+  if(sameMod) return `<fieldset style="margin-top:10px"><legend>Name for the new unit</legend>
+    <div class="rename-fields" id="rf" style="padding-left:0">
+      <label>New type<input id="nt" value="${esc(c.new_type)}"></label>
+      <label>New dictionary<input id="nd" value="${esc(c.new_dictionary)}"></label>
+    </div>
+    <div class="count">The original “${esc(type)}” stays as it is.</div></fieldset>`;
   return `<fieldset style="margin-top:10px;border-color:var(--warn)"><legend class="w-warn">Unit already exists in destination</legend>
     <div class="radio-row">
       <label><input type="radio" name="cf" value="rename" ${c.on_conflict==='rename'?'checked':''}> Rename</label>
@@ -980,7 +1174,8 @@ function wireConflict(type){const c=cfgFor(type);
   document.querySelectorAll('input[name=cf]').forEach(r=>r.onchange=()=>{c.on_conflict=r.value;document.getElementById('rf').style.display=r.value==='rename'?'':'none';});
   const nt=document.getElementById('nt'),nd=document.getElementById('nd');
   if(nt)nt.oninput=()=>c.new_type=nt.value; if(nd)nd.oninput=()=>c.new_dictionary=nd.value;
-  const rf=document.getElementById('rf'); if(rf)rf.style.display=c.on_conflict==='rename'?'':'none';
+  const rf=document.getElementById('rf');
+  if(rf&&state.src!==state.dst)rf.style.display=c.on_conflict==='rename'?'':'none';
 }
 
 const PROG_ICON={pending:'·',current:'⟳',done:'✓',error:'✗',skipped:'–'};
@@ -1028,7 +1223,7 @@ async function doApply(){
   }
   closeModal();
   const cmsg=cleaner?(cleaner.ran?'  · cleaner ran'+(cleaner.copied?' (copied in)':''):`  · cleaner failed: ${cleaner.error||'?'}`):'';
-  toast(`Transferred ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${cmsg}  (undo in 🕑 Log)`,4200);
+  toast(`${state.src===state.dst?'Created':'Transferred'} ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${cmsg}  (undo in 🕑 Log)`,4200);
   if(state.selMode)toggleSelMode();
   state.cfg={};
   if(state.dst===state.src)loadSource();
@@ -1037,8 +1232,1321 @@ async function doApply(){
 /* ---------- batch open ---------- */
 function openBatch(){ if(!state.selected.size)return; openComposer([...state.selected]); }
 
+/* ======================= UNIT EDITOR (edit mode) =======================
+   Edits one mod in place: EDU fields, the localised name/description, the
+   battle_models.modeldb entries the unit uses (including creating a new entry
+   from an existing one), and deleting the unit. Every apply goes through the
+   same backup + log as a transfer, so 🕑 Log → Undo reverts it. */
+const enc=encodeURIComponent;
+const modRoot=n=>(state.mods.find(m=>m.name===n)||{}).root||'';
+// A native dialog hands back an absolute path; show it as the mod-relative one
+// the game actually uses (the server accepts either).
+function relInMod(p){
+  const root=modRoot(state.src); if(!p||!root)return p||'';
+  const norm=s=>s.replace(/\\/g,'/').replace(/\/+$/,'');
+  const r=norm(root)+'/data/', s=norm(p);
+  return s.toLowerCase().startsWith(r.toLowerCase())?s.slice(r.length):s;
+}
+
+async function openEditor(type){
+  const modal=document.getElementById('modal');
+  modal.className='modal wide'; modal.innerHTML='<h2>Loading unit…</h2>';
+  overlay.classList.add('open');
+  let d;
+  try{ d=await api.get(`/api/edit/unit?mod=${enc(state.src)}&type=${enc(type)}`); }
+  catch(e){ modal.innerHTML=`<h2>Unit editor</h2><div class="mbody w-bad">${esc(''+e)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  if(d.error){ modal.innerHTML=`<h2>Unit editor</h2><div class="mbody w-bad">${esc(d.error)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  state.ed={mod:state.src,unit:type,d,tab:'identity',ov:{},rm:new Set(),
+            loc:Object.assign({},d.loc),newType:'',newDict:'',
+            mEdits:{},newModels:[],open:{},form:null,removeOldIcons:false,added:new Set(),
+            // per-entry UI state: which faction has its "unique textures" panel
+            // open, and the last /api/edit/model_folder answer for its folder box
+            facOpen:{},folder:{}};
+  renderEditor();
+}
+// Every unit opens in its own browser tab, so you can follow "this model is also
+// used by X" without losing the edits in the tab you came from.
+function openUnitTab(type){
+  window.open(`/?mod=${enc(state.ed?state.ed.mod:state.src)}&edit=${enc(type)}`,'_blank');
+}
+// A model's users are unit types, plus "mount:<name>" / "file:<name>" referrers
+// which are not units and so have no editor to open.
+function userLink(name){
+  return /^(mount|file):/.test(name) ? `<span class="count">${esc(name)}</span>`
+    : `<a class="ulink" onclick="openUnitTab('${q1(esc(name))}')">${esc(name)}</a>`;
+}
+function edDirty(){
+  const e=state.ed; if(!e)return false;
+  return !!(Object.keys(e.ov).length||e.rm.size||e.newModels.length||
+            edModelEdits().length||e.newType||e.newDict||
+            JSON.stringify(e.loc)!==JSON.stringify(e.d.loc));
+}
+/* ---- what each touched bmdb entry sends ----
+   Texture paths go by faction + kind, never by span index: ticking a faction on
+   or off renumbers every texture slot in the entry, so an index captured by the
+   page would land on the wrong one. Meshes keep using indices — those are stable. */
+function edModelEdits(){
+  const e=state.ed;
+  return Object.keys(e.mEdits).map(name=>{
+    const me=e.mEdits[name];
+    if(!me._touched)return null;
+    const m=e.d.models.find(x=>x.name===name); if(!m)return null;
+    const v=edTexView(m), kinds=edKinds(m), faction_paths={};
+    edFacs(m).forEach(f=>{
+      const o={},cur=v.facs[f]||{};
+      kinds.forEach(k=>{ if(cur[k]&&cur[k]!==v.defs[k])o[k]=cur[k]; });
+      if(Object.keys(o).length)faction_paths[f]=o;
+    });
+    return {entry:name,new_name:me.new_name||'',paths:me.paths||{},copies:me.copies||[],
+      imports:(me.imports||[]).map(x=>({src:x.src,dest_dir:x.dest_dir})),
+      defaults:v.defs,faction_paths,factions:me.factions||null,
+      move_dir:me.move_dir||'',move_shared:!!me.move_shared};
+  }).filter(Boolean);
+}
+function edPayload(extra){
+  const e=state.ed;
+  const locChanged=JSON.stringify(e.loc)!==JSON.stringify(e.d.loc);
+  return Object.assign({mod:e.mod,unit:e.unit,new_type:e.newType,new_dictionary:e.newDict,
+    field_overrides:e.ov,remove_fields:[...e.rm],loc:locChanged?e.loc:null,
+    model_edits:edModelEdits(),new_models:e.newModels,
+    remove_old_icons:!!e.removeOldIcons},extra||{});
+}
+function renderEditor(){
+  const e=state.ed,d=e.d;
+  const tab=(k,label)=>`<button class="${e.tab===k?'on':''}" onclick="edTab('${k}')">${label}</button>`;
+  document.getElementById('modal').innerHTML=`
+    <h2>Edit unit <span class="pill">${esc(e.mod)}</span></h2>
+    <div class="ehead">
+      <img onerror="iconRetry(this)" src="${iconUrl(e.mod,e.unit)}">
+      <div><div class="nm">${esc(e.loc.name||d.type)}</div>
+        <div class="count">${esc(d.type)} · dictionary <code>${esc(d.dictionary)}</code>
+          · ${d.models.length} model entr${d.models.length===1?'y':'ies'}</div></div>
+    </div>
+    <div class="tabs">${tab('identity','Identity & text')}${tab('fields','EDU fields')}
+      ${tab('models','Battle models (bmdb)')}</div>
+    <div class="mbody" id="edBody"></div>
+    <div class="foot">
+      <button class="danger" onclick="edDeleteDialog()" style="margin-right:auto">🗑 Delete unit…</button>
+      <button onclick="closeModal()">Close</button>
+      <button onclick="edPreview()">Preview</button>
+      <button class="primary" onclick="edSave()">Save changes</button>
+    </div>`;
+  edRenderTab();
+}
+function edTab(t){state.ed.tab=t;renderEditor();}
+function edRenderTab(){
+  const e=state.ed,b=document.getElementById('edBody');
+  b.innerHTML=(e.tab==='identity'?edIdentity():e.tab==='fields'?edFields():edModels())
+    +'<div id="edPreview"></div>';
+  // keep the last preview visible across cosmetic re-renders (tab switch, expanding
+  // an entry) — flagged as stale once anything has been edited since it was made
+  if(e.plan)document.getElementById('edPreview').innerHTML=edPlanHtml(e.plan,e.planStale);
+  if(e.tab==='fields')edWireFields();
+  if(e.tab==='identity')edWireIdentity();
+  if(e.tab==='models')edWireModels();
+}
+function edWireModels(){
+  document.querySelectorAll('#edBody input[data-entry]').forEach(inp=>{
+    inp.oninput=()=>{const name=inp.dataset.entry,i=+inp.dataset.i;
+      const m=state.ed.d.models.find(x=>x.name===name);
+      const orig=(m.paths.find(p=>p.i===i)||{}).value;
+      const me=edTouch(name);
+      if(inp.value!==orig)me.paths[i]=inp.value; else delete me.paths[i];
+      inp.classList.toggle('changed',inp.value!==orig);};
+  });
+  document.querySelectorAll('#edBody input[data-def]').forEach(inp=>{
+    inp.oninput=()=>{const name=inp.dataset.def,k=inp.dataset.kind;
+      const m=state.ed.d.models.find(x=>x.name===name),me=edTouch(name),v=inp.value.trim();
+      if(v&&v!==m.texture_defaults[k])me.defaults[k]=v; else delete me.defaults[k];
+      inp.classList.toggle('changed',k in me.defaults);};
+  });
+  document.querySelectorAll('#edBody input[data-fac]').forEach(inp=>{
+    inp.oninput=()=>{const name=inp.dataset.fac,f=inp.dataset.f,k=inp.dataset.kind;
+      const me=edTouch(name),v=inp.value.trim();
+      const fp=me.faction_paths[f]||(me.faction_paths[f]={});
+      if(v)fp[k]=v; else delete fp[k];
+      if(!Object.keys(fp).length)delete me.faction_paths[f];
+      inp.classList.toggle('changed',!!v);};
+  });
+}
+// Where an imported texture should land: alongside the one it replaces, else in
+// the model folder's textures/ (sprites live in their own shared folder).
+function edImportDir(m,kind){
+  const cur=edTexView(m).defs[kind]||'';
+  if(cur.includes('/'))return cur.slice(0,cur.lastIndexOf('/'));
+  const me=state.ed.mEdits[m.name]||{};
+  const base=me.move_dir||m.folder.base||m.folder.suggestion;
+  return kind==='sprite'?'unit_sprites':base+'/textures';
+}
+const TEX_FILTER='Textures (*.texture)|*.texture|All files (*.*)|*.*';
+const SPR_FILTER='Sprites (*.spr)|*.spr|All files (*.*)|*.*';
+async function edImportInto(name,kind,set){
+  const m=state.ed.d.models.find(x=>x.name===name);
+  const r=await api.post('/api/browse_file',
+    {title:'Select a file to import',filter:kind==='sprite'?SPR_FILTER:TEX_FILTER});
+  if(!r.path)return;
+  const dir=edImportDir(m,kind),rel=dir+'/'+r.path.split(/[\\\/]/).pop();
+  const me=edTouch(name);
+  me.imports=(me.imports||[]).filter(x=>x.rel!==rel).concat([{src:r.path,dest_dir:dir,rel}]);
+  set(me,rel); edRenderTab(); edPreview();
+}
+const edImportDefault=(name,kind)=>edImportInto(name,kind,(me,rel)=>{me.defaults[kind]=rel;});
+const edImportFac=(name,fac,kind)=>edImportInto(name,kind,(me,rel)=>{
+  (me.faction_paths[fac]||(me.faction_paths[fac]={}))[kind]=rel;});
+
+/* ---- EDU field access shared by every tab ----
+   `e.ov` holds overrides keyed by the label block_fields() produced; `e.added`
+   remembers fields this session created, so an override that happens to equal
+   the (empty) starting value still gets written. */
+const csv=s=>(s||'').split(',').map(x=>x.trim()).filter(Boolean);
+function edFieldVal(label){const e=state.ed;
+  if(label in e.ov)return e.ov[label];
+  const f=e.d.fields.find(x=>x[0]===label); return f?f[1]:'';}
+function edSetField(label,val){
+  const e=state.ed,f=e.d.fields.find(x=>x[0]===label);
+  if(!f){e.d.fields=e.d.fields.concat([[label,'']]); e.added.add(label);}
+  if(val===((f||['',''])[1])&&!e.added.has(label)) delete e.ov[label]; else e.ov[label]=val;
+  e.rm.delete(label); edStale();
+}
+// Put a field back exactly as it was — including "it wasn't there at all", which
+// setting it to "" would not do (an empty EDU line is still a line).
+function edRestoreField(label,val){
+  const e=state.ed;
+  if(val===''&&e.added.has(label)){
+    e.added.delete(label); delete e.ov[label];
+    e.d.fields=e.d.fields.filter(f=>f[0]!==label); edStale(); return;
+  }
+  edSetField(label,val);
+}
+
+/* ---- identity + localisation ---- */
+// export_units.txt keeps a description on ONE line, so a real newline or tab
+// typed into the box would split the record. They are written as the literal
+// two-character escapes the game reads instead, the moment the box loses focus.
+const escLines=s=>(s==null?'':''+s).replace(/\r\n?|\n/g,'\\n').replace(/\t/g,'\\t');
+function edIsMerc(){return csv(edFieldVal('attributes')).includes('mercenary_unit');}
+function edIdentity(){
+  const e=state.ed,d=e.d,merc=edIsMerc();
+  return `<div class="frm">
+    <div class="two">
+      <div><label>Unit type (EDU <code>type</code>, the internal name)
+        <input id="edType" value="${esc(e.newType||d.type)}"></label>
+        <div class="count" style="margin-top:4px">Renaming this does <b>not</b> update
+          <code>export_descr_buildings.txt</code>, <code>descr_strat.txt</code> or scripts that
+          recruit the unit — fix those by hand.</div></div>
+      <div><label>Dictionary (localisation + unit-card key)
+        <input id="edDict" value="${esc(e.newDict||d.dictionary)}"></label>
+        <div class="count" style="margin-top:4px">Renaming it moves the text entry and copies the
+          unit cards to the new name (${d.icons.length} icon file${d.icons.length===1?'':'s'} found).
+          <label class="chk" style="margin-top:4px"><input type="checkbox" id="edRmIcons"
+            ${e.removeOldIcons?'checked':''}> delete the old icon files</label></div></div>
+    </div>
+    <label>Displayed name<input id="edName" value="${esc(e.loc.name)}"></label>
+    <label>Short description (unit card tooltip)<textarea id="edShort">${esc(e.loc.descr_short)}</textarea></label>
+    <label>Description (info card)<textarea id="edDescr" style="min-height:150px">${esc(e.loc.descr)}</textarea></label>
+    <div class="count" style="margin-top:4px">The description is stored on a single line — any
+      new line or tab you type becomes <code>\\n</code> / <code>\\t</code> when you click away.</div>
+    <fieldset style="margin-top:12px"><legend>Mercenary</legend>
+      <button class="${merc?'on':''}" onclick="edToggleMerc(${merc?'false':'true'})">${
+        merc?'✓ Mercenary unit':'Make this a mercenary unit'}</button>
+      <div class="count" style="margin-top:6px">${merc
+        ?'The <code>mercenary_unit</code> attribute is on this unit. Pressing the button removes it.'
+        :'Adds the <code>mercenary_unit</code> attribute to its <code>attributes</code> line.'}
+        Recruitment still needs a pool entry in <code>descr_mercenaries.txt</code> — not written by
+        this tool. Its unit card is looked up under <code>ui/units/mercs/</code> once it is a merc
+        (unless <code>card_pic_dir</code> pins it elsewhere).</div>
+    </fieldset>
+    <div class="icoprev">
+      <img class="card" onerror="this.style.display='none'" src="${iconUrl(e.mod,e.unit)}">
+      <img class="info" onerror="this.style.display='none'" src="${iconUrl(e.mod,e.unit,'info')}">
+    </div></div>`;
+}
+function edToggleMerc(on){
+  const attrs=csv(edFieldVal('attributes'));
+  const i=attrs.indexOf('mercenary_unit');
+  if(on&&i<0)attrs.push('mercenary_unit');
+  if(!on&&i>=0)attrs.splice(i,1);
+  edSetField('attributes',attrs.join(', ')); edRenderTab();
+}
+function edWireIdentity(){
+  const e=state.ed,d=e.d;
+  const bind=(id,fn)=>{const el=document.getElementById(id);
+    if(el)el.oninput=()=>{fn(el.value);edStale();};};
+  bind('edType',v=>{e.newType=(v.trim()===d.type)?'':v.trim();});
+  bind('edDict',v=>{e.newDict=(v.trim()===d.dictionary)?'':v.trim();});
+  bind('edName',v=>{e.loc.name=v;});
+  bind('edShort',v=>{e.loc.descr_short=v;});
+  bind('edDescr',v=>{e.loc.descr=v;});
+  ['edShort','edDescr'].forEach(id=>{const el=document.getElementById(id); if(!el)return;
+    el.onblur=()=>{const v=escLines(el.value);
+      if(v!==el.value){el.value=v; if(id==='edShort')e.loc.descr_short=v; else e.loc.descr=v; edStale();}};});
+  const rm=document.getElementById('edRmIcons'); if(rm)rm.onchange=()=>e.removeOldIcons=rm.checked;
+}
+
+/* ---- every EDU field, editable, with a real delete ----
+   Four of them are comma-separated lists whose ORDER is meaningful, so they get
+   drag-to-reorder chips instead of a text box: `ownership` / `era 0..2` (the
+   factions that may field the unit) and `armour_ug_models` (position N = armour
+   upgrade level N). */
+const LIST_FIELDS=new Set(['ownership','era 0','era 1','era 2']);
+function edFields(){
+  const e=state.ed,d=e.d;
+  const present=new Set(d.fields.map(([l])=>l.replace(/#\d+$/,'')));
+  const missing=(d.known_fields||[]).filter(k=>!present.has(k));
+  // type/dictionary/soldier define the block — the engine refuses to drop them
+  const PROTECTED=new Set(['type','dictionary','soldier']);
+  const rmBtn=(label,gone)=>PROTECTED.has(label.replace(/#\d+$/,''))
+    ? '<span class="rm" title="This field defines the unit and can\'t be removed"> </span>'
+    : `<button class="rm" data-rm="${esc(label)}" title="${
+        gone?'Keep this field':'Remove this line from the unit'}">${gone?'↺':'✕'}</button>`;
+  const rows=d.fields.map(([label,val])=>{
+    const cur=(label in e.ov)?e.ov[label]:val;
+    const gone=e.rm.has(label);
+    const head=`<div class="afrow wide${gone?' gone':''}" data-label="${esc(label)}">
+      <label title="${esc(label)}">${esc(label)}</label>`;
+    if(LIST_FIELDS.has(label)&&!gone)
+      return head+edFactionField(label,cur)+rmBtn(label,gone)+'</div>';
+    if(label==='armour_ug_models'&&!gone)
+      return head+edArmourField(label,cur)+rmBtn(label,gone)+'</div>';
+    return `<div class="afrow${gone?' gone':''}" data-label="${esc(label)}">
+      <label title="${esc(label)}">${esc(label)}</label>
+      <input data-k="${esc(label)}" value="${esc(cur)}" ${gone?'disabled':''}
+        class="${(label in e.ov)&&e.ov[label]!==val?'changed':''}">
+      ${rmBtn(label,gone)}</div>`;
+  }).join('');
+  return `<fieldset><legend>EDU fields — edited in place</legend>
+    <div class="fieldbar">
+      <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
+      <span class="count" id="fieldChanged"></span>
+    </div>
+    <div class="allfields" id="allFields">${rows}</div>
+    <div class="count" style="margin-top:6px">✕ removes the whole line — clearing a value
+      leaves an empty field, which the game still reads.</div>
+    <div class="prow" style="margin-top:8px;grid-template-columns:170px 1fr auto">
+      <span class="pl">Add a missing field</span>
+      <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">— none missing —</option>'}</select>
+      <button onclick="edAddField()">Add</button>
+    </div></fieldset>`;
+}
+function edWireFields(){
+  const e=state.ed;
+  document.querySelectorAll('#allFields input[data-k]').forEach(inp=>{
+    inp.oninput=()=>{const k=inp.dataset.k,orig=(e.d.fields.find(f=>f[0]===k)||['',''])[1];
+      if(inp.value!==orig)e.ov[k]=inp.value; else delete e.ov[k];
+      inp.classList.toggle('changed',inp.value!==orig); edCount(); edStale();};
+  });
+  document.querySelectorAll('#allFields .rm').forEach(b=>{
+    b.onclick=()=>{const k=b.dataset.rm;
+      if(e.rm.has(k)){e.rm.delete(k);} else {e.rm.add(k); delete e.ov[k];}
+      edRenderTab();};
+  });
+  edCount();
+}
+function edCount(){
+  const e=state.ed,el=document.getElementById('fieldChanged'); if(!el)return;
+  const n=Object.keys(e.ov).length,r=e.rm.size;
+  el.textContent=[n?`${n} changed`:'',r?`${r} removed`:''].filter(Boolean).join(' · ');
+}
+function edAddField(){
+  const e=state.ed,sel=document.getElementById('edAddKey'); const k=sel&&sel.value; if(!k)return;
+  e.d.fields=e.d.fields.concat([[k,'']]);      // shows up as a new (empty) row
+  e.added.add(k); e.ov[k]=''; edRenderTab();
+  const inp=document.querySelector(`#allFields input[data-k="${cssq(k)}"]`);
+  if(inp){inp.focus();}
+}
+
+/* ---- drag-to-reorder chip lists ---------------------------------------
+   The order of these lists is data, not decoration: armour_ug_models[N] is the
+   model shown at armour upgrade level N, and era lines are conventionally led by
+   the faction the unit belongs to. Dropping a chip rewrites the whole line. */
+let edDrag=null;
+function edDragStart(ev,label,i){
+  edDrag={label,i}; ev.dataTransfer.effectAllowed='move';
+  try{ev.dataTransfer.setData('text/plain',String(i));}catch(_){}
+  ev.currentTarget.classList.add('drag');
+}
+function edDragOver(ev,label){
+  if(!edDrag||edDrag.label!==label)return;
+  ev.preventDefault(); ev.currentTarget.classList.add('over');
+}
+function edDragLeave(ev){ev.currentTarget.classList.remove('over');}
+function edDragEnd(ev){ev.currentTarget.classList.remove('drag'); edDrag=null;}
+function edDrop(ev,label,i){
+  if(!edDrag||edDrag.label!==label)return;
+  ev.preventDefault();
+  const list=csv(edFieldVal(label)),from=edDrag.i;
+  if(from===i){edDrag=null; edRenderTab(); return;}
+  const [moved]=list.splice(from,1); list.splice(i,0,moved);
+  edDrag=null; edSetField(label,list.join(', ')); edRenderTab();
+}
+function edChips(label,items,extra){
+  return `<div class="chips">${items.map((v,i)=>`<span class="chipd" draggable="true"
+      ondragstart="edDragStart(event,'${q1(esc(label))}',${i})"
+      ondragover="edDragOver(event,'${q1(esc(label))}')" ondragleave="edDragLeave(event)"
+      ondragend="edDragEnd(event)" ondrop="edDrop(event,'${q1(esc(label))}',${i})"
+      title="drag to reorder">
+      <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
+      ${(extra||(()=>''))(v,i)}
+      <button class="x" title="Remove" onclick="edListRemove('${q1(esc(label))}',${i})">✕</button>
+    </span>`).join('')||'<span class="count">— empty —</span>'}</div>`;
+}
+function edListRemove(label,i){
+  const list=csv(edFieldVal(label)); list.splice(i,1);
+  edSetField(label,list.join(', ')); edRenderTab();
+}
+function edListSet(label,items){edSetField(label,items.join(', ')); edRenderTab();}
+function edListToggle(label,fac,on){
+  const list=csv(edFieldVal(label)),i=list.indexOf(fac);
+  if(on&&i<0)list.push(fac); else if(!on&&i>=0)list.splice(i,1);
+  edListSet(label,list);
+}
+
+/* ---- ownership / era 0..2: a faction checklist over a chip list ---- */
+function edFactionList(){
+  const d=state.ed.d,seen=new Set();
+  const all=(d.all_factions||[]).slice();
+  ['ownership','era 0','era 1','era 2'].forEach(l=>csv(edFieldVal(l)).forEach(f=>all.push(f)));
+  return all.filter(f=>!seen.has(f)&&seen.add(f)).sort();
+}
+const edFacLabel=f=>{const n=(state.ed.d.faction_names||{})[f]; return n?`${n} (${f})`:f;};
+function edFactionField(label,cur){
+  const list=csv(cur),chosen=new Set(list);
+  const isEra=label!=='ownership';
+  const own=csv(edFieldVal('ownership'));
+  const boxes=edFactionList().map(f=>`<div class="facrow">
+      <label class="chk"><input type="checkbox" ${chosen.has(f)?'checked':''}
+        onchange="edListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)">
+        ${esc(edFacLabel(f))}</label></div>`).join('');
+  return `<div style="flex:1;min-width:0">
+    ${edChips(label,list)}
+    <div class="barrow">
+      <details class="drop"><summary>▾ Choose factions — ${list.length} selected</summary>
+        <div class="dropbody"><div class="barrow" style="margin:0 0 6px">
+          <button onclick="edListSet('${q1(esc(label))}',${JSON.stringify(edFactionList()).replace(/"/g,'&quot;')})">All</button>
+          <button onclick="edListSet('${q1(esc(label))}',[])">None</button>
+        </div><div class="faclist" style="border:none;padding:0;max-height:none">${boxes}</div></div>
+      </details>
+      ${isEra?`<button ${own.length?'':'disabled'}
+          onclick="edListSet('${q1(esc(label))}',${JSON.stringify(own).replace(/"/g,'&quot;')})"
+          title="Replace this era with the ownership line">Copy ownership (${own.length})</button>
+        <button ${own.length?'':'disabled'}
+          onclick="edListSet('${q1(esc(label))}',['${q1(esc(own[0]||''))}'])"
+          title="Replace this era with just the first faction of ownership">Copy 1st ownership${
+            own.length?` (${esc(own[0])})`:''}</button>`:''}
+    </div></div>`;
+}
+
+/* ---- armour_ug_models: reorder tiers, jump to an entry, add the next one ---- */
+function edArmourField(label,cur){
+  const models=csv(cur),levels=csv(edFieldVal('armour_ug_levels'));
+  const jump=(v)=>`<button title="Edit ${esc(v)} in the Battle models tab"
+      onclick="edJumpModel('${q1(esc(v))}')">✎</button>`;
+  return `<div style="flex:1;min-width:0">
+    ${edChips(label,models,jump)}
+    <div class="barrow">
+      <button onclick="edAddArmourTier()" title="Clone the last model into a new entry and add it as the next tier">＋ Add armour tier</button>
+      <span class="count">position = upgrade level${levels.length?` · armour_ug_levels: ${esc(levels.join(', '))}`:''}${
+        levels.length&&levels.length!==models.length
+          ? ` <span class="w-warn">— ${levels.length} level(s) for ${models.length} model(s)</span>`:''}</span>
+    </div></div>`;
+}
+// Jump straight to a model's entry in the bmdb tab (the ✎ beside an armour tier
+// and the model links elsewhere both land here).
+function edJumpModel(name){
+  const e=state.ed,key=(name||'').toLowerCase();
+  if(!e.d.models.some(m=>m.name===key)){
+    if(e.newModels.some(n=>n.name===key)){e.tab='models'; renderEditor(); return;}
+    toast(`“${name}” is not one of this unit's model entries`); return;
+  }
+  e.tab='models'; e.open[key]=true; renderEditor();
+  const el=document.querySelector(`#edBody .mentry[data-entry="${cssq(key)}"]`);
+  if(el)el.scrollIntoView({block:'center'});
+}
+// "+" beside armour_ug_models: clone the tier below into a brand-new entry, add
+// it as the next tier, bump armour_ug_levels, and open the form to give it its
+// own mesh/texture — an upgrade tier pointing at the same files as the tier
+// below it is not an upgrade.
+function edAddArmourTier(){
+  const e=state.ed,d=e.d;
+  const models=csv(edFieldVal('armour_ug_models'));
+  const src=(models[models.length-1]||edFieldVal('soldier').split(',')[0]||'').trim().toLowerCase();
+  if(!src||!d.models.some(m=>m.name===src)){
+    toast('No existing model entry to clone this tier from'); return;}
+  const levels=csv(edFieldVal('armour_ug_levels'));
+  const nextLevel=levels.length?(Math.max(...levels.map(x=>parseInt(x,10)||0))+1)
+                               :(models.length?models.length+1:1);
+  const stem=src.replace(/_ug\d+$/,'');
+  let name=`${stem}_ug${models.length+1}`,n=models.length+1;
+  while(d.model_names.includes(name)||e.newModels.some(x=>x.name===name)||models.includes(name))
+    name=`${stem}_ug${++n}`;
+  const from=d.models.find(m=>m.name===src)||{};
+  e.form={clone_from:src,name,
+          dest_dir:(from.folder&&(from.folder.base||from.folder.suggestion))||'unit_models',
+          mesh_src:'',texture_src:'',normal_src:'',sprite_src:'',
+          mesh_all_lods:true,apply_to_attach:false,assign_to:'',
+          // the tier list and levels are set now so the chips show it straight
+          // away; dropping the pending entry puts both back
+          _tier:{models:edFieldVal('armour_ug_models'),levels:edFieldVal('armour_ug_levels')}};
+  edSetField('armour_ug_models',models.concat([name]).join(', '));
+  edSetField('armour_ug_levels',levels.concat([String(nextLevel)]).join(', '));
+  e.tab='models'; renderEditor();
+}
+
+/* ---- battle model entries ----
+   One entry per card: its name, who else uses it, its meshes, ONE set of default
+   textures that every faction inherits, the faction checklist (with a per-faction
+   override panel where a faction needs its own skin), and the folder its files
+   live in. */
+const TEX_KINDS=['texture','normal','sprite','attach_texture','attach_normal'];
+const KIND_LABEL={texture:'Texture',normal:'Normal map',sprite:'Sprite (.spr)',
+  attach_texture:'Attachment texture',attach_normal:'Attachment normal map'};
+// An attachment has no sprite — the format stores an empty string there — so
+// that slot is never offered.
+const edKinds=m=>['texture','normal','sprite'].concat(
+  m.has_attach?['attach_texture','attach_normal']:[]);
+const edFacs=m=>((state.ed.mEdits[m.name]||{}).factions)||m.factions;
+// What each faction's slots read right now: the entry's own values, with the
+// edits made in this session on top. Anything equal to the default is *not* sent
+// as an override, so changing a default really does reach every faction that
+// shares it — and only those.
+// With a folder move pending, every path shown (and sent) is the one it will
+// have AFTER the move — otherwise the boxes would still read the old folder and
+// send it straight back.
+function edRebase(name,val,kind){
+  const me=state.ed.mEdits[name]||{};
+  if(!me.move_dir||!val||kind==='sprite')return val;
+  const base=me.move_dir.replace(/\/+$/,''),file=val.split('/').pop();
+  return (kind==='mesh'?base:base+'/textures')+'/'+file;
+}
+function edTexView(m){
+  const me=state.ed.mEdits[m.name]||{};
+  const defs={},facs={};
+  const merged=Object.assign({},m.texture_defaults,me.defaults||{});
+  Object.keys(merged).forEach(k=>{defs[k]=edRebase(m.name,merged[k],k);});
+  edFacs(m).forEach(f=>{
+    const src=Object.assign({},m.textures[f]||{},(me.faction_paths||{})[f]||{}),out={};
+    Object.keys(src).forEach(k=>{out[k]=edRebase(m.name,src[k],k);});
+    facs[f]=out;});
+  return {defs,facs};
+}
+function edModels(){
+  const e=state.ed,d=e.d;
+  const pending=e.newModels.map((n,i)=>`<div class="pending">
+      <button class="x" onclick="edDropNew(${i})" title="Discard">✕</button>
+      <b>${esc(n.name)}</b> — new entry cloned from
+      <a class="ulink" onclick="edJumpModel('${q1(esc(n.clone_from))}')">${esc(n.clone_from)}</a>
+      ${n.assign_to?` → <code>${esc(n.assign_to)}</code>`:''}
+      ${n._tier?' <span class="count">· next armour tier</span>':''}
+      <div class="count">${esc(n.dest_dir||'(no folder)')} · ${n.mesh_src?esc(n.mesh_src.split(/[\\\/]/).pop()):'(clone mesh)'}
+        · ${n.texture_src?esc(n.texture_src.split(/[\\\/]/).pop()):'(clone texture)'}
+        <button style="padding:1px 7px;font-size:11px;margin-left:6px" onclick="edEditNew(${i})">Edit…</button></div></div>`).join('');
+  const entries=d.models.map((m,i)=>edModelCard(m,i)).join('');
+  return `${pending}${e.form?edNewModelForm():''}
+    <div class="count" style="margin-bottom:8px">Paths are relative to the mod's <code>data/</code> folder.
+      “Import…” copies a file from anywhere on disk into the mod and points the slot at it.</div>
+    ${entries}`;
+}
+function edModelCard(m,idx){
+  const e=state.ed;
+  if(m.missing) return `<div class="mentry"><div class="mhead">
+      <span class="mn w-bad">${esc(m.name)}</span>
+      <span class="count">missing from this mod's modeldb${m.slots.length?` · ${m.slots.map(esc).join(', ')}`:''}</span>
+    </div></div>`;
+  const open=!!e.open[m.name];
+  const me=e.mEdits[m.name]||{};
+  const facs=edFacs(m);
+  const meshes=m.paths.filter(p=>p.group==='lod').map(p=>{
+    const cur=edRebase(m.name,(me.paths&&p.i in me.paths)?me.paths[p.i]:p.value,'mesh');
+    return `<div class="prow">
+      <span class="pl" title="${esc(p.label)}">${esc(p.label)}</span>
+      <input data-entry="${esc(m.name)}" data-i="${p.i}" value="${esc(cur)}"
+        class="${cur!==p.value?'changed':''}">
+      <button onclick="edImportPath('${q1(esc(m.name))}',${p.i},'mesh')">Import…</button>
+      <button onclick="edResetPath('${q1(esc(m.name))}',${p.i})" title="Undo this change">↺</button></div>`;
+  }).join('');
+  return `<div class="mentry" data-entry="${esc(m.name)}">
+    <div class="mhead" onclick="edToggle('${q1(esc(m.name))}')">
+      <span>${open?'▾':'▸'}</span><span class="mn">${esc(m.name)}</span>
+      <span class="grow count">${m.slots.map(esc).join(', ')
+        ||(e.bmdb?'<span class="w-warn">nothing references it</span>':'referenced by this unit')}
+        · ${m.lods.length} LOD${m.lods.length===1?'':'s'} · ${facs.length} skin${facs.length===1?'':'s'}</span>
+      ${edSharedDrop(m)}
+    </div>
+    ${open?`<div class="mbody2">
+      <div class="prow" style="grid-template-columns:170px 1fr auto">
+        <span class="pl">Entry name</span>
+        <input id="edmn${idx}" value="${esc(me.new_name||m.name)}"
+          oninput="edRename('${q1(esc(m.name))}',${idx},this.value)"
+          class="${me.new_name?'changed':''}">
+        <button onclick="edNewFrom('${q1(esc(m.name))}')">＋ New entry from this</button>
+      </div>
+      <div class="prow" style="grid-template-columns:170px 1fr"><span class="pl"></span>
+        <span id="edmns${idx}" class="count">${edNameHint(m,me.new_name||m.name)}</span></div>
+      <div class="count" style="margin-top:5px">Skeletons: ${m.skeletons.map(esc).join(', ')||'—'}</div>
+      ${edFolderBox(m)}
+      <div class="psec">Meshes (LODs)</div>${meshes||'<div class="count">none</div>'}
+      ${edDefaultTextures(m)}
+      ${edFactionSkins(m)}
+      </div>`:''}</div>`;
+}
+/* "shared with" — every unit that references this entry, each a link that opens
+   that unit in its own tab. */
+function edSharedDrop(m){
+  const users=m.used_by||[],bm=!!state.ed.bmdb;
+  if(!users.length)return `<span class="count">${bm?'used by nothing':'only this unit'}</span>`;
+  return `<details class="drop" onclick="event.stopPropagation()">
+    <summary class="${bm?'':'w-warn'}">${bm?`used by ${users.length}`
+      :`⚠ shared with ${users.length} other${users.length===1?'':'s'}`} ▾</summary>
+    <div class="dropbody" style="position:absolute;z-index:5;min-width:230px">
+      <div class="count" style="margin-bottom:5px">Editing this entry changes ${bm?'every one of them'
+        :'them too — use “＋ New entry from this” to affect only this unit'}.</div>
+      ${users.map(u=>`<div class="urow">${userLink(u)}</div>`).join('')}
+    </div></details>`;
+}
+function edNameHint(m,val){
+  const e=state.ed,v=(val||'').trim().toLowerCase();
+  if(!v)return '<span class="w-bad">the entry needs a name</span>';
+  if(v===m.name)return 'unchanged';
+  if(/\s/.test(v))return '<span class="w-bad">✗ entry names cannot contain spaces</span>';
+  if(e.d.model_names.includes(v)||e.newModels.some(n=>n.name===v))
+    return '<span class="w-bad">✗ taken — another entry in this mod already has that name</span>';
+  const n=(m.used_by||[]).length+1;
+  return `<span class="w-good">✓ available</span> — ${n} unit reference${n===1?'':'s'} will be
+    rewritten to match across the whole EDU`;
+}
+
+/* ---- the default texture set every faction inherits ---- */
+function edDefaultTextures(m){
+  const v=edTexView(m);
+  const rows=edKinds(m).map(k=>`<div class="prow" style="grid-template-columns:170px 1fr auto">
+      <span class="pl">${KIND_LABEL[k]}</span>
+      <input data-def="${esc(m.name)}" data-kind="${k}" value="${esc(v.defs[k]||'')}"
+        class="${(state.ed.mEdits[m.name]||{}).defaults&&k in state.ed.mEdits[m.name].defaults?'changed':''}">
+      <button onclick="edImportDefault('${q1(esc(m.name))}','${k}')">Import…</button></div>`).join('');
+  return `<div class="psec">Default textures and sprites</div>
+    <div class="count">Used by every faction below unless that faction is given its own.</div>
+    ${rows}`;
+}
+/* ---- the faction checklist, with a per-faction override panel ---- */
+function edFactionSkins(m){
+  const e=state.ed,chosen=edFacs(m),set=new Set(chosen);
+  const all=(e.d.all_factions||[]).slice();
+  chosen.forEach(f=>{if(!all.includes(f))all.push(f);});
+  all.sort();
+  const v=edTexView(m),kinds=edKinds(m);
+  const rows=all.map(f=>{
+    const on=set.has(f),key=m.name+'|'+f,open=!!e.facOpen[key];
+    const uniq=on&&kinds.some(k=>(v.facs[f]||{})[k]&&v.facs[f][k]!==v.defs[k]);
+    return `<div class="facrow">
+        <label class="chk"><input type="checkbox" ${on?'checked':''}
+          onchange="edFacToggle('${q1(esc(m.name))}','${q1(esc(f))}',this.checked)">
+          ${esc(edFacLabel(f))}</label>
+        ${on?`<button class="uq ${uniq||open?'on':''}" title="Give ${esc(f)} its own textures"
+          onclick="edFacUnique('${q1(esc(m.name))}','${q1(esc(f))}')">${uniq?'✎ unique':'✎'}</button>`:''}
+      </div>${on&&open?edFacUniquePanel(m,f,v,kinds):''}`;
+  }).join('');
+  return `<div class="psec">Factions (which factions this model has a skin for)</div>
+    <div class="barrow" style="margin-top:4px">
+      <button onclick="edFacAll('${q1(esc(m.name))}',true)">All</button>
+      <button onclick="edFacAll('${q1(esc(m.name))}',false)">None</button>
+      <span class="count">${chosen.length} selected${
+        chosen.length?` · first = <b>${esc(chosen[0])}</b> (the record new skins are cloned from)`:''}</span>
+    </div>
+    <div class="faclist">${rows}</div>`;
+}
+function edFacUniquePanel(m,f,v,kinds){
+  const cur=v.facs[f]||{};
+  return `<div class="facuniq">
+    <div class="count" style="margin-bottom:4px"><b>${esc(edFacLabel(f))}</b> — leave a box empty
+      to fall back to the default above.</div>
+    ${kinds.map(k=>{const own=cur[k]&&cur[k]!==v.defs[k];
+      return `<div class="prow" style="grid-template-columns:150px 1fr auto">
+        <span class="pl">${KIND_LABEL[k]}</span>
+        <input data-fac="${esc(m.name)}" data-f="${esc(f)}" data-kind="${k}"
+          value="${esc(own?cur[k]:'')}" placeholder="${esc(v.defs[k]||'(default)')}"
+          class="${own?'changed':''}">
+        <button onclick="edImportFac('${q1(esc(m.name))}','${q1(esc(f))}','${k}')">Import…</button>
+      </div>`;}).join('')}</div>`;
+}
+function edFacToggle(name,fac,on){
+  const m=state.ed.d.models.find(x=>x.name===name);
+  const me=edTouch(name),list=(me.factions||m.factions).slice(),i=list.indexOf(fac);
+  if(on&&i<0)list.push(fac); else if(!on&&i>=0)list.splice(i,1);
+  me.factions=list; edRenderTab();
+}
+function edFacAll(name,on){
+  const e=state.ed,m=e.d.models.find(x=>x.name===name),me=edTouch(name);
+  if(!on&&m.factions.length){
+    // one record has to survive: an entry with no faction skin can't be drawn
+    me.factions=[ (me.factions||m.factions)[0] ];
+    toast('Kept one faction — a battle model needs at least one skin');
+  } else if(on){
+    const all=(e.d.all_factions||[]).slice();
+    (me.factions||m.factions).forEach(f=>{if(!all.includes(f))all.push(f);});
+    me.factions=all;
+  }
+  edRenderTab();
+}
+function edFacUnique(name,fac){
+  const e=state.ed,k=name+'|'+fac; e.facOpen[k]=!e.facOpen[k]; edRenderTab();
+}
+
+/* ---- "all this model's files in one folder" ---- */
+function edFolderBox(m){
+  const e=state.ed,me=e.mEdits[m.name]||{},f=m.folder,chk=e.folder[m.name];
+  const target=me.move_dir||(chk&&chk.target)||f.base||f.suggestion;
+  if(me.move_dir) return `<div class="folderbox">
+    <b class="w-good">✓ Files will move into <span class="fpath">data/${esc(me.move_dir)}</span></b>
+    <div class="count" style="margin-top:4px">Meshes go in that folder, textures in its
+      <code>textures/</code> sub-folder. Sprites are left where they are.
+      ${me.move_shared?'<b class="w-warn">Other entries using the same files are being repointed with it.</b>'
+                      :'Other entries keep their current paths.'}</div>
+    <div class="barrow"><button onclick="edFolderCancel('${q1(esc(m.name))}')">Undo this move</button></div>
+  </div>`;
+  const head=f.standardized
+    ? `<b>Model folder</b> <span class="fpath">data/${esc(f.base)}</span>
+       <div class="count" style="margin-top:3px">Meshes and textures all live under this one folder.</div>`
+    : `<b class="w-warn">⚠ No single model folder</b>
+       <div class="count" style="margin-top:3px">This entry's files are spread across
+         ${f.mesh_dirs.length+f.texture_dirs.length} folder(s):
+         ${[...new Set(f.mesh_dirs.concat(f.texture_dirs))].map(d=>`<div class="fpath">data/${esc(d||'(data root)')}</div>`).join('')}
+         Standardise them into one folder?</div>`;
+  return `<div class="folderbox${f.standardized?'':' bad'}">
+    ${head}
+    <div class="frow2">
+      <input id="edfd_${esc(m.name)}" value="${esc(target)}" placeholder="unit_models/_Units/my_model">
+      <button onclick="edFolderPick('${q1(esc(m.name))}')">Browse…</button>
+      <button class="${f.standardized?'':'primary'}" onclick="edFolderCheck('${q1(esc(m.name))}')">${
+        f.standardized?'Change folder…':'Standardise…'}</button>
+    </div>
+    ${chk?edFolderCheckHtml(m,chk):''}</div>`;
+}
+function edFolderCheckHtml(m,chk){
+  if(chk.error)return `<div class="count w-bad" style="margin-top:6px">${esc(chk.error)}</div>`;
+  if(!chk.moves.length)return `<div class="count w-good" style="margin-top:6px">Nothing to move —
+    every file is already where <span class="fpath">data/${esc(chk.target_rel)}</span> wants it.</div>`;
+  const missing=chk.moves.filter(x=>x.missing);
+  const shared=chk.shared_entries||[];
+  return `<div style="margin-top:8px;border-top:1px solid var(--edge);padding-top:7px">
+    <div class="count">${chk.moves.length} file(s) would move:</div>
+    <div class="movelist">${chk.moves.map(x=>`<div>${esc(x.old)} → <b>${esc(x.new)}</b>${
+      x.missing?' <span class="w-warn">(not on disk)</span>':''}</div>`).join('')}</div>
+    ${missing.length?`<div class="count w-warn" style="margin-top:5px">${missing.length} of them
+      aren't on disk — those entries are repointed anyway, put the files there yourself.</div>`:''}
+    ${shared.length?`<div class="count w-warn" style="margin-top:6px">⚠ <b>${shared.length} other
+      model entr${shared.length===1?'y also uses':'ies also use'} these files:</b>
+      ${shared.map(n=>`<code>${esc(n)}</code>`).join(', ')}.<br>
+      Moving without updating them leaves the old files in place and those entries pointing at them.</div>
+      <div class="barrow">
+        <button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',true)">Edit and move anyway — update all ${shared.length}</button>
+        <button onclick="edFolderApply('${q1(esc(m.name))}',false)">Move only this entry</button>
+      </div>`
+    :`<div class="barrow"><button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',false)">Move the files</button></div>`}
+  </div>`;
+}
+function edFolderTarget(name){
+  const el=document.getElementById('edfd_'+name); return el?el.value.trim():'';
+}
+async function edFolderCheck(name){
+  const e=state.ed,target=edFolderTarget(name);
+  if(!target){toast('Give the folder a path first');return;}
+  const r=await api.post('/api/edit/model_folder',{mod:e.mod,entry:name,target});
+  e.folder[name]=r; edRenderTab();
+}
+async function edFolderPick(name){
+  const r=await api.post('/api/browse_folder',{title:'Folder inside the mod’s data\\ for this model'});
+  if(!r.path)return;
+  const el=document.getElementById('edfd_'+name); if(el)el.value=relInMod(r.path);
+  edFolderCheck(name);
+}
+function edFolderApply(name,shared){
+  const chk=state.ed.folder[name]||{},me=edTouch(name);
+  me.move_dir=chk.target_rel||edFolderTarget(name); me.move_shared=!!shared;
+  delete state.ed.folder[name]; edRenderTab(); edPreview();
+}
+function edFolderCancel(name){
+  const me=edTouch(name); me.move_dir=''; me.move_shared=false;
+  edRenderTab(); edPreview();
+}
+
+function edToggle(name){const e=state.ed;e.open[name]=!e.open[name];edRenderTab();}
+function edME(name){const e=state.ed;
+  if(!e.mEdits[name])e.mEdits[name]={new_name:'',paths:{},copies:[],defaults:{},
+    faction_paths:{},factions:null,move_dir:'',move_shared:false,_touched:false};
+  return e.mEdits[name];}
+// Only a *touched* entry is sent to the server — opening a card must never
+// rewrite paths that merely happened to be displayed.
+function edTouch(name){const me=edME(name); me._touched=true; edStale(); return me;}
+function edRename(name,idx,v){
+  const me=edTouch(name);
+  me.new_name=(v.trim().toLowerCase()===name)?'':v.trim().toLowerCase();
+  const m=state.ed.d.models.find(x=>x.name===name);
+  const hint=document.getElementById('edmns'+idx);
+  if(hint)hint.innerHTML=edNameHint(m,v);
+}
+function edSetPath(name,i,v){const me=edTouch(name);me.paths[i]=v;}
+function edResetPath(name,i){const me=edTouch(name);delete me.paths[i];
+  me.copies=(me.copies||[]).filter(c=>c.i!==i); edRenderTab();}
+async function edImportPath(name,i,kind){
+  const filt=kind==='mesh'?'Meshes (*.mesh)|*.mesh|All files (*.*)|*.*'
+            :kind==='sprite'?'Sprites (*.spr)|*.spr|All files (*.*)|*.*'
+            :'Textures (*.texture)|*.texture|All files (*.*)|*.*';
+  const r=await api.post('/api/browse_file',{title:'Select a file to import',filter:filt});
+  if(!r.path)return;
+  const m=state.ed.d.models.find(x=>x.name===name);
+  const slot=m.paths.find(p=>p.i===i);
+  const me=edME(name);
+  const cur=(i in me.paths)?me.paths[i]:slot.value;
+  const dir=cur.includes('/')?cur.slice(0,cur.lastIndexOf('/')):'unit_models';
+  const file=r.path.split(/[\\\/]/).pop();
+  me.paths[i]=dir+'/'+file;
+  me.copies=(me.copies||[]).filter(c=>c.i!==i).concat([{i,src:r.path,dest_dir:dir}]);
+  edRenderTab(); edPreview();
+}
+
+/* ---- new bmdb entry cloned from an existing one ---- */
+function edNewFrom(name){
+  const e=state.ed,m=e.d.models.find(x=>x.name===name)||{};
+  e.form={clone_from:name,name:(e.newType||e.d.type).toLowerCase().replace(/[^a-z0-9_]+/g,'_'),
+          dest_dir:(m.folder&&(m.folder.base||m.folder.suggestion))
+                   ||('unit_models/'+(e.mod||'').replace(/[^A-Za-z0-9._-]+/g,'_')),
+          mesh_src:'',texture_src:'',normal_src:'',sprite_src:'',
+          mesh_all_lods:true,apply_to_attach:false,
+          assign_to:(m.slots||[])[0]||'soldier'};
+  e.open[name]=true; edRenderTab();
+}
+function edEditNew(i){
+  const e=state.ed; e.form=Object.assign({_editing:i},e.newModels[i]); edRenderTab();
+}
+function edNewModelForm(){
+  const e=state.ed,f=e.form;
+  const slots=['','soldier'];
+  e.d.fields.forEach(([l])=>{const k=l.replace(/#\d+$/,'');
+    if(k==='officer')slots.push(l==='officer'?'officer#1':l);});
+  const arm=(e.d.fields.find(([l])=>l==='armour_ug_models')||[])[1];
+  if(arm)arm.split(',').forEach((_x,i)=>slots.push('armour_ug_models#'+(i+1)));
+  const file=(v)=>v?esc(v):'<span class="count">not set — the clone’s file is kept</span>';
+  return `<div class="newmodel">
+    <b>New model entry cloned from <code>${esc(f.clone_from)}</code></b>
+    <div class="count" style="margin-top:3px">Sprites, the faction (ownership) texture records and the
+      footer — animations/skeletons and torch — are copied from that entry, so the new model stays valid.</div>
+    <div class="fbrow"><span class="k">Entry name</span>
+      <input value="${esc(f.name)}" oninput="edForm('name',this.value)"><span></span></div>
+    <div class="fbrow"><span class="k">Copy files into</span>
+      <input value="${esc(f.dest_dir)}" oninput="edForm('dest_dir',this.value)"
+        placeholder="unit_models/my_folder">
+      <button onclick="edPickDir()">Browse…</button></div>
+    <div class="fbrow"><span class="k">Mesh (.mesh)</span><div>${file(f.mesh_src)}</div>
+      <button onclick="edPickFile('mesh_src','Meshes (*.mesh)|*.mesh|All files (*.*)|*.*')">Choose…</button></div>
+    <div class="fbrow"><span class="k">Texture</span><div>${file(f.texture_src)}</div>
+      <button onclick="edPickFile('texture_src','Textures (*.texture)|*.texture|All files (*.*)|*.*')">Choose…</button></div>
+    <div class="fbrow"><span class="k">Normal map</span><div>${file(f.normal_src)}</div>
+      <button onclick="edPickFile('normal_src','Textures (*.texture)|*.texture|All files (*.*)|*.*')">Choose…</button></div>
+    <div class="fbrow"><span class="k">Sprite (.spr)</span><div>${file(f.sprite_src)}</div>
+      <button onclick="edPickFile('sprite_src','Sprites (*.spr)|*.spr|All files (*.*)|*.*')">Choose…</button></div>
+    <div style="margin-top:8px">
+      <label class="chk"><input type="checkbox" ${f.mesh_all_lods?'checked':''}
+        onchange="edForm('mesh_all_lods',this.checked)"> use the mesh for every LOD</label>
+      <label class="chk" style="margin-left:14px"><input type="checkbox" ${f.apply_to_attach?'checked':''}
+        onchange="edForm('apply_to_attach',this.checked)"> also repoint attachment textures</label>
+    </div>
+    <div class="fbrow"><span class="k">Point EDU slot at it</span>
+      <select onchange="edForm('assign_to',this.value)">
+        ${slots.map(s=>`<option value="${esc(s)}" ${f.assign_to===s?'selected':''}>${s?esc(s):'— don’t change the unit —'}</option>`).join('')}
+      </select><button class="primary" onclick="edAddNewModel()">${
+        f._editing===undefined?'Add entry':'Save entry'}</button></div>
+  </div>`;
+}
+function edForm(k,v){state.ed.form[k]=v; if(k==='mesh_all_lods'||k==='apply_to_attach')return; }
+async function edPickFile(key,filter){
+  const r=await api.post('/api/browse_file',{title:'Select a file to import',filter});
+  if(r.path){state.ed.form[key]=r.path; edRenderTab();}
+}
+async function edPickDir(){
+  const r=await api.post('/api/browse_folder',{title:'Folder inside the mod’s data\\ to copy the files into'});
+  if(r.path){state.ed.form.dest_dir=relInMod(r.path); edRenderTab();}
+}
+function edAddNewModel(){
+  const e=state.ed,f=e.form;
+  if(!f.name.trim()){toast('The new entry needs a name');return;}
+  const entry=Object.assign({},f,{name:f.name.trim().toLowerCase()});
+  const at=entry._editing; delete entry._editing;
+  if(at===undefined)e.newModels.push(entry); else e.newModels[at]=entry;
+  e.form=null; edRenderTab(); edPreview();
+}
+// Discarding a pending entry has to undo what adding it changed — an armour tier
+// also wrote armour_ug_models / armour_ug_levels.
+function edDropNew(i){
+  const e=state.ed,[gone]=e.newModels.splice(i,1);
+  if(gone&&gone._tier){
+    edRestoreField('armour_ug_models',gone._tier.models);
+    edRestoreField('armour_ug_levels',gone._tier.levels);
+  }
+  edRenderTab(); edPreview();
+}
+
+/* ---- preview / save / delete ---- */
+// bmdb mode posts the very same body to the very same planner, minus the unit —
+// see unittransfer.edit.plan_bmdb.
+const edApi=p=>(state.ed&&state.ed.bmdb?'/api/bmdb/':'/api/edit/')+p;
+async function edPreview(){
+  const box=document.getElementById('edPreview'); if(!box)return null;
+  box.innerHTML='<div class="preview">Planning…</div>';
+  const r=await api.post(edApi('plan'),edPayload());
+  if(r.error){box.innerHTML=`<div class="preview w-bad">${esc(r.error)}</div>`;return null;}
+  state.ed.plan=r; state.ed.planStale=false;
+  box.innerHTML=edPlanHtml(r); return r;
+}
+function edStale(){const e=state.ed; if(e&&e.plan&&!e.planStale){e.planStale=true;
+  const b=document.getElementById('edPreview'); if(b)b.innerHTML=edPlanHtml(e.plan,true);}}
+function edPlanHtml(r,stale){
+  const li=(cls,items)=>items.map(x=>`<div class="srow ${cls}"><span class="sicon">${
+      cls==='bad'?'✗':cls==='warn'?'!':'·'}</span><span class="stext">${esc(x)}</span></div>`).join('');
+  return `<div class="sum" style="margin-top:10px">
+    <div class="srow shead"><span class="sicon">✎</span><span class="stext">Pending changes${
+      stale?' <span class="w-warn">— edited since this preview, press Preview again</span>':''}</span></div>
+    ${li('',r.changes.length?r.changes:['no changes'])}
+    ${r.files_written.length?`<div class="srow"><span class="sicon">💾</span><span class="stext">writes ${
+      r.files_written.map(f=>`<span class="path">${esc(f)}</span>`).join(', ')}</span></div>`:''}
+    ${li('warn',r.warnings)}${li('bad',r.errors)}</div>`;
+}
+async function edSave(){
+  const e=state.ed,bm=!!e.bmdb;
+  if(!edDirty()){toast('Nothing to save');return;}
+  const r=await api.post(edApi('plan'),edPayload());
+  if(r.error){toast('Error: '+r.error);return;}
+  if(r.errors&&r.errors.length){
+    document.getElementById('edPreview').innerHTML=edPlanHtml(r);
+    toast(r.errors[0]);return;}
+  const what=bm?e.d.models[0].name:e.unit;
+  document.getElementById('modal').innerHTML=`<h2>Saving…</h2>
+    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
+    <div class="count" style="margin-top:8px">Writing ${esc(what)} into ${esc(e.mod)}…</div></div>`;
+  const res=await api.post(edApi('apply'),edPayload());
+  if(res.error){toast('Save failed: '+res.error);bm?renderBmdbEditor():renderEditor();return;}
+  closeModal();
+  const c=res.cleaner;
+  toast(bm?`Saved “${esc(what)}” ✓  (undo in 🕑 Log)`
+          :`Saved “${res.plan.resolved_type}” ✓${c?(c.ran?'  · cleaner ran':'  · cleaner failed'):''}  (undo in 🕑 Log)`,4200);
+  state.destData=null; state.bmdb=null; loadSource();
+}
+/* =====================================================================
+   BMDB MODE — the whole battle_models.modeldb, not one unit's slice of it.
+
+   The list is every entry in the mod; opening one loads it in the SAME model
+   card the unit editor uses (server-side it is literally the same payload and
+   the same plan engine), so an entry can be edited without going through a unit
+   that happens to reference it. Entries nothing references are flagged, and
+   "Clean up" moves them — and the files under unit_models nothing mentions —
+   out of the mod entirely. */
+async function loadBmdb(){
+  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s battle_models.modeldb…</div>';
+  try{ state.bmdb=await api.get('/api/bmdb/entries?mod='+enc(state.src)); }
+  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
+    <span class="count">${esc(''+e)}</span><br><br>
+    <button class="primary" onclick="loadBmdb()">Retry</button></div>`; return; }
+  renderBmdb();
+}
+function renderBmdb(){
+  if(!state.bmdb||state.bmdb.mod!==state.src)return loadBmdb();
+  const qq=search.value.trim().toLowerCase();
+  const rows=state.bmdb.entries.filter(e=>
+    (!qq||e.name.includes(qq)||(e.folder||'').toLowerCase().includes(qq)
+      ||e.used_by.some(u=>u.toLowerCase().includes(qq)))
+    &&(!unusedOnly.checked||e.unused));
+  const nUnused=state.bmdb.entries.filter(e=>e.unused).length;
+  const dupes=state.bmdb.count-state.bmdb.names;
+  count.textContent=`${rows.length}/${state.bmdb.names}`;
+  // 2000+ rows of HTML in one go is fine; it's the icons that are expensive and
+  // there are none here.
+  main.innerHTML=`<div class="dbhead">
+      <h2>${esc(state.src)} · ${state.bmdb.names} battle-model entries</h2>
+      <span class="count">${nUnused} referenced by nothing${
+        nUnused?' — <b class="w-warn">🧹 Clean up BMDB…</b> moves them out':''}${
+        dupes?` · ${dupes} duplicate entry block${dupes===1?'':'s'} share a name with another`:''}</span>
+    </div>
+    ${rows.length?`<div class="dblist">${rows.map(bmdbRow).join('')}</div>`
+                 :'<div class="empty">No entries match.</div>'}`;
+  main.querySelectorAll('.dbrow').forEach(r=>r.onclick=()=>openBmdbEntry(r.dataset.name));
+}
+function bmdbRow(e){
+  const use=e.unused?'<span class="w-warn">nothing references it</span>'
+    :e.mentioned_in?`<span class="count">no unit uses it — only named in <code>${esc(e.mentioned_in)}</code></span>`
+    :`${esc(e.used_by.slice(0,4).join(', '))}${e.use_count>4?` +${e.use_count-4} more`:''}`;
+  return `<div class="dbrow ${e.unused?'unused':''}" data-name="${esc(e.name)}">
+    <span class="en">${esc(e.name)}${e.copies>1?`<span class="badge w-warn" style="margin-left:5px"
+      title="the modeldb holds this name ${e.copies} times">×${e.copies}</span>`:''}</span>
+    <span class="use">${use}</span>
+    <span class="nums">${e.lods} LOD${e.lods===1?'':'s'} · ${e.skins} skin${e.skins===1?'':'s'}</span>
+  </div>`;
+}
+// Opening an entry builds exactly the state the unit editor's model tab runs on,
+// with a one-entry `models` list and no unit — so edModels(), the faction
+// checklist, the folder box and "＋ New entry from this" all work unchanged.
+async function openBmdbEntry(name){
+  const modal=document.getElementById('modal');
+  modal.className='modal wide'; modal.innerHTML='<h2>Loading entry…</h2>';
+  overlay.classList.add('open');
+  let r;
+  try{ r=await api.get(`/api/bmdb/entry?mod=${enc(state.src)}&name=${enc(name)}`); }
+  catch(e){ r={error:''+e}; }
+  if(r.error){ modal.innerHTML=`<h2>Battle model</h2><div class="mbody w-bad">${esc(r.error)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  state.ed={bmdb:true,mod:state.src,unit:'',tab:'models',ov:{},rm:new Set(),added:new Set(),
+    loc:{},newType:'',newDict:'',mEdits:{},newModels:[],open:{[r.model.name]:true},form:null,
+    facOpen:{},folder:{},
+    d:{type:'',dictionary:'',fields:[],loc:{},models:[r.model],model_names:r.model_names,
+       all_factions:r.all_factions,faction_names:r.faction_names}};
+  renderBmdbEditor();
+}
+function renderBmdbEditor(){
+  const e=state.ed,m=e.d.models[0];
+  document.getElementById('modal').innerHTML=`
+    <h2>Battle model <span class="pill">${esc(e.mod)}</span></h2>
+    <div class="ehead">
+      <div><div class="nm" style="font-family:ui-monospace,Consolas,monospace">${esc(m.name)}</div>
+        <div class="count">${m.lods.length} LOD${m.lods.length===1?'':'s'} ·
+          ${m.factions.length} faction skin${m.factions.length===1?'':'s'} ·
+          ${m.used_by.length?`used by ${m.used_by.length}`:'<span class="w-warn">referenced by nothing</span>'}</div></div>
+    </div>
+    <div class="mbody" id="edBody"></div>
+    <div class="foot">
+      <button onclick="closeModal()">Close</button>
+      <button onclick="edPreview()">Preview</button>
+      <button class="primary" onclick="edSave()">Save changes</button>
+    </div>`;
+  edRenderTab();
+}
+
+/* ---- clean-up: what nothing uses, and where to put it ---- */
+async function openCleanup(){
+  const modal=document.getElementById('modal');
+  modal.className='modal wide';
+  modal.innerHTML=`<h2>Clean up ${esc(state.src)}’s BMDB</h2>
+    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
+    <div class="count" style="margin-top:8px">Scanning every entry, every unit that names one,
+      and every file under <code>data/unit_models</code>… (a big mod takes a few seconds)</div></div>`;
+  overlay.classList.add('open');
+  let a;
+  try{ a=await api.get('/api/bmdb/audit?mod='+enc(state.src)); }
+  catch(e){ a={error:''+e}; }
+  if(a.error){ modal.innerHTML=`<h2>Clean up</h2><div class="mbody w-bad">${esc(a.error)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  state.clean={a,target:state.settings.last_cleanup_target||'',
+    entries:new Set(a.unused.map(u=>u.entry)),     // unused: pre-ticked, they are dead by definition
+    merges:new Set(),                              // suggestions: never pre-ticked, they change a model
+    into:Object.fromEntries(a.merges.map(m=>[m.entry,m.into])),
+    orphans:new Set(a.orphans.map(o=>o.rel)),
+    open:{unused:true,merges:true,orphans:false},plan:null};
+  renderCleanup();
+}
+const MB=n=>(n/1048576).toFixed(1)+' MB';
+function renderCleanup(){
+  const c=state.clean,a=c.a;
+  // The counts get their own node: ticking a row must not re-render the lists
+  // (a big mod has 3000+ file rows and rebuilding them per click is unusable).
+  const sec=(k,title,body)=>`<div class="clsec">
+      <div class="h" onclick="clToggle('${k}')"><span>${c.open[k]?'▾':'▸'}</span>
+        <b>${title}</b><span class="count" id="clc_${k}">${clCountText(k)}</span></div>
+      ${c.open[k]?`<div class="b">${body()}</div>`:''}</div>`;
+  document.getElementById('modal').innerHTML=`
+    <h2>Clean up ${esc(a.mod)}’s battle_models.modeldb</h2>
+    <div class="mbody">
+      <div class="count" style="margin-bottom:10px">${a.entry_count} entries scanned.
+        Nothing is deleted: everything ticked is <b>moved</b> into the folder below, keeping the
+        mod's own folder layout so it can be pasted straight back. The removal itself is undoable
+        from 🕑 Log.</div>
+
+      <fieldset><legend>Where the removed assets go</legend>
+        <div class="cltarget">
+          <input id="clTarget" value="${esc(c.target)}" placeholder="e.g. D:\\M2TW backups\\${esc(a.mod)}_unused"
+            oninput="state.clean.target=this.value;clStale()">
+          <button onclick="clPickTarget()">Browse…</button>
+        </div>
+        <div class="treebox">${esc(a.mod)}_unused\\
+  removed_battle_models.modeldb   <span style="color:var(--dim)">— only the entries that were removed</span>
+  data\\unit_models\\…              <span style="color:var(--dim)">— their meshes/textures, same paths as in the mod</span>
+  unused_files\\data\\unit_models\\… <span style="color:var(--dim)">— files no entry mentions at all</span></div>
+        <div class="count" style="margin-top:6px">Must be outside the mod, or the files never really leave it.</div>
+      </fieldset>
+
+      ${sec('unused','Entries nothing references',()=>clUnusedBody())}
+      ${sec('merges','Soldier-only entries with an identical twin',()=>clMergeBody())}
+      ${sec('orphans','Files under unit_models no entry mentions',()=>clOrphanBody())}
+
+      ${a.mentioned.length?`<div class="count">${a.mentioned.length} further entr${
+        a.mentioned.length===1?'y is':'ies are'} unused by any unit but still named in another
+        file (<code>${esc([...new Set(a.mentioned.map(m=>m.file))].slice(0,4).join('</code>, <code>'))}</code>)
+        — left alone on purpose.</div>`:''}
+      <div id="clPreview"></div>
+    </div>
+    <div class="foot">
+      <button onclick="closeModal()">Close</button>
+      <button onclick="clPreview()">Preview</button>
+      <button class="primary" onclick="clApply()">Move them out</button>
+    </div>`;
+}
+function clToggle(k){state.clean.open[k]=!state.clean.open[k];renderCleanup();}
+function clStale(){const b=document.getElementById('clPreview');
+  if(b&&state.clean.plan){state.clean.plan=null;b.innerHTML='';}}
+async function clPickTarget(){
+  const r=await api.post('/api/browse_folder',{title:'Folder to move the unused assets into'});
+  if(!r.path)return;
+  state.clean.target=r.path; clStale(); renderCleanup();
+  state.settings.last_cleanup_target=r.path;      // so reopening the dialog offers it again
+  api.post('/api/settings',{last_cleanup_target:r.path});
+}
+function clUnusedBody(){
+  const c=state.clean,rows=c.a.unused;
+  if(!rows.length)return '<div class="count" style="margin-top:8px">Nothing — every entry is referenced. 🎉</div>';
+  return `<div class="count" style="margin-top:7px">No unit, mount or character in this mod names these.
+      Their files move out too, unless an entry that stays also uses them.</div>
+    <div class="clbar">
+      <button onclick="clAll('entries',true)">Select all</button>
+      <button onclick="clAll('entries',false)">None</button></div>
+    <div class="cllist">${rows.map(u=>`<div class="clrow">
+      <input type="checkbox" ${c.entries.has(u.entry)?'checked':''}
+        onchange="clPick('entries','${q1(esc(u.entry))}',this.checked)">
+      <div class="grow"><span class="nm">${esc(u.entry)}</span>${u.copies>1?`
+        <span class="badge w-warn">×${u.copies} copies of this name — all go</span>`:''}
+        <div class="sub">${u.lods} LOD${u.lods===1?'':'s'} · ${u.skins} skin${u.skins===1?'':'s'} ·
+          ${u.files.length} file${u.files.length===1?'':'s'} named, ${u.on_disk} on disk</div></div>
+    </div>`).join('')}</div>`;
+}
+/* Suggestions, never decisions: the twin has the same animations, skeletons and
+   torch block, but its meshes and textures are its own — so every row is ticked
+   by hand (or with "Agree to all" once you have read them). */
+function clMergeBody(){
+  const c=state.clean,rows=c.a.merges;
+  if(!rows.length)return '<div class="count" style="margin-top:8px">None found.</div>';
+  return `<div class="count" style="margin-top:7px">
+      These entries are named <b>only</b> by a unit's <code>soldier</code> line — never as an
+      <code>armour_ug_models</code> tier, an officer, a mount or a character model. Each one has a twin
+      with the <b>exact same footer</b> (animations, skeletons and torch), so the soldier line can be
+      pointed at the twin and this entry freed. It is <b>not</b> automatic: the twin's meshes and
+      textures are its own, so check the pair before ticking it.</div>
+    <div class="clbar">
+      <button onclick="clAll('merges',true)">Agree to all</button>
+      <button onclick="clAll('merges',false)">None</button></div>
+    <div class="cllist">${rows.map(m=>{
+      const risky=m.units_without_upgrades.length;
+      return `<div class="clrow ${risky?'risky':''}">
+      <input type="checkbox" ${c.merges.has(m.entry)?'checked':''}
+        onchange="clPick('merges','${q1(esc(m.entry))}',this.checked)">
+      <div class="grow">
+        <span class="nm">${esc(m.entry)}</span> →
+        <select onchange="state.clean.into['${q1(esc(m.entry))}']=this.value;clStale()">
+          ${m.options.map(o=>`<option value="${esc(o)}" ${c.into[m.entry]===o?'selected':''}>${esc(o)}</option>`).join('')}
+        </select>
+        ${m.own_upgrade?'<span class="badge" style="color:var(--good);border-color:var(--good)">already an armour tier of the same unit</span>':''}
+        <div class="sub">soldier of ${m.units.map(u=>userLink(u)).join(', ')}
+          · ${m.lods} LOD${m.lods===1?'':'s'}, ${m.files.length} file${m.files.length===1?'':'s'}</div>
+        ${risky?`<div class="sub w-warn">⚠ ${esc(m.units_without_upgrades.join(', '))}
+          list no armour_ug_models, so this entry IS what you see on the field — swapping it
+          changes how the unit looks.</div>`:''}
+      </div></div>`;}).join('')}</div>`;
+}
+function clOrphanBody(){
+  const c=state.clean,rows=c.a.orphans;
+  if(!rows.length)return '<div class="count" style="margin-top:8px">None — every file under unit_models is named by an entry.</div>';
+  return `<div class="count" style="margin-top:7px">Files sitting in <code>data/unit_models</code> that
+      <b>no</b> modeldb entry names — removed ones or not. They go to
+      <code>unused_files\\</code> in the destination, paths mirrored.</div>
+    <div class="clbar">
+      <button onclick="clAll('orphans',true)">Select all</button>
+      <button onclick="clAll('orphans',false)">None</button></div>
+    <div class="cllist">${rows.map(o=>`<div class="clrow">
+      <input type="checkbox" ${c.orphans.has(o.rel)?'checked':''}
+        onchange="clPick('orphans','${q1(esc(o.rel))}',this.checked)">
+      <div class="grow"><span class="sub" style="margin:0">${esc(o.rel)}</span></div>
+      <span class="count">${MB(o.size)}</span></div>`).join('')}</div>`;
+}
+function clCountText(k){
+  const c=state.clean,a=c.a;
+  if(k==='unused')return `${c.entries.size}/${a.unused.length} ticked`;
+  if(k==='merges')return `${c.merges.size}/${a.merges.length} ticked · needs your eye`;
+  const bytes=a.orphans.reduce((n,o)=>n+(c.orphans.has(o.rel)?o.size:0),0);
+  return `${c.orphans.size}/${a.orphans.length} ticked · ${MB(bytes)}`;
+}
+function clCounts(){['unused','merges','orphans'].forEach(k=>{
+  const el=document.getElementById('clc_'+k); if(el)el.textContent=clCountText(k);});}
+// The checkbox already shows its own new state, so only the header count needs
+// touching — that keeps ticking one of 3000 rows instant.
+function clPick(key,id,on){const s=state.clean[key]; on?s.add(id):s.delete(id);
+  clStale(); clCounts();}
+function clAll(key,on){
+  const c=state.clean;
+  const all=key==='entries'?c.a.unused.map(u=>u.entry)
+           :key==='merges'?c.a.merges.map(m=>m.entry)
+           :c.a.orphans.map(o=>o.rel);
+  c[key]=new Set(on?all:[]);
+  const head=document.getElementById('clc_'+(key==='entries'?'unused':key));
+  if(head)head.closest('.clsec').querySelectorAll('.cllist input[type=checkbox]')
+    .forEach(cb=>{cb.checked=on;});
+  clStale(); clCounts();
+}
+function clPayload(){
+  const c=state.clean;
+  return {mod:c.a.mod,target:c.target,
+    entries:[...c.entries],
+    merges:[...c.merges].map(e=>({entry:e,into:c.into[e]})),
+    orphans:[...c.orphans]};
+}
+async function clPreview(){
+  const box=document.getElementById('clPreview'); if(!box)return null;
+  box.innerHTML='<div class="preview">Planning…</div>';
+  const r=await api.post('/api/bmdb/cleanup_plan',clPayload());
+  if(r.error){box.innerHTML=`<div class="preview w-bad">${esc(r.error)}</div>`;return null;}
+  state.clean.plan=r;
+  box.innerHTML=clPlanHtml(r); return r;
+}
+function clPlanHtml(r){
+  const li=(cls,items)=>items.map(x=>`<div class="srow ${cls}"><span class="sicon">${
+      cls==='bad'?'✗':cls==='warn'?'!':'·'}</span><span class="stext">${esc(x)}</span></div>`).join('');
+  const sample=r.exports.slice(0,12);
+  return `<div class="sum" style="margin-top:10px">
+    <div class="srow shead"><span class="sicon">🧹</span><span class="stext">What this moves</span></div>
+    ${li('',r.changes)}
+    ${r.target?`<div class="srow"><span class="sicon">📁</span><span class="stext">into <span class="path">${esc(r.target)}</span></span></div>`:''}
+    ${sample.length?`<div class="srow"><span class="sicon">·</span><span class="stext">
+      ${sample.map(x=>`<span class="path">${esc(x)}</span>`).join('<br>')}
+      ${r.export_count>sample.length?`<br><i>…and ${r.export_count-sample.length} more</i>`:''}</span></div>`:''}
+    ${li('warn',r.warnings)}${li('bad',r.errors)}</div>`;
+}
+async function clApply(){
+  const c=state.clean;
+  if(!c.target){toast('Choose where the removed assets should go first');return;}
+  const r=state.clean.plan||await clPreview();
+  if(!r)return;
+  if(r.errors&&r.errors.length){toast(r.errors[0]);return;}
+  if(!r.entry_deletes.length&&!r.export_count){toast('Nothing is ticked');return;}
+  if(!confirm(`Move ${r.entry_deletes.length} modeldb entr${r.entry_deletes.length===1?'y':'ies'} `+
+      `and ${r.export_count} file(s) out of “${c.a.mod}”?\n\nThey are copied to:\n${r.target}\n\n`+
+      `${r.merges.length?`${r.merges.length} unit soldier line(s) are repointed at their twin.\n\n`:''}`+
+      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`))return;
+  document.getElementById('modal').innerHTML=`<h2>Cleaning up…</h2>
+    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:65%"></div></div>
+    <div class="count" style="margin-top:8px">Copying ${r.export_count} file(s) out, then rewriting
+      ${esc(c.a.mod)}’s modeldb…</div></div>`;
+  const res=await api.post('/api/bmdb/cleanup_apply',clPayload());
+  if(res.error){toast('Cleanup failed: '+res.error);renderCleanup();return;}
+  closeModal();
+  const cl=res.cleaner;
+  toast(`Removed ${res.plan.entry_deletes.length} entr${res.plan.entry_deletes.length===1?'y':'ies'} `+
+        `and ${res.plan.export_count} file(s) ✓${cl?(cl.ran?' · cleaner ran':' · cleaner failed'):''}`+
+        `  (undo in 🕑 Log)`,5200);
+  state.bmdb=null; state.destData=null; loadSource();
+}
+
+function edDeleteDialog(){
+  const e=state.ed;
+  document.getElementById('modal').innerHTML=`<h2 class="w-bad">Delete “${esc(e.d.type)}”</h2>
+    <div class="mbody">
+      <div class="warnbox">This removes the unit's block from <code>export_descr_unit.txt</code>.
+        Anything that still recruits it (<code>export_descr_buildings.txt</code>,
+        <code>descr_strat.txt</code>, scripts) must be cleaned up by hand or the game will error.</div>
+      <fieldset><legend>Also remove</legend>
+        <label class="chk"><input type="checkbox" id="dOptLoc" checked> its text entry
+          (<code>${esc(e.d.dictionary)}</code>) from export_units.txt</label><br>
+        <label class="chk"><input type="checkbox" id="dOptModels"> its battle-model entries —
+          only ones no other unit or mount uses</label><br>
+        <label class="chk"><input type="checkbox" id="dOptAssets"> the mesh/texture files of those
+          entries (only if nothing else references them)</label><br>
+        <label class="chk"><input type="checkbox" id="dOptIcons"> its unit card and info card</label>
+      </fieldset>
+      <div class="count">Everything removed is backed up first — 🕑 Log → Undo restores it byte-exact.</div>
+      <div id="edPreview"></div>
+    </div>
+    <div class="foot"><button onclick="renderEditor()">Cancel</button>
+      <button onclick="edDeletePreview()">Preview</button>
+      <button class="danger" onclick="edDoDelete()">Delete unit</button></div>`;
+  edDeletePreview();
+}
+function edDeleteOpts(){
+  const g=id=>{const el=document.getElementById(id);return !!(el&&el.checked);};
+  return {delete:true,delete_options:{remove_loc:g('dOptLoc'),remove_models:g('dOptModels'),
+    remove_assets:g('dOptAssets'),remove_icons:g('dOptIcons')}};
+}
+async function edDeletePreview(){
+  const box=document.getElementById('edPreview'); if(!box)return;
+  box.innerHTML='<div class="preview">Planning…</div>';
+  const r=await api.post('/api/edit/plan',edPayload(edDeleteOpts()));
+  box.innerHTML=r.error?`<div class="preview w-bad">${esc(r.error)}</div>`:edPlanHtml(r);
+}
+async function edDoDelete(){
+  const e=state.ed;
+  if(!confirm(`Delete “${e.d.type}” from ${e.mod}?\n\nIt is backed up first, so you can undo it from the 🕑 Log.`))return;
+  const res=await api.post('/api/edit/apply',edPayload(edDeleteOpts()));
+  if(res.error){toast('Delete failed: '+res.error);return;}
+  closeModal(); toast(`Deleted “${e.d.type}” ✓  (undo in 🕑 Log)`,4200);
+  state.destData=null; loadSource();
+}
+
+/* ---- new unit: reuses the transfer engine with source == destination ---- */
+function openNewUnitPicker(){
+  const modal=document.getElementById('modal');
+  const d=state.data||{};
+  modal.className='modal';
+  modal.innerHTML=`<h2>New unit — pick the unit to build it from</h2>
+    <div class="mbody">
+      <div class="count" style="margin-bottom:8px">The new unit is a copy of the one you pick: same models,
+        icons and stats, under a new <code>type</code> and <code>dictionary</code>. Nothing is duplicated on
+        disk — identical models and cards are reused. You can then change any field in the next step.</div>
+      <input id="nuSearch" placeholder="Filter units…" style="width:100%" oninput="renderNewUnitList()">
+      <div class="barrow" style="margin-bottom:6px">
+        <select id="nuFac" onchange="renderNewUnitList()">${
+          opts('All factions',(d.factions||[]),facLabel)}</select>
+        <select id="nuCat" onchange="renderNewUnitList()">${opts('All categories',d.categories||[])}</select>
+        <select id="nuClass" onchange="renderNewUnitList()">${opts('All classes',d.classes||[])}</select>
+        <label class="chk"><input type="checkbox" id="nuMerc" onchange="renderNewUnitList()"> mercs only</label>
+        <span class="count" id="nuCount"></span>
+      </div>
+      <div class="baselist" id="nuList" style="max-height:420px"></div>
+    </div>
+    <div class="foot"><button onclick="closeModal()">Cancel</button></div>`;
+  overlay.classList.add('open');
+  renderNewUnitList();
+}
+const opts=(allLabel,values,label)=>`<option value="">${allLabel}</option>`+
+  values.map(v=>`<option value="${esc(v)}">${esc(label?label(v):v)}</option>`).join('');
+function renderNewUnitList(){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const qq=g('nuSearch').trim().toLowerCase();
+  const fac=g('nuFac'),cat=g('nuCat'),cls=g('nuClass');
+  const merc=(document.getElementById('nuMerc')||{}).checked;
+  const all=state.data?state.data.units:[];
+  const units=all.filter(u=>
+    (!qq||u.name.toLowerCase().includes(qq)||u.type.toLowerCase().includes(qq)
+      ||u.dictionary.toLowerCase().includes(qq))
+    &&(!fac||u.ownership.includes(fac))&&(!cat||u.kind===cat)&&(!cls||u.class===cls)
+    &&(!merc||u.mercenary));
+  const cnt=document.getElementById('nuCount');
+  if(cnt)cnt.textContent=`${units.length}/${all.length}`;
+  document.getElementById('nuList').innerHTML=units.slice(0,400).map(u=>`
+    <div class="baserow" onclick="startNewUnit('${q1(esc(u.type))}')">
+      <img onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}">
+      <div><div>${esc(u.name)}</div><div class="count">${esc(u.type)} · ${esc(u.kind||u.category||'?')}${
+        u.class?' / '+esc(u.class):''}${u.mercenary?' · merc':''}</div></div>
+    </div>`).join('')||'<div class="count" style="padding:8px">No units match.</div>';
+}
+function startNewUnit(type){
+  state.dst=state.src; state.destData=null;      // same-mod "transfer" = a new unit
+  const u=(state.data.units.find(x=>x.type===type)||{});
+  const c=cfgFor(type);
+  c.on_conflict='rename';
+  c.new_type=type+' (new)';
+  c.new_dictionary=(u.dictionary||type)+'_new';
+  // nothing needs relocating inside one mod: identical models/cards are reused
+  c.asset_conflict='use_existing'; c.icon_conflict='use_existing'; c.engine_conflict='use_existing';
+  c._resolved=true;
+  openComposer([type]);
+}
+
 /* ---------- settings ---------- */
 async function openSettings(){
+  document.getElementById('modal').className='modal';
   const s=await api.get('/api/settings'); state.settings=s;
   const ign=s.unit_limit_ignored||[];
   const ignHtml=ign.length
@@ -1112,6 +2620,7 @@ async function browseRoot(){
 function newerSameDest(log,e){const idx=log.indexOf(e);
   return log.slice(idx+1).filter(x=>x.dest_root===e.dest_root&&x.applied&&!x.undone);}
 async function openLog(){
+  document.getElementById('modal').className='modal';
   const log=await api.get('/api/log'); state.logCache=log;
   const items=[...log].reverse().map(e=>{
     const newer=newerSameDest(log,e);
@@ -1121,7 +2630,10 @@ async function openLog(){
       ?`<button onclick="doRevert('${id}')" title="Restore “${esc(e.dest)}” to its state at this point (undo everything newer)">⟲ Revert to here${newer.length?` (${newer.length})`:''}</button>`
       :'';
     return `<div class="log-item ${e.undone?'undone':''}">
-    <div class="top"><div><b>${esc(e.resolved_type||e.unit_type)}</b> <span class="pill">${esc(e.source)} → ${esc(e.dest)}</span></div>
+    <div class="top"><div><b>${esc(e.resolved_type||e.unit_type)}</b> <span class="pill">${
+      e.mode==='bmdb'?`${e.action==='cleanup'?'🧹 cleaned out of':'🗄 bmdb edit in'} ${esc(e.dest)}`
+      :e.mode==='edit'?`${e.action==='delete'?'🗑 deleted in':'✎ edited in'} ${esc(e.dest)}`
+                     :`${esc(e.source)} → ${esc(e.dest)}`}</span></div>
       <div style="display:flex;gap:8px;align-items:center"><span class="when">${esc(e.when)}</span>
       ${undoBtn}${revBtn}
       ${e.undone?'<span class="pill">undone</span>':(!e.applied?'<span class="pill">not applied</span>':'')}</div></div>

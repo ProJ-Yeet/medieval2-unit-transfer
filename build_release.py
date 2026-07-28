@@ -362,6 +362,21 @@ Using it
 * Every transfer is undoable from the clock icon — it backs up each file it
   touches first.
 
+The other two modes
+-------------------
+The dropdown in the top-left corner switches what you are working on:
+
+* **Unit Editor** — one mod instead of two. Click a unit to edit every EDU
+  field, its name and description, the battle-model entries it uses, to build a
+  new unit from it, or to delete it.
+* **BMDB Editor** — the mod's whole battle_models.modeldb. Browse and edit any
+  entry, even ones no unit points at, and use **Clean up BMDB** to find the
+  entries nothing references, the soldier-only entries that could share an
+  existing model, and the files under unit_models nothing mentions. Nothing is
+  deleted: you choose a folder and everything ticked is moved there, laid out
+  like the mod itself so it can be pasted straight back — and the whole removal
+  is undoable from the clock icon like anything else.
+
 What gets carried across
 ------------------------
 The unit's EDU entry, its localised name and description, its battle models and

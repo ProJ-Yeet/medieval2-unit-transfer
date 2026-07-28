@@ -406,6 +406,79 @@ def rewrite_entry_paths(raw: str, path_map: Dict[str, str], pad: bool = False) -
     return "".join(out)
 
 
+def rewrite_paths_indexed(raw: str, index_map: Dict[int, str],
+                          pad: bool = False) -> str:
+    """Return ``raw`` with the path at each *span index* replaced.
+
+    Indices are positions in :func:`entry_path_spans`' output. Unlike
+    :func:`rewrite_entry_paths` (which maps by value) this addresses one slot at
+    a time, so two LODs that happen to share a mesh file can be pointed at
+    different files. Each replacement re-emits its own ``<len> <chars>`` prefix;
+    every other byte is preserved. ``pad`` — see :func:`entry_path_spans`.
+    """
+    index_map = {int(k): v for k, v in (index_map or {}).items() if v is not None}
+    if not index_map:
+        return raw
+    spans = entry_path_spans(raw, pad=pad)
+    out: List[str] = []
+    pos = 0
+    for i, (start, end, val, _kind) in enumerate(spans):
+        new = index_map.get(i)
+        if new is None or new == val:
+            continue
+        out.append(raw[pos:start])
+        out.append(f"{len(new)} {new}")
+        pos = end
+    out.append(raw[pos:])
+    return "".join(out)
+
+
+def path_slots_raw(raw: str, pad: bool = False) -> List[dict]:
+    """:func:`path_slots` straight off an entry's raw text.
+
+    The editor rewrites an entry in stages (faction records added/removed, then
+    per-faction texture paths set), and every stage shifts the span indices — so
+    each stage has to re-derive the slots from the text it is about to edit
+    rather than from the originally parsed :class:`ModelEntry`.
+    """
+    spans = entry_path_spans(raw, pad=pad)
+    groups = _texture_group_spans(raw, pad=pad)
+    records = [("main" if gi == 0 else "attach", rec["fac"])
+               for gi, g in enumerate(groups) for rec in g["records"]]
+    slots: List[dict] = []
+    lod_i = rec_i = 0
+    for i, (_s, _e, value, kind) in enumerate(spans):
+        if kind == "mesh":
+            slots.append({"i": i, "kind": "mesh", "value": value, "group": "lod",
+                          "faction": "", "label": f"LOD {lod_i} mesh"})
+            lod_i += 1
+            continue
+        group, faction = records[rec_i] if rec_i < len(records) else ("main", "")
+        pretty = {"texture": "texture", "normal": "normal map", "sprite": "sprite"}[kind]
+        slots.append({"i": i, "kind": kind, "value": value, "group": group,
+                      "faction": faction,
+                      "label": f"{faction} {pretty}"
+                               + (" (attachment)" if group == "attach" else "")})
+        if kind == "sprite":            # texture/normal/sprite = one faction record
+            rec_i += 1
+    return slots
+
+
+def path_slots(entry: "ModelEntry") -> List[dict]:
+    """Describe every editable path slot of an entry, in span-index order.
+
+    Returns ``{"i", "kind", "value", "group", "faction", "label"}`` per slot —
+    the shape the editor UI renders. The span order is fixed by the format:
+    LOD meshes, then main-texture records (faction: texture/normal/sprite),
+    then attachment-texture records.
+    """
+    slots = path_slots_raw(entry.raw, pad=entry.first_entry_pad)
+    for lod_i, (_mesh, dist) in enumerate(entry.lods):     # label with the LOD distance
+        if lod_i < len(slots) and slots[lod_i]["kind"] == "mesh":
+            slots[lod_i]["label"] = f"LOD {lod_i} mesh (dist {dist})"
+    return slots
+
+
 def _texture_group_spans(raw: str, pad: bool = False) -> List[dict]:
     """Span info for an entry's two texture groups (main, then attach).
 
@@ -447,7 +520,7 @@ def _texture_group_spans(raw: str, pad: bool = False) -> List[dict]:
             _, s_end, _ = r.get_string_span()   # sprite
             records.append({"fac": fac, "start": f_start, "fac_end": f_end, "end": s_end})
         groups.append({"cnt_start": cnt_start, "cnt_end": cnt_end, "count": count,
-                       "records": records,
+                       "records": records, "records_start": records_start,
                        "group_end": records[-1]["end"] if records else records_start})
     return groups
 
@@ -489,6 +562,49 @@ def add_texture_factions(raw: str, factions, prefer: Optional[str] = None,
     if not edits:
         return raw
     # apply back-to-front so earlier offsets stay valid
+    out = raw
+    for start, end, text in sorted(edits, key=lambda e: e[0], reverse=True):
+        out = out[:start] + text + out[end:]
+    return out
+
+
+def set_texture_factions(raw: str, factions, prefer: Optional[str] = None,
+                         pad: bool = False) -> str:
+    """Make each texture group hold *exactly* ``factions``, in that order.
+
+    Unlike :func:`add_texture_factions` (which only ever adds) this is what the
+    editor's faction checklist needs: ticking a faction clones an existing record
+    for it, unticking one drops that record, and each group's count token is
+    rewritten to match. A kept record is spliced back **verbatim**, so its own
+    texture/normal/sprite paths survive the reshuffle. Refuses to empty a group —
+    a texture group with zero records is not a model the game can draw.
+    ``pad`` — see :func:`entry_path_spans`.
+    """
+    wanted = [f for f in dict.fromkeys((f or "").strip().lower() for f in factions) if f]
+    if not wanted:
+        return raw
+    groups = _texture_group_spans(raw, pad=pad)
+    edits: List[Tuple[int, int, str]] = []
+    for g in groups:
+        recs = g["records"]
+        if not recs:
+            continue                                # nothing to clone from
+        if [r["fac"] for r in recs] == wanted:
+            continue                                # already exactly right
+        have = {r["fac"]: r for r in recs}
+        donor = have.get(prefer or "")
+        if donor is None:                           # 'slave' is the generic rebel skin
+            donor = next((r for r in recs if r["fac"] != "slave"), recs[0])
+        tail = raw[donor["fac_end"]:donor["end"]]
+        # reuse whatever separated the count from the first record (usually "\n")
+        lead = raw[g["records_start"]:recs[0]["start"]] or "\n"
+        parts = [raw[have[f]["start"]:have[f]["end"]] if f in have
+                 else f"{len(f)} {f}{tail}" for f in wanted]
+        body = "".join((lead if i == 0 else "\n") + p for i, p in enumerate(parts))
+        edits.append((g["records_start"], g["group_end"], body))
+        edits.append((g["cnt_start"], g["cnt_end"], str(len(wanted))))
+    if not edits:
+        return raw
     out = raw
     for start, end, text in sorted(edits, key=lambda e: e[0], reverse=True):
         out = out[:start] + text + out[end:]

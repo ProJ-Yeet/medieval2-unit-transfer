@@ -6,10 +6,13 @@ Package layout:
   localization.py  parse/write data/text/export_units.txt (UTF-16 name/descr records)
   mod.py           Mod abstraction: paths, faction discovery, lazy DB access
   transfer.py      dependency resolution + cross-mod transfer (Stage 3)
+  edit.py          unit EDITOR mode: change/create/delete units inside one mod
+  bmdb.py          BMDB mode: the whole modeldb — browse/edit any entry, audit what
+                   nothing references, and export the dead weight out of the mod
   server.py        local web UI (Stage 2)
 
 Design rule: transfers APPEND verbatim source entries to the destination rather than
 re-serializing whole destination files, so untouched entries are never reformatted.
 """
 
-__version__ = "1.0.6"
+__version__ = "1.3.0"

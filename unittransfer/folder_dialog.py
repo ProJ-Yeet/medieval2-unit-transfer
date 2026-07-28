@@ -46,6 +46,69 @@ _ole32.CoTaskMemFree.restype = None
 _ole32.CoTaskMemFree.argtypes = [ctypes.c_void_p]
 
 
+class _OPENFILENAMEW(ctypes.Structure):
+    _fields_ = [
+        ("lStructSize", wintypes.DWORD),
+        ("hwndOwner", wintypes.HWND),
+        ("hInstance", wintypes.HINSTANCE),
+        ("lpstrFilter", wintypes.LPCWSTR),
+        ("lpstrCustomFilter", wintypes.LPWSTR),
+        ("nMaxCustFilter", wintypes.DWORD),
+        ("nFilterIndex", wintypes.DWORD),
+        ("lpstrFile", wintypes.LPWSTR),
+        ("nMaxFile", wintypes.DWORD),
+        ("lpstrFileTitle", wintypes.LPWSTR),
+        ("nMaxFileTitle", wintypes.DWORD),
+        ("lpstrInitialDir", wintypes.LPCWSTR),
+        ("lpstrTitle", wintypes.LPCWSTR),
+        ("Flags", wintypes.DWORD),
+        ("nFileOffset", wintypes.WORD),
+        ("nFileExtension", wintypes.WORD),
+        ("lpstrDefExt", wintypes.LPCWSTR),
+        ("lCustData", wintypes.LPARAM),
+        ("lpfnHook", ctypes.c_void_p),
+        ("lpTemplateName", wintypes.LPCWSTR),
+        ("pvReserved", ctypes.c_void_p),
+        ("dwReserved", wintypes.DWORD),
+        ("FlagsEx", wintypes.DWORD),
+    ]
+
+
+OFN_FILEMUSTEXIST = 0x00001000
+OFN_PATHMUSTEXIST = 0x00000800
+OFN_EXPLORER = 0x00080000
+
+
+def browse_for_file(title: str = "Select a file", filter_spec: str = "",
+                    initial_dir: str = "") -> Optional[str]:
+    """Blocking native file-open dialog. Returns the chosen path or None.
+
+    ``filter_spec`` is the Win32 double-NUL filter form, given here as
+    ``"Meshes (*.mesh)|*.mesh|All files (*.*)|*.*"`` — the editor needs a real
+    filesystem path for the mesh/texture to import, which a browser file input
+    can never hand back.
+    """
+    if sys.platform != "win32":
+        return None
+    spec = filter_spec or "All files (*.*)|*.*"
+    filt = "\0".join(spec.split("|")) + "\0\0"
+    buf = ctypes.create_unicode_buffer(2048)
+    ofn = _OPENFILENAMEW()
+    ofn.lStructSize = ctypes.sizeof(_OPENFILENAMEW)
+    ofn.lpstrFilter = filt
+    ofn.lpstrFile = ctypes.cast(buf, wintypes.LPWSTR)
+    ofn.nMaxFile = len(buf)
+    ofn.lpstrTitle = title
+    ofn.lpstrInitialDir = initial_dir or None
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_EXPLORER
+    comdlg32 = ctypes.windll.comdlg32
+    comdlg32.GetOpenFileNameW.restype = wintypes.BOOL
+    comdlg32.GetOpenFileNameW.argtypes = [ctypes.POINTER(_OPENFILENAMEW)]
+    if not comdlg32.GetOpenFileNameW(ctypes.byref(ofn)):
+        return None
+    return buf.value or None
+
+
 def browse_for_folder(title: str = "Select a folder") -> Optional[str]:
     """Blocking native folder-picker. Returns the chosen path, or None if the
     user cancelled (or this isn't Windows)."""
