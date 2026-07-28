@@ -186,20 +186,26 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     *suggestion*: it changes which model the line names, so the UI ticks them one
     by one (that is what the manual checkbox is for).
 
-    Twins suggest *each other*, so the pairings are worked out per footer group
-    rather than one entry at a time: merging every survivor of a group into
-    another member would rewrite each soldier line to a name the same cleanup
-    deletes, which is the one outcome M2TW will not start on. When a group has
-    somewhere safe to land the whole group can go; when it does not, one member
-    is held back to be the entry the others point at.
+    A soldier line moved onto an entry the same cleanup then deletes is the one
+    outcome M2TW will not start on, so only entries that are *referenced* are
+    ever offered to move onto. Being referenced is what keeps an entry off the
+    unused list and what makes ``plan_cleanup`` refuse to remove it, so a target
+    picked here cannot go anywhere. Twins suggest each other, though, and a merge
+    is the single way a referenced entry may still be dropped — so the pairings
+    are worked out per footer group rather than one entry at a time. When a group
+    has somewhere safe to land the whole group can go; when it does not, one
+    member is held back to be the entry the others point at.
     """
     entries = mod.modeldb.by_name()
     by_type = _unit_index(mod)
-    # Entries worth pointing at: anything that survives the cleanup, grouped by
-    # footer. A twin that is itself about to be removed would be no saving at all.
+    # Entries worth pointing at, grouped by footer: the ones something in the mod
+    # still names. An entry nothing references is a removal away from not being
+    # there -- including the ones held back merely because a descr_*.txt mentions
+    # them, which never reach the `unused` list but are deletable all the same.
     twins: Dict[tuple, List[str]] = {}
     for e in mod.modeldb.entries:
-        if e.name in unused:
+        slots = users.get(e.name)
+        if not (slots and any(slots[k] for k in SLOT_KINDS)):
             continue
         twins.setdefault(footer_key(e), []).append(e.name)
 

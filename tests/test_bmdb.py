@@ -101,6 +101,20 @@ check("no candidate points at an entry that is itself merged away",
       not [c for c in a["merges"] if c["into"] in sources])
 check("nor is one ever offered as an alternative target",
       not [o for c in a["merges"] for o in c["options"] if o in sources])
+# Only referenced entries are offered to move onto: that is what keeps them off
+# the unused list and what makes plan_cleanup refuse to delete them. An entry
+# held back only because a descr_*.txt mentions it is deletable, so it is out.
+users_now = bmdb_mod.entry_users(mod)
+def is_referenced(n):
+    s = users_now.get(n)
+    return bool(s and any(s[k] for k in bmdb_mod.SLOT_KINDS))
+check("every target offered is an entry something still references",
+      all(is_referenced(o) for c in a["merges"] for o in c["options"]))
+check("...including the default pick",
+      all(is_referenced(c["into"]) for c in a["merges"]))
+check("an entry only a descr_*.txt mentions is never offered as a target",
+      not ({m["entry"] for m in a["mentioned"]}
+           & {o for c in a["merges"] for o in c["options"]}))
 
 print("\n== cleanup plan ==")
 target = Path(tempfile.mkdtemp(prefix="ut_export_")) / "unused_assets"
