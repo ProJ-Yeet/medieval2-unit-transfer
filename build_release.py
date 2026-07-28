@@ -7,10 +7,11 @@ The point is that the person you send it to installs nothing. The zip carries
 Python's official *embeddable* distribution with Pillow already in it, so they
 unzip and double-click `Unit Transfer.bat`.
 
-Only the bare minimum ships: `app.py`, `transfer_cli.py`, `unittransfer/`,
-`web/`, the launcher and a README. Never `config/` (personal settings, backups
-and the transfer log), `.cache/`, `tests/`, `graphify-out/` or `__pycache__` —
-shipping `config/` would hand over someone else's mod paths and undo history.
+Only the bare minimum ships: `app.py`, `transfer_cli.py`, `Full Cleaner.bat`,
+`unittransfer/`, `web/`, the launcher, `Install-Dependencies.bat` and a README.
+Never `config/` (personal settings, backups and the transfer log), `.cache/`,
+`tests/`, `graphify-out/` or `__pycache__` — shipping `config/` would hand over
+someone else's mod paths and undo history.
 """
 from __future__ import annotations
 
@@ -35,7 +36,10 @@ EMBED_URL = (f"https://www.python.org/ftp/python/{PY_VERSION}/"
              f"python-{PY_VERSION}-embed-amd64.zip")
 
 #: everything the tool needs at runtime, and nothing else
-INCLUDE_FILES = ("app.py", "transfer_cli.py")
+#: Full Cleaner.bat ships unconditionally: unittransfer/cleaner.py copies it out
+#: of the app root into a destination mod after a transfer, so it must exist
+#: there even in the portable build.
+INCLUDE_FILES = ("app.py", "transfer_cli.py", "Full Cleaner.bat")
 INCLUDE_DIRS = ("unittransfer", "web")
 #: never ship these, whatever they contain
 EXCLUDE_NAMES = {"__pycache__", ".pytest_cache", ".DS_Store"}
@@ -403,14 +407,12 @@ def write_docs(stage: Path, portable: bool) -> None:
         encoding="utf-8")
     if portable:
         (stage / "Troubleshoot.bat").write_text(TROUBLESHOOT_BAT, encoding="utf-8")
-    else:
-        # no bundled runtime -> the target PC needs its own Python + Pillow;
-        # Launch-Unit-Transfer.bat (copied above as "Unit Transfer.bat") already
-        # tries to auto-install Pillow, but ship the standalone installer too as
-        # a fallback / clearer diagnostic.
-        (stage / "Install-Dependencies.bat").write_text(
-            (ROOT / "Install-Dependencies.bat").read_text(encoding="utf-8"),
-            encoding="utf-8")
+    # Ship the standalone installer either way: even the portable build's
+    # bundled runtime can be missing/blocked (antivirus, partial extract), and
+    # someone running from source needs it as the auto-install fallback.
+    (stage / "Install-Dependencies.bat").write_text(
+        (ROOT / "Install-Dependencies.bat").read_text(encoding="utf-8"),
+        encoding="utf-8")
     note = ("Nothing else to install — Python and the image library are already\n"
             "inside this folder (`runtime\\`)."
             if portable else
