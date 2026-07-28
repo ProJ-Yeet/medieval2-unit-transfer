@@ -93,6 +93,14 @@ check("a candidate's twin is never the entry itself",
       all(c["into"] != c["entry"] for c in a["merges"]))
 check("candidates are never also on the unused list",
       not ({c["entry"] for c in a["merges"]} & unused))
+# Twins suggest each other, so A->B and B->A can both look like a saving. Accept
+# both and each soldier line ends up naming an entry the same cleanup deleted --
+# M2TW then refuses to read the EDU at all.
+sources = {c["entry"] for c in a["merges"]}
+check("no candidate points at an entry that is itself merged away",
+      not [c for c in a["merges"] if c["into"] in sources])
+check("nor is one ever offered as an alternative target",
+      not [o for c in a["merges"] for o in c["options"] if o in sources])
 
 print("\n== cleanup plan ==")
 target = Path(tempfile.mkdtemp(prefix="ut_export_")) / "unused_assets"
@@ -113,6 +121,51 @@ check("a file a surviving entry still uses is never moved",
 inside = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
     target=str(root / "export"), entries=picked))
 check("refuses an export folder inside the mod", bool(inside.errors))
+
+# A stale scan can list an entry the mod has started using again. Removing it
+# would leave a `soldier` line pointing at nothing, which stops M2TW loading the
+# EDU at all -- so the plan re-checks the request instead of trusting it.
+used_entry = merge["entry"]                       # named by a soldier line
+stale = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
+    target=str(target), entries=picked + [used_entry]))
+check("a referenced entry asked for as unused is not removed",
+      used_entry not in stale.entry_deletes)
+check("...and the warning says what still names it",
+      any(used_entry in w and "soldier model for" in w for w in stale.warnings))
+check("...while the rest of the request still goes through",
+      len(stale.entry_deletes) == len(picked))
+check("...and nothing rewrites the EDU, since no merge was accepted",
+      not stale.edu_text)
+
+# Same entry, this time as an accepted merge: now it may go, because the merge
+# repoints the soldier line naming it.
+paired = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
+    target=str(target), entries=picked + [used_entry],
+    merges=[{"entry": used_entry, "into": merge["into"]}]))
+check("the same entry IS removed when a merge repoints its soldier line",
+      used_entry in paired.entry_deletes and bool(paired.edu_text))
+
+# A merge that no longer validates must not delete through the exemption either.
+bad = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
+    target=str(target), entries=[used_entry],
+    merges=[{"entry": used_entry, "into": "no_such_entry_at_all"}]))
+check("a merge that fails its checks takes the entry with it",
+      used_entry not in bad.entry_deletes and bool(bad.errors))
+
+# The scan no longer offers a mutual pair, but a hand-built request still can.
+mutual = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
+    target=str(target),
+    merges=[{"entry": used_entry, "into": merge["into"]},
+            {"entry": merge["into"], "into": used_entry}]))
+check("a mutual pair of merges is refused rather than applied",
+      bool(mutual.errors) and not mutual.entry_deletes)
+check("...and the error names both halves",
+      any(used_entry in e and merge["into"] in e for e in mutual.errors))
+into_doomed = bmdb_mod.plan_cleanup(mod, bmdb_mod.CleanupRequest(
+    target=str(target), entries=picked,          # picked[0] is on the unused list
+    merges=[{"entry": used_entry, "into": picked[0]}]))
+check("merging into an entry the same cleanup deletes is refused",
+      bool(into_doomed.errors) and used_entry not in into_doomed.entry_deletes)
 
 print("\n== cleanup apply ==")
 orig_raw = {e.name: e.raw for e in mod.modeldb.entries}   # applying reparses `mod`

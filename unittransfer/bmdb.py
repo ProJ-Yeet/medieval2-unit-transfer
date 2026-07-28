@@ -96,6 +96,28 @@ def entry_users(mod: Mod) -> Dict[str, Dict[str, List[str]]]:
     return users
 
 
+def _describe_users(users: Dict[str, Dict[str, List[str]]], name: str) -> str:
+    """``"the soldier model for Gondor Infantry, …"``, or ``""`` if nothing names it.
+
+    Phrased for a warning line, so the slot is named as well as the referrer: the
+    whole point of the message is that the entry is not the dead weight the list
+    it came from said it was.
+    """
+    slots = users.get(name)
+    if not slots:
+        return ""
+    parts = []
+    for kind in SLOT_KINDS:
+        who = slots[kind]
+        if not who:
+            continue
+        shown = ", ".join(who[:3])
+        if len(who) > 3:
+            shown += f" and {len(who) - 3} more"
+        parts.append(f"the {kind} model for {shown}")
+    return "; ".join(parts)
+
+
 def _character_models(mod: Mod) -> List[str]:
     """``battle_model`` names from descr_character.txt (generals and agents)."""
     path = mod.data / "descr_character.txt"
@@ -163,6 +185,13 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     the mod already has frees a whole modeldb slot. Every pairing is a
     *suggestion*: it changes which model the line names, so the UI ticks them one
     by one (that is what the manual checkbox is for).
+
+    Twins suggest *each other*, so the pairings are worked out per footer group
+    rather than one entry at a time: merging every survivor of a group into
+    another member would rewrite each soldier line to a name the same cleanup
+    deletes, which is the one outcome M2TW will not start on. When a group has
+    somewhere safe to land the whole group can go; when it does not, one member
+    is held back to be the entry the others point at.
     """
     entries = mod.modeldb.by_name()
     by_type = _unit_index(mod)
@@ -174,7 +203,8 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
             continue
         twins.setdefault(footer_key(e), []).append(e.name)
 
-    out: List[dict] = []
+    # Who could be merged at all, before any of them is paired up.
+    eligible: List[tuple] = []
     for name, slots in sorted(users.items()):
         if name in unused or not slots["soldier"]:
             continue
@@ -183,7 +213,25 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
         entry = entries.get(name)
         if entry is None:
             continue
-        options = [n for n in dict.fromkeys(twins.get(footer_key(entry), [])) if n != name]
+        eligible.append((name, slots, entry, footer_key(entry)))
+
+    # Per footer group: if some survivor is not itself eligible, everything in
+    # the group can point at it. If they are all eligible the group would empty
+    # itself out, so the last one keeps its slot and takes the others.
+    grouped: Dict[tuple, List[str]] = {}
+    for name, _slots, _entry, foot in eligible:
+        grouped.setdefault(foot, []).append(name)
+    sources: set = set()
+    for foot, names in grouped.items():
+        anchored = any(n not in names for n in twins.get(foot, []))
+        sources.update(names if anchored else names[:-1])
+
+    out: List[dict] = []
+    for name, slots, entry, foot in eligible:
+        if name not in sources:
+            continue
+        options = [n for n in dict.fromkeys(twins.get(foot, []))
+                   if n != name and n not in sources]
         if not options:
             continue
         units = slots["soldier"]
@@ -444,15 +492,32 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
         plan.errors.append(err)
 
     entries = mod.modeldb.by_name()
+    # Removing an entry something still names breaks the game on load, so the
+    # request is re-checked against the mod rather than trusted: a scan can be
+    # older than the mod it describes. A `soldier` reference counts like any
+    # other — the merge pass below is the only way a referenced entry may go, and
+    # only because it repoints that soldier line first.
+    users = entry_users(mod)
+    merging = {m["entry"] for m in req.merges}
     doomed: List[str] = []
     for name in dict.fromkeys(req.entries):
         e = entries.get(name)
         if e is None:
             plan.warnings.append(f"'{name}' is not in this mod's modeldb — skipped")
-        elif e.first_entry_pad:
+            continue
+        if e.first_entry_pad:
             plan.warnings.append(edit.PAD_ENTRY_KEPT.format(name=name))
-        else:
-            doomed.append(name)
+            continue
+        used = _describe_users(users, name)
+        if used:
+            # merges add their own entry to `doomed`, but only once the pairing
+            # has passed every check below — being asked for is not enough.
+            if name not in merging:
+                plan.warnings.append(
+                    f"'{name}' is still {used} — kept, removing it would stop the "
+                    "game loading. Re-scan the mod to pick it up as a merge.")
+            continue
+        doomed.append(name)
 
     # ---- accepted soldier merges: repoint the EDU, then the entry joins the pile
     model_map: Dict[str, str] = {}
@@ -466,6 +531,15 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
             continue
         if entries[name].first_entry_pad:
             plan.warnings.append(edit.PAD_ENTRY_KEPT.format(name=name))
+            continue
+        if into == name or into in merging or into in doomed:
+            # Repointing a soldier line at something this same cleanup deletes
+            # leaves it naming a model that is not in the file — exactly the
+            # error the game refuses to start on. Footer twins suggest each
+            # other, so a mutual pair is the way this happens.
+            plan.errors.append(
+                f"'{name}' would be pointed at '{into}', which this cleanup also "
+                "removes — untick one of the two, they are twins of each other")
             continue
         if footer_key(entries[name]) != footer_key(entries[into]):
             plan.errors.append(
