@@ -122,7 +122,25 @@ try:
           == before["unit_models/battle_models.modeldb"])
 
     print("\n== audit ==")
-    a = get("/api/bmdb/audit?mod=TestMod")
+    # The audit is one long request, so the page polls /api/progress?job= beside
+    # it — exactly what this does, on the same server, at the same time.
+    seen, stop = [], threading.Event()
+    def _poll():
+        while not stop.is_set():
+            try:
+                seen.append(get("/api/progress?job=jtest"))
+            except Exception:
+                pass
+            stop.wait(0.05)
+    poller = threading.Thread(target=_poll, daemon=True); poller.start()
+    a = get("/api/bmdb/audit?mod=TestMod&job=jtest")
+    stop.set(); poller.join(2)
+    reports = [s for s in seen if s]
+    check(f"the job reported progress while it ran ({len(reports)} polls saw a step)",
+          bool(reports) and all(isinstance(r["pct"], int) and r["label"] for r in reports))
+    check("and finishes at 100%", get("/api/progress?job=jtest")["pct"] == 100)
+    check("an unknown job id answers empty rather than erroring",
+          get("/api/progress?job=never_ran") == {})
     check(f"{len(a['unused'])} unused entries", len(a["unused"]) > 0)
     check(f"{len(a['merges'])} soldier-only merge suggestions", len(a["merges"]) > 0)
     check("every suggestion offers alternative twins to pick from",

@@ -4,8 +4,11 @@ Runs on a throwaway copy of Third_Age_Reforged's data files, so the real mods ar
 never touched. Covers:
   * the audit: what nothing references, what only a `soldier` line names, and
     which files under unit_models no entry mentions at all
-  * the safety nets: an entry named in a descr_*.txt is never called unused, and
-    the padded first entry of a sentinel-less modeldb is never removed
+  * the safety nets: an entry named in a descr_*.txt — or inline in a campaign's
+    descr_strat.txt / campaign_script.txt — is never called unused, and the padded
+    first entry of a sentinel-less modeldb is never removed
+  * mounts no unit rides: reported, removable from descr_mount.txt, and the model
+    entry they were the last referrer of comes free with them
   * cleanup: entries dropped, their files exported mirroring the mod's layout,
     files a surviving entry still uses left alone, and a standalone modeldb of
     exactly the removed entries that parses back
@@ -62,7 +65,12 @@ before_db = mod.modeldb_path.read_bytes()
 before_edu = mod.edu_path.read_bytes()
 
 print("\n== audit ==")
-a = bmdb_mod.audit(mod)
+steps = []
+a = bmdb_mod.audit(mod, progress=lambda pct, label: steps.append((pct, label)))
+check(f"the audit reported {len(steps)} progress steps, each with a label",
+      len(steps) > 5 and all(label for _pct, label in steps))
+check("progress never goes backwards and ends at 100%",
+      all(b[0] >= x[0] for x, b in zip(steps, steps[1:])) and steps[-1][0] == 100)
 unused = {u["entry"] for u in a["unused"]}
 check(f"{a['entry_count']} entries scanned", a["entry_count"] > 500)
 check(f"{len(unused)} entries nothing references", len(unused) > 0)
@@ -112,6 +120,18 @@ check("every target offered is an entry something still references",
       all(is_referenced(o) for c in a["merges"] for o in c["options"]))
 check("...including the default pick",
       all(is_referenced(c["into"]) for c in a["merges"]))
+# "already an armour tier of the same unit" is a fact about the picked twin, so the
+# audit says it for EVERY option — the UI's picker can be changed after the scan.
+by_type = mod.edu.by_type()
+def _own_tiers(c):
+    return {x.lower() for t in c["units"] if by_type.get(t)
+            for x in by_type[t].armour_ug_models}
+check("each candidate flags which of its options are armour tiers of the same unit",
+      all(set(c["own_options"]) <= set(c["options"]) for c in a["merges"])
+      and all(set(c["own_options"]) == set(c["options"]) & _own_tiers(c)
+              for c in a["merges"]))
+check("the default pick's badge agrees with that list",
+      all(c["own_upgrade"] == (c["into"] in c["own_options"]) for c in a["merges"]))
 check("an entry only a descr_*.txt mentions is never offered as a target",
       not ({m["entry"] for m in a["mentioned"]}
            & {o for c in a["merges"] for o in c["options"]}))
@@ -273,6 +293,110 @@ check("the modeldb was not rewritten — no entry was touched",
       Mod(root_c).modeldb_path.read_bytes() == before_db)
 undo(rec_c["id"])
 check("undo restores it", junk.is_file())
+
+print("\n== campaign references (descr_strat.txt / campaign_script.txt) ==")
+# A named character on the campaign map can carry its own battle_model, written
+# inline in a comma-separated line rather than on one of its own. Nothing in the
+# EDU or descr_mount points at it, so without this pass it looks stone dead.
+root_e = fresh_mod()
+dead = [u["entry"] for u in bmdb_mod.audit(Mod(root_e), scan_orphans=False)["unused"]]
+in_strat, in_script, in_comment = dead[0], dead[1], dead[2]
+camp = root_e / "data/world/maps/campaign/imperial_campaign"
+camp.mkdir(parents=True)
+(camp / "descr_strat.txt").write_text(
+    "character\tGrishnakh, general, male, age 23, x 346, y 250, "
+    f"portrait Grishnak, battle_model {in_strat}, hero_ability WHIPING\n",
+    encoding="latin-1")
+(camp / "campaign_script.txt").write_text(
+    f"    spawn_character England, agent spy, battle_model {in_script}, x 10, y 20\n"
+    f"    ;spawn_character England, agent spy, battle_model {in_comment}, x 1, y 2\n",
+    encoding="latin-1")
+mod_e2 = Mod(root_e)
+a_e = bmdb_mod.audit(mod_e2, scan_orphans=False)
+unused_e = {u["entry"] for u in a_e["unused"]}
+check("both campaign files are found", len(a_e["campaign_files"]) == 2)
+check(f"'{in_strat}' (descr_strat.txt, inline after a comma) is no longer unused",
+      in_strat not in unused_e)
+check(f"'{in_script}' (campaign_script.txt) is no longer unused", in_script not in unused_e)
+check(f"'{in_comment}' (only in a commented-out line) is still unused",
+      in_comment in unused_e)
+slots_e = bmdb_mod.entry_users(mod_e2)
+check("the reference is attributed to the campaign file it came from",
+      slots_e[in_strat]["campaign"] == ["file:imperial_campaign/descr_strat.txt"])
+pe = bmdb_mod.plan_cleanup(mod_e2, bmdb_mod.CleanupRequest(
+    target=str(Path(tempfile.mkdtemp(prefix="ut_exp_"))), entries=[in_strat]))
+check("asked to remove it anyway, the cleanup refuses", not pe.entry_deletes)
+check("and says which campaign file still names it",
+      any("descr_strat.txt" in w for w in pe.warnings))
+
+print("\n== descr_model_strat.txt is not a reference ==")
+# The "any descr_*.txt that mentions it" net is deliberately over-cautious, but
+# descr_model_strat.txt only ever names STRAT-map models (data/models_strat) — a
+# battle-model name matching in there is a coincidence that would pin a genuinely
+# dead entry in place forever.
+root_g = fresh_mod()
+dead_g = [u["entry"] for u in bmdb_mod.audit(Mod(root_g), scan_orphans=False)["unused"]][0]
+strat_block = (f"type {dead_g}\nskeleton strat_named_with_army\n"
+               f"model_flexi data/models_strat/{dead_g}_high.cas, 15\n")
+(root_g / "data/descr_model_strat.txt").write_text(strat_block, encoding="latin-1")
+a_g = bmdb_mod.audit(Mod(root_g), scan_orphans=False)
+check(f"'{dead_g}' named in descr_model_strat.txt is still reported as unused",
+      dead_g in {u["entry"] for u in a_g["unused"]})
+check("and is not held back as 'mentioned somewhere else'",
+      dead_g not in {m["entry"] for m in a_g["mentioned"]})
+(root_g / "data/descr_model_strat.txt").unlink()
+(root_g / "data/descr_ut_other.txt").write_text(strat_block, encoding="latin-1")
+a_g2 = bmdb_mod.audit(Mod(root_g), scan_orphans=False)
+check("the same text in any OTHER descr_*.txt still holds it back",
+      dead_g in {m["entry"] for m in a_g2["mentioned"]})
+
+print("\n== mounts no unit rides ==")
+# Removing the mount is what takes the last referrer off its model, so the entry
+# only comes free as part of the same cleanup.
+root_f = fresh_mod()
+free_me = [u["entry"] for u in bmdb_mod.audit(Mod(root_f), scan_orphans=False)["unused"]][0]
+dmp = root_f / "data/descr_mount.txt"
+before_mounts = dmp.read_bytes()
+dmp.write_text(dmp.read_text(encoding="latin-1") +
+               f"\ntype\t\t\tut_test_mount\nclass\t\t\thorse\nmodel\t\t\t{free_me}\n"
+               "radius\t\t\t1.2\nheight\t\t\t2.0\nmass\t\t\t1.0\n", encoding="latin-1")
+mod_f = Mod(root_f)
+a_f = bmdb_mod.audit(mod_f, scan_orphans=False)
+check("the planted mount's model is no longer 'unused' — the mount references it",
+      free_me not in {u["entry"] for u in a_f["unused"]})
+row = next((r for r in a_f["unused_mounts"] if r["mount"] == "ut_test_mount"), None)
+check("the mount is reported as ridden by nobody", row is not None)
+check("and flagged as freeing its model entry", bool(row and row["frees_model"]))
+ridden = next(u.mount for u in mod_f.edu.units if u.mount)
+check(f"a mount a unit actually rides ('{ridden}') is not offered",
+      ridden not in {r["mount"] for r in a_f["unused_mounts"]})
+pf = bmdb_mod.plan_cleanup(mod_f, bmdb_mod.CleanupRequest(
+    target=str(Path(tempfile.mkdtemp(prefix="ut_exp_"))), mounts=[ridden]))
+check("and asked for anyway it is refused, with the riders named",
+      not pf.mount_deletes and any(ridden in w for w in pf.warnings))
+
+tgt_f = Path(tempfile.mkdtemp(prefix="ut_exp_"))
+n_mounts = len(mod_f.mount_file.mounts)     # applying invalidates mod_f's cached parse
+pf2 = bmdb_mod.plan_cleanup(mod_f, bmdb_mod.CleanupRequest(
+    target=str(tgt_f), mounts=["ut_test_mount"], entries=[free_me]))
+check("planning the removal is clean", not pf2.errors)
+check("the mount block goes", pf2.mount_deletes == ["ut_test_mount"])
+check("and its model entry goes with it", free_me in pf2.entry_deletes)
+rec_f = bmdb_mod.apply_cleanup(pf2)
+mod_f2 = Mod(root_f)
+check("descr_mount.txt no longer defines it", mod_f2.mount_file.get("ut_test_mount") is None)
+check("every other mount is untouched",
+      len(mod_f2.mount_file.mounts) == n_mounts - 1)
+check("the entry is gone from the modeldb", free_me not in mod_f2.modeldb.by_name())
+check("the removed block is exported verbatim so it can be pasted back",
+      (tgt_f / bmdb_mod.EXPORT_MOUNTS_NAME).is_file()
+      and "ut_test_mount" in (tgt_f / bmdb_mod.EXPORT_MOUNTS_NAME).read_text(encoding="latin-1"))
+undo(rec_f["id"])
+check("undo restores descr_mount.txt byte-exact",
+      (root_f / "data/descr_mount.txt").read_bytes() != before_mounts
+      and "ut_test_mount" in (root_f / "data/descr_mount.txt").read_text(encoding="latin-1"))
+check("undo restores the modeldb byte-exact",
+      (root_f / "data/unit_models/battle_models.modeldb").read_bytes() == before_db)
 
 print("\n== mod-wide entry editing (the unit editor's engine, no unit) ==")
 root_d = fresh_mod()

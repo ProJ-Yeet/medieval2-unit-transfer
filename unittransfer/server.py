@@ -34,6 +34,7 @@ BMDB mode (the whole battle_models.modeldb, see :mod:`unittransfer.bmdb`)
   GET  /api/bmdb/audit?mod=      -> unused entries, soldier-merge twins, orphan files
   POST /api/bmdb/cleanup_plan    -> what a cleanup would move/remove
   POST /api/bmdb/cleanup_apply   -> do it (backups + undo, assets exported first)
+  GET  /api/progress?job=ID      -> where a long job (audit / cleanup) has got to
 """
 from __future__ import annotations
 
@@ -87,6 +88,40 @@ def _liveness_watchdog(httpd) -> None:
                      "tab closed" if closed else f"idle >{int(_DEAD_MAN)}s")
             threading.Thread(target=httpd.shutdown, daemon=True).start()
             return
+
+
+# ---------------------------------------------------------------------------
+# progress for the long jobs (the BMDB audit and the cleanup)
+#
+# Both are a single request that can run for many seconds, and a bar parked at a
+# made-up width tells the user nothing. The page makes up a job id, passes it with
+# the request and polls /api/progress?job=ID beside it; the job writes where it is
+# under that id from its own thread (ThreadingHTTPServer serves the poll meanwhile).
+_PROGRESS: Dict[str, dict] = {}
+_PROGRESS_LOCK = threading.Lock()
+_PROGRESS_TTL = 300.0        # seconds a finished job's last report is kept
+
+
+def _progress_sink(job: str):
+    """A ``(percent, label)`` callback the poller can read back, or ``None``."""
+    job = (job or "").strip()
+    if not job:
+        return None
+
+    def report(pct: int, label: str) -> None:
+        now = time.time()
+        with _PROGRESS_LOCK:
+            for k, v in list(_PROGRESS.items()):
+                if now - v["when"] > _PROGRESS_TTL:
+                    _PROGRESS.pop(k, None)      # a page that never polled again
+            _PROGRESS[job] = {"pct": pct, "label": label, "when": now}
+    return report
+
+
+def _progress_read(job: str) -> dict:
+    with _PROGRESS_LOCK:
+        rec = _PROGRESS.get((job or "").strip())
+        return {"pct": rec["pct"], "label": rec["label"]} if rec else {}
 
 
 class Registry:
@@ -264,7 +299,9 @@ def _cleanup_payload(plan) -> dict:
         "target": str(plan.target or ""),
         "entry_deletes": list(plan.entry_deletes),
         "merges": [{"entry": a, "into": b} for a, b in plan.merges],
+        "mount_deletes": list(plan.mount_deletes),
         "edu_rewritten": bool(plan.edu_text),
+        "mounts_rewritten": bool(plan.mount_text),
         "export_count": len(plan.exports),
         "exports": [rel for _src, rel in plan.exports[:300]],
         "kept_files": plan.kept_files[:60],
@@ -450,17 +487,25 @@ class Handler(BaseHTTPRequestHandler):
                 if not name or name not in self.registry.names() or not utype:
                     return self._err(404, "unknown mod/unit")
                 return self._json(edit.unit_detail(self.registry.get(name), utype))
+            if u.path == "/api/progress":
+                return self._json(_progress_read((q.get("job") or [""])[0]))
             if u.path in ("/api/bmdb/entries", "/api/bmdb/entry", "/api/bmdb/audit"):
                 name = (q.get("mod") or [None])[0]
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
+                audit = u.path == "/api/bmdb/audit"
+                # reported before the mod is resolved: parsing its EDU is already
+                # a second or two, and the page is showing a bar by then
+                sink = _progress_sink((q.get("job") or [""])[0]) if audit else None
+                if sink:
+                    sink(1, f"reading {name}'s files")
                 mod = self.registry.get(name)
                 if u.path == "/api/bmdb/entries":
                     return self._json(bmdb.overview(mod))
                 if u.path == "/api/bmdb/entry":
                     return self._json(bmdb.entry_detail(mod, (q.get("name") or [""])[0]))
                 log.info("BMDB   audit of %s", name)
-                return self._json(bmdb.audit(mod))
+                return self._json(bmdb.audit(mod, progress=sink))
             if u.path == "/api/log":
                 return self._json(config.load_log())
             if u.path == "/icon":
@@ -640,11 +685,15 @@ class Handler(BaseHTTPRequestHandler):
         return {"record": rec, "plan": _edit_payload(plan)}
 
     def _bmdb_cleanup(self, body):
+        sink = _progress_sink(body.get("job") or "")
+        if sink:
+            sink(1, "working out what moves")
         mod = self.registry.get(body["mod"])
         plan = bmdb.plan_cleanup(mod, bmdb.cleanup_request_from_dict(body))
-        log.info("BMDB   cleanup %s -> %s (%d entries, %d files)", mod.name,
-                 plan.target, len(plan.entry_deletes), len(plan.exports))
-        rec = bmdb.apply_cleanup(plan)
+        log.info("BMDB   cleanup %s -> %s (%d entries, %d mounts, %d files)", mod.name,
+                 plan.target, len(plan.entry_deletes), len(plan.mount_deletes),
+                 len(plan.exports))
+        rec = bmdb.apply_cleanup(plan, progress=sink)
         self.registry.invalidate(body["mod"])
         for line in plan.summary().splitlines()[1:]:
             if line.strip():
@@ -652,6 +701,8 @@ class Handler(BaseHTTPRequestHandler):
         out = {"record": rec, "plan": _cleanup_payload(plan)}
         # the game caches unit models; a removed entry has to be cleared out of them
         if config.load_settings().get("run_full_cleaner", True) and body.get("run_cleaner", True):
+            if sink:
+                sink(99, "clearing the game's caches (full cleaner)")
             res = cleaner.run_full_cleaner(mod.root)
             out["cleaner"] = res
             log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)

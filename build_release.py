@@ -53,27 +53,48 @@ def rmtree(path: Path) -> None:
     """Delete a staging tree even when Windows is being difficult.
 
     A previous build's runtime may still have read-only files or a handle that
-    hasn't been released (antivirus, Explorer preview), so clear the read-only
-    bit and retry a few times rather than failing the build.
+    hasn't been released (antivirus, Explorer preview, or a subprocess we only
+    just waited on — Windows can keep the handle alive for a moment after the
+    process exits), so clear the read-only bit and retry a few times rather than
+    failing the build. If it still won't go, say so here, with the real OS
+    error, instead of letting the leftovers surface later as a confusing
+    "refusing to package".
     """
     import os
     import stat
 
-    def on_error(func, p, _exc):
+    # The first failure of an attempt is the cause (the locked file); the ones
+    # after it are its knock-on effects ("directory not empty"), so keep the first.
+    first_error: OSError | None = None
+
+    def note(err):
+        nonlocal first_error
+        if first_error is None and isinstance(err, OSError):
+            first_error = err
+
+    def on_error(func, p, exc):
+        note(exc[1] if isinstance(exc, tuple) else exc)
         try:
             os.chmod(p, stat.S_IWRITE)
             func(p)
-        except OSError:
-            pass
+        except OSError as e:
+            note(e)
 
-    for attempt in range(4):
+    # onerror is deprecated from 3.12 and gone in 3.14; onexc replaces it.
+    handler = ({"onexc": on_error} if sys.version_info >= (3, 12)
+               else {"onerror": on_error})
+
+    for attempt in range(5):
         if not path.exists():
             return
-        shutil.rmtree(path, onerror=on_error)
+        first_error = None
+        shutil.rmtree(path, **handler)
         if not path.exists():
             return
         time.sleep(0.5 * (attempt + 1))
-    raise SystemExit(f"could not remove {path} — close anything using it and retry")
+    detail = f"\n  {first_error}" if first_error else ""
+    raise SystemExit(
+        f"could not remove {path} — close anything using it and retry{detail}")
 
 
 def _copy_tree(src: Path, dst: Path) -> int:
@@ -150,7 +171,7 @@ def stage_runtime(stage: Path) -> None:
     for junk in list(site.glob("*.dist-info")) + list(site.glob("*.egg-info")):
         shutil.rmtree(junk, ignore_errors=True)
     for junk in site.rglob("__pycache__"):
-        shutil.rmtree(junk, ignore_errors=True)
+        rmtree(junk)
 
     ok = subprocess.run([str(runtime / "python.exe"), "-c",
                          "import PIL;from PIL import Image;print(PIL.__version__)"],
@@ -190,12 +211,19 @@ FORBIDDEN_NAMES = ("launcher-output.txt", "troubleshoot-output.txt")
 
 
 def clean_stage(stage: Path) -> None:
-    """Remove anything the build or the smoke test generated in the staging tree."""
+    """Remove anything the build or the smoke test generated in the staging tree.
+
+    The smoke test runs the staged runtime's own python.exe, which writes
+    __pycache__ next to the packages it imports; Windows can still hold a handle
+    on those folders for a moment after that process exits. Delete through
+    ``rmtree`` so it retries — with ignore_errors the failure was silent and only
+    showed up as assert_clean refusing to package.
+    """
     removed = 0
     for name in FORBIDDEN_DIRS:
         for d in list(stage.rglob(name)):
             if d.is_dir():
-                shutil.rmtree(d, ignore_errors=True)
+                rmtree(d)
                 removed += 1
     for p in list(stage.rglob("*")):
         if p.is_file() and (p.suffix.lower() in FORBIDDEN_SUFFIXES

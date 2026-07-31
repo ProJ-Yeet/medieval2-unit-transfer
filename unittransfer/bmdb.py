@@ -14,7 +14,10 @@ module works on the file as a whole:
   * **clean up**: drop those entries from the mod's modeldb and *move* their
     files out into a folder of the user's choosing, mirroring the mod's own
     layout so the whole thing can be dropped back in later. That folder also gets
-    a standalone modeldb holding only the removed entries.
+    a standalone modeldb holding only the removed entries;
+  * **drop dead mounts**: a ``descr_mount.txt`` definition no unit rides is a
+    modeldb entry held alive by nothing, so removing the mount is usually what
+    makes its model removable. Opt-in, and the removed blocks are exported too.
 
 Why it matters: M2TW loads the entire modeldb into memory and big overhauls sit
 near the engine's limits, so entries and meshes that nothing references cost real
@@ -25,8 +28,12 @@ What counts as "referenced":
   * ``export_descr_unit.txt`` — ``soldier`` / ``officer`` / ``armour_ug_models``
   * ``descr_mount.txt`` — a mount's model
   * ``descr_character.txt`` — ``battle_model`` (generals, agents)
+  * every campaign's ``descr_strat.txt`` and ``campaign_script.txt`` —
+    ``battle_model`` again, but written inline in a comma-separated character
+    line rather than on its own, so those two files get a looser pattern
   * anything else: any ``data/descr_*.txt`` that merely *mentions* the name is
-    treated as a reference too. That is deliberately over-cautious — a false
+    treated as a reference too, bar the two in :data:`DESCR_SKIP` that cannot
+    name a battle model at all. That is deliberately over-cautious — a false
     "still used" costs nothing, a false "unused" silently breaks a mod.
 """
 from __future__ import annotations
@@ -36,25 +43,77 @@ import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from . import config, edit, modeldb
 from . import edu as edu_mod
+from . import mounts as mounts_mod
 from .mod import Mod
 
 # Slot kinds an entry can be referenced from. "soldier" is called out separately
-# because it is the one the merge suggestions are about.
-SLOT_KINDS = ("soldier", "officer", "armour", "mount", "character")
+# because it is the one the merge suggestions are about; OTHER_KINDS is "doing a
+# real job somewhere a soldier merge cannot follow", which is every other kind —
+# spelling it out that way means a new kind is covered everywhere by adding it here.
+SLOT_KINDS = ("soldier", "officer", "armour", "mount", "character", "campaign")
+OTHER_KINDS = tuple(k for k in SLOT_KINDS if k != "soldier")
 
 # Name of the standalone modeldb written into the export folder. Deliberately NOT
 # battle_models.modeldb: the export mirrors the mod's data/ tree so it can be
 # copied back, and a file with that name would overwrite the real one.
 EXPORT_DB_NAME = "removed_battle_models.modeldb"
+EXPORT_MOUNTS_NAME = "removed_mounts.txt"   # the descr_mount.txt blocks, verbatim
 UNUSED_SUBDIR = "unused_files"          # files no entry mentions at all
 README_NAME = "README.txt"
 
+# The campaign files that can name a battle model, relative to each campaign folder.
+CAMPAIGN_FILES = ("descr_strat.txt", "campaign_script.txt")
+
+# data/descr_*.txt files the over-cautious "somebody still mentions it" net skips.
+# Everything else in that glob counts, so a file only belongs here when it CANNOT
+# name a battle model or a mount — otherwise a false "unused" breaks a mod.
+DESCR_SKIP = {
+    # Where mounts are *defined*, not used: the only battle model a mount block
+    # names is its `model` line, which `entry_users` already counts as a real
+    # "mount" reference. Including it would make every mount's model look
+    # "mentioned somewhere else" and the dead-mount pass could never free one.
+    "descr_mount.txt",
+    # Strat-map models only: its `model_flexi` / `texture` lines point at
+    # data/models_strat, never at a unit_models battle model — so a name matching
+    # in here is a coincidence, and one that pins a genuinely dead entry in place.
+    "descr_model_strat.txt",
+}
+
 _TOKEN_RE = re.compile(r"[a-z0-9_.\-]+")
+_COMMENT_RE = re.compile(r";[^\n]*")
+# descr_character.txt puts `battle_model` on a line of its own...
 _BATTLE_MODEL_RE = re.compile(r"^\s*battle_model\s+(\S+)", re.IGNORECASE | re.MULTILINE)
+# ...but descr_strat.txt and campaign_script.txt write it inline, in the middle of
+# a comma-separated character line ("character x, general, battle_model foo, ..."),
+# so there it needs a comma to count as both a separator and a terminator.
+_BATTLE_MODEL_INLINE_RE = re.compile(r"(?:^|[\s,])battle_model[\s,]+([^\s,]+)",
+                                     re.IGNORECASE | re.MULTILINE)
+
+
+# A scan / cleanup of a big mod is one multi-second call, so both take an optional
+# ``(percent, label)`` sink the server exposes to the page — the bar then shows
+# where the job really is instead of sitting at a made-up width.
+Progress = Optional[Callable[[int, str], None]]
+
+
+def _reporter(progress: Progress) -> Callable[[float, str], None]:
+    """Wrap an optional sink so the callers below can report unconditionally.
+
+    Reporting is never allowed to break the job it is describing, so a sink that
+    raises (a poller's dict gone, anything) is swallowed.
+    """
+    def report(pct: float, label: str) -> None:
+        if progress is None:
+            return
+        try:
+            progress(max(0, min(100, int(pct))), label)
+        except Exception:
+            pass
+    return report
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +152,8 @@ def entry_users(mod: Mod) -> Dict[str, Dict[str, List[str]]]:
         add(model, "mount", f"mount:{mount_name}")
     for name in _character_models(mod):
         add(name, "character", "file:descr_character.txt")
+    for name, where in _campaign_models(mod):
+        add(name, "campaign", f"file:{where}")
     return users
 
 
@@ -108,7 +169,7 @@ def _describe_users(users: Dict[str, Dict[str, List[str]]], name: str) -> str:
         return ""
     parts = []
     for kind in SLOT_KINDS:
-        who = slots[kind]
+        who = [short_referrer(w) for w in slots[kind]]
         if not who:
             continue
         shown = ", ".join(who[:3])
@@ -116,6 +177,11 @@ def _describe_users(users: Dict[str, Dict[str, List[str]]], name: str) -> str:
             shown += f" and {len(who) - 3} more"
         parts.append(f"the {kind} model for {shown}")
     return "; ".join(parts)
+
+
+def short_referrer(who: str) -> str:
+    """``"mount:x"`` / ``"file:y"`` -> ``"x"`` / ``"y"``; a unit type is unchanged."""
+    return who.split(":", 1)[1] if who.startswith(("mount:", "file:")) else who
 
 
 def _character_models(mod: Mod) -> List[str]:
@@ -126,15 +192,155 @@ def _character_models(mod: Mod) -> List[str]:
     return [m.group(1).lower() for m in _BATTLE_MODEL_RE.finditer(_read_text(path))]
 
 
+def campaign_files(mod: Mod) -> List[Path]:
+    """Every campaign's descr_strat.txt / campaign_script.txt.
+
+    All campaign folders are walked, not just ``imperial_campaign`` — overhauls
+    rename it, and a model kept alive only by an alternate campaign is exactly the
+    kind of thing that must not be reported as dead.
+    """
+    base = mod.data / "world" / "maps" / "campaign"
+    if not base.is_dir():
+        return []
+    out: List[Path] = []
+    for folder in sorted(p for p in base.iterdir() if p.is_dir()):
+        out += [folder / name for name in CAMPAIGN_FILES if (folder / name).is_file()]
+    return out
+
+
+def _campaign_models(mod: Mod) -> List[Tuple[str, str]]:
+    """``(model name, "<campaign>/<file>")`` for every inline ``battle_model``.
+
+    These name the model a *specific* character on the campaign map fights with —
+    nothing in the EDU or descr_mount points at them, so without this pass they
+    look completely unreferenced and the cleanup would happily delete them.
+    Comments are stripped first: campaign_script.txt is mostly commented-out
+    history in a mature mod, and a commented reference is not a reference.
+    """
+    out: List[Tuple[str, str]] = []
+    for path in campaign_files(mod):
+        text = _read_text(path)
+        if not text:
+            continue
+        label = f"{path.parent.name}/{path.name}"
+        for m in _BATTLE_MODEL_INLINE_RE.finditer(_COMMENT_RE.sub("", text)):
+            out.append((m.group(1).strip().lower(), label))
+    return out
+
+
+def ridden_mounts(mod: Mod) -> set:
+    """Lowercased mount names some unit's EDU ``mount`` line names."""
+    return {u.mount.lower() for u in mod.edu.units if u.mount}
+
+
+def _mount_mentions(mod: Mod,
+                    report: Optional[Callable[[float, str], None]] = None) -> Dict[str, str]:
+    """``mount name -> the descr_*.txt that mentions it``, for mounts.
+
+    The same over-cautious net the entries get, but by whole name rather than by
+    token: mount names contain spaces ("gondor horse"), so they cannot be looked
+    up in :func:`_descr_tokens`. :data:`DESCR_SKIP` is left out for the reasons
+    given there.
+
+    Every name goes into ONE alternation so each file is scanned once. A regex per
+    name per file is a hundred-odd passes over the same megabytes, and on a big
+    mod that alone was most of the audit's running time.
+    """
+    names = [m.type for m in mod.mount_file.mounts if m.type]
+    if not names:
+        return {}
+
+    # Whitespace in the name may be a tab in the file, and a name must not match as
+    # a fragment of a longer one ("horse" inside "war horse"). `/ \ . -` are in the
+    # boundary class as well so a name never matches a path segment — a mount called
+    # "camel" is not a reference just because descr_skeleton.txt loads
+    # animations/camel/Camel_Idle.CAS.
+    def body(name: str) -> str:
+        return r"\s+".join(re.escape(p) for p in name.lower().split())
+
+    by_key = {" ".join(n.lower().split()): n for n in names}
+    # longest alternative first, so at one position "war horse" beats "horse"
+    alts = sorted((body(n) for n in names), key=len, reverse=True)
+    rx = re.compile(r"(?<![a-z0-9_./\\-])(?:" + "|".join(alts) + r")(?![a-z0-9_./\\-])")
+
+    paths = [p for p in sorted(mod.data.glob("descr_*.txt"))
+             if p.name.lower() not in DESCR_SKIP]
+    out: Dict[str, str] = {}
+    for i, path in enumerate(paths):
+        if report:
+            report(i / (len(paths) or 1), path.name)
+        text = _read_text(path).lower()
+        if not text:
+            continue
+        for m in rx.finditer(text):
+            name = by_key.get(" ".join(m.group(0).split()))
+            if name is not None:
+                out.setdefault(name, path.name)   # the first file that names it
+    if report:
+        report(1.0, "")
+    return out
+
+
+def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
+                tokens: Dict[str, str],
+                report: Optional[Callable[[float, str], None]] = None
+                ) -> Tuple[List[dict], List[dict]]:
+    """``(mounts no unit rides, mounts held back because a descr_*.txt names one)``.
+
+    ``frees_model`` on a row is the interesting part: it means removing that mount
+    is the *only* thing keeping its modeldb entry alive, so ticking the mount lets
+    the entry go with it. It is false when some other slot still names the model,
+    when a second mount also names it and that one is staying, or when the entry is
+    protected for any of the usual reasons.
+    """
+    if not mod.mount_file.mounts:
+        return [], []
+    ridden = ridden_mounts(mod)
+    mentions = _mount_mentions(mod, report)
+    entries = mod.modeldb.by_name()
+
+    dead = [m for m in mod.mount_file.mounts
+            if m.type and m.type.lower() not in ridden and m.type not in mentions]
+    dead_low = {m.type.lower() for m in dead}
+
+    rows: List[dict] = []
+    for m in dead:
+        model = (m.model or "").lower()
+        slots = users.get(model) or {}
+        others = [short_referrer(w) for k in SLOT_KINDS if k != "mount"
+                  for w in slots.get(k, [])]
+        # a model two mounts share only comes free when BOTH of them go
+        other_mounts = [short_referrer(w) for w in slots.get("mount", [])
+                        if short_referrer(w).lower() not in dead_low]
+        entry = entries.get(model)
+        frees = bool(model) and entry is not None and not others and not other_mounts \
+            and not entry.first_entry_pad and model not in tokens
+        rows.append({
+            "mount": m.type,
+            "class": m.mount_class,
+            "model": m.model,
+            "in_db": entry is not None,
+            "frees_model": frees,
+            "kept_by": (others + other_mounts)[:4],
+            "mentioned_in": tokens.get(model, "") if entry is not None else "",
+        })
+    rows.sort(key=lambda r: r["mount"].lower())
+    held = [{"mount": name, "file": where} for name, where in sorted(mentions.items())]
+    return rows, held
+
+
 def _descr_tokens(mod: Mod) -> Dict[str, str]:
     """``token -> the descr_*.txt file it appeared in``, for the safety net.
 
     Every ``data/descr_*.txt`` is tokenised once (they are the only files that
-    plausibly name a battle model outside the EDU). Membership is then O(1) per
-    entry instead of a scan per name, which matters on a 2000-entry modeldb.
+    plausibly name a battle model outside the EDU), bar :data:`DESCR_SKIP`.
+    Membership is then O(1) per entry instead of a scan per name, which matters on
+    a 2000-entry modeldb.
     """
     out: Dict[str, str] = {}
     for path in sorted(mod.data.glob("descr_*.txt")):
+        if path.name.lower() in DESCR_SKIP:
+            continue
         text = _read_text(path).lower()
         if not text:
             continue
@@ -214,7 +420,7 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     for name, slots in sorted(users.items()):
         if name in unused or not slots["soldier"]:
             continue
-        if any(slots[k] for k in ("officer", "armour", "mount", "character")):
+        if any(slots[k] for k in OTHER_KINDS):
             continue                      # doing a real job somewhere else
         entry = entries.get(name)
         if entry is None:
@@ -251,13 +457,17 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
         preferred = next((n for n in options if n in own), options[0])
         # the picker is capped, so the default has to be inside what it shows
         options = [preferred] + [n for n in options if n != preferred]
+        options = options[:12]
         no_upgrades = [t for t in units
                        if not (by_type.get(t) and by_type[t].armour_ug_models)]
         out.append({
             "entry": name,
             "units": units,
             "into": preferred,
-            "options": options[:12],
+            "options": options,
+            # per option, not just the default: the picker can be changed, and the
+            # "already an armour tier" badge has to follow whatever is picked.
+            "own_options": [n for n in options if n in own],
             "own_upgrade": preferred in own,
             "units_without_upgrades": no_upgrades,
             "files": _entry_files(entry),
@@ -267,39 +477,68 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     return out
 
 
-def orphan_files(mod: Mod, referenced: set) -> List[dict]:
-    """Files under ``data/unit_models`` that no modeldb entry mentions at all."""
+def orphan_files(mod: Mod, referenced: set,
+                 report: Optional[Callable[[float, str], None]] = None) -> List[dict]:
+    """Files under ``data/unit_models`` that no modeldb entry mentions at all.
+
+    ``report`` is called with ``(fraction done, folder name)`` as the walk moves
+    from one top-level folder to the next. That is why the tree is walked a folder
+    at a time rather than with a single ``rglob``: this is the slowest part of the
+    audit by far (tens of thousands of files on an overhaul), and one silent
+    multi-second pause is exactly what the progress bar exists to avoid.
+    """
     base = mod.unit_models_dir
     if not base.is_dir():
         return []
+    try:
+        tops = sorted(base.iterdir(), key=lambda p: p.name.lower())
+    except OSError:
+        tops = []
     out: List[dict] = []
-    for p in base.rglob("*"):
-        if not p.is_file():
-            continue
-        rel = p.relative_to(mod.data).as_posix()
-        # never offer a modeldb (the real one, or somebody's .modeldb backup) —
-        # the whole audit is derived from it
-        if ".modeldb" in p.name.lower() or _norm(rel) in referenced:
-            continue
-        try:
-            size = p.stat().st_size
-        except OSError:
-            size = 0
-        out.append({"rel": rel, "size": size})
+    total = len(tops) or 1
+    for i, top in enumerate(tops):
+        if report:
+            report(i / total, top.name)
+        for p in (top.rglob("*") if top.is_dir() else [top]):
+            if not p.is_file():
+                continue
+            rel = p.relative_to(mod.data).as_posix()
+            # never offer a modeldb (the real one, or somebody's .modeldb backup) —
+            # the whole audit is derived from it
+            if ".modeldb" in p.name.lower() or _norm(rel) in referenced:
+                continue
+            try:
+                size = p.stat().st_size
+            except OSError:
+                size = 0
+            out.append({"rel": rel, "size": size})
+    if report:
+        report(1.0, "")
     out.sort(key=lambda x: x["rel"].lower())
     return out
 
 
-def audit(mod: Mod, scan_orphans: bool = True) -> dict:
-    """Everything the cleanup dialog needs, in one pass over the mod."""
+def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dict:
+    """Everything the cleanup dialog needs, in one pass over the mod.
+
+    The percentages handed to ``progress`` are the shares each phase really takes
+    on a big mod — parsing the modeldb and walking ``unit_models`` are most of the
+    wait, and the walk reports its own way through as it goes.
+    """
+    say = _reporter(progress)
+    say(3, "reading units, mounts, characters and campaign scripts")
     users = entry_users(mod)
+    say(12, "reading data/descr_*.txt")
     tokens = _descr_tokens(mod)
+    say(20, "parsing battle_models.modeldb")
     entries = mod.modeldb.by_name()
 
+    say(42, "listing the files every entry names")
     referenced_files = set()
     for e in mod.modeldb.entries:
         referenced_files.update(_norm(f) for f in _entry_files(e))
 
+    say(48, f"checking {len(entries)} entries for references")
     counts = name_counts(mod)
     unused: List[dict] = []
     unused_names: set = set()
@@ -328,8 +567,20 @@ def audit(mod: Mod, scan_orphans: bool = True) -> dict:
                        "copies": counts[e.name],
                        "on_disk": sum(1 for f in files if (mod.data / f).is_file())})
 
+    say(56, "looking for entries with an identical twin")
     merges = merge_candidates(mod, users, unused_names)
-    orphans = orphan_files(mod, referenced_files) if scan_orphans else []
+    say(60, "walking data/unit_models")
+    orphans = orphan_files(
+        mod, referenced_files,
+        lambda frac, where: say(60 + 25 * frac,
+                                f"walking data/unit_models{'/' + where if where else ''}"),
+    ) if scan_orphans else []
+    say(85, "checking mounts no unit rides")
+    dead_mounts, held_mounts = mount_audit(
+        mod, users, tokens,
+        lambda frac, where: say(85 + 14 * frac,
+                                f"checking mounts no unit rides{' — ' + where if where else ''}"))
+    say(100, "done")
     return {
         "mod": mod.name,
         "root": str(mod.root),
@@ -340,6 +591,9 @@ def audit(mod: Mod, scan_orphans: bool = True) -> dict:
         "orphans": orphans,
         "orphan_bytes": sum(o["size"] for o in orphans),
         "referenced_files": len(referenced_files),
+        "unused_mounts": dead_mounts,
+        "mentioned_mounts": held_mounts,
+        "campaign_files": [f"{p.parent.name}/{p.name}" for p in campaign_files(mod)],
     }
 
 
@@ -399,8 +653,7 @@ def entry_detail(mod: Mod, name: str) -> dict:
         raise KeyError(f"model entry {name!r} not found in {mod.name}")
     slots = entry_users(mod).get(entry.name) or {k: [] for k in SLOT_KINDS}
     refs = [w for k in SLOT_KINDS for w in slots[k]]
-    short = lambda w: w.split(":", 1)[1] if w.startswith(("mount:", "file:")) else w
-    labels = [f"{k}: {', '.join(short(w) for w in slots[k][:3])}"
+    labels = [f"{k}: {', '.join(short_referrer(w) for w in slots[k][:3])}"
               f"{'…' if len(slots[k]) > 3 else ''}"
               for k in SLOT_KINDS if slots[k]]
     payload = edit.model_payload(entry, labels, refs)
@@ -425,6 +678,7 @@ class CleanupRequest:
     entries: List[str] = field(default_factory=list)      # unused entries to remove
     merges: List[dict] = field(default_factory=list)      # [{"entry", "into"}] accepted
     orphans: List[str] = field(default_factory=list)      # data-relative files to move out
+    mounts: List[str] = field(default_factory=list)       # descr_mount.txt blocks to drop
     keep_shared_files: bool = True                # never move a file a kept entry uses
 
 
@@ -436,6 +690,7 @@ def cleanup_request_from_dict(d: dict) -> CleanupRequest:
                  "into": str(m.get("into") or "").lower()}
                 for m in (d.get("merges") or []) if m.get("entry") and m.get("into")],
         orphans=[str(x).replace("\\", "/") for x in (d.get("orphans") or [])],
+        mounts=[str(x) for x in (d.get("mounts") or []) if str(x).strip()],
         keep_shared_files=bool(d.get("keep_shared_files", True)),
     )
 
@@ -448,6 +703,8 @@ class CleanupPlan:
     entry_deletes: List[str] = field(default_factory=list)
     merges: List[Tuple[str, str]] = field(default_factory=list)   # (entry, into)
     edu_text: str = ""                            # "" = the EDU is not rewritten
+    mount_text: str = ""                          # "" = descr_mount.txt is not rewritten
+    mount_deletes: List[str] = field(default_factory=list)
     exports: List[Tuple[Path, str]] = field(default_factory=list)  # (src abs, rel in export)
     deletes: List[str] = field(default_factory=list)               # rel under data/
     kept_files: List[str] = field(default_factory=list)            # shared, left in place
@@ -504,6 +761,11 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
     # other — the merge pass below is the only way a referenced entry may go, and
     # only because it repoints that soldier line first.
     users = entry_users(mod)
+
+    # ---- mounts nothing rides: dropped from descr_mount.txt FIRST, because that
+    # is what takes the "mount" referrer off their model and lets the entry go.
+    _plan_mounts(plan, users)
+
     merging = {m["entry"] for m in req.merges}
     doomed: List[str] = []
     for name in dict.fromkeys(req.entries):
@@ -519,9 +781,14 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
             # merges add their own entry to `doomed`, but only once the pairing
             # has passed every check below — being asked for is not enough.
             if name not in merging:
+                slots = users.get(name) or {}
+                only_mounts = bool(slots.get("mount")) and not any(
+                    slots.get(k) for k in SLOT_KINDS if k != "mount")
                 plan.warnings.append(
-                    f"'{name}' is still {used} — kept, removing it would stop the "
-                    "game loading. Re-scan the mod to pick it up as a merge.")
+                    f"'{name}' is still {used} — kept, removing it would stop the game "
+                    + ("loading. Tick that mount for removal too and the entry comes "
+                       "free with it." if only_mounts else
+                       "loading. Re-scan the mod to pick it up as a merge."))
             continue
         doomed.append(name)
 
@@ -651,9 +918,57 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
             f"{plan.orphan_count} file(s) no entry mentions moved to "
             f"{UNUSED_SUBDIR}/ ({plan.orphan_bytes / 1048576:.1f} MB)")
 
-    if not (plan.entry_deletes or plan.exports):
+    if not (plan.entry_deletes or plan.exports or plan.mount_deletes):
         plan.changes.append("nothing to clean up")
     return plan
+
+
+def _plan_mounts(plan: CleanupPlan, users: Dict[str, Dict[str, List[str]]]) -> None:
+    """Work out the descr_mount.txt rewrite, and strip the referrers it removes.
+
+    Mutates ``users`` in place: a mount that is going stops counting as a reason to
+    keep its model, which is the whole point of offering the removal. Everything is
+    re-checked against the mod — a unit that started riding the mount since the scan
+    keeps it, because a dangling ``mount`` line stops the unit appearing at all.
+    """
+    mod, req = plan.mod, plan.request
+    if not req.mounts:
+        return
+    by_type = {m.type.lower(): m for m in mod.mount_file.mounts if m.type}
+    ridden = ridden_mounts(mod)
+    keep: List[str] = []
+    for want in dict.fromkeys(m.strip().lower() for m in req.mounts):
+        mount = by_type.get(want)
+        if mount is None:
+            plan.warnings.append(f"mount '{want}' is not in this mod's descr_mount.txt — skipped")
+            continue
+        if want in ridden:
+            riders = [u.type for u in mod.edu.units if u.mount.lower() == want]
+            plan.warnings.append(
+                f"mount '{mount.type}' is ridden by {', '.join(riders[:3])}"
+                f"{'…' if len(riders) > 3 else ''} — kept, removing it would leave those "
+                "units with a mount that does not exist")
+            continue
+        keep.append(mount.type)
+    if not keep:
+        return
+
+    drop = {t.lower() for t in keep}
+    plan.mount_deletes = keep
+    plan.mount_text = mod.mount_file.preamble + "".join(
+        m.raw for m in mod.mount_file.mounts if m.type.lower() not in drop)
+    for slots in users.values():
+        slots["mount"] = [w for w in slots["mount"]
+                          if short_referrer(w).lower() not in drop]
+    plan.changes.append(
+        f"{len(keep)} mount{'' if len(keep) == 1 else 's'} removed from descr_mount.txt: "
+        f"{', '.join(keep[:5])}{'…' if len(keep) > 5 else ''}")
+
+
+def removed_mounts_text(mod: Mod, names: Sequence[str]) -> str:
+    """The removed descr_mount.txt blocks, verbatim, for the export folder."""
+    drop = {n.lower() for n in names}
+    return "".join(m.raw for m in mod.mount_file.mounts if m.type.lower() in drop)
 
 
 def edu_set_soldier(block: str, name: str) -> str:
@@ -707,6 +1022,11 @@ When:         {when}
       Files that were sitting under data\\unit_models but were not named by ANY
       entry in the modeldb, removed or kept. Nothing referenced them.
 
+  {mounts}
+      The {nm} descr_mount.txt block(s) that were removed, verbatim. No unit in the
+      mod had a "mount" line naming them. Paste them back into data\\descr_mount.txt
+      to restore them.
+
 Undo: the removal itself is in the tool's log (the clock button) — "Undo" puts
 every removed file and the original modeldb / export_descr_unit.txt back. This
 folder is a copy and is never touched by Undo, so it is safe to keep or delete.
@@ -717,13 +1037,14 @@ folder is a copy and is never touched by Undo, so it is safe to keep or delete.
 # cleanup: apply
 
 
-def apply_cleanup(plan: CleanupPlan) -> Dict:
+def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
     """Write the cleanup: export first, then rewrite the mod (with backups)."""
     if plan.errors:
         raise ValueError("cannot apply: " + "; ".join(plan.errors))
     mod, target = plan.mod, plan.target
     if target is None:
         raise ValueError("cannot apply: no export folder")
+    say = _reporter(progress)
     tid = config.new_transfer_id()
     backup_root = config.backup_root_for(tid)
     manifest: Dict[str, List[str]] = {"backed_up": [], "created": []}
@@ -731,17 +1052,27 @@ def apply_cleanup(plan: CleanupPlan) -> Dict:
     # 1) copy everything out BEFORE touching the mod, so a failure half-way
     #    leaves the mod intact rather than the assets gone and nowhere to be.
     target.mkdir(parents=True, exist_ok=True)
-    for src, rel in plan.exports:
+    n_exports = len(plan.exports)
+    for i, (src, rel) in enumerate(plan.exports):
+        # copying is most of the wall clock, and its total is known — so this is
+        # the one part of the job whose bar is a straight count of real work.
+        if i % 10 == 0:
+            say(2 + 68 * i / n_exports, f"copying files out — {i}/{n_exports}")
         dest = target / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
+    say(70, "writing the export folder's modeldb")
     if plan.entry_deletes:
         (target / EXPORT_DB_NAME).write_text(
             export_modeldb_text(mod, plan.entry_deletes), encoding=modeldb.ENCODING)
+    if plan.mount_deletes:
+        (target / EXPORT_MOUNTS_NAME).write_text(
+            removed_mounts_text(mod, plan.mount_deletes), encoding=mounts_mod.ENCODING)
     (target / README_NAME).write_text(
         _README.format(mod=mod.name, when=time.strftime("%Y-%m-%d %H:%M:%S"),
                        db=EXPORT_DB_NAME, n=len(plan.entry_deletes),
-                       unused=UNUSED_SUBDIR),
+                       unused=UNUSED_SUBDIR, mounts=EXPORT_MOUNTS_NAME,
+                       nm=len(plan.mount_deletes)),
         encoding="utf-8")
 
     # 2) now rewrite the mod, backing up every file first
@@ -763,11 +1094,19 @@ def apply_cleanup(plan: CleanupPlan) -> Dict:
         t.write_text(text, encoding=encoding)
 
     if plan.edu_text:
+        say(72, "rewriting export_descr_unit.txt")
         write_text("export_descr_unit.txt", plan.edu_text, edu_mod.ENCODING)
+    if plan.mount_text:
+        say(74, "rewriting descr_mount.txt")
+        write_text("descr_mount.txt", plan.mount_text, mounts_mod.ENCODING)
     if plan.modeldb_touched:
+        say(76, "rewriting battle_models.modeldb")
         write_text("unit_models/battle_models.modeldb", _modeldb_without(plan),
                    modeldb.ENCODING)
-    for rel in plan.deletes:
+    n_deletes = len(plan.deletes)
+    for i, rel in enumerate(plan.deletes):
+        if i % 10 == 0:
+            say(84 + 15 * i / n_deletes, f"taking files out of the mod — {i}/{n_deletes}")
         t = mod.data / rel
         if t.exists():
             backup_and(rel)                     # backed up, then removed: Undo restores it
@@ -775,6 +1114,7 @@ def apply_cleanup(plan: CleanupPlan) -> Dict:
                 t.unlink()
             except OSError as exc:
                 plan.warnings.append(f"could not remove data/{rel}: {exc}")
+    say(99, "writing the log entry")
 
     rec = {
         "id": tid,
@@ -786,9 +1126,15 @@ def apply_cleanup(plan: CleanupPlan) -> Dict:
         "dest": mod.name,
         "dest_root": str(mod.root),
         "unit_type": "",
-        "resolved_type": f"{len(plan.entry_deletes)} unused model entr"
-                         f"{'y' if len(plan.entry_deletes) == 1 else 'ies'}",
-        "options": {"target": str(target), "merges": [list(m) for m in plan.merges]},
+        "resolved_type": ", ".join(
+            [f"{n} {word}" for n, word in
+             ((len(plan.entry_deletes),
+               f"unused model entr{'y' if len(plan.entry_deletes) == 1 else 'ies'}"),
+              (len(plan.mount_deletes),
+               f"unused mount{'' if len(plan.mount_deletes) == 1 else 's'}"))
+             if n]) or "nothing",
+        "options": {"target": str(target), "merges": [list(m) for m in plan.merges],
+                    "mounts": list(plan.mount_deletes)},
         "applied": True,
         "undone": False,
         "note": "",

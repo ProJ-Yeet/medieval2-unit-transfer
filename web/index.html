@@ -185,9 +185,14 @@
   .sbrow .count{font-size:11px}
   /* base picker faction filter */
   .basebar{display:flex;gap:6px} .basebar input{flex:1;min-width:0} .basebar select{flex:0 0 150px}
-  /* "inherited from base" badge in the field editor */
+  /* "inherited from base" badge in the field editor — a button when the source
+     unit has a value of its own to switch back to, a flat marker when it doesn't */
   .ibadge{display:inline-block;margin-left:5px;font-size:9px;background:var(--accent);color:#1a1a1a;
-    border-radius:3px;padding:0 4px;font-weight:700;vertical-align:middle}
+    border-radius:3px;padding:0 4px;font-weight:700;vertical-align:middle;
+    border:1px solid var(--accent);font-family:inherit;line-height:15px}
+  button.ibadge{cursor:pointer}
+  button.ibadge.off{background:transparent;color:var(--dim);border-color:var(--edge)}
+  button.ibadge:hover{filter:brightness(1.15)}
   /* reroute folder browser */
   .brbar{display:flex;gap:6px;align-items:center} .brbar input{flex:1;min-width:0}
   .brlist{max-height:140px;overflow:auto;border:1px solid var(--edge);border-radius:6px;margin-top:6px;background:var(--panel2)}
@@ -364,7 +369,13 @@
       <option value="class">Class</option>
       <option value="none">Nothing (flat)</option>
     </select>
-    <h3>Faction</h3><div id="factionFilter"></div>
+    <h3>Faction</h3>
+    <select id="facSort" style="width:100%;margin-bottom:6px"
+      title="Which of the two names factions are listed and sorted by — the other one goes in brackets">
+      <option value="name">A→Z by in-game name</option>
+      <option value="code">A→Z by code name</option>
+    </select>
+    <div id="factionFilter"></div>
     <h3>Category</h3><div id="categoryFilter"></div>
     <h3>Class</h3><div id="classFilter"></div>
     <h3>Era</h3>
@@ -407,7 +418,14 @@ const api={
 const esc=s=>(s==null?'':''+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const q1=v=>v.replace(/'/g,"\\'");
 function toast(m,ms=2800){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms);}
-const facLabel=f=>{const n=state.factionNames[f];return n?`${n} (${f})`:f;};
+// A faction has two names — the EDU's code ("teutonic_order") and the in-game one
+// ("Clans of Enedwaith") — and which one you look for depends on what you are
+// doing. Whichever is picked leads and sorts; the other rides along in brackets so
+// the row is still readable either way.
+const facBy=()=>(state.settings.faction_sort==='code'?'code':'name');
+const facTwoNames=(code,name)=>!name?code
+  :facBy()==='code'?`${code} (${name})`:`${name} (${code})`;
+const facLabel=f=>facTwoNames(f,state.factionNames[f]);
 const iconUrl=(mod,type,kind)=>`/icon?mod=${encodeURIComponent(mod)}&type=${encodeURIComponent(type)}&kind=${kind||'card'}`;
 // Icon requests can be dropped when a page fires dozens at once (connection
 // bursts). A missing icon returns a valid blank PNG (onload), so onerror only
@@ -435,6 +453,7 @@ async function init(){
   try{
     startHeartbeat();
     const s=await api.get('/api/settings');state.settings=s;
+    facSort.value=facBy();                 // remembered across runs like the rest
     // ?mod=&edit= — how "open this unit in a new tab" arrives. It picks the mod
     // and opens the editor for this tab only; the remembered mod is not changed.
     const qs=new URLSearchParams(location.search);
@@ -486,7 +505,13 @@ async function ensureDest(){ if(!state.destData||state.destData.mod!==state.dst)
 
 function buildFilter(id,values,key,useLabel){
   const box=document.getElementById(id);
-  box.innerHTML=(values||[]).map(v=>`<label class="opt"><input type="checkbox" value="${esc(v)}">${esc(useLabel?facLabel(v):v)}</label>`).join('')||'<span class="count">—</span>';
+  // factions are listed under whichever name is leading, so the A→Z the user
+  // picked is the A→Z they see here as well as in the group headers
+  const list=useLabel?[...(values||[])].sort((a,b)=>facLabel(a).localeCompare(facLabel(b)))
+                     :(values||[]);
+  box.innerHTML=list.map(v=>`<label class="opt"><input type="checkbox" value="${esc(v)}" ${
+    state.sel[key].has(v)?'checked':''}>${esc(useLabel?facLabel(v):v)}</label>`).join('')
+    ||'<span class="count">—</span>';
   box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);render();});
 }
 function wire(){
@@ -512,6 +537,11 @@ function wire(){
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
     if(srcChanged)loadSource();};
   search.oninput=render; mercOnly.onchange=render; groupBy.onchange=render;
+  // rebuilds the faction list (its A→Z changes) but keeps whatever is ticked
+  facSort.onchange=()=>{state.settings.faction_sort=facSort.value;
+    api.post('/api/settings',{faction_sort:facSort.value});
+    if(state.data)buildFilter('factionFilter',state.data.factions,'faction',true);
+    render();};
   document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);render();});
   settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
   selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch;
@@ -569,11 +599,18 @@ function render(){
   count.textContent=`${units.length}/${state.data.units.length}`;
   const gb=groupBy.value;
   if(!units.length){main.innerHTML='<div class="empty">No units match.</div>';return;}
+  // Ticking a filter says "this is what I'm here for", so its group leads —
+  // otherwise picking one faction buries it under every OTHER faction its units
+  // are also owned by (a unit renders once per faction it belongs to). Alphabetical
+  // within the picked ones, then alphabetical for the rest.
+  const picked=state.sel[{faction:'faction',kind:'category',class:'class'}[gb]]||new Set();
+  const byPicked=(ka,kb,la,lb)=>(picked.has(kb)-picked.has(ka))||la.localeCompare(lb);
   let groups;
   if(gb==='none')groups=[['All units',units]];
   else if(gb==='faction'){const map=new Map();for(const u of units){for(const f of (u.ownership.length?u.ownership:['(none)']))(map.get(f)||map.set(f,[]).get(f)).push(u);}
-    groups=[...map.entries()].sort((a,b)=>facLabel(a[0]).localeCompare(facLabel(b[0]))).map(([f,us])=>[gb==='faction'?facLabel(f):f,us]);}
-  else{const map=new Map();for(const u of units){const k=u[gb]||'(none)';(map.get(k)||map.set(k,[]).get(k)).push(u);}groups=[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));}
+    groups=[...map.entries()].sort((a,b)=>byPicked(a[0],b[0],facLabel(a[0]),facLabel(b[0]))).map(([f,us])=>[facLabel(f),us]);}
+  else{const map=new Map();for(const u of units){const k=u[gb]||'(none)';(map.get(k)||map.set(k,[]).get(k)).push(u);}
+    groups=[...map.entries()].sort((a,b)=>byPicked(a[0],b[0],a[0],b[0]));}
   main.innerHTML=groups.map(([g,us])=>`<section class="faction-group">
     <div class="faction-head"><h2>${esc(g)}</h2><span class="n">${us.length} units</span></div>
     <div class="grid">${us.map(cardHtml).join('')}</div></section>`).join('');
@@ -757,6 +794,13 @@ async function renderComposer(){
          <span class="count" id="fieldChanged"></span>
        </div>
        <div class="allfields" id="allFields"><div class="count" style="padding:6px">Loading fields…</div></div>
+       ${sameMod?'':`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
+         marks a field that comes from the base unit${c.base_type?` <b>${esc(c.base_type)}</b>`:''}.
+         Click it to turn it off and keep <b>${esc(u.type)}</b>'s own value instead; click it again
+         to go back to the base's. A greyed-out <span class="ibadge off"
+         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> means
+         that field is currently the source unit's. Fields the source unit doesn't have at all
+         can't be switched — their B stays on.</div>`}
      </fieldset>
      <div id="previewBox"></div>
    </div>
@@ -809,7 +853,7 @@ function toggleBase(){const c=cfgFor(state.editing);
   if(!useBase.checked){c.base_type='';baseArea.style.display='none';renderComposer();return;}
   baseArea.style.display='';renderBaseList();}
 // faction label using the DESTINATION mod's names (base units live in the dest)
-const destFacLabel=f=>{const n=(state.destData?.faction_names||{})[f];return n?`${n} (${f})`:f;};
+const destFacLabel=f=>facTwoNames(f,(state.destData?.faction_names||{})[f]);
 function renderBaseList(){
   const u=state.data.units.find(x=>x.type===state.editing); const c=cfgFor(state.editing);
   const dd=state.destData; if(!dd){baseList.innerHTML='<div class="count" style="padding:8px">loading destination…</div>';return;}
@@ -858,6 +902,15 @@ async function loadFields(type){
     c._fields=r.fields||[]; c._inherited=r.inherited||[];
     c._orig={}; for(const [label,val] of c._fields) c._orig[label]=val;   // baseline for diffing
     c._fieldsKey=key;
+    // With a base, the SOURCE unit's own values are what a B can be switched back
+    // to, so they are fetched alongside (once per unit — they never change).
+    if(c.base_type&&!c._srcFields){
+      try{
+        const s=await api.get(`/api/unit_fields?mod=${encodeURIComponent(state.src)}`
+                              +`&type=${encodeURIComponent(type)}`);
+        c._srcFields=Object.fromEntries(s.fields||[]);
+      }catch(e){ c._srcFields={}; }
+    }
     // an override that now matches the new baseline is no longer an override
     for(const k of Object.keys(c.field_overrides))
       if(c.field_overrides[k]===c._orig[k]) delete c.field_overrides[k];
@@ -877,16 +930,53 @@ function renderAllFields(type){
     const changed=(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
     const isInh=inh.has(label.replace(/#\d+$/,''));
     return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}${isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${isInh?'<span class="ibadge" title="from base">B</span>':''}</label>
+      <label title="${esc(label)}${isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${
+        isInh?baseBadge(c,label,cur):''}</label>
       <input data-k="${esc(label)}" value="${esc(cur)}" class="${changed?'changed':''}"
         ${dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
   }).join('');
   box.querySelectorAll('input[data-k]').forEach(inp=>{
     inp.oninput=()=>{const k=inp.dataset.k, v=inp.value;
       if(v!==c._orig[k]) c.field_overrides[k]=v; else delete c.field_overrides[k];
-      inp.classList.toggle('changed', v!==c._orig[k]); updateFieldChanged();};
+      inp.classList.toggle('changed', v!==c._orig[k]);
+      // a typed value is no longer the base's, so the B has to stop claiming it is
+      const b=box.querySelector(`button[data-b="${cssq(k)}"]`);
+      if(b)b.outerHTML=baseBadge(c,k,v);
+      updateFieldChanged();};
   });
   updateFieldChanged(); filterFields();
+}
+/* The B beside an inherited field is a switch, not a label: ON the field carries
+   the base unit's value, OFF it carries the source unit's own. Nothing new is
+   stored for it — "off" is just a field override holding the source's value, which
+   is what the transfer engine already knows how to write. It follows that typing
+   your own value turns the B off too: the field is no longer the base's. */
+const baseSrcVal=(c,label)=>(c._srcFields||{})[label];
+function baseBadge(c,label,cur){
+  const src=baseSrcVal(c,label);
+  const same=src===undefined||src===c._orig[label];
+  if(same)                        // nothing to switch to — a plain marker, as before
+    return `<span class="ibadge" title="from base ${esc(c.base_type)}${
+      src===undefined?" — the source unit has no such line, so this one can only come from the base"
+                     :" — the source unit's value is identical"}">B</span>`;
+  const on=cur===c._orig[label];
+  return `<button type="button" class="ibadge${on?'':' off'}" data-b="${esc(label)}"
+    onclick="toggleBaseField('${q1(esc(label))}')"
+    title="${on?`using ${esc(c.base_type)}'s value — click to keep ${esc(state.editing)}'s own (${esc(src)})`
+              :`using ${esc(state.editing)}'s own value — click to take ${esc(c.base_type)}'s (${esc(c._orig[label])})`}">B</button>`;
+}
+function toggleBaseField(label){
+  const c=cfgFor(state.editing);
+  const src=baseSrcVal(c,label); if(src===undefined)return;
+  const inp=document.querySelector(`#allFields input[data-k="${cssq(label)}"]`); if(!inp)return;
+  const usingBase=inp.value===c._orig[label];
+  const next=usingBase?src:c._orig[label];
+  if(next!==c._orig[label]) c.field_overrides[label]=next; else delete c.field_overrides[label];
+  inp.value=next;
+  inp.classList.toggle('changed', next!==c._orig[label]);
+  const b=document.querySelector(`#allFields button[data-b="${cssq(label)}"]`);
+  if(b)b.outerHTML=baseBadge(c,label,next);
+  updateFieldChanged();
 }
 function updateFieldChanged(){const c=cfgFor(state.editing);const n=Object.keys(c.field_overrides).length;
   const el=document.getElementById('fieldChanged'); if(el)el.textContent=n?`${n} changed`:'';}
@@ -1195,6 +1285,41 @@ function renderProgress(types,status){
         ${curIdx>=0?` — <b>${esc(types[curIdx])}</b>`:''}</div>
       <div class="proglist">${rows}</div>
     </div>`;
+}
+
+/* Real progress for the long BMDB jobs (the scan and the cleanup). Each is ONE
+   request that runs for seconds, so the server reports where it is under a job id
+   and this polls that id alongside the request — a bar parked at a made-up width
+   is exactly what this replaces. Polling stops the moment the request settles. */
+const newJob=()=>'j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function jobBox(title,note){
+  document.getElementById('modal').innerHTML=`<h2>${esc(title)}</h2>
+    <div class="mbody">
+      <div class="progress-track"><div class="progress-fill" id="jobFill" style="width:0%"></div></div>
+      <div class="count" style="margin-top:8px"><b id="jobPct">0%</b>
+        <span id="jobStep">starting…</span></div>
+      <div class="count" style="margin-top:10px">${note}</div>
+    </div>`;
+}
+// Only touches the bar if it is still on screen — the job's own result replaces
+// the modal, and a late poll must not paint over it.
+function jobPaint(pct,label){
+  const f=document.getElementById('jobFill'); if(!f)return;
+  f.style.width=Math.max(0,Math.min(100,pct))+'%';
+  document.getElementById('jobPct').textContent=pct+'%';
+  document.getElementById('jobStep').textContent=label?'— '+label:'';
+}
+async function runJob(job,title,note,run){
+  let done=false;
+  jobBox(title,note);
+  (async()=>{while(!done){
+    await new Promise(r=>setTimeout(r,300));
+    if(done)break;
+    // one try, no retries: a dropped poll just means the next one paints instead
+    let p=null; try{p=await api.get('/api/progress?job='+enc(job),1);}catch(e){}
+    if(!done&&p&&typeof p.pct==='number')jobPaint(p.pct,p.label||'');
+  }})();
+  try{ return await run(); } finally{ done=true; }
 }
 async function doApply(){
   const types=composerList.length?composerList:[state.editing];
@@ -1608,9 +1733,10 @@ function edFactionList(){
   const d=state.ed.d,seen=new Set();
   const all=(d.all_factions||[]).slice();
   ['ownership','era 0','era 1','era 2'].forEach(l=>csv(edFieldVal(l)).forEach(f=>all.push(f)));
-  return all.filter(f=>!seen.has(f)&&seen.add(f)).sort();
+  return all.filter(f=>!seen.has(f)&&seen.add(f))
+            .sort((a,b)=>edFacLabel(a).localeCompare(edFacLabel(b)));
 }
-const edFacLabel=f=>{const n=(state.ed.d.faction_names||{})[f]; return n?`${n} (${f})`:f;};
+const edFacLabel=f=>facTwoNames(f,(state.ed.d.faction_names||{})[f]);
 function edFactionField(label,cur){
   const list=csv(cur),chosen=new Set(list);
   const isEra=label!=='ownership';
@@ -1834,7 +1960,7 @@ function edFactionSkins(m){
   const e=state.ed,chosen=edFacs(m),set=new Set(chosen);
   const all=(e.d.all_factions||[]).slice();
   chosen.forEach(f=>{if(!all.includes(f))all.push(f);});
-  all.sort();
+  all.sort((a,b)=>edFacLabel(a).localeCompare(edFacLabel(b)));
   const v=edTexView(m),kinds=edKinds(m);
   const rows=all.map(f=>{
     const on=set.has(f),key=m.name+'|'+f,open=!!e.facOpen[key];
@@ -2224,13 +2350,13 @@ function renderBmdbEditor(){
 async function openCleanup(){
   const modal=document.getElementById('modal');
   modal.className='modal wide';
-  modal.innerHTML=`<h2>Clean up ${esc(state.src)}’s BMDB</h2>
-    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
-    <div class="count" style="margin-top:8px">Scanning every entry, every unit that names one,
-      and every file under <code>data/unit_models</code>… (a big mod takes a few seconds)</div></div>`;
   overlay.classList.add('open');
+  const job=newJob();
   let a;
-  try{ a=await api.get('/api/bmdb/audit?mod='+enc(state.src)); }
+  try{ a=await runJob(job,`Clean up ${esc(state.src)}’s BMDB`,
+        `Scanning every entry, every unit that names one, and every file under
+         <code>data/unit_models</code>… (a big mod takes a few seconds)`,
+        ()=>api.get(`/api/bmdb/audit?mod=${enc(state.src)}&job=${enc(job)}`)); }
   catch(e){ a={error:''+e}; }
   if(a.error){ modal.innerHTML=`<h2>Clean up</h2><div class="mbody w-bad">${esc(a.error)}</div>
     <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
@@ -2239,7 +2365,8 @@ async function openCleanup(){
     merges:new Set(),                              // suggestions: never pre-ticked, they change a model
     into:Object.fromEntries(a.merges.map(m=>[m.entry,m.into])),
     orphans:new Set(a.orphans.map(o=>o.rel)),
-    open:{unused:true,merges:true,orphans:false},plan:null};
+    mounts:new Set(),                              // rewrites descr_mount.txt: opt in by hand
+    open:{unused:true,merges:true,mounts:false,orphans:false},plan:null};
   renderCleanup();
 }
 const MB=n=>(n/1048576).toFixed(1)+' MB';
@@ -2267,6 +2394,7 @@ function renderCleanup(){
         </div>
         <div class="treebox">${esc(a.mod)}_unused\\
   removed_battle_models.modeldb   <span style="color:var(--dim)">— only the entries that were removed</span>
+  removed_mounts.txt              <span style="color:var(--dim)">— the descr_mount.txt blocks that were removed</span>
   data\\unit_models\\…              <span style="color:var(--dim)">— their meshes/textures, same paths as in the mod</span>
   unused_files\\data\\unit_models\\… <span style="color:var(--dim)">— files no entry mentions at all</span></div>
         <div class="count" style="margin-top:6px">Must be outside the mod, or the files never really leave it.</div>
@@ -2274,12 +2402,19 @@ function renderCleanup(){
 
       ${sec('unused','Entries nothing references',()=>clUnusedBody())}
       ${sec('merges','Soldier-only entries with an identical twin',()=>clMergeBody())}
+      ${sec('mounts','Mounts no unit rides',()=>clMountBody())}
       ${sec('orphans','Files under unit_models no entry mentions',()=>clOrphanBody())}
 
       ${a.mentioned.length?`<div class="count">${a.mentioned.length} further entr${
         a.mentioned.length===1?'y is':'ies are'} unused by any unit but still named in another
-        file (<code>${esc([...new Set(a.mentioned.map(m=>m.file))].slice(0,4).join('</code>, <code>'))}</code>)
+        file (<code>${[...new Set(a.mentioned.map(m=>m.file))].slice(0,4).map(esc).join('</code>, <code>')}</code>)
         — left alone on purpose.</div>`:''}
+      ${a.mentioned_mounts.length?`<div class="count">${a.mentioned_mounts.length} mount${
+        a.mentioned_mounts.length===1?' is':'s are'} ridden by no unit but still named in a
+        <code>descr_*.txt</code> — not offered above.</div>`:''}
+      ${a.campaign_files.length?`<div class="count">Campaign files also read for
+        <code>battle_model</code> references:
+        <code>${a.campaign_files.map(esc).join('</code>, <code>')}</code>.</div>`:''}
       <div id="clPreview"></div>
     </div>
     <div class="foot">
@@ -2337,16 +2472,57 @@ function clMergeBody(){
         onchange="clPick('merges','${q1(esc(m.entry))}',this.checked)">
       <div class="grow">
         <span class="nm">${esc(m.entry)}</span> →
-        <select onchange="state.clean.into['${q1(esc(m.entry))}']=this.value;clStale()">
+        <select onchange="clInto('${q1(esc(m.entry))}',this.value)">
           ${m.options.map(o=>`<option value="${esc(o)}" ${c.into[m.entry]===o?'selected':''}>${esc(o)}</option>`).join('')}
         </select>
-        ${m.own_upgrade?'<span class="badge" style="color:var(--good);border-color:var(--good)">already an armour tier of the same unit</span>':''}
+        <span class="badge" id="clOwn_${esc(m.entry)}" style="color:var(--good);border-color:var(--good)${
+          clIsOwn(m,c.into[m.entry])?'':';display:none'}">already an armour tier of the same unit</span>
         <div class="sub">soldier of ${m.units.map(u=>userLink(u)).join(', ')}
           · ${m.lods} LOD${m.lods===1?'':'s'}, ${m.files.length} file${m.files.length===1?'':'s'}</div>
         ${risky?`<div class="sub w-warn">⚠ ${esc(m.units_without_upgrades.join(', '))}
           list no armour_ug_models, so this entry IS what you see on the field — swapping it
           changes how the unit looks.</div>`:''}
       </div></div>`;}).join('')}</div>`;
+}
+/* "already an armour tier of the same unit" is a fact about the PICKED twin, not
+   about the row — the picker offers up to 12, and only some of them are models the
+   unit already draws. So the badge is re-evaluated on every change instead of being
+   frozen at whatever the server suggested. */
+const clIsOwn=(m,into)=>(m.own_options||[]).includes(into);
+function clInto(entry,into){
+  const c=state.clean;
+  c.into[entry]=into;
+  const row=c.a.merges.find(m=>m.entry===entry),b=document.getElementById('clOwn_'+entry);
+  if(row&&b)b.style.display=clIsOwn(row,into)?'':'none';
+  clStale();
+}
+/* A mount nothing rides is dead weight in descr_mount.txt, and its model entry is
+   usually alive for that reason alone — so ticking one here is what lets the entry
+   go too (that is what "frees ..." means on the row). Not pre-ticked: this is the
+   one part of the cleanup that rewrites descr_mount.txt. */
+function clMountBody(){
+  const c=state.clean,rows=c.a.unused_mounts;
+  if(!rows.length)return '<div class="count" style="margin-top:8px">None — every mount is ridden by a unit.</div>';
+  return `<div class="count" style="margin-top:7px">No unit in this mod has a <code>mount</code>
+      line naming these, so their <code>descr_mount.txt</code> blocks do nothing. Ticking one
+      removes that block <b>and</b> frees its modeldb entry, when nothing else names the model.
+      The removed blocks are written to <code>removed_mounts.txt</code> in the destination.</div>
+    <div class="clbar">
+      <button onclick="clAll('mounts',true)">Select all</button>
+      <button onclick="clAll('mounts',false)">None</button></div>
+    <div class="cllist">${rows.map(m=>`<div class="clrow">
+      <input type="checkbox" ${c.mounts.has(m.mount)?'checked':''}
+        onchange="clPick('mounts','${q1(esc(m.mount))}',this.checked)">
+      <div class="grow"><span class="nm">${esc(m.mount)}</span>
+        ${m.class?`<span class="badge">${esc(m.class)}</span>`:''}
+        ${m.frees_model?`<span class="badge" style="color:var(--good);border-color:var(--good)">frees ${esc(m.model)}</span>`:''}
+        <div class="sub">model <code>${esc(m.model||'(none)')}</code>${
+          m.in_db?'':' <span class="w-warn">— not in the modeldb</span>'}</div>
+        ${!m.frees_model&&m.kept_by.length?`<div class="sub">its model stays: still used by
+          ${esc(m.kept_by.join(', '))}</div>`:''}
+        ${!m.frees_model&&!m.kept_by.length&&m.mentioned_in?`<div class="sub">its model stays:
+          named in <code>${esc(m.mentioned_in)}</code></div>`:''}
+      </div></div>`).join('')}</div>`;
 }
 function clOrphanBody(){
   const c=state.clean,rows=c.a.orphans;
@@ -2367,10 +2543,14 @@ function clCountText(k){
   const c=state.clean,a=c.a;
   if(k==='unused')return `${c.entries.size}/${a.unused.length} ticked`;
   if(k==='merges')return `${c.merges.size}/${a.merges.length} ticked · needs your eye`;
+  if(k==='mounts'){
+    const frees=a.unused_mounts.filter(m=>c.mounts.has(m.mount)&&m.frees_model).length;
+    return `${c.mounts.size}/${a.unused_mounts.length} ticked${frees?` · frees ${frees} entr${frees===1?'y':'ies'}`:''}`;
+  }
   const bytes=a.orphans.reduce((n,o)=>n+(c.orphans.has(o.rel)?o.size:0),0);
   return `${c.orphans.size}/${a.orphans.length} ticked · ${MB(bytes)}`;
 }
-function clCounts(){['unused','merges','orphans'].forEach(k=>{
+function clCounts(){['unused','merges','mounts','orphans'].forEach(k=>{
   const el=document.getElementById('clc_'+k); if(el)el.textContent=clCountText(k);});}
 // The checkbox already shows its own new state, so only the header count needs
 // touching — that keeps ticking one of 3000 rows instant.
@@ -2380,6 +2560,7 @@ function clAll(key,on){
   const c=state.clean;
   const all=key==='entries'?c.a.unused.map(u=>u.entry)
            :key==='merges'?c.a.merges.map(m=>m.entry)
+           :key==='mounts'?c.a.unused_mounts.map(m=>m.mount)
            :c.a.orphans.map(o=>o.rel);
   c[key]=new Set(on?all:[]);
   const head=document.getElementById('clc_'+(key==='entries'?'unused':key));
@@ -2389,9 +2570,13 @@ function clAll(key,on){
 }
 function clPayload(){
   const c=state.clean;
+  // A ticked mount carries its model with it, so the freed entries ride along in
+  // `entries` — they are never in the unused list (the mount was referencing them).
+  const freed=c.a.unused_mounts.filter(m=>c.mounts.has(m.mount)&&m.frees_model).map(m=>m.model);
   return {mod:c.a.mod,target:c.target,
-    entries:[...c.entries],
+    entries:[...new Set([...c.entries,...freed])],
     merges:[...c.merges].map(e=>({entry:e,into:c.into[e]})),
+    mounts:[...c.mounts],
     orphans:[...c.orphans]};
 }
 async function clPreview(){
@@ -2421,16 +2606,17 @@ async function clApply(){
   const r=state.clean.plan||await clPreview();
   if(!r)return;
   if(r.errors&&r.errors.length){toast(r.errors[0]);return;}
-  if(!r.entry_deletes.length&&!r.export_count){toast('Nothing is ticked');return;}
+  if(!r.entry_deletes.length&&!r.export_count&&!r.mount_deletes.length){toast('Nothing is ticked');return;}
   if(!confirm(`Move ${r.entry_deletes.length} modeldb entr${r.entry_deletes.length===1?'y':'ies'} `+
       `and ${r.export_count} file(s) out of “${c.a.mod}”?\n\nThey are copied to:\n${r.target}\n\n`+
       `${r.merges.length?`${r.merges.length} unit soldier line(s) are repointed at their twin.\n\n`:''}`+
+      `${r.mount_deletes.length?`${r.mount_deletes.length} mount(s) are removed from descr_mount.txt.\n\n`:''}`+
       `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`))return;
-  document.getElementById('modal').innerHTML=`<h2>Cleaning up…</h2>
-    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:65%"></div></div>
-    <div class="count" style="margin-top:8px">Copying ${r.export_count} file(s) out, then rewriting
-      ${esc(c.a.mod)}’s modeldb…</div></div>`;
-  const res=await api.post('/api/bmdb/cleanup_apply',clPayload());
+  const job=newJob();
+  const res=await runJob(job,'Cleaning up…',
+    `Copying ${r.export_count} file(s) out, then rewriting ${esc(c.a.mod)}’s modeldb.
+     Everything is backed up as it goes — 🕑 Log → Undo puts it all back.`,
+    ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job}));
   if(res.error){toast('Cleanup failed: '+res.error);renderCleanup();return;}
   closeModal();
   const cl=res.cleaner;
@@ -2509,8 +2695,11 @@ function openNewUnitPicker(){
   overlay.classList.add('open');
   renderNewUnitList();
 }
+// A labelled list (factions) is ordered by what it SHOWS, so a picker follows the
+// same A→Z as the sidebar; a plain one keeps the order it came in.
 const opts=(allLabel,values,label)=>`<option value="">${allLabel}</option>`+
-  values.map(v=>`<option value="${esc(v)}">${esc(label?label(v):v)}</option>`).join('');
+  (label?[...values].sort((a,b)=>label(a).localeCompare(label(b))):values)
+    .map(v=>`<option value="${esc(v)}">${esc(label?label(v):v)}</option>`).join('');
 function renderNewUnitList(){
   const g=id=>(document.getElementById(id)||{}).value||'';
   const qq=g('nuSearch').trim().toLowerCase();
