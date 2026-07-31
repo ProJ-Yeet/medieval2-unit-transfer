@@ -159,8 +159,11 @@ and is left alone).
 
 - **Faction-wise browser** — units grouped by owning faction, with real faction
   names, filters (category, class, era, mercenary), and search
+- **Filters stay put** — what you tick survives editing or transferring a unit,
+  and is still there the next time you open the tool
 - **Batch transfer** — select several units and transfer them in one pass, each
-  with its own options
+  with its own options; leaving ☑ Select keeps the selection (**✕ Clear** empties
+  it, as does finishing the transfer or changing the source mod)
 - **Use another unit as a stat base** — port a unit's identity/models but
   inherit combat stats, cost, and ownership from an existing unit in the
   destination mod

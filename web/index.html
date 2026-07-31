@@ -352,6 +352,7 @@
   <label class="chk"><input type="checkbox" id="mercOnly"> mercs</label>
   <button id="selBtn" title="Select multiple units">☑ Select</button>
   <button id="batchBtn" class="primary" style="display:none">Transfer selected (0)</button>
+  <button id="clearSelBtn" style="display:none" title="Untick every selected unit">✕ Clear</button>
   <button id="newUnitBtn" class="primary" style="display:none" title="Create a new unit using an existing one as the base">＋ New unit</button>
   <button id="cleanBtn" style="display:none" title="Find entries and files nothing uses and move them out of the mod">🧹 Clean up BMDB…</button>
   <label class="chk" id="unusedWrap" style="display:none"><input type="checkbox" id="unusedOnly"> unused only</label>
@@ -454,6 +455,7 @@ async function init(){
     startHeartbeat();
     const s=await api.get('/api/settings');state.settings=s;
     facSort.value=facBy();                 // remembered across runs like the rest
+    restoreFilters();                      // …and so are the filters themselves
     // ?mod=&edit= — how "open this unit in a new tab" arrives. It picks the mod
     // and opens the editor for this tab only; the remembered mod is not changed.
     const qs=new URLSearchParams(location.search);
@@ -495,12 +497,52 @@ async function loadSource(){
     return;
   }
   state.factionNames=state.data.faction_names||{};
-  state.sel={faction:new Set(),category:new Set(),class:new Set(),era:new Set()};
+  // Keep whatever is ticked. Saving a unit or finishing a transfer reloads this
+  // list, and re-ticking the same filters every time was maddening. Only values
+  // this mod doesn't have are dropped — a filter that can never match would hide
+  // everything with no visible reason why.
+  let dropped=false;
+  const prune=(key,values)=>{const ok=new Set(values||[]);
+    for(const v of [...state.sel[key]])if(!ok.has(v)){state.sel[key].delete(v);dropped=true;}};
+  prune('faction',state.data.factions);
+  prune('category',state.data.categories);
+  prune('class',state.data.classes);
+  if(dropped)saveFilters();   // don't let the next run resurrect what was dropped
+  // same for a pending multi-selection: a unit that was just deleted (or that
+  // this mod never had) can't be transferred, so it can't stay ticked
+  const types=new Set(state.data.units.map(u=>u.type));
+  for(const t of [...state.selected])if(!types.has(t))state.selected.delete(t);
+  updateBatchBtn();
   buildFilter('factionFilter',state.data.factions,'faction',true);
   buildFilter('categoryFilter',state.data.categories,'category');
   buildFilter('classFilter',state.data.classes,'class');
+  syncEraBoxes();
   render();
 }
+/* ---------- filters remembered ----------
+   The filter panel is "where I was looking", the same kind of state as the mod
+   pair and the faction sort, so it is persisted the same way and restored on
+   the next run instead of only surviving until the next reload. */
+function restoreFilters(){
+  const f=state.settings.filters||{};
+  state.sel={faction:new Set(f.faction||[]),category:new Set(f.category||[]),
+             class:new Set(f.class||[]),era:new Set(f.era||[])};
+  if(f.group_by)groupBy.value=f.group_by;
+  mercOnly.checked=!!f.merc_only;
+  syncEraBoxes();
+}
+function syncEraBoxes(){document.querySelectorAll('.era').forEach(cb=>cb.checked=state.sel.era.has(cb.value));}
+let _saveFiltersT=null;
+function saveFilters(){                       // debounced: ticking is a burst
+  clearTimeout(_saveFiltersT);
+  _saveFiltersT=setTimeout(()=>{
+    state.settings.filters={faction:[...state.sel.faction],category:[...state.sel.category],
+      class:[...state.sel.class],era:[...state.sel.era],
+      group_by:groupBy.value,merc_only:mercOnly.checked};
+    api.post('/api/settings',{filters:state.settings.filters});
+  },400);
+}
+function filtersChanged(){saveFilters();render();}
 async function ensureDest(){ if(!state.destData||state.destData.mod!==state.dst){state.destData=await api.get('/api/units?mod='+encodeURIComponent(state.dst));} return state.destData; }
 
 function buildFilter(id,values,key,useLabel){
@@ -512,7 +554,7 @@ function buildFilter(id,values,key,useLabel){
   box.innerHTML=list.map(v=>`<label class="opt"><input type="checkbox" value="${esc(v)}" ${
     state.sel[key].has(v)?'checked':''}>${esc(useLabel?facLabel(v):v)}</label>`).join('')
     ||'<span class="count">—</span>';
-  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);render();});
+  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);filtersChanged();});
 }
 function wire(){
   modeSel.onchange=()=>{state.mode=modeSel.value;applyMode(true);};
@@ -521,6 +563,9 @@ function wire(){
   // leaving a pointless A -> A: with A -> B, choosing A as the dest gives B -> A.
   srcSel.onchange=async e=>{
     const v=e.target.value;
+    // A ticked pile belongs to the mod it was ticked in — carrying it to another
+    // mod would transfer whatever happens to share a type name over there.
+    if(v!==state.src)clearSelection();
     // Edit / bmdb mode works on a single mod, so both sides follow the picker.
     if(state.mode!=='transfer'){state.src=state.dst=v;dstSel.value=v;state.destData=null;
       state.cfg={};state.bmdb=null;
@@ -532,19 +577,19 @@ function wire(){
   dstSel.onchange=async e=>{
     const v=e.target.value;
     const srcChanged=(v===state.src);
-    if(srcChanged){state.src=state.dst;srcSel.value=state.src;}
+    if(srcChanged){state.src=state.dst;srcSel.value=state.src;clearSelection();}
     state.dst=v;dstSel.value=v;state.destData=null;state.cfg={};
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
     if(srcChanged)loadSource();};
-  search.oninput=render; mercOnly.onchange=render; groupBy.onchange=render;
+  search.oninput=render; mercOnly.onchange=filtersChanged; groupBy.onchange=filtersChanged;
   // rebuilds the faction list (its A→Z changes) but keeps whatever is ticked
   facSort.onchange=()=>{state.settings.faction_sort=facSort.value;
     api.post('/api/settings',{faction_sort:facSort.value});
     if(state.data)buildFilter('factionFilter',state.data.factions,'faction',true);
     render();};
-  document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);render();});
+  document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);filtersChanged();});
   settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
-  selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch;
+  selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch; clearSelBtn.onclick=clearSelection;
   cleanBtn.onclick=openCleanup; unusedOnly.onchange=render;
   overlay.onclick=e=>{if(e.target.id==='overlay')closeModal();};
 }
@@ -558,6 +603,7 @@ function applyMode(persist){
   document.getElementById('dstWrap').style.display=one?'none':'';
   selBtn.style.display=one?'none':'';
   batchBtn.style.display=(!one&&state.selMode)?'inline-block':'none';
+  clearSelBtn.style.display=(!one&&state.selMode&&state.selected.size)?'inline-block':'none';
   newUnitBtn.style.display=edit?'inline-block':'none';
   cleanBtn.style.display=bm?'inline-block':'none';
   unusedWrap.style.display=bm?'inline-flex':'none';
@@ -571,15 +617,22 @@ function applyMode(persist){
   render();
 }
 
+// Leaving select mode keeps WHAT was ticked — you step out to look at a unit in
+// the drawer, or to change a filter, and coming back to an empty pile after
+// ticking twenty units was the worst way to lose work here. Only the highlight
+// goes (a ticked card outside select mode just looks broken); ✕ Clear, switching
+// source mod, and a finished transfer are what actually empty it.
 function toggleSelMode(){state.selMode=!state.selMode;document.body.classList.toggle('selmode',state.selMode);
   selBtn.classList.toggle('on',state.selMode);
-  if(!state.selMode){
-    state.selected.clear();updateBatchBtn();
-    // clear the highlight too — clearing the set alone left cards looking selected
-    main.querySelectorAll('.card.sel').forEach(c=>c.classList.remove('sel'));
-  }
-  batchBtn.style.display=state.selMode?'inline-block':'none';}
-function updateBatchBtn(){batchBtn.textContent=`Transfer selected (${state.selected.size})`;batchBtn.disabled=state.selected.size===0;}
+  paintSelection();
+  batchBtn.style.display=state.selMode?'inline-block':'none';
+  updateBatchBtn();}
+function clearSelection(){state.selected.clear();paintSelection();updateBatchBtn();}
+// every card of every selected unit, since one unit can render under several groups
+function paintSelection(){main.querySelectorAll('.card').forEach(c=>
+  c.classList.toggle('sel',state.selMode&&state.selected.has(c.dataset.type)));}
+function updateBatchBtn(){batchBtn.textContent=`Transfer selected (${state.selected.size})`;batchBtn.disabled=state.selected.size===0;
+  clearSelBtn.style.display=(state.selMode&&state.selected.size)?'inline-block':'none';}
 
 function unitMatches(u){
   const qq=search.value.trim().toLowerCase();
@@ -617,7 +670,7 @@ function render(){
   main.querySelectorAll('.card').forEach(c=>c.onclick=()=>onCard(c.dataset.type));
 }
 function cardHtml(u){
-  const s=state.selected.has(u.type)?'sel':'';
+  const s=(state.selMode&&state.selected.has(u.type))?'sel':'';
   return `<div class="card ${s}" data-type="${esc(u.type)}">
     <div class="tick">✓</div>
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}" alt="">
@@ -634,7 +687,7 @@ function onCard(type){
 // same goes for the other group-by modes), so EVERY copy has to reflect the
 // selection — querySelector would only ever find the first, making a selected
 // unit look unselected under its other factions.
-function markCardSel(type){const on=state.selected.has(type);
+function markCardSel(type){const on=state.selMode&&state.selected.has(type);
   main.querySelectorAll(`.card[data-type="${cssq(type)}"]`).forEach(c=>c.classList.toggle('sel',on));}
 const cssq=s=>s.replace(/"/g,'\\"');
 
@@ -1349,7 +1402,8 @@ async function doApply(){
   closeModal();
   const cmsg=cleaner?(cleaner.ran?'  · cleaner ran'+(cleaner.copied?' (copied in)':''):`  · cleaner failed: ${cleaner.error||'?'}`):'';
   toast(`${state.src===state.dst?'Created':'Transferred'} ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${cmsg}  (undo in 🕑 Log)`,4200);
-  if(state.selMode)toggleSelMode();
+  // these ones are done — leaving them ticked invites transferring them twice
+  clearSelection();
   state.cfg={};
   if(state.dst===state.src)loadSource();
 }
