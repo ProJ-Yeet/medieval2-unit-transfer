@@ -12,6 +12,9 @@ Covers:
   * differing siege-engine files keep the DESTINATION's version by default
   * include_engine=False ports nothing
   * regression: `engine`/`mounted_engine` no longer leak into missing_models
+  * mounted engines: `class` (not engine_skeleton) names the descr_engine_skeleton
+    entry — added when the destination lacks it, kept + flagged when it already
+    exists, never renamed; the reference_points file is copied
 
     python -m tests.test_engines
 """
@@ -318,6 +321,106 @@ if acts.get("elephant_serpentine") == "rename":
     check("undo restores descr_mounted_engines.txt byte-exact",
           (dr / "data/descr_mounted_engines.txt").read_bytes()
           == (DAC / "data/descr_mounted_engines.txt").read_bytes())
+shutil.rmtree(dr, ignore_errors=True)
+
+# ---- mounted engine: `class` is the descr_engine_skeleton.txt entry ------
+# A mounted engine has no engine_model_group (the model is the mount's), so
+# `skeletons()` is empty and only its `class` line names an animation set.
+print("\n== mounted_engine: class -> descr_engine_skeleton ==")
+me = src.mounted_engine_file.get("elephant_serpentine")
+check("mounted engine block has no model groups", me is not None and not me.groups)
+check("...so skeletons() is empty", me.skeletons() == [])
+check("mounted_skeletons() falls back to the `class` line",
+      me.mounted_skeletons() == ["serpentine"])
+check("its reference_points file is picked up as a file ref",
+      me.file_refs() == ["siege_engines/Elephant_cannon_lod0.modelReferencePoints"])
+check("culture is read like a descr_engines block", me.culture == "all")
+# A ground engine must NOT treat `class` as a skeleton: there it's a hardcoded
+# engine class (tower / ladder / ram / catapult) while engine_skeleton names the
+# animation set. `huge_bombard` happens to use the same word for both, so check a
+# siege tower, where the two genuinely differ.
+tower = next(e for e in src.engine_file.engines
+             if e.engine_class == "tower" and e.skeletons())
+check("ground engine `class` (tower) is not among its skeleton names",
+      "tower" not in [s.lower() for s in tower.skeletons()])
+
+dr = fresh_dest()
+plan = plan_transfer(src, "Sauron Elephants2", Mod(dr), TransferOptions())
+sacts = {n: (a, d) for n, a, d in plan.engine_skeleton_actions}
+check("the mounted engine's class resolved into descr_engine_skeleton.txt",
+      "serpentine" in sacts)
+check("both mods define it identically -> reused",
+      sacts["serpentine"][0] == "reuse")
+check("nothing written to descr_engine_skeleton.txt for a reuse",
+      not plan.engine_skeleton_raws)
+shutil.rmtree(dr, ignore_errors=True)
+
+# class ABSENT from the destination -> the entry and its animations are added
+print("\n== mounted engine class missing in destination -> ADD ==")
+dr = fresh_dest()
+sk_path = dr / "data/descr_engine_skeleton.txt"
+sf = engines.parse_skeleton_file(sk_path)
+sf.skeletons = [s for s in sf.skeletons if s.type.lower() != "serpentine"]
+sk_path.write_text(sf.to_text(), encoding=engines.ENCODING)
+plan = plan_transfer(src, "Sauron Elephants2", Mod(dr), TransferOptions())
+sacts = {n: (a, d) for n, a, d in plan.engine_skeleton_actions}
+check("missing class ADDED to descr_engine_skeleton.txt",
+      sacts.get("serpentine", ("",))[0] == "add")
+check("its block is queued for writing", len(plan.engine_skeleton_raws) == 1)
+check("its animations/engine/ files come along",
+      any(r.lower().startswith("animations/engine/siege_serpentine")
+          for r in plan.engine_assets))
+rec = apply_transfer(plan)
+check("serpentine present in the destination after apply",
+      engines.parse_skeleton_file(sk_path).get("serpentine") is not None)
+undo(rec["id"])
+shutil.rmtree(dr, ignore_errors=True)
+
+# class exists with DIFFERENT content -> keep the destination's, flag it.
+# (Never rename: `class` is a shared stock animation set, and forking it would
+# duplicate every engine animation for no gain.)
+print("\n== mounted engine class differs in destination -> KEEP + flag ==")
+dr = fresh_dest()
+sk_path = dr / "data/descr_engine_skeleton.txt"
+sf = engines.parse_skeleton_file(sk_path)
+for s in sf.skeletons:
+    if s.type.lower() == "serpentine":
+        s.raw = s.raw.replace("siege_serpentine_default.CAS",
+                              "siege_serpentine_default_DESTVERSION.CAS")
+sk_path.write_text(sf.to_text(), encoding=engines.ENCODING)
+before = sk_path.read_bytes()
+plan = plan_transfer(src, "Sauron Elephants2", Mod(dr), TransferOptions())
+sacts = {n: (a, d) for n, a, d in plan.engine_skeleton_actions}
+check("differing class is REUSED, not renamed",
+      sacts.get("serpentine", ("",))[0] == "reuse")
+check("no skeleton rename was recorded",
+      "serpentine" not in plan.engine_skeleton_renames)
+check("nothing queued for descr_engine_skeleton.txt", not plan.engine_skeleton_raws)
+check("the difference is flagged as a warning",
+      any("serpentine" in w and "class" in w for w in plan.warnings))
+apply_transfer(plan)
+check("destination descr_engine_skeleton.txt left byte-exact",
+      sk_path.read_bytes() == before)
+shutil.rmtree(dr, ignore_errors=True)
+
+# ---- a mounted engine whose reference_points file the SOURCE ships --------
+print("\n== mounted engine reference_points copied when the source has it ==")
+dr = fresh_dest()
+ref = "siege_engines/Elephant_cannon_lod0.modelReferencePoints"
+srcref = TATR / "data" / ref
+made = not srcref.exists()
+if made:                                   # vanilla file — stand one in to prove the copy
+    srcref.parent.mkdir(parents=True, exist_ok=True)
+    srcref.write_bytes(b"REFPOINTS")
+try:
+    plan = plan_transfer(src, "Sauron Elephants2", Mod(dr), TransferOptions())
+    check("reference_points queued for copying",
+          ref.lower() in [r.lower() for r in plan.engine_assets])
+    apply_transfer(plan)
+    check("reference_points landed in the destination", (dr / "data" / ref).exists())
+finally:
+    if made:
+        srcref.unlink()
 shutil.rmtree(dr, ignore_errors=True)
 
 # ---- every siege unit plans without raising ------------------------------

@@ -748,6 +748,8 @@ async function renderComposer(){
   const eng=u.engine||u.mounted_engine||''; const hasEng=!!eng;
   const engMounted=!u.engine&&!!u.mounted_engine;
   const engGroups=u.engine_groups||[];
+  // a mounted engine has no model groups — its `class` names the descr_engine_skeleton entry
+  const engClass=engMounted?(u.engine_class||''):'';
   // a group supplied by the base makes its "include the source's" box moot
   const offBase=c.officer_from==='base'&&!!c.base_type;
   const mntBase=c.mount_from==='base'&&!!c.base_type;
@@ -771,7 +773,7 @@ async function renderComposer(){
        <img class="baseimg" src="${iconUrl(state.src,type)}">
        <div><b>${esc(u.name)}</b><div class="count">${esc(type)} · ${esc(u.kind||u.category||'?')}/${esc(u.class||'?')}</div>
          ${hasProj?`<div class="projline">🏹 projectile: ${proj.map(p=>`<span class="chip">${esc(p)}</span>`).join('')}</div>`:''}
-         ${hasEng?`<div class="projline">🏰 siege engine: <span class="chip">${esc(eng)}</span>${engMounted?'<span class="count"> (mounted)</span>':''}${engGroups.length?`<span class="count"> · ${engGroups.map(esc).join(' / ')}</span>`:''}</div>`:''}</div>
+         ${hasEng?`<div class="projline">🏰 siege engine: <span class="chip">${esc(eng)}</span>${engMounted?'<span class="count"> (mounted)</span>':''}${engGroups.length?`<span class="count"> · ${engGroups.map(esc).join(' / ')}</span>`:''}${engClass?`<span class="count"> · class: ${esc(engClass)}</span>`:''}</div>`:''}</div>
      </div>
      ${sameMod?'':`${projOn?`<div class="warnbox">⚠ <b>Projectile import won't import the special effects.</b> The projectile
        definition (damage, velocity, angles…) is copied, but its visual effect/impact lines are pointed at
@@ -787,19 +789,26 @@ async function renderComposer(){
        ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${mntBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:''}</div>`:''}
        ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
        ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">→ using ${esc(c.base_type)}’s stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
-       ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:`→ added to ${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'} + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
+       ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
        <div class="count" style="margin-top:5px">Unticked groups keep their source name and must already exist in the destination — or switch them to the base above.</div>
      </fieldset>
      ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine — <code>${esc(eng)}</code></legend>
        <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''},
-         ${engGroups.length?`each group's <code>descr_engine_skeleton.txt</code> entry with its <code>animations/engine/</code> files, and `:''}every
+         ${engMounted?`and the <code>reference_points</code> file it names.`
+         :`${engGroups.length?`each group's <code>descr_engine_skeleton.txt</code> entry with its <code>animations/engine/</code> files, and `:''}every
          <code>reference_points</code> / <code>engine_bone_map</code> / <code>engine_collision</code> / <code>engine_mesh</code>
-         file it names${engGroups.length?' — plus <b>the textures read straight out of each mesh binary</b> (no text file names them)':''}.</div>
-       <div class="count" style="margin-top:5px">Engine files can't be relocated into a mod folder the way battle models are:
+         file it names${engGroups.length?' — plus <b>the textures read straight out of each mesh binary</b> (no text file names them)':''}.`}</div>
+       ${engMounted?`<div class="count" style="margin-top:5px"><b>Mounted engine.</b> It has no model of its own — the visible gun is part of
+         the <b>mount's</b> model and wears the mount's textures, so only the <code>reference_points</code> file comes across.
+         ${engClass?`Its <code>class ${esc(engClass)}</code> names the animation set in <code>descr_engine_skeleton.txt</code>: if ${esc(state.dst)}
+         already defines <code>${esc(engClass)}</code> that entry is <b>kept as-is</b> (never overwritten, never renamed) and the preview flags it —
+         that normally works fine. Only when ${esc(state.dst)} lacks it is the source's entry added along with its <code>animations/engine/</code> files.`
+         :`No <code>class</code> line was found on the block, so no <code>descr_engine_skeleton.txt</code> entry is carried — check it by hand.`}</div>`:''}
+       ${engMounted?'':`<div class="count" style="margin-top:5px">Engine files can't be relocated into a mod folder the way battle models are:
          each mesh has its texture paths <b>baked into the binary</b>. Overwriting a shared file (say
          <code>siege_engines/textures/mangonel.texture</code>) also re-skins ${esc(state.dst)}'s own engines that use it,
          so keeping the destination's is the safe default — the imported engine may then wear the destination's skin.
-         <b>Preview</b> lists any such file and lets you flip that choice.</div>
+         <b>Preview</b> lists any such file and lets you flip that choice.</div>`}
        <div class="count" style="margin-top:5px"><b>Watch for overrides:</b> engines usually reference vanilla files without
          overriding them. Those aren't copied — but if ${esc(state.dst)} overrides one, its version wins and may not match.
          The preview flags every such file.</div>
@@ -1237,6 +1246,17 @@ function assetConflictUI(type,r){
         but ${esc(state.dst)} does</b>. Nothing is copied for them — ${esc(state.dst)}’s version wins, and it may not be
         what this engine expects. Check these by hand:</div>
       <div class="flist">${ovr.map(p=>`<div class="frow"><span class="fp">${esc(p)}</span></div>`).join('')}</div>
+    </fieldset>`;
+  }
+  // --- descr_engine_skeleton.txt entries (a mounted engine's `class` lands here)
+  const skel=r.engine_skeleton_actions||[];
+  if(skel.length){
+    const kept=skel.filter(x=>x.action==='reuse');
+    html+=`<fieldset class="assetconf" ${kept.length?'':'style="border-color:var(--edge)"'}>
+      <legend class="${skel.some(x=>x.action==='vanilla')?'w-warn':''}">Engine skeletons (<code>descr_engine_skeleton.txt</code>)</legend>
+      <div class="count">An entry already present in ${esc(state.dst)} is <b>never overwritten</b> — it is reused as-is.</div>
+      <div class="flist">${skel.map(x=>`<div class="frow"><span class="fp">${esc(x.name)}</span><span class="fs ${
+        x.action==='vanilla'?'w-warn':x.action==='add'?'w-good':''}">${esc(x.action)} — ${esc(x.detail)}</span></div>`).join('')}</div>
     </fieldset>`;
   }
   return html;

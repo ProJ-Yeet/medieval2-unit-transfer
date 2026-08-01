@@ -244,9 +244,11 @@ class TransferPlan:
             L.append(f"      {self.projectile_effects_blanked} effect line(s) -> "
                      "'invisible_placeholder_set' (effects not ported — re-add by hand)")
         for name, action, detail in self.engine_actions:
+            # `detail` opens with the file the action applies to — descr_engines.txt
+            # for a ground engine, descr_mounted_engines.txt for a mounted one
             verb = {"add": "ADDED to", "rename": "RENAMED in", "reuse": "reused in",
                     "missing": "MISSING from"}.get(action, action)
-            L.append(f"  siege engine '{name}' -> {verb} descr_engines.txt ({detail})")
+            L.append(f"  siege engine '{name}' -> {verb} {detail}")
         for name, action, detail in self.engine_skeleton_actions:
             verb = {"add": "ADDED to", "rename": "RENAMED in", "reuse": "reused in",
                     "vanilla": "left to VANILLA in"}.get(action, action)
@@ -492,13 +494,20 @@ def _engine_asset(plan: "TransferPlan", source: Mod, dest: Mod, rel: str,
 
 
 def _resolve_engine_skeletons(plan: "TransferPlan", source: Mod, dest: Mod,
-                              names: List[str], seen_assets: set) -> Dict[str, str]:
+                              names: List[str], seen_assets: set,
+                              allow_rename: bool = True) -> Dict[str, str]:
     """Plan the descr_engine_skeleton.txt entries an engine's model groups need.
 
     Returns the rename map (lowercased old name -> new) so the engine block's
     ``engine_skeleton`` lines can be repointed. Engine animations are stored loose
     under ``animations/engine/`` rather than in a unit anim pack, so the ``.CAS``
     and ``-evt:`` files are copied alongside.
+
+    ``allow_rename=False`` for a MOUNTED engine: it names its skeleton through the
+    block's ``class`` line, and those are the shared stock classes (serpentine /
+    rocket_launcher / ballista) the destination almost always already defines. A
+    rename there would fork an animation set for no gain, so an entry that already
+    exists is kept as-is and merely flagged.
     """
     taken = set(dest.engine_skeleton_file.by_type().keys())
     renames: Dict[str, str] = {}
@@ -525,6 +534,17 @@ def _resolve_engine_skeletons(plan: "TransferPlan", source: Mod, dest: Mod,
         dst_s = dest.engine_skeleton_def(name)
         if dst_s is not None and dst_s.content_equals(src_s):
             plan.engine_skeleton_actions.append((name, "reuse", "identical in destination"))
+            continue
+        if dst_s is not None and not allow_rename:
+            plan.engine_skeleton_actions.append(
+                (name, "reuse", "already in the destination descr_engine_skeleton.txt "
+                                "with different animations — KEPT, not overwritten"))
+            plan.warnings.append(
+                f"engine skeleton '{name}' (the mounted engine's `class`) already exists "
+                "in the destination descr_engine_skeleton.txt with different animations. "
+                "The destination's entry is kept — the mounted engine will use it, which "
+                "normally works fine. Compare the two by hand if the firing animation "
+                "looks wrong.")
             continue
         if dst_s is not None:
             new_name = engines_mod.unique_engine_name(name, taken, _tag(source))
@@ -556,7 +576,8 @@ def _resolve_engines(plan: "TransferPlan", source: Mod, dest: Mod, unit,
         src_blocks = (source.mounted_engine_defs(name) if mounted
                       else source.engine_defs(name))
         if not src_blocks:
-            plan.engine_actions.append((name, "missing", f"no entry in the source {filename}"))
+            plan.engine_actions.append(
+                (name, "missing", f"{filename} — no entry in the source"))
             plan.warnings.append(
                 f"siege engine '{name}' ({field_key}) has no entry in the source "
                 f"{filename} — the destination will have a dangling engine reference.")
@@ -567,10 +588,11 @@ def _resolve_engines(plan: "TransferPlan", source: Mod, dest: Mod, unit,
         # carry the whole set, or the engine only half-exists in the destination
         same = (len(dst_blocks) == len(src_blocks)
                 and all(d.content_equals(s) for d, s in zip(dst_blocks, src_blocks)))
+        nblocks = (f"{len(src_blocks)} block"
+                   f"{'s' if len(src_blocks) > 1 else ''}")
         if dst_blocks and same:
             plan.engine_actions.append(
-                (name, "reuse", f"identical in destination {filename}"
-                                f"{f' ({len(src_blocks)} blocks)' if len(src_blocks) > 1 else ''}"))
+                (name, "reuse", f"{filename} — identical in destination ({nblocks})"))
             continue
 
         final_name = name
@@ -580,19 +602,21 @@ def _resolve_engines(plan: "TransferPlan", source: Mod, dest: Mod, unit,
             final_name = engines_mod.unique_engine_name(name, all_types, _tag(source))
             plan.engine_renames[field_key] = final_name
             plan.engine_actions.append(
-                (name, "rename", f"name collision -> '{final_name}'"))
+                (name, "rename", f"{filename} — name collision -> '{final_name}'"))
         else:
             plan.engine_actions.append(
-                (name, "add", f"new engine ({len(src_blocks)} block"
-                              f"{'s' if len(src_blocks) > 1 else ''})"))
+                (name, "add", f"{filename} — new engine ({nblocks})"))
 
-        # skeletons first: their rename map has to be applied to the engine blocks
+        # skeletons first: their rename map has to be applied to the engine blocks.
+        # A mounted engine has no model groups — its `class` line is the skeleton
+        # name (see Engine.mounted_skeletons), and it is never renamed.
         skel_names: List[str] = []
         for b in src_blocks:
-            for s in b.skeletons():
+            for s in (b.mounted_skeletons() if mounted else b.skeletons()):
                 if not any(s.lower() == x.lower() for x in skel_names):
                     skel_names.append(s)
-        skel_map = _resolve_engine_skeletons(plan, source, dest, skel_names, seen_assets)
+        skel_map = _resolve_engine_skeletons(plan, source, dest, skel_names,
+                                             seen_assets, allow_rename=not mounted)
 
         for b in src_blocks:
             raw = engines_mod.rewrite_engine_raw(

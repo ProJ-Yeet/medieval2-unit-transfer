@@ -121,6 +121,25 @@ class Engine:
                 out.append(g.skeleton)
         return out
 
+    def mounted_skeletons(self) -> List[str]:
+        """Skeleton names for a block out of ``descr_mounted_engines.txt``.
+
+        A mounted engine (elephant cannon, camel gun, …) has NO
+        ``engine_model_group``: its model comes from the unit's mount, so the
+        block only carries ``reference_points``. Its ``class`` line is what names
+        the ``descr_engine_skeleton.txt`` entry — the mounted equivalent of a
+        ground engine's ``engine_skeleton`` (usually ``serpentine``,
+        ``rocket_launcher`` or ``ballista``).
+
+        Only call this for mounted blocks: in ``descr_engines.txt`` ``class``
+        names a hardcoded engine class (``ram``, ``tower``, …), not a skeleton.
+        """
+        out = self.skeletons()          # normally empty; honour it if a mod adds groups
+        if self.engine_class and not any(
+                self.engine_class.lower() == s.lower() for s in out):
+            out.insert(0, self.engine_class)
+        return out
+
     def file_refs(self) -> List[str]:
         """Every data-relative file the block names, deduped, in file order."""
         out: List[str] = []

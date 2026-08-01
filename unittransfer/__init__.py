@@ -15,4 +15,4 @@ Design rule: transfers APPEND verbatim source entries to the destination rather 
 re-serializing whole destination files, so untouched entries are never reformatted.
 """
 
-__version__ = "1.3.3"
+__version__ = "1.3.4"

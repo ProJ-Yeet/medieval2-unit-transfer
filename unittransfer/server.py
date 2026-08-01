@@ -222,6 +222,22 @@ def _engine_groups(m: Mod, u) -> list:
     return []
 
 
+def _mounted_engine_class(m: Mod, u) -> str:
+    """The ``descr_engine_skeleton.txt`` entry a mounted engine's ``class`` names.
+
+    A mounted engine has no model groups (the model is the mount's), so ``class``
+    is the only thing pointing at an animation set — usually ``serpentine``,
+    ``rocket_launcher`` or ``ballista``. '' when the unit has no mounted engine or
+    this mod doesn't define it.
+    """
+    if not u.mounted_engine:
+        return ""
+    for b in m.mounted_engine_defs(u.mounted_engine):
+        if b.engine_class:
+            return b.engine_class
+    return ""
+
+
 def _unit_payload(m: Mod, u) -> dict:
     loc = m.loc.get(u.dictionary)
     disp = (loc.name.strip() if loc and loc.name else "") or u.type
@@ -242,6 +258,8 @@ def _unit_payload(m: Mod, u) -> dict:
         # this unit drives, and how many blocks + model groups it spans.
         "engine": u.engine, "mounted_engine": u.mounted_engine,
         "engine_groups": _engine_groups(m, u),
+        # a mounted engine has no model groups: its `class` is the skeleton name
+        "engine_class": _mounted_engine_class(m, u),
         # projectile(s) the unit fires (stat_pri/stat_sec slot 3); [] for melee.
         "projectiles": u.projectiles(),
         "has_card": m.find_unit_card(u) is not None,
