@@ -35,6 +35,12 @@ BMDB mode (the whole battle_models.modeldb, see :mod:`unittransfer.bmdb`)
   POST /api/bmdb/cleanup_plan    -> what a cleanup would move/remove
   POST /api/bmdb/cleanup_apply   -> do it (backups + undo, assets exported first)
   GET  /api/progress?job=ID      -> where a long job (audit / cleanup) has got to
+
+Sounds mode (the unit voice bank, see :mod:`unittransfer.sounds`)
+  GET  /api/sounds?mod=          -> accents/classes, donors, and every unit split
+                                    into "has a voice entry" / "doesn't"
+  POST /api/sounds/plan | /apply -> stage voice edits, then write them (backups +
+                                    undo, same as a transfer)
 """
 from __future__ import annotations
 
@@ -48,7 +54,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import bmdb, cleaner, config, edit
+from . import bmdb, cleaner, config, edit, sounds
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
 from .mod import Mod
@@ -145,7 +151,8 @@ class Registry:
         for p in (mod.edu_path, mod.export_units_path, mod.modeldb_path,
                   mod.descr_mount_path, mod.descr_projectile_path,
                   mod.descr_engines_path, mod.descr_mounted_engines_path,
-                  mod.descr_engine_skeleton_path, mod.expanded_path):
+                  mod.descr_engine_skeleton_path, mod.expanded_path,
+                  mod.eds_path):
             try:
                 st = p.stat()
                 sig.append((p.name, st.st_size, int(st.st_mtime_ns)))
@@ -333,6 +340,21 @@ def _cleanup_payload(plan) -> dict:
     }
 
 
+def _sound_payload(plan) -> dict:
+    """Preview shape of a voice-edit plan (never the whole rewritten voice bank —
+    it is a megabyte of text the browser has no use for)."""
+    return {
+        "mod": plan.mod.name,
+        "count": len(plan.ops),
+        "eds_rewritten": bool(plan.eds_text),
+        "edu_rewritten": bool(plan.edu_text),
+        "changes": plan.changes,
+        "warnings": plan.warnings,
+        "errors": plan.errors,
+        "summary": plan.summary(),
+    }
+
+
 def _options_from(d: dict) -> TransferOptions:
     return TransferOptions(
         include_officers=bool(d.get("include_officers", True)),
@@ -356,6 +378,8 @@ def _options_from(d: dict) -> TransferOptions:
         engine_conflict=d.get("engine_conflict", "use_existing"),
         make_mercenary=bool(d.get("make_mercenary", False)),
         merc_icons=bool(d.get("merc_icons", False)),
+        sound_mode=d.get("sound_mode", "base"),
+        sound_donor=d.get("sound_donor") or None,
     )
 
 
@@ -380,6 +404,12 @@ def _plan_payload(plan) -> dict:
         "asset_conflict": plan.options.asset_conflict,
         "icon_conflict": plan.options.icon_conflict,
         "mercenary": plan.mercenary,
+        "sound_mode": plan.options.sound_mode,
+        "sound_action": plan.sound_action,
+        "sound_donor": plan.sound_donor,
+        "sound_accent": plan.sound_accent,
+        "sound_class": plan.sound_class,
+        "sound_detail": plan.sound_detail,
         "mount_action": plan.mount_action,
         "mount_name": plan.mount_name,
         "projectile_actions": [{"name": n, "action": a, "detail": d}
@@ -524,6 +554,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(bmdb.entry_detail(mod, (q.get("name") or [""])[0]))
                 log.info("BMDB   audit of %s", name)
                 return self._json(bmdb.audit(mod, progress=sink))
+            if u.path == "/api/sounds":
+                name = (q.get("mod") or [None])[0]
+                if not name or name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                return self._json(sounds.overview(self.registry.get(name)))
             if u.path == "/api/log":
                 return self._json(config.load_log())
             if u.path == "/icon":
@@ -593,6 +628,12 @@ class Handler(BaseHTTPRequestHandler):
                     mod, bmdb.cleanup_request_from_dict(body))))
             if u.path == "/api/bmdb/cleanup_apply":
                 return self._json(self._bmdb_cleanup(body))
+            if u.path == "/api/sounds/plan":
+                mod = self.registry.get(body["mod"])
+                return self._json(_sound_payload(
+                    sounds.plan_sounds(mod, sounds.ops_from_dicts(body.get("ops")))))
+            if u.path == "/api/sounds/apply":
+                return self._json(self._sounds_apply(body))
             if u.path == "/api/plan":
                 return self._json(self._plan(body))
             if u.path == "/api/apply":
@@ -687,6 +728,30 @@ class Handler(BaseHTTPRequestHandler):
                 log.info("CLEANER ran in %s (rc=%s)", mod.name, res.get("returncode"))
             else:
                 log.warning("CLEANER did not run: %s", res.get("error"))
+            config.update_log(rec.get("id", ""), cleaner=res)
+        return out
+
+    # ---- sounds mode ----
+    def _sounds_apply(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = sounds.plan_sounds(mod, sounds.ops_from_dicts(body.get("ops")))
+        if plan.errors:
+            return {"error": "; ".join(plan.errors), "plan": _sound_payload(plan)}
+        log.info("VOICE  %d edit(s) in %s", len(plan.ops), mod.name)
+        rec = sounds.apply_sounds(plan)
+        self.registry.invalidate(body["mod"])       # files changed on disk
+        for line in plan.summary().splitlines()[1:]:
+            if line.strip():
+                log.info("   %s", line.strip())
+        log.info("VOICE  done id=%s", rec.get("id"))
+        out = {"record": rec, "plan": _sound_payload(plan)}
+        # the game bakes the voice bank into its sound caches — clear them, same
+        # as after a transfer or a unit edit
+        if (config.load_settings().get("run_full_cleaner", True)
+                and body.get("run_cleaner", True)):
+            res = cleaner.run_full_cleaner(mod.root)
+            out["cleaner"] = res
+            log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)
             config.update_log(rec.get("id", ""), cleaner=res)
         return out
 

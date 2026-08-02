@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from . import (config, edu as edu_mod, engines as engines_mod, localization,
-               modeldb, mounts, projectiles as projectiles_mod)
+               modeldb, mounts, projectiles as projectiles_mod, sounds)
 from .mod import Mod
 
 
@@ -94,6 +94,17 @@ class TransferOptions:
     # Mercenary icon folders: puts the unit card / info card in the mercs/merc
     # folders (pinned via card_pic_dir/info_pic_dir), independent of the flag above.
     merc_icons: bool = False
+    # Voice: where the transferred unit's selection barks come from.
+    #   "base" copy the BASE unit's voice entry (the default — a unit built on
+    #          another one should sound like it, and its accent/voice_type already
+    #          come from the base, so the entry lands in a block that exists)
+    #   "unit" copy some OTHER destination unit's entry, named by `sound_donor`
+    #          (base one unit for stats, another for the voice)
+    #   "none" write no voice entry at all
+    # A copied voice also PINS the EDU's `accent` / `voice_type` to the donor's:
+    # the entry is dead weight unless those two fields point at the same block.
+    sound_mode: str = "base"
+    sound_donor: Optional[str] = None
 
 
 @dataclass
@@ -184,6 +195,13 @@ class TransferPlan:
     texture_donor: str = ""          # faction whose skin the new records clone
     mercenary: bool = False          # unit is being turned into a mercenary
     merc_icons: bool = False         # card/info card pinned to the mercs/merc folders
+    # voice bank (export_descr_sounds_units_voice.txt). See `_resolve_sound`.
+    sound_action: str = ""           # "" | "copy" | "none" | "missing" | "no_base"
+    sound_donor: str = ""            # destination unit whose entry is copied
+    sound_accent: str = ""           # accent/class the copy lands in — also forced
+    sound_class: str = ""            # onto the EDU block's accent / voice_type
+    sound_text: str = ""             # whole new voice-bank file ("" = unchanged)
+    sound_detail: str = ""           # human-readable note for the summary
     # 1 if this transfer adds a NEW unit type to the destination EDU, else 0
     # (overwrite/skip add none) — drives the 500 vanilla unit-limit warning.
     dest_new_units: int = 1
@@ -208,6 +226,14 @@ class TransferPlan:
             L.append(f"  MERCENARY ATTRIBUTE: +{MERC_ATTR} attribute, +'{MERC_TEX_FACTION}' bmdb skin")
         if self.merc_icons:
             L.append(f"  MERCENARY ICONS: -> {MERC_CARD_DIR}/ + {MERC_INFO_DIR}/")
+        if self.sound_action == "copy":
+            L.append(f"  voice: copied {self.sound_donor}'s Unit_Select entry into "
+                     f"{self.sound_accent}/{self.sound_class} "
+                     f"(EDU accent + voice_type pinned to match)")
+        elif self.sound_action in ("missing", "no_base"):
+            L.append("  ! voice: " + self.sound_detail)
+        elif self.sound_action == "none" and self.sound_detail:
+            L.append("  voice: " + self.sound_detail)
         if self.options.field_overrides:
             L.append("  field overrides: " + ", ".join(sorted(self.options.field_overrides)))
         if self.skipped:
@@ -674,6 +700,84 @@ def _resolve_engines(plan: "TransferPlan", source: Mod, dest: Mod, unit,
                 "destination lacks it.")
 
 
+def _resolve_sound(plan: "TransferPlan", dest: Mod) -> None:
+    """Decide the transferred unit's voice entry and compose the new voice bank.
+
+    The unit's barks are NOT part of its EDU block: they live in the destination's
+    ``export_descr_sounds_units_voice.txt`` as a ``unit <type>`` entry inside one
+    accent/class block, and the EDU's ``accent`` / ``voice_type`` are what send the
+    game looking in that block. So copying a voice means both halves — an entry
+    spliced into the bank, and those two EDU fields pinned to the donor's — which is
+    why the composer locks them while a donor is in play.
+
+    Nothing here can fail the transfer: a missing bank or a mute donor downgrades to
+    a warning, because a unit with no voice entry still works (it just falls back to
+    its class's generic barks).
+    """
+    opts = plan.options
+    mode = (opts.sound_mode or "base").lower()
+    if mode == "none":
+        plan.sound_action = "none"
+        return
+    if not dest.eds_path.exists():
+        plan.sound_action = "missing"
+        plan.sound_detail = (f"{dest.name} has no data/{sounds.EDS_REL} — no voice "
+                             "entry written")
+        plan.warnings.append(plan.sound_detail)
+        return
+
+    if mode == "base":
+        donor_name = opts.base_type or ""
+        if not donor_name:
+            plan.sound_action = "no_base"
+            plan.sound_detail = ("no base unit chosen, so there is no base voice to "
+                                 "copy — pick a base unit, choose another unit for the "
+                                 "voice, or turn the voice off")
+            plan.warnings.append(plan.sound_detail)
+            return
+    else:
+        donor_name = opts.sound_donor or ""
+        if not donor_name:
+            plan.sound_action = "no_base"
+            plan.sound_detail = "no unit chosen to copy the voice from"
+            plan.warnings.append(plan.sound_detail)
+            return
+
+    bank = dest.sounds
+    donor = bank.get(donor_name)
+    if donor is None:
+        plan.sound_action = "missing"
+        plan.sound_detail = (f"'{donor_name}' has no Unit_Select entry in {dest.name}'s "
+                             "voice bank, so there is nothing to copy (it uses its "
+                             "class's generic barks)")
+        plan.warnings.append(plan.sound_detail)
+        return
+
+    plan.sound_donor = donor_name
+    plan.sound_accent = donor.accent
+    plan.sound_class = donor.voice_class
+    # Overwriting a unit that already has an entry must MOVE it, not add a second
+    # one — two `unit X` lines in the bank and the game reads only the first.
+    existing = bank.get(plan.resolved_type)
+    try:
+        if existing is not None:
+            plan.sound_text = sounds.move_unit(bank, plan.resolved_type,
+                                               donor.accent, donor.voice_class, donor)
+        else:
+            plan.sound_text = sounds.add_unit(bank, plan.resolved_type, donor,
+                                              donor.accent, donor.voice_class)
+    except ValueError as exc:
+        plan.sound_action = "missing"
+        plan.sound_detail = f"voice entry not written: {exc}"
+        plan.warnings.append(plan.sound_detail)
+        return
+    plan.sound_action = "copy"
+    plan.warnings.append(
+        f"voice: '{plan.resolved_type}' copies {donor_name}'s Unit_Select sounds and "
+        f"its EDU accent/voice_type are pinned to {donor.accent}/{donor.voice_class} "
+        "(the entry only works if both point at the same block).")
+
+
 def base_field_groups_for(opts: TransferOptions) -> List[str]:
     """EDU field groups a base unit supplies, given the include/soldier options.
 
@@ -1116,6 +1220,9 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
             f"mercenary icons: card/info card go to ui/units/{MERC_CARD_DIR}/ + "
             f"ui/unit_info/{MERC_INFO_DIR}/ (pinned via card_pic_dir/info_pic_dir).")
 
+    # ---- voice bank ----
+    _resolve_sound(plan, dest)
+
     # ---- asset name/path conflicts (byte comparison) ----
     # For every file we'd copy, if the destination already has a file with the
     # same name AND path, byte-compare them so the user can choose whether a
@@ -1208,10 +1315,15 @@ def _build_unit_block(plan: TransferPlan, unit) -> str:
     # a siege engine was renamed to dodge a clash -> point the EDU at the new name
     for field_key, new_name in plan.engine_renames.items():
         block = edu_mod.set_field(block, field_key, new_name)
-    # 3) manual per-field overrides
+    # 3) pin accent / voice_type at the block the copied voice entry lives in —
+    #    before the manual overrides, so typing your own accent still wins (the
+    #    composer locks those two fields, but a saved batch config could carry one)
+    if plan.sound_action == "copy":
+        block = sounds.set_voice_fields(block, plan.sound_accent, plan.sound_class)
+    # 4) manual per-field overrides
     for k, v in plan.options.field_overrides.items():
         block = edu_mod.set_field(block, k, v)
-    # 4) mercenary flag last, so a manual `attributes` override can't drop it
+    # 5) mercenary flag last, so a manual `attributes` override can't drop it
     if plan.mercenary:
         block = edu_mod.add_attribute(block, MERC_ATTR)
     return block
@@ -1368,6 +1480,10 @@ def apply_transfer(plan: TransferPlan) -> Dict:
             text += "\n"
         write_text(rel, text, engines_mod.ENCODING)
 
+    # ---- 3e) voice bank ----
+    if plan.sound_text:
+        write_text(sounds.EDS_REL, plan.sound_text, sounds.ENCODING)
+
     # ---- 4) assets + icons ----
     engine_rels = {r.lower() for r in plan.engine_assets}
     for src_abs, rel in plan.asset_files:
@@ -1425,7 +1541,7 @@ def _base_record(plan: TransferPlan, applied: bool, transfer_id: str = "",
 def _invalidate(mod: Mod):
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file"):
+                 "mounted_engine_file", "engine_skeleton_file", "sounds"):
         mod.__dict__.pop(attr, None)
 
 

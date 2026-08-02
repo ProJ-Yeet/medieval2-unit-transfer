@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import (edu, engines as engines_mod, localization, modeldb,
-               mounts as mounts_mod, projectiles as projectiles_mod)
+               mounts as mounts_mod, projectiles as projectiles_mod,
+               sounds as sounds_mod)
 
 
 class Mod:
@@ -73,6 +74,11 @@ class Mod:
     @property
     def expanded_path(self) -> Path:
         return self.data / "text" / "expanded.txt"
+
+    @property
+    def eds_path(self) -> Path:
+        """The unit voice bank (``export_descr_sounds_units_voice.txt``)."""
+        return self.data / sounds_mod.EDS_REL
 
     # ---- parsed databases (cached) -------------------------------------
     @cached_property
@@ -143,6 +149,11 @@ class Mod:
     def engine_skeleton_def(self, name: str):
         """The descr_engine_skeleton block for a skeleton name, or None."""
         return self.engine_skeleton_file.get(name)
+
+    @cached_property
+    def sounds(self) -> "sounds_mod.SoundBank":
+        """Parsed voice bank (lines kept verbatim so edits are splices)."""
+        return sounds_mod.parse_file(self.eds_path)
 
     @cached_property
     def effect_sets(self) -> set:

@@ -2,6 +2,7 @@
 
     python build_release.py            # portable build (bundles Python + Pillow)
     python build_release.py --no-runtime   # code only; the target PC needs Python
+    python build_release.py --version v1.4.0   # name the zip for a release
 
 The point is that the person you send it to installs nothing. The zip carries
 Python's official *embeddable* distribution with Pillow already in it, so they
@@ -390,8 +391,8 @@ Using it
 * Every transfer is undoable from the clock icon — it backs up each file it
   touches first.
 
-The other two modes
--------------------
+The other three modes
+---------------------
 The dropdown in the top-left corner switches what you are working on:
 
 * **Unit Editor** — one mod instead of two. Click a unit to edit every EDU
@@ -404,14 +405,20 @@ The dropdown in the top-left corner switches what you are working on:
   deleted: you choose a folder and everything ticked is moved there, laid out
   like the mod itself so it can be pasted straight back — and the whole removal
   is undoable from the clock icon like anything else.
+* **Unit Sounds** — the mod's voice bank, which decides what a unit's soldiers
+  shout when you select them. Three tabs: units with no voice entry, units with
+  one, and entries whose unit no longer exists. Pick the unit to copy the
+  sounds from and the row is ready; **Set all shown to copy** does a whole
+  filtered list at once. It writes the voice bank AND the matching accent /
+  voice_type lines in the EDU, because a unit is silent unless those two agree.
 
 What gets carried across
 ------------------------
 The unit's EDU entry, its localised name and description, its battle models and
 all their meshes/textures/sprites, its unit card and info card, its mount, its
-projectile, and — for artillery — its full siege engine: the descr_engines
-block, the engine skeletons and animations, the meshes, bone maps, collision
-models, and the textures baked inside those meshes.
+projectile, its voice, and — for artillery — its full siege engine: the
+descr_engines block, the engine skeletons and animations, the meshes, bone maps,
+collision models, and the textures baked inside those meshes.
 
 Things it warns you about rather than guessing: missing animations, files the
 destination mod overrides, and effects/sounds it can't port.
@@ -484,10 +491,14 @@ def main(argv=None) -> int:
     ap.add_argument("--no-runtime", action="store_true",
                     help="don't bundle Python (target PC must have it installed)")
     ap.add_argument("--out", default=None, help="output .zip path")
+    ap.add_argument("--version", default=None,
+                    help="name the build for a release (e.g. v1.4.0) instead of today's date")
     args = ap.parse_args(argv)
     portable = not args.no_runtime
 
-    stamp = time.strftime("%Y%m%d")
+    # A release asset wants to say which version it is; a throwaway build only
+    # needs to say when it was made.
+    stamp = args.version or time.strftime("%Y%m%d")
     name = f"{APP_NAME}-{stamp}" + ("" if portable else "-noruntime")
     stage = DIST / name
     print(f"Building {name} ({'portable' if portable else 'code only'})")

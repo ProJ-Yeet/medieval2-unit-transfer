@@ -18,6 +18,9 @@ graphify-out/
 # Third-party reference tools kept locally for comparison (not ours to ship)
 UnitEditor11/
 
+# Superseded work kept around locally (old builds, the Sounds Parser prototype)
+Old Files/
+
 # Runtime logs (server.log.sample IS committed as a reference; real logs are not)
 server.log
 launcher-output.txt

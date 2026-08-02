@@ -1082,7 +1082,7 @@ def apply_edit(plan: EditPlan) -> Dict:
 def _invalidate(mod: Mod) -> None:
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file"):
+                 "mounted_engine_file", "engine_skeleton_file", "sounds"):
         mod.__dict__.pop(attr, None)
 
 

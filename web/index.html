@@ -335,6 +335,41 @@
   .cltarget input{font-family:ui-monospace,Consolas,monospace;font-size:12px}
   .treebox{font:11.5px/1.5 ui-monospace,Consolas,monospace;color:var(--dim);background:var(--panel);
     border:1px solid var(--edge);border-radius:6px;padding:8px 10px;margin-top:7px;overflow-x:auto}
+  /* ---- Sounds mode: the unit voice bank ---- */
+  .sndhead{position:sticky;top:0;background:var(--bg);padding:10px 0 6px;z-index:2;
+    border-bottom:1px solid var(--edge)}
+  .sndhead h2{margin:0 0 3px;font-size:15px;color:var(--accent)}
+  .sndtabs{display:flex;gap:6px;margin:10px 0 0}
+  .sndbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:8px 10px;
+    background:var(--panel);border:1px solid var(--edge);border-radius:8px}
+  .sndbar select,.sndbar input{padding:4px 7px;font-size:12px}
+  .sndbar .grow{flex:1;min-width:120px}
+  .sndlist{border:1px solid var(--edge);border-radius:8px;background:var(--panel);margin-top:10px}
+  /* The unit column had 1.5fr and squeezed "In game now" into 88px, which cut off
+     the one thing the row is telling you ("English — generic", "Gondor/General ✗").
+     Half the width is plenty for a name over its type, and the freed space goes
+     where the text actually is. */
+  .sndrow{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(150px,.6fr) 130px 100px minmax(180px,1.6fr) 46px;
+    gap:8px;align-items:center;padding:5px 10px;border-bottom:1px solid var(--edge)}
+  .sndrow:last-child{border-bottom:none}
+  .sndrow.hrow{background:var(--panel2);color:var(--dim);font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;position:sticky;top:0;border-radius:8px 8px 0 0}
+  .sndrow.staged{background:rgba(92,201,138,.08);box-shadow:inset 3px 0 0 var(--good)}
+  .sndrow.dropping{background:rgba(224,108,108,.08);box-shadow:inset 3px 0 0 var(--bad)}
+  .sndrow select{width:100%;padding:3px 6px;font-size:12px;min-width:0}
+  .sndrow select:disabled{opacity:.55}
+  .sndrow .un{min-width:0}
+  .sndrow .un .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sndrow .un .ty{color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sndrow .now{color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sndrow .rm{display:flex;justify-content:center}
+  /* ---- composer: the voice fieldset ---- */
+  .sndopt{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+  .sndpick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+  .sndpick select{flex:0 0 auto;max-width:210px}
+  .sndpick .lockicon{color:var(--warn);cursor:help}
+  .sndlocked{border:1px dashed var(--warn);border-radius:6px;padding:6px 8px;margin-top:6px}
+  .sndlist.mini{max-height:190px;overflow:auto;margin-top:6px}
 </style>
 </head>
 <body>
@@ -343,6 +378,7 @@
     <option value="transfer">⚔ Unit Transfer</option>
     <option value="edit">✎ Unit Editor</option>
     <option value="bmdb">🗄 BMDB Editor</option>
+    <option value="sounds">🔊 Unit Sounds</option>
   </select>
   <div class="sep"></div>
   <span class="lbl" id="srcLbl">From</span><select id="srcSel"></select>
@@ -355,6 +391,7 @@
   <button id="clearSelBtn" style="display:none" title="Untick every selected unit">✕ Clear</button>
   <button id="newUnitBtn" class="primary" style="display:none" title="Create a new unit using an existing one as the base">＋ New unit</button>
   <button id="cleanBtn" style="display:none" title="Find entries and files nothing uses and move them out of the mod">🧹 Clean up BMDB…</button>
+  <button id="sndBtn" class="primary" style="display:none" title="Write the staged voice changes into this mod">Apply voice edits (0)</button>
   <label class="chk" id="unusedWrap" style="display:none"><input type="checkbox" id="unusedOnly"> unused only</label>
   <button id="settingsBtn" title="MED II root">⚙ Root</button>
   <button id="logBtn" title="Log + undo">🕑 Log</button>
@@ -398,8 +435,9 @@ const state={mods:[],src:null,dst:null,data:null,destData:null,factionNames:{},
   sel:{faction:new Set(),category:new Set(),class:new Set(),era:new Set()},
   selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{},
   // 'transfer' = move units between mods; 'edit' = edit the units of ONE mod;
-  // 'bmdb' = edit / clean up that mod's whole battle_models.modeldb
-  mode:'transfer', ed:null, bmdb:null, clean:null};
+  // 'bmdb' = edit / clean up that mod's whole battle_models.modeldb;
+  // 'sounds' = which voice-bank entry each unit uses
+  mode:'transfer', ed:null, bmdb:null, clean:null, snd:null, destSnd:null};
 
 const VANILLA_UNIT_LIMIT=500;   // M2TW vanilla EDU cap; M2TWEOP/EOP raise it.
 
@@ -460,7 +498,7 @@ async function init(){
     // and opens the editor for this tab only; the remembered mod is not changed.
     const qs=new URLSearchParams(location.search);
     const qMod=qs.get('mod'),qEdit=qs.get('edit');
-    state.mode=qEdit?'edit':(['edit','bmdb'].includes(s.mode)?s.mode:'transfer');
+    state.mode=qEdit?'edit':(['edit','bmdb','sounds'].includes(s.mode)?s.mode:'transfer');
     modeSel.value=state.mode;
     await refreshMods(qMod||s.last_source,qMod||s.last_dest);
     wire(); applyMode(false);
@@ -568,7 +606,7 @@ function wire(){
     if(v!==state.src)clearSelection();
     // Edit / bmdb mode works on a single mod, so both sides follow the picker.
     if(state.mode!=='transfer'){state.src=state.dst=v;dstSel.value=v;state.destData=null;
-      state.cfg={};state.bmdb=null;
+      state.cfg={};state.bmdb=null;state.snd=null;state.destSnd=null;
       await api.post('/api/settings',{last_source:v,last_dest:v});return loadSource();}
     if(v===state.dst){state.dst=state.src;dstSel.value=state.dst;state.destData=null;}
     state.src=v;srcSel.value=v;state.cfg={};
@@ -578,7 +616,7 @@ function wire(){
     const v=e.target.value;
     const srcChanged=(v===state.src);
     if(srcChanged){state.src=state.dst;srcSel.value=state.src;clearSelection();}
-    state.dst=v;dstSel.value=v;state.destData=null;state.cfg={};
+    state.dst=v;dstSel.value=v;state.destData=null;state.destSnd=null;state.cfg={};
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
     if(srcChanged)loadSource();};
   search.oninput=render; mercOnly.onchange=filtersChanged; groupBy.onchange=filtersChanged;
@@ -590,7 +628,7 @@ function wire(){
   document.querySelectorAll('.era').forEach(cb=>cb.onchange=()=>{cb.checked?state.sel.era.add(cb.value):state.sel.era.delete(cb.value);filtersChanged();});
   settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
   selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch; clearSelBtn.onclick=clearSelection;
-  cleanBtn.onclick=openCleanup; unusedOnly.onchange=render;
+  cleanBtn.onclick=openCleanup; unusedOnly.onchange=render; sndBtn.onclick=sndApply;
   overlay.onclick=e=>{if(e.target.id==='overlay')closeModal();};
 }
 /* ---------- mode switching ---------- */
@@ -598,7 +636,8 @@ function wire(){
 // the source: that also lets the "new unit" flow reuse the transfer engine with
 // source == dest.
 function applyMode(persist){
-  const one=state.mode!=='transfer', edit=state.mode==='edit', bm=state.mode==='bmdb';
+  const one=state.mode!=='transfer', edit=state.mode==='edit', bm=state.mode==='bmdb',
+        snd=state.mode==='sounds';
   document.getElementById('srcLbl').textContent=one?'Mod':'From';
   document.getElementById('dstWrap').style.display=one?'none':'';
   selBtn.style.display=one?'none':'';
@@ -606,11 +645,14 @@ function applyMode(persist){
   clearSelBtn.style.display=(!one&&state.selMode&&state.selected.size)?'inline-block':'none';
   newUnitBtn.style.display=edit?'inline-block':'none';
   cleanBtn.style.display=bm?'inline-block':'none';
+  sndBtn.style.display=snd?'inline-block':'none';
   unusedWrap.style.display=bm?'inline-flex':'none';
-  mercOnly.parentElement.style.display=bm?'none':'inline-flex';
-  document.querySelector('.filters').style.display=bm?'none':'';
-  search.placeholder=bm?'Search entries…':'Search…';
-  document.title=bm?'BMDB Editor':edit?'Unit Editor':'Unit Transfer';
+  mercOnly.parentElement.style.display=(bm||snd)?'none':'inline-flex';
+  // both of these bring their own filters — the sidebar's faction/era ones say
+  // nothing about a voice entry, and nothing at all about a modeldb record
+  document.querySelector('.filters').style.display=(bm||snd)?'none':'';
+  search.placeholder=bm?'Search entries…':snd?'Search units…':'Search…';
+  document.title=bm?'BMDB Editor':snd?'Unit Sounds':edit?'Unit Editor':'Unit Transfer';
   if(one&&state.selMode)toggleSelMode();
   if(one&&state.dst!==state.src){state.dst=state.src;dstSel.value=state.src;state.destData=null;}
   if(persist)api.post('/api/settings',{mode:state.mode,last_dest:state.dst});
@@ -647,6 +689,7 @@ function unitMatches(u){
 }
 function render(){
   if(state.mode==='bmdb')return renderBmdb();
+  if(state.mode==='sounds')return renderSounds();
   if(!state.data)return;
   const units=state.data.units.filter(unitMatches);
   count.textContent=`${units.length}/${state.data.units.length}`;
@@ -719,8 +762,21 @@ function cfgFor(type){
     officer_from:'source',mount_from:'source',crew_from:'source',
     field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,merc_icons:false,exclude_models:[],
     asset_conflict:'mod_folder',asset_reroute_dir:'',icon_conflict:'use_existing',
+    // voice: 'base' (copy the base unit's barks — the default), 'unit' (copy some
+    // other destination unit's), 'none'. snd_accent/snd_class only filter the
+    // donor list; the accent/class actually written are always the donor's.
+    sound_mode:'base',sound_donor:'',snd_accent:'',snd_class:'',
     base_fac:'',_conflict:null,_fields:null,_orig:null,_fieldsKey:null,_inherited:null};
   return state.cfg[type];
+}
+// The destination's voice bank, fetched once per destination mod. Needed to know
+// whether a base unit HAS barks to copy, and to list the units that do.
+async function ensureDestSnd(){
+  if(!state.destSnd||state.destSnd.mod!==state.dst){
+    try{ state.destSnd=await api.get('/api/sounds?mod='+enc(state.dst)); }
+    catch(e){ state.destSnd={mod:state.dst,has_file:false,donors:[],accents:[],classes:[]}; }
+  }
+  return state.destSnd;
 }
 
 /* ---------- composer (single or batch) ---------- */
@@ -730,6 +786,7 @@ async function openComposer(types){
   document.getElementById('modal').className='modal';
   overlay.classList.add('open');
   await ensureDest();           // needed for the unit-limit projection + base picker
+  await ensureDestSnd();        // …and to know which destination units have barks
   renderComposer();
 }
 async function renderComposer(){
@@ -831,6 +888,7 @@ async function renderComposer(){
          </div>
        </div>
      </fieldset>`}
+     ${soundFieldset(c,u)}
      <fieldset><legend>Mercenary attribute</legend>
        <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
        <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute and gives the battle
@@ -882,6 +940,9 @@ async function renderComposer(){
   if(window.optProj)optProj.onchange=()=>{c.include_projectile=optProj.checked; doPreview();};
   // re-render: the engine fieldset appears/disappears with the checkbox
   if(window.optEngine)optEngine.onchange=()=>{c.include_engine=optEngine.checked; renderComposer();};
+  // re-render: the whole voice panel (locks, donor list, notes) changes with the mode
+  document.querySelectorAll('input[name=sndmode]').forEach(r=>r.onchange=()=>{
+    c.sound_mode=r.value; renderComposer();});
   optMerc.onchange=()=>{c.make_mercenary=optMerc.checked; doPreview();};
   optMercIcons.onchange=()=>{c.merc_icons=optMercIcons.checked; doPreview();};
   // per-group source/base toggles — re-render so the include boxes grey out
@@ -909,6 +970,105 @@ function fromBasePanel(c,u){
   return `<div class="basefrom${on?'':' off'}">
     <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`:'base unit'}${on?'':' — pick a base unit to enable'}</div>
     ${rows}</div>`;
+}
+/* ---------- voice / sound ----------
+   A unit's barks are not in its EDU block: they are a `unit <type>` entry inside one
+   accent/class block of the destination's voice bank, and the EDU's `accent` +
+   `voice_type` are what point the game at that block. Copying a voice therefore
+   pins those two fields to the donor's — an entry the EDU doesn't point at is never
+   read — which is exactly why the accent and class controls here lock as soon as a
+   donor is in play, rather than letting you set a combination that can't work. */
+// The donor a config resolves to, plus why it can or can't be used.
+function soundDonor(c){
+  const ds=state.destSnd;
+  if(!ds||!ds.has_file)return {mode:c.sound_mode,blocked:'nobank'};
+  if(c.sound_mode==='none')return {mode:'none'};
+  const name=c.sound_mode==='base'?(c.base_type||''):(c.sound_donor||'');
+  if(!name)return {mode:c.sound_mode,blocked:c.sound_mode==='base'?'nobase':'nopick'};
+  const d=(ds.donors||[]).find(x=>x.name===name);
+  return d?{mode:c.sound_mode,name,accent:d.accent,cls:d['class']}
+          :{mode:c.sound_mode,name,blocked:'silent'};
+}
+function soundFieldset(c,u){
+  const ds=state.destSnd||{},d=soundDonor(c);
+  const locked=!!d.accent;
+  const radio=(v,label,note,off)=>`<label class="chk${off?' off':''}">
+    <input type="radio" name="sndmode" value="${v}" ${c.sound_mode===v?'checked':''} ${off?'disabled':''}>
+    ${label}${note?` <span class="count">— ${note}</span>`:''}</label>`;
+  if(!ds.has_file)return `<fieldset><legend>Voice / sound</legend>
+    <div class="count">“${esc(state.dst)}” has no
+      <code>data/export_descr_sounds_units_voice.txt</code>, so there is no voice bank to copy
+      an entry into. The unit will use the game's own sounds.</div></fieldset>`;
+  // why the accent/class pair is not yours to choose while a donor is set
+  const why=locked
+    ? `Locked — the voice entry is a copy of “${d.name}”’s, so it goes into ${d.accent} / ${d.cls}, `
+      +`the block that unit sits in. The EDU’s accent and voice_type are written to match: `
+      +`point them anywhere else and the game looks in a block this entry is not in, and the unit `
+      +`falls back to generic barks. `
+      +(c.sound_mode==='base'?`Switch to “another unit” to choose a different voice.`
+                             :`Clear the unit below to filter by accent and class again.`)
+    : '';
+  const donors=(ds.donors||[]).filter(x=>(!c.snd_accent||x.accent===c.snd_accent)
+                                       &&(!c.snd_class||x['class']===c.snd_class));
+  const acc=locked?d.accent:c.snd_accent, cls=locked?d.cls:c.snd_class;
+  const pick=(key,cur,vals,blank)=>`<select ${locked?`disabled title="${esc(why)}"`
+      :`onchange="cmpSndPick('${key}',this.value)"`}>
+    <option value="">${blank}</option>
+    ${vals.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}
+    ${locked&&!vals.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:''}</select>`;
+  let body='';
+  if(c.sound_mode==='none')
+    body=`<div class="count" style="margin-top:6px">No voice entry is written and the EDU’s
+      <code>accent</code> / <code>voice_type</code> are left exactly as the source unit had them.
+      The unit still speaks — it just falls back to whatever that accent/class block says for
+      every unit, instead of having lines of its own.</div>`;
+  else if(d.blocked==='nobase')
+    body=`<div class="count w-warn" style="margin-top:6px">No base unit is chosen yet, so there is
+      no base voice to copy. Pick one under <b>Use another unit as base</b> above, or switch to
+      “another unit” and choose the voice by hand.</div>`;
+  else if(d.blocked==='silent')
+    body=`<div class="count w-warn" style="margin-top:6px">“${esc(d.name)}” has no
+      <code>Unit_Select</code> entry of its own in ${esc(state.dst)}’s voice bank — it uses its
+      class’s generic barks, so there is nothing to copy. Pick another unit${
+      c.sound_mode==='base'?' for the voice':''}.</div>`;
+  else body=`<div class="sndpick">
+      <span class="count">Accent</span>${pick('snd_accent',acc,ds.accents||[],'— any —')}
+      <span class="count">Class</span>${pick('snd_class',cls,ds.classes||[],'— any —')}
+      ${locked?`<span class="lockicon" title="${esc(why)}">🔒 locked</span>`:
+        `<span class="count">these two just filter the list below</span>`}
+    </div>
+    ${c.sound_mode==='unit'?`<div class="sndpick">
+      <span class="count">Sound from</span>
+      <select onchange="cmpSndPick('sound_donor',this.value)" style="flex:1;max-width:340px">
+        <option value="">— pick a unit (${donors.length} with their own barks) —</option>
+        ${donors.map(x=>`<option value="${esc(x.name)}" ${x.name===c.sound_donor?'selected':''}>${esc(x.name)} (${esc(x.accent)}/${esc(x['class'])})</option>`).join('')}
+      </select>
+      ${c.sound_donor?`<button onclick="cmpSndPick('sound_donor','')" title="unlock the accent and class filters">✕</button>`:''}
+    </div>`:''}
+    ${locked?`<div class="sndlocked count">🔒 <b>${esc(d.name)}</b>’s <code>Unit_Select</code> sounds are
+      copied to <b>${esc(c.new_type||u.type)}</b> in <b>${esc(d.accent)} / ${esc(d.cls)}</b>,
+      and the unit’s EDU <code>accent</code> and <code>voice_type</code> are set to match.
+      ${esc(why)}</div>`:''}`;
+  return `<fieldset><legend>Voice / sound</legend>
+    <div class="sndopt">
+      ${radio('base','Use the base unit’s sound',
+              c.base_type?`copies “${esc(c.base_type)}”’s barks`:'no base unit chosen yet')}
+      ${radio('unit','Use another unit’s sound',
+              'base the unit on one, take the voice from another')}
+      ${radio('none','Don’t import sound','leave the unit on its class’s generic barks')}
+    </div>${body}</fieldset>`;
+}
+function cmpSndPick(key,value){
+  const c=cfgFor(state.editing);
+  c[key]=value;
+  // a donor from another block would drag that block's sounds along, so a changed
+  // filter drops a pick it no longer matches
+  if(key!=='sound_donor'&&c.sound_donor){
+    const d=(state.destSnd.donors||[]).find(x=>x.name===c.sound_donor);
+    if(!d||(c.snd_accent&&d.accent!==c.snd_accent)||(c.snd_class&&d['class']!==c.snd_class))
+      c.sound_donor='';
+  }
+  renderComposer();
 }
 function switchUnit(t){state.editing=t;renderComposer();}
 function toggleBase(){const c=cfgFor(state.editing);
@@ -986,16 +1146,43 @@ function renderAllFields(type){
   const c=cfgFor(type); const box=document.getElementById('allFields'); if(!box)return;
   if(!c._fields.length){box.innerHTML='<div class="count" style="padding:6px">No editable fields.</div>';updateFieldChanged();return;}
   const inh=new Set(c.base_type?(c._inherited||[]):[]);
-  box.innerHTML=c._fields.map(([label,val])=>{
+  // A copied voice OWNS accent + voice_type: the entry is written into the donor's
+  // block, and these two are what send the game there. Editing one here would
+  // silently point the unit at a block its entry is not in, so they are shown as
+  // the donor's and locked, with the same explanation as the voice panel's 🔒.
+  const snd=soundDonor(c), sndLock=snd.accent
+    ? {vals:{accent:snd.accent,voice_type:snd.cls},
+       why:`Locked by the voice panel — “${snd.name}”’s sounds are copied into `
+          +`${snd.accent} / ${snd.cls}, and these two fields are what point the game at `
+          +`that block. Choose “Don’t import sound” to edit them yourself.`}
+    : null;
+  // A unit that has no `accent` line at all still GETS one when a voice is copied
+  // (the game can't find the block without it), so show that row rather than
+  // writing a field the panel never mentioned. It goes where the EDU keeps it —
+  // right after voice_type / class.
+  let fields=c._fields;
+  if(sndLock){
+    fields=c._fields.slice();
+    for(const k of ['voice_type','accent']){
+      if(fields.some(([l])=>l===k))continue;
+      const after=fields.findIndex(([l])=>l==='voice_type'||l==='class');
+      fields.splice(after<0?0:after+1,0,[k,sndLock.vals[k]]);
+    }
+  }
+  box.innerHTML=fields.map(([label,val])=>{
     const dup=/#\d+$/.test(label);
-    const cur=(label in c.field_overrides)?c.field_overrides[label]:val;
-    const changed=(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
-    const isInh=inh.has(label.replace(/#\d+$/,''));
+    const key=label.replace(/#\d+$/,'');
+    const bySound=!!sndLock&&!dup&&(key in sndLock.vals);
+    const cur=bySound?sndLock.vals[key]
+      :(label in c.field_overrides)?c.field_overrides[label]:val;
+    const changed=!bySound&&(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
+    const isInh=inh.has(key);
     return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}${isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${
-        isInh?baseBadge(c,label,cur):''}</label>
+      <label title="${esc(label)}${bySound?' — '+esc(sndLock.why):isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${
+        bySound?'<span class="ibadge" title="'+esc(sndLock.why)+'">🔒</span>':isInh?baseBadge(c,label,cur):''}</label>
       <input data-k="${esc(label)}" value="${esc(cur)}" class="${changed?'changed':''}"
-        ${dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
+        ${bySound?`disabled title="${esc(sndLock.why)}"`
+         :dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
   }).join('');
   box.querySelectorAll('input[data-k]').forEach(inp=>{
     inp.oninput=()=>{const k=inp.dataset.k, v=inp.value;
@@ -1065,10 +1252,17 @@ function toggleModel(name,on){
   c.exclude_models=[...ex]; doPreview();
 }
 function optsPayload(type){const c=cfgFor(type);
+  // The engine applies field overrides AFTER pinning accent/voice_type to the voice
+  // donor's block, so an override left over from before the lock would quietly undo
+  // it — drop those two while a donor is in play.
+  let fo=c.field_overrides;
+  if(soundDonor(c).accent&&('accent' in fo||'voice_type' in fo)){
+    fo=Object.assign({},fo); delete fo.accent; delete fo.voice_type;
+  }
   return {include_officers:c.include_officers,include_mount:c.include_mount,include_crew:c.include_crew,
     include_projectile:c.include_projectile!==false,include_engine:c.include_engine!==false,
     exclude_models:c.exclude_models||[],
-    base_type:c.base_type||null,field_overrides:c.field_overrides,
+    base_type:c.base_type||null,field_overrides:fo,
     soldier_from:c.soldier_from||'source',officer_from:c.officer_from||'source',
     mount_from:c.mount_from||'source',crew_from:c.crew_from||'source',
     on_conflict:c.on_conflict,new_type:c.new_type||null,new_dictionary:c.new_dictionary||null,
@@ -1076,7 +1270,8 @@ function optsPayload(type){const c=cfgFor(type);
     asset_reroute_dir:c.asset_reroute_dir||null,
     icon_conflict:c.icon_conflict||'use_existing',
     engine_conflict:c.engine_conflict||'use_existing',
-    make_mercenary:!!c.make_mercenary,merc_icons:!!c.merc_icons};}
+    make_mercenary:!!c.make_mercenary,merc_icons:!!c.merc_icons,
+    sound_mode:c.sound_mode||'base',sound_donor:c.sound_donor||null};}
 // Render the plan summary as indented rows. Each row's text sits in its own
 // column, so a long path wraps under itself and the structure stays readable.
 function renderSummary(t){
@@ -1430,6 +1625,262 @@ async function doApply(){
 
 /* ---------- batch open ---------- */
 function openBatch(){ if(!state.selected.size)return; openComposer([...state.selected]); }
+
+/* ======================= SOUNDS MODE =======================
+   The unit VOICE BANK (data/export_descr_sounds_units_voice.txt): which .wav files
+   a unit's soldiers shout when you select them.
+
+   A unit's voice needs two things that have to agree: a `unit <type>` entry inside
+   one accent/class block of the bank, and the EDU's `accent` + `voice_type` fields
+   pointing at that same block. Get one without the other and the unit is silent —
+   which is why every row here writes both, and why the accent/class of a row snap
+   to whatever donor you pick instead of being editable independently.
+
+   Everything is staged in memory and written in one apply, straight into the mod,
+   through the same backups + 🕑 Log undo as a transfer. (The prototype this grew
+   out of needed a .bat to generate reference files, a hand-run editor, exported
+   patch CSVs, and a second .bat to fold them back in — none of that exists here.) */
+async function loadSounds(){
+  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s voice bank…</div>';
+  let r;
+  try{ r=await api.get('/api/sounds?mod='+enc(state.src)); }
+  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the voice bank.<br>
+    <span class="count">${esc(''+e)}</span><br><br>
+    <button class="primary" onclick="loadSounds()">Retry</button></div>`; return; }
+  // `ops` is the staging area: unit type -> {accent, class, donor, remove}
+  state.snd=Object.assign({tab:'missing',ops:{},fAccent:'',fClass:'',onlyBad:false,
+                           bulkDonor:'',view:[]},r);
+  renderSounds();
+}
+// Donors that live in one accent/class block. A donor from another block is no use:
+// copying its entry into this block would give the unit that block's neighbours,
+// not the sounds you picked.
+function sndDonors(accent,cls){
+  if(!accent||!cls)return [];
+  return state.snd.donors.filter(d=>d.accent===accent&&d['class']===cls);
+}
+function sndOp(type){const s=state.snd; return s.ops[type]||(s.ops[type]={});}
+// The value a row currently shows: what's staged, else the bank's (existing units)
+// or the EDU's if the bank has a block for it (missing units — a unit whose EDU
+// already names a real accent is nearly always meant to stay there).
+function sndVal(u,key){
+  const op=state.snd.ops[u.type]||{};
+  if(op[key]!==undefined)return op[key];
+  if(key==='donor')return '';
+  if(key==='accent')return u.accent!==undefined?u.accent:(u.accent_valid?u.edu_accent:'');
+  return u['class']!==undefined?u['class']:(u.class_valid?u.edu_class:'');
+}
+// A row is only sent when it would actually do something. A new entry needs a donor
+// to copy (there is nothing else to build one from); an existing one can also just
+// move block, or be dropped.
+function sndReady(u){
+  const op=state.snd.ops[u.type]||{};
+  if(op.remove)return true;
+  const a=sndVal(u,'accent'),c=sndVal(u,'class');
+  if(!a||!c)return false;
+  if(u.accent===undefined)return !!op.donor;          // missing -> needs a donor
+  return !!op.donor||a!==u.accent||c!==u['class'];
+}
+function sndOps(){
+  const s=state.snd,out=[];
+  for(const u of s.missing.concat(s.existing)){
+    if(!sndReady(u))continue;
+    const op=s.ops[u.type]||{};
+    out.push({unit:u.type,accent:sndVal(u,'accent'),class:sndVal(u,'class'),
+              donor:op.donor||'',remove:!!op.remove});
+  }
+  for(const o of s.orphans){const op=s.ops[o.type];
+    if(op&&op.remove)out.push({unit:o.type,remove:true});}
+  return out;
+}
+/* One place where every staged change is made, and the ONLY place the row is
+   repainted from — state first, paint second. Doing it the other way round is what
+   made the prototype need two clicks to take a unit: picking a donor rebuilt the
+   dropdown from a `copyFrom` that had not been written yet, so the first pick was
+   thrown away and only the second one stuck. */
+function sndPick(i,key,value){
+  const u=state.snd.view[i]; if(!u)return;
+  const op=sndOp(u.type);
+  op[key]=value;
+  if(key==='donor'&&value){
+    const d=state.snd.donors.find(x=>x.name===value);
+    if(d){op.accent=d.accent; op['class']=d['class'];}   // the entry has to land in ITS block
+  }
+  // moving the row to another block orphans a donor from the old one
+  if((key==='accent'||key==='class')&&op.donor){
+    const d=state.snd.donors.find(x=>x.name===op.donor);
+    if(!d||d.accent!==sndVal(u,'accent')||d['class']!==sndVal(u,'class'))op.donor='';
+  }
+  renderSounds();
+}
+function sndToggleRemove(i,on){
+  const u=state.snd.view[i]; if(!u)return;
+  sndOp(u.type).remove=on; renderSounds();
+}
+function sndTab(t){state.snd.tab=t; renderSounds();}
+function sndFilter(key,v){state.snd[key]=v; renderSounds();}
+function sndReset(){state.snd.ops={}; renderSounds(); toast('Staged voice changes cleared.');}
+// Give every visible row the same donor in one go — the usual job here is "these
+// forty new units should all sound like that one", and doing it row by row is the
+// step this replaces.
+function sndBulk(){
+  const name=state.snd.bulkDonor; if(!name){toast('Pick a unit to copy from first.');return;}
+  const d=state.snd.donors.find(x=>x.name===name); if(!d)return;
+  let n=0;
+  for(const u of state.snd.view){
+    if(u.type===name)continue;                       // never make a unit copy itself
+    const op=sndOp(u.type); op.donor=name; op.accent=d.accent; op['class']=d['class']; n++;
+  }
+  renderSounds();
+  toast(`${n} row(s) set to copy “${name}” (${d.accent}/${d['class']}).`);
+}
+const SND_CAP=150;   // selects are expensive; the filters above are how you reach the rest
+function renderSounds(){
+  if(!state.snd||state.snd.mod!==state.src)return loadSounds();
+  const s=state.snd;
+  if(!s.has_file){
+    main.innerHTML=`<div class="empty">“${esc(state.src)}” has no
+      <code>data/export_descr_sounds_units_voice.txt</code>.<br>
+      <span class="count">Without that file there is no voice bank to edit — units fall back
+      to the game's own.</span></div>`;
+    sndBtn.textContent='Apply voice edits (0)'; sndBtn.disabled=true; return;
+  }
+  const qq=search.value.trim().toLowerCase();
+  const list=s.tab==='missing'?s.missing:s.tab==='existing'?s.existing:s.orphans;
+  const all=list.filter(u=>{
+    if(qq&&!(u.type.toLowerCase().includes(qq)||(u.name||'').toLowerCase().includes(qq)))return false;
+    const a=sndVal(u,'accent'),c=sndVal(u,'class');
+    if(s.fAccent&&a!==s.fAccent)return false;
+    if(s.fClass&&c!==s.fClass)return false;
+    if(s.onlyBad&&s.tab==='existing'&&!(u.accent_conflict||u.class_conflict))return false;
+    if(s.onlyBad&&s.tab==='missing'&&u.accent_valid)return false;
+    return true;
+  });
+  s.view=all.slice(0,SND_CAP);
+  const staged=sndOps().length;
+  sndBtn.textContent=`Apply voice edits (${staged})`; sndBtn.disabled=!staged;
+  count.textContent=`${all.length}/${list.length}`;
+  const nConf=s.existing.filter(u=>u.accent_conflict||u.class_conflict).length;
+  const tab=(k,label,n)=>`<button class="${s.tab===k?'on':''}" onclick="sndTab('${k}')">${label} <span class="badge">${n}</span></button>`;
+  const opt=(v,cur)=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`;
+  main.innerHTML=`<div class="sndhead">
+      <h2>${esc(state.src)} · unit voices</h2>
+      <span class="count">${s.donors.length} units have their own selection barks across
+        ${s.pairs.length} accent/class blocks.
+        ${nConf?`<b class="w-warn">${nConf}</b> unit(s) sit in a block their EDU doesn't point at — the game follows the EDU, so those entries are dead.`:''}</span>
+      <div class="sndtabs">
+        ${tab('missing','No voice entry',s.missing.length)}
+        ${tab('existing','Has a voice entry',s.existing.length)}
+        ${tab('orphans','Entries with no unit',s.orphans.length)}
+      </div>
+    </div>
+    ${s.tab==='orphans'?`<div class="count" style="margin-top:10px">These voice entries name a unit
+       that no longer exists in <code>export_descr_unit.txt</code>. They do nothing — but the name is
+       taken, so a new unit called the same thing would inherit them. Tick one to delete it.</div>`:''}
+    <div class="sndbar">
+      <span class="count">Filter</span>
+      <select onchange="sndFilter('fAccent',this.value)">
+        <option value="">All accents</option>${s.accents.map(a=>opt(a,s.fAccent)).join('')}</select>
+      <select onchange="sndFilter('fClass',this.value)">
+        <option value="">All classes</option>${s.classes.map(c=>opt(c,s.fClass)).join('')}</select>
+      ${s.tab==='orphans'?'':`<label class="chk"><input type="checkbox" ${s.onlyBad?'checked':''}
+        onchange="sndFilter('onlyBad',this.checked)"> ${s.tab==='existing'?'only ones the EDU disagrees with':'only ones with no usable accent'}</label>`}
+      <span class="grow"></span>
+      ${s.tab==='orphans'?'':`<span class="count">Set all ${s.view.length} shown to copy</span>
+      <select onchange="sndFilter('bulkDonor',this.value)" style="max-width:230px">
+        <option value="">— pick a unit —</option>
+        ${s.donors.map(d=>`<option value="${esc(d.name)}" ${d.name===s.bulkDonor?'selected':''}>${esc(d.name)} (${esc(d.accent)}/${esc(d['class'])})</option>`).join('')}
+      </select>
+      <button onclick="sndBulk()">Apply to shown</button>`}
+      ${staged?`<button class="danger" onclick="sndReset()">✕ Clear ${staged} staged</button>`:''}
+    </div>
+    ${all.length?`<div class="sndlist">
+      <div class="sndrow hrow"><span>Unit</span><span>In game now</span><span>Accent</span>
+        <span>Class</span><span>Copy sounds from</span><span>Drop</span></div>
+      ${s.view.map(sndRowHtml).join('')}</div>`
+     :'<div class="empty">No units match.</div>'}
+    ${all.length>SND_CAP?`<div class="count" style="margin:10px 0">Showing the first
+      ${SND_CAP} of ${all.length} — narrow it down with the filters or the search box.</div>`:''}`;
+}
+function sndRowHtml(u,i){
+  const s=state.snd,op=s.ops[u.type]||{};
+  const a=sndVal(u,'accent'),c=sndVal(u,'class');
+  const isOrphan=s.tab==='orphans', has=u.accent!==undefined;
+  const ready=sndReady(u), dropping=!!op.remove;
+  // what the game does with this unit right now, before anything staged
+  let now;
+  if(isOrphan) now=`<span class="w-warn">no such unit</span>`;
+  else if(!has) now=u.edu_accent
+    ? (u.accent_valid?`<span class="count">${esc(u.edu_accent)} — generic</span>`
+                     :`<span class="w-bad" title="the EDU names an accent this mod's voice bank has no block for">${esc(u.edu_accent)} ✗</span>`)
+    : `<span class="w-warn" title="no accent line in the EDU at all">no accent</span>`;
+  else now=(u.accent_conflict||u.class_conflict)
+    ? `<span class="w-bad" title="EDU says ${esc(u.edu_accent||'—')}/${esc(u.edu_class||'—')}, the bank has it in ${esc(u.accent)}/${esc(u['class'])} — the game follows the EDU, so these sounds never play">${esc(u.accent)}/${esc(u['class'])} ✗</span>`
+    : `<span class="count">${esc(u.accent)}/${esc(u['class'])}</span>`;
+  if(isOrphan) return `<div class="sndrow ${dropping?'dropping':''}">
+    <div class="un"><div class="nm">${esc(u.name)}</div><div class="ty">voice entry only</div></div>
+    <span class="now">${now}</span>
+    <span class="count">${esc(u.accent)}</span><span class="count">${esc(u['class'])}</span>
+    <span class="count">—</span>
+    <span class="rm"><input type="checkbox" ${dropping?'checked':''} title="delete this entry from the voice bank"
+      onchange="sndToggleRemove(${i},this.checked)"></span></div>`;
+  const donors=sndDonors(a,c);
+  const sel=(cur,vals,key,blank)=>`<select onchange="sndPick(${i},'${key}',this.value)" ${dropping?'disabled':''}>
+    <option value="">${blank}</option>
+    ${vals.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}</select>`;
+  return `<div class="sndrow ${dropping?'dropping':ready?'staged':''}">
+    <div class="un"><div class="nm">${esc(u.name||u.type)}</div><div class="ty">${esc(u.type)}</div></div>
+    <span class="now">${now}</span>
+    ${sel(a,s.accents,'accent','— accent —')}
+    ${sel(c,s.classes,'class','— class —')}
+    <select onchange="sndPick(${i},'donor',this.value)" ${dropping?'disabled':''}
+      title="${a&&c?`units with their own barks in ${esc(a)}/${esc(c)}`:'pick an accent and a class first'}">
+      <option value="">${a&&c?(has?'— keep its own sounds —':`— pick a unit (${donors.length}) —`):'— accent/class first —'}</option>
+      ${donors.map(d=>`<option value="${esc(d.name)}" ${d.name===(op.donor||'')?'selected':''}>${esc(d.name)}</option>`).join('')}
+    </select>
+    <span class="rm">${has?`<input type="checkbox" ${dropping?'checked':''}
+      title="remove this unit's voice entry from the bank" onchange="sndToggleRemove(${i},this.checked)">`:''}</span>
+  </div>`;
+}
+async function sndApply(){
+  const ops=sndOps(); if(!ops.length)return;
+  const modal=document.getElementById('modal');
+  modal.className='modal'; modal.innerHTML='<h2>Planning voice edits…</h2>';
+  overlay.classList.add('open');
+  let r;
+  try{ r=await api.post('/api/sounds/plan',{mod:state.src,ops}); }
+  catch(e){ r={error:''+e}; }
+  if(r.error&&!r.errors){ modal.innerHTML=`<h2>Voice edits</h2><div class="mbody w-bad">${esc(r.error)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  const bad=(r.errors||[]).length;
+  modal.innerHTML=`<h2>Voice edits <span class="pill">${esc(state.src)}</span></h2>
+    <div class="mbody">
+      ${bad?`<div class="warnbox">⚠ <b>${bad} row(s) can't be written</b> — nothing is applied
+        until they are fixed or removed from the selection.<br>
+        ${r.errors.map(e=>esc(e)).join('<br>')}</div>`:''}
+      <div class="count" style="margin-bottom:8px">Writes
+        <code>data/export_descr_sounds_units_voice.txt</code>${r.edu_rewritten?
+        ' and <code>data/export_descr_unit.txt</code> (the matching <code>accent</code> / <code>voice_type</code> lines)':''}.
+        Both are backed up first — 🕑 Log → Undo restores them byte-exact.</div>
+      ${renderSummary(r.summary)}
+    </div>
+    <div class="foot"><button onclick="closeModal()">Cancel</button>
+      <button class="primary" ${bad?'disabled':''} onclick="sndDoApply()">Apply ${ops.length} change(s)</button></div>`;
+}
+async function sndDoApply(){
+  const ops=sndOps();
+  document.getElementById('modal').innerHTML=`<h2>Writing voice edits…</h2>
+    <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
+      <div class="count" style="margin-top:8px">${ops.length} unit(s)</div></div>`;
+  let r;
+  try{ r=await api.post('/api/sounds/apply',{mod:state.src,ops}); }
+  catch(e){ r={error:''+e}; }
+  if(r.error){ toast('Voice edits failed: '+r.error,4500); closeModal(); return; }
+  closeModal();
+  const cl=r.cleaner?(r.cleaner.ran?'  · cleaner ran':`  · cleaner failed: ${r.cleaner.error||'?'}`):'';
+  toast(`${ops.length} voice change(s) written ✓${cl}  (undo in 🕑 Log)`,4200);
+  state.snd=null; state.destSnd=null; loadSounds();
+}
 
 /* ======================= UNIT EDITOR (edit mode) =======================
    Edits one mod in place: EDU fields, the localised name/description, the
@@ -2894,7 +3345,8 @@ async function openLog(){
       :'';
     return `<div class="log-item ${e.undone?'undone':''}">
     <div class="top"><div><b>${esc(e.resolved_type||e.unit_type)}</b> <span class="pill">${
-      e.mode==='bmdb'?`${e.action==='cleanup'?'🧹 cleaned out of':'🗄 bmdb edit in'} ${esc(e.dest)}`
+      e.mode==='sounds'?`🔊 voice edits in ${esc(e.dest)}`
+      :e.mode==='bmdb'?`${e.action==='cleanup'?'🧹 cleaned out of':'🗄 bmdb edit in'} ${esc(e.dest)}`
       :e.mode==='edit'?`${e.action==='delete'?'🗑 deleted in':'✎ edited in'} ${esc(e.dest)}`
                      :`${esc(e.source)} → ${esc(e.dest)}`}</span></div>
       <div style="display:flex;gap:8px;align-items:center"><span class="when">${esc(e.when)}</span>

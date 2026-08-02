@@ -3,12 +3,13 @@
 Move units between **Medieval II: Total War** mods — and edit them once they're
 there — without hand-editing text files.
 
-Three modes, switched from the dropdown in the top-left corner:
+Four modes, switched from the dropdown in the top-left corner:
 
 - **⚔ Unit Transfer** — copy a unit from one mod into another
 - **✎ Unit Editor** — change, clone or delete the units of a single mod
 - **🗄 BMDB Editor** — edit *any* `battle_models.modeldb` entry, and clean the
   file of everything nothing uses
+- **🔊 Unit Sounds** — decide which voice-bank entry each unit speaks with
 
 Point it at two mods, pick a unit from one, and transfer it into the other. It
 figures out and carries across everything the unit actually depends on — battle
@@ -40,6 +41,9 @@ it needs are bundled inside.
   collision/reference-points file, and the textures baked into those meshes
   (read straight out of the binary — no text file names them)
 - Its **unit card and info card** icons
+- Its **voice** — a copy of another unit's `Unit_Select` entry in the
+  destination's voice bank, with the EDU's `accent` / `voice_type` pinned to match
+  (see [Unit Sounds mode](#unit-sounds-mode))
 
 Name collisions are detected and resolved (reuse identical content, rename on a
 real conflict, or overwrite/skip — your choice), and every step is shown in a
@@ -155,6 +159,62 @@ never moved. The removal itself is backed up like any other change, so
 **🕑 Log → Undo** restores the mod byte-exact (the destination folder is a copy
 and is left alone).
 
+## Unit Sounds mode
+
+Switch the dropdown to **🔊 Unit Sounds** to work on the mod's voice bank,
+`data/export_descr_sounds_units_voice.txt` — the file that decides which `.wav`
+files a unit's soldiers shout when you select them.
+
+A unit's voice needs **two things that have to agree**:
+
+1. a `unit <type>` entry inside one `accent` / `class` block of the voice bank, and
+2. the unit's EDU `accent` and `voice_type` fields pointing at *that same block*.
+
+Get one without the other and the unit is silent — it falls back to the generic
+barks its class uses. That is why every row here writes both halves, and why a
+row's accent and class snap to whatever unit you copy from instead of being
+editable on their own.
+
+Three tabs:
+
+- **No voice entry** — units the bank has never heard of. Pick the unit to copy
+  the sounds from and the row is ready; its accent and class follow that unit.
+  Rows whose EDU names an accent the bank has no block for are flagged in red
+  (the single most common reason a transferred unit ends up mute)
+- **Has a voice entry** — move a unit to another accent/class block, re-point it
+  at a different unit's sounds, or drop its entry entirely. **only ones the EDU
+  disagrees with** narrows the list to entries the game never reads, because the
+  EDU sends it looking somewhere else
+- **Entries with no unit** — entries naming a unit that no longer exists in the
+  EDU. Dead weight, and the name is taken; tick one to delete it
+
+**Set all shown to copy** applies one donor to every visible row at once, which
+is the usual job here ("these forty new units should all sound like that one").
+Everything is staged in memory — the row goes green — and written in a single
+**Apply voice edits**, straight into the mod, with the same backups and
+**🕑 Log → Undo** as a transfer.
+
+### Voice on a transfer
+
+The transfer composer has the same thing as a **Voice / sound** panel with three
+options:
+
+- **Use the base unit's sound** *(default)* — the unit you already picked under
+  *Use another unit as base* also supplies the voice. Its stats and its barks
+  come from the same place, which is nearly always what you want
+- **Use another unit's sound** — base the unit on one destination unit but take
+  the voice from a different one. The accent and class dropdowns filter the list
+  of units that have their own barks
+- **Don't import sound** — no entry is written and the EDU's `accent` /
+  `voice_type` are left exactly as the source unit had them
+
+With either of the first two, the accent and class **lock** once a donor is
+resolved (with a tooltip saying why): the copied entry lives in that donor's
+block, so pointing the EDU anywhere else would leave the unit reading a block its
+entry is not in. The `accent` and `voice_type` rows in the field editor lock with
+it, showing what will actually be written — including when the source unit had no
+`accent` line at all and one is being added.
+
 ## Features
 
 - **Faction-wise browser** — units grouped by owning faction, with real faction
@@ -172,6 +232,9 @@ and is left alone).
   skin, icon folders) as part of the transfer
 - **Conflict resolution** — for every asset that would collide with an existing
   file: keep, overwrite, or relocate into its own folder
+- **Voice bank editing** — give a unit another unit's selection barks, move it
+  between accent/class blocks, or clear out entries whose unit is long gone; the
+  file is edited by splicing, so every line you didn't touch stays byte-exact
 - **Modeldb cleanup** — find the battle-model entries nothing references and the
   files under `unit_models` nothing mentions, and move them out of the mod into
   a folder laid out like the mod itself
@@ -214,7 +277,9 @@ python build_release.py
 
 Produces `dist/UnitTransfer-<date>.zip`: the tool plus a bundled Python runtime
 and Pillow, so it runs on a machine with nothing installed. `--no-runtime`
-builds a smaller code-only zip for a machine that already has Python.
+builds a smaller code-only zip for a machine that already has Python, and
+`--version v1.4.0` names the zip for a release instead of stamping it with the
+date.
 
 ## Command-line transfer
 
@@ -256,8 +321,9 @@ open, and print the address.
 
 - `unittransfer/` — parsers and writers for each file format (EDU, localisation,
   `battle_models.modeldb`, `descr_mount`, `descr_projectile`,
-  `descr_engines`/`descr_engine_skeleton`), the dependency-resolution and
-  transfer engine, the in-mod edit engine (`edit.py`), the mod-wide modeldb audit
-  and cleanup (`bmdb.py`), and the local HTTP server
+  `descr_engines`/`descr_engine_skeleton`,
+  `export_descr_sounds_units_voice`), the dependency-resolution and transfer
+  engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
+  the mod-wide modeldb audit and cleanup (`bmdb.py`), and the local HTTP server
 - `web/` — the browser UI
 - `tests/` — one module per area, runnable individually
