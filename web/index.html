@@ -830,8 +830,12 @@ const row=(k,v)=>`<div class="row"><div class="k">${k}</div><div class="v">${v}<
 /* ---------- per-unit config ---------- */
 function cfgFor(type){
   if(!state.cfg[type]) state.cfg[type]={include_officers:true,include_mount:true,include_crew:true,include_projectile:true,include_engine:true,engine_conflict:'use_existing',
+    // How the unit lands in the destination — see setMode(). 'base_type' is the
+    // destination unit the 'base' and 'replace' modes both lean on (the stat
+    // donor / the unit being rewritten); '' while the mode is 'new'.
+    mode:'new',import_card:false,import_info_card:false,
     base_type:'',soldier_from:(state.settings&&state.settings.soldier_from_base)?'base':'source',
-    officer_from:'source',mount_from:'source',crew_from:'source',
+    officer_from:'source',mount_from:'source',crew_from:'source',upgrade_from:'source',
     field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,merc_icons:false,exclude_models:[],
     asset_conflict:'mod_folder',asset_reroute_dir:'',icon_conflict:'use_existing',
     // voice: 'base' (copy the base unit's barks — the default), 'unit' (copy some
@@ -844,6 +848,23 @@ function cfgFor(type){
     base_fac:'',_conflict:null,_fields:null,_orig:null,_fieldsKey:null,_inherited:null};
   return state.cfg[type];
 }
+/* ---- transfer mode ----------------------------------------------------------
+   'new'     the unit arrives as its own EDU entry, with its own name and icons.
+   'base'    same, but the stats/attributes/ownership/era are inherited from a
+             destination unit — a new unit built on an existing one.
+   'replace' the picked destination unit IS what gets written: its block is
+             rewritten with this unit's models and nothing is added to the mod.
+             It keeps its type, name, description, stats and cards; each stat can
+             still be switched over one at a time with the B buttons below, and
+             the cards have their own tick boxes.
+   The last two share one picker (`base_type`) because they ask the same question
+   — which destination unit — and both are restricted to the SAME unit kind: a
+   cavalry model in an infantry entry has neither the right stats nor the right
+   animations. */
+const modeOf=c=>c.mode||'new';
+const isReplace=c=>modeOf(c)==='replace'&&!!c.base_type;
+// what the picked unit is called in prose, per mode
+const donorRole=c=>modeOf(c)==='replace'?'replaced unit':'base unit';
 // The destination's voice bank, fetched once per destination mod. Needed to know
 // whether a base unit HAS barks to copy, and to list the units that do.
 async function ensureDestSnd(){
@@ -873,7 +894,8 @@ async function renderComposer(){
       const bimg=cc.base_type?`<img onerror="iconRetry(this)" src="${iconUrl(state.dst,cc.base_type)}">`:'';
       return `<div class="bchip ${t===type?'sel':''}" onclick="switchUnit('${q1(esc(t))}')">
         <img onerror="iconRetry(this)" src="${iconUrl(state.src,t)}"><div class="t">${esc(t)}</div>
-        <div class="base">${cc.base_type?('base: '+esc(cc.base_type)):'no base'}</div></div>`;}).join('')}</div>` : '';
+        <div class="base">${!cc.base_type?'new unit'
+          :(isReplace(cc)?'replaces: ':'base: ')+esc(cc.base_type)}</div></div>`;}).join('')}</div>` : '';
   const hasOff=u.officers.length>0, hasMount=!!u.mount, hasCrew=!!(u.crew&&u.crew.length);
   const proj=u.projectiles||[]; const hasProj=proj.length>0;
   // siege engine: descr_engines.txt entry + its skeletons/meshes/baked textures
@@ -882,7 +904,11 @@ async function renderComposer(){
   const engGroups=u.engine_groups||[];
   // a mounted engine has no model groups — its `class` names the descr_engine_skeleton entry
   const engClass=engMounted?(u.engine_class||''):'';
-  // a group supplied by the base makes its "include the source's" box moot
+  // a group supplied by the base — or kept by the unit being replaced — makes its
+  // "include the source's" box moot
+  const rep=isReplace(c);
+  const kw=rep?'(kept)':'(from base)';           // why a group's box is greyed out
+  const insteadMsg=n=>rep?`→ keeping ${esc(n)}’s own`:`→ using ${esc(n)}’s instead`;
   const offBase=c.officer_from==='base'&&!!c.base_type;
   const mntBase=c.mount_from==='base'&&!!c.base_type;
   const crwBase=c.crew_from==='base'&&!!c.base_type;
@@ -896,7 +922,9 @@ async function renderComposer(){
   const engBase=crwBase; const engOn=hasEng&&!engBase;
   const sameMod=state.src===state.dst;      // edit mode's "new unit from this one"
   m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`
-      :sameMod?`New unit from “${esc(u.name)}”`:`Transfer “${esc(u.name)}”`} <span class="pill">${
+      :sameMod?`New unit from “${esc(u.name)}”`
+      :rep?`Replace “${esc(c.base_type)}” with “${esc(u.name)}”`
+      :`Transfer “${esc(u.name)}”`} <span class="pill">${
       sameMod?'in '+esc(state.src):esc(state.src)+' → '+esc(state.dst)}</span></h2>
    <div class="mbody">
      ${unitLimitBanner()}
@@ -912,17 +940,17 @@ async function renderComposer(){
        <code>invisible_placeholder_set</code> wherever ${esc(state.dst)} doesn't already define them. Re-add the
        real effects manually in <code>descr_effect_impacts.txt</code> / the arrow-trail files.</div>`:''}
      <fieldset><legend>Include secondary models</legend>
-       <label class="chk${offOn?'':' off'}"><input type="checkbox" id="optOff" ${offOn&&c.include_officers?'checked':''} ${offOn?'':'disabled'}> Officers ${!hasOff?'(none)':offBase?'(from base)':`(${u.officers.length})`}</label>
-       <label class="chk${mntOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optMount" ${mntOn&&c.include_mount?'checked':''} ${mntOn?'':'disabled'}> Mount${!hasMount?' (none)':mntBase?' (from base)':` (${esc(u.mount)})`}</label>
-       <label class="chk${crwOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optCrew" ${crwOn&&c.include_crew?'checked':''} ${crwOn?'':'disabled'}> Crew${!hasCrew?' (none)':crwBase?' (from base)':` (${u.crew.length})`}</label>
-       <label class="chk${projOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optProj" ${projOn&&c.include_projectile?'checked':''} ${projOn?'':'disabled'}> Projectile${!hasProj?' (none)':projBase?' (from base)':` (${proj.map(esc).join(', ')})`}</label>
-       <label class="chk${engOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optEngine" ${engOn&&c.include_engine!==false?'checked':''} ${engOn?'':'disabled'}> Siege engine${!hasEng?' (none)':engBase?' (from base)':` (${esc(eng)})`}</label>
-       ${hasOff?`<div class="optnames"><span class="k">Officers</span>${offBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:modelChecks(u.officers,offOn,c)}</div>`:''}
-       ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${mntBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:''}</div>`:''}
-       ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
-       ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">→ using ${esc(c.base_type)}’s stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
-       ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">→ using ${esc(c.base_type)}’s instead</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
-       <div class="count" style="margin-top:5px">Unticked groups keep their source name and must already exist in the destination — or switch them to the base above.</div>
+       <label class="chk${offOn?'':' off'}"><input type="checkbox" id="optOff" ${offOn&&c.include_officers?'checked':''} ${offOn?'':'disabled'}> Officers ${!hasOff?'(none)':offBase?kw:`(${u.officers.length})`}</label>
+       <label class="chk${mntOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optMount" ${mntOn&&c.include_mount?'checked':''} ${mntOn?'':'disabled'}> Mount${!hasMount?' (none)':mntBase?' '+kw:` (${esc(u.mount)})`}</label>
+       <label class="chk${crwOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optCrew" ${crwOn&&c.include_crew?'checked':''} ${crwOn?'':'disabled'}> Crew${!hasCrew?' (none)':crwBase?' '+kw:` (${u.crew.length})`}</label>
+       <label class="chk${projOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optProj" ${projOn&&c.include_projectile?'checked':''} ${projOn?'':'disabled'}> Projectile${!hasProj?' (none)':projBase?' '+kw:` (${proj.map(esc).join(', ')})`}</label>
+       <label class="chk${engOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optEngine" ${engOn&&c.include_engine!==false?'checked':''} ${engOn?'':'disabled'}> Siege engine${!hasEng?' (none)':engBase?' '+kw:` (${esc(eng)})`}</label>
+       ${hasOff?`<div class="optnames"><span class="k">Officers</span>${offBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.officers,offOn,c)}</div>`:''}
+       ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${mntBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:''}</div>`:''}
+       ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
+       ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">${insteadMsg(c.base_type)} stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
+       ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
+       <div class="count" style="margin-top:5px">Unticked groups keep their source name and must already exist in the destination — or switch them to ${rep?`“${esc(c.base_type)}”`:'the base'} above.</div>
      </fieldset>
      ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine — <code>${esc(eng)}</code></legend>
        <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''},
@@ -948,9 +976,28 @@ async function renderComposer(){
          (<code>fire_effect</code>, <code>shot_pfx_*</code>, <code>shot_sfx</code>, <code>area_effect</code>) and the crew
          animation names in <code>crew_animations</code> — verify those exist in ${esc(state.dst)}.</div>
      </fieldset>`:''}
-     <fieldset><legend>Use another unit as base (optional)</legend>
-       <label class="chk"><input type="checkbox" id="useBase" ${c.base_type?'checked':''} onchange="toggleBase()"> Inherit stats/attributes/cost/formation/ownership/era from a destination unit</label>
-       <div id="baseArea" style="margin-top:8px;${c.base_type?'':'display:none'}">
+     <fieldset><legend>What this transfer creates in ${esc(state.dst)}</legend>
+       <div class="radio-row">
+         <label><input type="radio" name="tmode" value="new" ${modeOf(c)==='new'?'checked':''}>
+           <b>A new unit</b> — its own EDU entry, name, description and icons</label>
+         <label><input type="radio" name="tmode" value="base" ${modeOf(c)==='base'?'checked':''}>
+           <b>A new unit based on an existing one</b> — still a new entry, but stats,
+           attributes, cost, formation, ownership and era are inherited from a destination unit</label>
+         <label><input type="radio" name="tmode" value="replace" ${modeOf(c)==='replace'?'checked':''}>
+           <b>Replace an existing unit</b> — no new entry: a destination unit's block is
+           rewritten with “${esc(u.name)}”’s models, keeping its name, description and stats</label>
+       </div>
+       <div id="baseArea" style="margin-top:8px;${modeOf(c)==='new'?'display:none':''}">
+         <div class="count" style="margin-bottom:6px">${modeOf(c)==='replace'
+           ? `Pick the <b>${esc(state.dst)}</b> unit to rewrite. Only ${esc(u.kind||u.category||'')} units are
+              listed — models and stats have to match the unit type, or the replacement fights
+              and animates wrong.<br>It keeps its type, dictionary, name, description, stats,
+              ownership, era and cards; it gets “${esc(u.type)}”’s soldier, officer and armour-upgrade
+              models. Change any of that with the <b>Take from</b> rows and the
+              <span class="ibadge">B</span> buttons under <b>Edit fields</b>, and the two boxes below
+              for the cards.`
+           : `Pick the <b>${esc(state.dst)}</b> unit to inherit the numbers from. Only
+              ${esc(u.kind||u.category||'')} units are listed — a base has to be the same unit type.`}</div>
          <div class="basepick">
            <img class="baseimg" id="baseImg" src="${c.base_type?iconUrl(state.dst,c.base_type):''}" style="${c.base_type?'':'visibility:hidden'}">
            <div style="flex:1">
@@ -961,8 +1008,22 @@ async function renderComposer(){
              <div class="baselist" id="baseList"></div>
            </div>
          </div>
+         ${modeOf(c)==='replace'&&!c.base_type?`<div class="count w-warn" style="margin-top:6px">
+           Pick a unit to replace — nothing can be applied until you do.</div>`:''}
        </div>
-     </fieldset>`}
+     </fieldset>
+     ${rep?`<fieldset><legend>Import from “${esc(u.name)}”</legend>
+       <div class="count">“${esc(c.base_type)}” keeps its own card and info card unless you say
+         otherwise — the models change, the picture in the recruitment panel doesn't have to.
+         An imported card is written under <b>${esc(c.base_type)}</b>'s dictionary name, into its
+         own faction folders, so the game still finds it.</div>
+       <label class="chk" style="margin-top:6px"><input type="checkbox" id="optImpCard" ${c.import_card?'checked':''}>
+         Unit card ${u.has_card?'':'<span class="count">— the source has none</span>'}</label>
+       <label class="chk" style="margin-left:12px"><input type="checkbox" id="optImpInfo" ${c.import_info_card?'checked':''}>
+         Unit info card ${u.has_info?'':'<span class="count">— the source has none</span>'}</label>
+       <div class="count" style="margin-top:6px">Individual stats are imported one at a time with the
+         <span class="ibadge">B</span> buttons in <b>Edit fields</b> below.</div>
+     </fieldset>`:''}`}
      ${soundFieldset(c,u)}
      <fieldset><legend>Mercenary attribute</legend>
        <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
@@ -989,7 +1050,16 @@ async function renderComposer(){
          <span class="count" id="fieldChanged"></span>
        </div>
        <div class="allfields" id="allFields"><div class="count" style="padding:6px">Loading fields…</div></div>
-       ${sameMod?'':`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
+       ${sameMod?'':rep?`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
+         marks a field <b>${esc(c.base_type)}</b> keeps — every stat, attribute, cost and era
+         is one of these, which is why a replacement plays exactly as it did before.
+         <b>Click a B to import that one field from “${esc(u.type)}”</b> instead; click it again to
+         put ${esc(c.base_type)}'s value back. A greyed-out <span class="ibadge off"
+         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> is a field
+         you have imported. Fields “${esc(u.type)}” doesn't have can't be switched — their B stays on,
+         and <code>type</code> / <code>dictionary</code> are locked outright: changing those would
+         rename the unit rather than replace it.</div>`
+        :`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
          marks a field that comes from the base unit${c.base_type?` <b>${esc(c.base_type)}</b>`:''}.
          Click it to turn it off and keep <b>${esc(u.type)}</b>'s own value instead; click it again
          to go back to the base's. A greyed-out <span class="ibadge off"
@@ -1021,30 +1091,67 @@ async function renderComposer(){
     c.sound_mode=r.value; renderComposer();});
   optMerc.onchange=()=>{c.make_mercenary=optMerc.checked; doPreview();};
   optMercIcons.onchange=()=>{c.merc_icons=optMercIcons.checked; doPreview();};
+  // new unit / based on one / replace one — a whole different composer each time
+  document.querySelectorAll('input[name=tmode]').forEach(r=>r.onchange=()=>setMode(r.value));
+  if(window.optImpCard)optImpCard.onchange=()=>{c.import_card=optImpCard.checked; doPreview();};
+  if(window.optImpInfo)optImpInfo.onchange=()=>{c.import_info_card=optImpInfo.checked; doPreview();};
   // per-group source/base toggles — re-render so the include boxes grey out
-  ['soldier_from','officer_from','mount_from','crew_from'].forEach(k=>
+  ['soldier_from','officer_from','mount_from','crew_from','upgrade_from'].forEach(k=>
     document.querySelectorAll(`input[name=${k}]`).forEach(r=>r.onchange=()=>{
       c[k]=r.value; renderComposer();}));
-  loadFields(type); if(c.base_type)renderBaseList();
+  loadFields(type); if(modeOf(c)!=='new')renderBaseList();
   doPreview();   // auto-plan so limit / asset-conflict warnings surface immediately
+}
+/* Switching mode rebuilds the composer: the picker, the per-group rows, the field
+   editor's baseline and the voice panel all mean something different in each one.
+   Going back to a plain new unit drops the pick — nothing else uses it — but the
+   pick SURVIVES a base<->replace switch, since it answers the same question. */
+function setMode(v){
+  const c=cfgFor(state.editing);
+  const prev=modeOf(c);
+  c.mode=v;
+  if(v==='new')c.base_type='';
+  // "Soldier from the base" (⚙ setting) is a base-template habit: a new unit built
+  // on another one often wants that one's soldier line. Replacing a unit is ABOUT
+  // swapping its models, so the soldier defaults to the transferred unit's there —
+  // and the setting comes back if the mode is switched back.
+  if(v==='replace'&&prev!=='replace')c.soldier_from='source';
+  if(v==='base'&&prev==='replace')
+    c.soldier_from=(state.settings&&state.settings.soldier_from_base)?'base':'source';
+  // the composed baseline (and which fields are inherited) changes with the mode
+  c._fields=null; c._fieldsKey=null;
+  renderComposer();
 }
 // The destination unit currently chosen as base (has its officers/mount/crew).
 function baseUnitOf(c){
   return (c.base_type&&state.destData)
     ? state.destData.units.find(x=>x.type===c.base_type) : null;}
 // "Take from base" toggles — one row per group, shown only when the BASE has it.
+// Replacing reads the same rows the other way round: "Source" ports the
+// transferred unit's models over the replaced unit's, "Keep" leaves that group
+// exactly as the replaced unit has it. Only the labels differ; both send the
+// same `<group>_from=base`, because in both modes "base" means "the destination
+// unit supplies this group".
 function fromBasePanel(c,u){
-  const b=baseUnitOf(c), on=!!c.base_type;
+  const b=baseUnitOf(c), on=!!c.base_type, rep=isReplace(c);
+  const keepLbl=rep?'Keep':'Base';
   const row=(key,label,detail)=>`<div class="sbrow"><span class="k">${label}</span>
     <label><input type="radio" name="${key}" value="source" ${c[key]!=='base'?'checked':''} ${on?'':'disabled'}> Source</label>
-    <label><input type="radio" name="${key}" value="base" ${c[key]==='base'?'checked':''} ${on?'':'disabled'}> Base</label>
+    <label><input type="radio" name="${key}" value="base" ${c[key]==='base'?'checked':''} ${on?'':'disabled'}> ${keepLbl}</label>
     <span class="count">${detail}</span></div>`;
+  const has=n=>rep?`${esc(c.base_type)} has ${n}`:`base has ${n}`;
   let rows=row('soldier_from','Soldier', on?'the soldier line only':'');
-  if(b&&b.officers.length) rows+=row('officer_from','Officers',`base has ${b.officers.length}: ${esc(b.officers.join(', '))}`);
-  if(b&&b.mount)           rows+=row('mount_from','Mount',`base: ${esc(b.mount)}`);
-  if(b&&b.crew&&b.crew.length) rows+=row('crew_from','Crew',`base has ${b.crew.length}: ${esc(b.crew.join(', '))}`);
+  if(b&&b.officers.length) rows+=row('officer_from','Officers',has(`${b.officers.length}: ${esc(b.officers.join(', '))}`));
+  if(b&&b.mount)           rows+=row('mount_from','Mount',has(esc(b.mount)));
+  if(b&&b.crew&&b.crew.length) rows+=row('crew_from','Crew',has(`${b.crew.length}: ${esc(b.crew.join(', '))}`));
+  // The armour-upgrade models are only a choice when replacing: a base template
+  // leaves them with the transferred unit, since the new unit IS that unit.
+  if(rep) rows+=row('upgrade_from','Armour upgrades',
+    `the <code>armour_ug_models</code> line — the models the unit wears once the`
+    +` blacksmith upgrades its armour`);
   return `<div class="basefrom${on?'':' off'}">
-    <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`:'base unit'}${on?'':' — pick a base unit to enable'}</div>
+    <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`
+      :(rep?'the replaced unit — pick one to enable':'base unit — pick a base unit to enable')}</div>
     ${rows}</div>`;
 }
 /* ---------- voice / sound ----------
@@ -1059,6 +1166,11 @@ function soundDonor(c){
   const ds=state.destSnd;
   if(!ds||!ds.has_file)return {mode:c.sound_mode,blocked:'nobank'};
   if(c.sound_mode==='none')return {mode:'none'};
+  // Replacing: "the base's voice" would be the replaced unit's own entry, copied
+  // onto itself. It already has it, and its accent/voice_type come across with
+  // its stats — so the default means "leave the voice alone", and nothing is
+  // locked. Picking another unit still copies that unit's barks as usual.
+  if(c.sound_mode==='base'&&isReplace(c))return {mode:'keep',name:c.base_type};
   const name=c.sound_mode==='base'?(c.base_type||''):(c.sound_donor||'');
   if(!name)return {mode:c.sound_mode,blocked:c.sound_mode==='base'?'nobase':'nopick'};
   const d=(ds.donors||[]).find(x=>x.name===name);
@@ -1093,7 +1205,12 @@ function soundFieldset(c,u){
     ${vals.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}
     ${locked&&!vals.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:''}</select>`;
   let body='';
-  if(c.sound_mode==='none')
+  if(d.mode==='keep')
+    body=`<div class="count" style="margin-top:6px">“${esc(d.name)}” keeps the
+      <code>Unit_Select</code> entry it already has, and its <code>accent</code> /
+      <code>voice_type</code> come across with the rest of its stats — nothing is written to
+      the voice bank. Pick “another unit” to give it a different voice.</div>`;
+  else if(c.sound_mode==='none')
     body=`<div class="count" style="margin-top:6px">No voice entry is written and the EDU’s
       <code>accent</code> / <code>voice_type</code> are left exactly as the source unit had them.
       The unit still speaks — it just falls back to whatever that accent/class block says for
@@ -1127,11 +1244,16 @@ function soundFieldset(c,u){
       ${esc(why)}</div>`:''}`;
   return `<fieldset><legend>Voice / sound</legend>
     <div class="sndopt">
-      ${radio('base','Use the base unit’s sound',
+      ${isReplace(c)
+        ? radio('base',`Keep “${esc(c.base_type)}”’s own voice`,'nothing is written to the voice bank')
+        : radio('base','Use the base unit’s sound',
               c.base_type?`copies “${esc(c.base_type)}”’s barks`:'no base unit chosen yet')}
       ${radio('unit','Use another unit’s sound',
-              'base the unit on one, take the voice from another')}
-      ${radio('none','Don’t import sound','leave the unit on its class’s generic barks')}
+              isReplace(c)?'copy some other destination unit’s barks over it'
+                          :'base the unit on one, take the voice from another')}
+      ${radio('none','Don’t import sound',isReplace(c)
+              ?'same as keeping it — the voice bank is left alone'
+              :'leave the unit on its class’s generic barks')}
     </div>${body}</fieldset>`;
 }
 function cmpSndPick(key,value){
@@ -1147,9 +1269,6 @@ function cmpSndPick(key,value){
   renderComposer();
 }
 function switchUnit(t){state.editing=t;renderComposer();}
-function toggleBase(){const c=cfgFor(state.editing);
-  if(!useBase.checked){c.base_type='';baseArea.style.display='none';renderComposer();return;}
-  baseArea.style.display='';renderBaseList();}
 // faction label using the DESTINATION mod's names (base units live in the dest)
 const destFacLabel=f=>facTwoNames(f,(state.destData?.faction_names||{})[f]);
 function renderBaseList(){
@@ -1174,7 +1293,7 @@ function renderBaseList(){
     && (!qq||x.name.toLowerCase().includes(qq)||x.type.toLowerCase().includes(qq))).slice(0,120);
   baseList.innerHTML=cands.map(x=>`<div class="baserow ${x.type===c.base_type?'sel':''}" onclick="pickBase('${q1(esc(x.type))}')">
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.dst,x.type)}"><div><div class="bn">${esc(x.name)}</div><div class="bs">${esc(x.type)}</div></div></div>`).join('')
-    ||`<div class="count" style="padding:8px">No ${esc(u.kind||u.category||'')} units in destination match.</div>`;
+    ||`<div class="count" style="padding:8px">No ${esc(u.kind||u.category||'')} units in destination match — the ${esc(donorRole(c))} must be the same unit type.</div>`;
 }
 function pickBase(t){const c=cfgFor(state.editing);c.base_type=t;
   // full re-render: the soldier toggle and the "using base's" hints only become
@@ -1185,12 +1304,13 @@ async function loadFields(type){
   // The baseline depends on whether a base unit is inherited from: with a base,
   // show the fields the unit will ACTUALLY have after inheriting its stats.
   // the composed result depends on the base AND on which groups come from it
-  const froms=['soldier_from','officer_from','mount_from','crew_from'];
-  const key=c.base_type?[c.base_type,...froms.map(k=>c[k]||'source')].join('|'):'';
+  const froms=['soldier_from','officer_from','mount_from','crew_from','upgrade_from'];
+  const key=c.base_type?[modeOf(c),c.base_type,...froms.map(k=>c[k]||'source')].join('|'):'';
   if(!c._fields || c._fieldsKey!==key){
     const url=c.base_type
       ? `/api/base_fields?source=${encodeURIComponent(state.src)}&unit=${encodeURIComponent(type)}`
         +`&dest=${encodeURIComponent(state.dst)}&base=${encodeURIComponent(c.base_type)}`
+        +`&mode=${encodeURIComponent(modeOf(c))}`
         +froms.map(k=>`&${k}=${encodeURIComponent(c[k]||'source')}`).join('')
       : `/api/unit_fields?mod=${encodeURIComponent(state.src)}&type=${encodeURIComponent(type)}`;
     let r;
@@ -1236,6 +1356,21 @@ function renderAllFields(type){
   // (the game can't find the block without it), so show that row rather than
   // writing a field the panel never mentioned. It goes where the EDU keeps it —
   // right after voice_type / class.
+  // Replacing a unit does not rename it: `type` and `dictionary` ARE the unit
+  // being rewritten. They stay the destination's and are shown as such — editing
+  // one here would rename the unit and orphan its localisation entry and icons,
+  // which is the one thing this mode exists to avoid.
+  const rb=baseUnitOf(c);
+  const idLock=(isReplace(c)&&rb)
+    ? {vals:{type:rb.type,dictionary:rb.dictionary},
+       why:`Locked — this transfer rewrites “${rb.type}” in place, so it keeps its own `
+          +`type and dictionary. Those two are what tie it to its name, description `
+          +`and icons; change them and you have renamed the unit instead of replacing it.`}
+    : null;
+  // both locks in one lookup, most specific first
+  const lockFor=key=>(idLock&&(key in idLock.vals))?{val:idLock.vals[key],why:idLock.why}
+                    :(sndLock&&(key in sndLock.vals))?{val:sndLock.vals[key],why:sndLock.why}
+                    :null;
   let fields=c._fields;
   if(sndLock){
     fields=c._fields.slice();
@@ -1248,16 +1383,17 @@ function renderAllFields(type){
   box.innerHTML=fields.map(([label,val])=>{
     const dup=/#\d+$/.test(label);
     const key=label.replace(/#\d+$/,'');
-    const bySound=!!sndLock&&!dup&&(key in sndLock.vals);
-    const cur=bySound?sndLock.vals[key]
+    const lk=dup?null:lockFor(key);
+    const cur=lk?lk.val
       :(label in c.field_overrides)?c.field_overrides[label]:val;
-    const changed=!bySound&&(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
+    const changed=!lk&&(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
     const isInh=inh.has(key);
     return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}${bySound?' — '+esc(sndLock.why):isInh?' — inherited from base '+esc(c.base_type):''}">${esc(label)}${
-        bySound?'<span class="ibadge" title="'+esc(sndLock.why)+'">🔒</span>':isInh?baseBadge(c,label,cur):''}</label>
+      <label title="${esc(label)}${lk?' — '+esc(lk.why)
+        :isInh?` — ${isReplace(c)?'kept from':'inherited from base'} `+esc(c.base_type):''}">${esc(label)}${
+        lk?'<span class="ibadge" title="'+esc(lk.why)+'">🔒</span>':isInh?baseBadge(c,label,cur):''}</label>
       <input data-k="${esc(label)}" value="${esc(cur)}" class="${changed?'changed':''}"
-        ${bySound?`disabled title="${esc(sndLock.why)}"`
+        ${lk?`disabled title="${esc(lk.why)}"`
          :dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
   }).join('');
   box.querySelectorAll('input[data-k]').forEach(inp=>{
@@ -1279,16 +1415,17 @@ function renderAllFields(type){
 const baseSrcVal=(c,label)=>(c._srcFields||{})[label];
 function baseBadge(c,label,cur){
   const src=baseSrcVal(c,label);
+  const rep=isReplace(c);
   const same=src===undefined||src===c._orig[label];
   if(same)                        // nothing to switch to — a plain marker, as before
-    return `<span class="ibadge" title="from base ${esc(c.base_type)}${
-      src===undefined?" — the source unit has no such line, so this one can only come from the base"
-                     :" — the source unit's value is identical"}">B</span>`;
+    return `<span class="ibadge" title="${rep?'kept from':'from base'} ${esc(c.base_type)}${
+      src===undefined?" — the transferred unit has no such line, so this one can only come from "+esc(c.base_type)
+                     :" — the transferred unit's value is identical"}">B</span>`;
   const on=cur===c._orig[label];
   return `<button type="button" class="ibadge${on?'':' off'}" data-b="${esc(label)}"
     onclick="toggleBaseField('${q1(esc(label))}')"
-    title="${on?`using ${esc(c.base_type)}'s value — click to keep ${esc(state.editing)}'s own (${esc(src)})`
-              :`using ${esc(state.editing)}'s own value — click to take ${esc(c.base_type)}'s (${esc(c._orig[label])})`}">B</button>`;
+    title="${on?`${rep?'keeping':'using'} ${esc(c.base_type)}'s value — click to ${rep?'import':'keep'} ${esc(state.editing)}'s own (${esc(src)})`
+              :`${rep?'imported from':'using'} ${esc(state.editing)}${rep?'':"'s own value"} — click to go back to ${esc(c.base_type)}'s (${esc(c._orig[label])})`}">B</button>`;
 }
 function toggleBaseField(label){
   const c=cfgFor(state.editing);
@@ -1366,12 +1503,24 @@ function optsPayload(type){const c=cfgFor(type);
   if(soundDonor(c).accent&&('accent' in fo||'voice_type' in fo)){
     fo=Object.assign({},fo); delete fo.accent; delete fo.voice_type;
   }
+  const rep=isReplace(c);
+  // the replaced unit's identity is not editable — the engine ignores these two
+  // when replacing, and sending them would only make the preview lie
+  if(rep&&('type' in fo||'dictionary' in fo)){
+    fo=Object.assign({},fo); delete fo.type; delete fo.dictionary;
+  }
   return {include_officers:c.include_officers,include_mount:c.include_mount,include_crew:c.include_crew,
     include_projectile:c.include_projectile!==false,include_engine:c.include_engine!==false,
     exclude_models:c.exclude_models||[],
-    base_type:c.base_type||null,field_overrides:fo,
+    // one picker, two meanings: a stat template, or the unit being rewritten
+    mode:rep?'replace':'new',
+    base_type:rep?null:(c.base_type||null),
+    replace_type:rep?c.base_type:null,
+    import_card:!!c.import_card,import_info_card:!!c.import_info_card,
+    field_overrides:fo,
     soldier_from:c.soldier_from||'source',officer_from:c.officer_from||'source',
     mount_from:c.mount_from||'source',crew_from:c.crew_from||'source',
+    upgrade_from:c.upgrade_from||'source',
     on_conflict:c.on_conflict,new_type:c.new_type||null,new_dictionary:c.new_dictionary||null,
     eop_target:c.eop_target||'auto',
     asset_conflict:c.asset_conflict||'mod_folder',
@@ -1390,7 +1539,7 @@ function renderSummary(t){
     let sev='';
     if(/ERROR/.test(body))sev='bad';
     else if(/^!/.test(body)||/WARNING|EXCLUDED|NOT found|SKIPPED|differ\b/.test(body))sev='warn';
-    else if(/RELOCATED|OVERWRITE|RENAMED|renamed bmdb|reuse existing|base template|byte-identical|supplies them/.test(body))sev='good';
+    else if(/RELOCATED|OVERWRITE|RENAMED|REPLACING|renamed bmdb|reuse existing|base template|byte-identical|supplies them/.test(body))sev='good';
     let icon='';
     if(/^!/.test(body))icon='⚠';
     else if(/^-/.test(body))icon='·';
@@ -1415,6 +1564,7 @@ function projectedDestCount(){
   let add=0, eopAdd=0;
   for(const t of composerList){ const c=cfgFor(t);
     const toEop=eopBound(t);
+    if(isReplace(c)) continue;               // rewrites a unit that already exists
     if(have.has(t) && c.on_conflict!=='rename') continue;  // overwrite/skip: no net type
     if(toEop) eopAdd++; else add++;
   }
@@ -1646,6 +1796,13 @@ async function doPreview(){
    the EDU and pushes the mod towards the 500 cap. */
 function eopUI(type,r){
   const c=cfgFor(type);
+  // Replacing has nothing to choose: the rewritten block stays in whichever file
+  // the replaced unit already lives in, EDU or M2TWEOP.
+  if(r.replace_type) return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--edge)">
+    <legend>Which file this unit is written to</legend>
+    <div class="count">The block replaces <b>${esc(r.replace_type)}</b> where it already is${
+      r.eop_file?` — <span class="path">${esc(r.eop_file)}</span>`:' in <code>export_descr_unit.txt</code>'},
+      so nothing moves between files and the ${VANILLA_UNIT_LIMIT}-unit cap is untouched.</div></fieldset>`;
   if(!r.dest_has_eop && !r.source_is_eop) return '';
   const auto=r.source_is_eop?'M2TWEOP unit file (the source unit is one)':'export_descr_unit.txt';
   return `<fieldset class="assetconf" style="margin-top:10px${r.source_is_eop&&!r.dest_has_eop?';border-color:var(--warn)':''}">
@@ -1777,7 +1934,9 @@ async function doApply(){
     renderProgress(types,status);
   }
   closeModal();
-  toast(`${state.src===state.dst?'Created':'Transferred'} ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${binMsg(last)}  (undo in 🕑 Log)`,4200);
+  const repl=types.filter(t=>isReplace(cfgFor(t))).length;
+  toast(`${state.src===state.dst?'Created':repl===ok?'Replaced':'Transferred'} ${ok} unit(s)${
+    repl&&repl!==ok?` (${repl} replaced)`:''}${skip?`, skipped ${skip}`:''} ✓${binMsg(last)}  (undo in 🕑 Log)`,4200);
   // these ones are done — leaving them ticked invites transferring them twice
   clearSelection();
   state.cfg={};

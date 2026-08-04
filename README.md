@@ -49,6 +49,42 @@ Name collisions are detected and resolved (reuse identical content, rename on a
 real conflict, or overwrite/skip — your choice), and every step is shown in a
 preview before anything is written.
 
+### What the transfer creates
+
+The composer's first choice is what should exist in the destination when the
+transfer is done. All three are restricted to the same **unit kind** — an
+infantry unit only bases on (or replaces) an infantry unit, a lancer a lancer —
+because stats and animations only make sense for the type they were written for.
+
+- **A new unit** *(default)* — its own EDU entry, name, description and icons.
+- **A new unit based on an existing one** — still a new entry, but combat stats,
+  attributes, cost, formation, ownership and era are inherited from a
+  destination unit you pick.
+- **Replace an existing unit** — no new entry at all. The destination unit you
+  pick is **rewritten in place**, in the file it already lives in and at the
+  position it already sits: it keeps its type, dictionary, name, description,
+  stats, ownership, era and cards, and gets the transferred unit's models. Use
+  it to give a unit your mod already has a better-looking model without
+  disturbing anything that refers to it (recruitment, scripts, the campaign map).
+
+  In that mode:
+  - **soldier, officers, armour upgrades and mount** come from the transferred
+    unit by default. Each is a **Source / Keep** row under *Edit fields* — set
+    one to *Keep* and that group stays exactly as the replaced unit had it.
+  - **the unit card and the info card are kept**, each with its own tick box to
+    import the source's instead. An imported card is written under the *replaced*
+    unit's dictionary name and into its own faction folders, so the game still
+    finds it.
+  - **stats are the replaced unit's**, and each one can be imported on its own by
+    clicking its `B` badge in the field editor (click again to put it back).
+    `type` and `dictionary` are locked — changing those would rename the unit
+    rather than replace it.
+  - **the voice bank and `text/export_units.txt` are not touched**, so the unit
+    keeps its barks, its name and its description.
+  - the replaced unit's **old battle models stay in the modeldb** (other units
+    may still use them) — the BMDB Editor's cleanup finds the ones that end up
+    unused.
+
 ## Unit Editor mode
 
 Switch the top-left dropdown to **✎ Unit Editor** and the tool works on one mod
@@ -237,9 +273,11 @@ Everything is staged in memory — the row goes green — and written in a singl
 The transfer composer has the same thing as a **Voice / sound** panel with three
 options:
 
-- **Use the base unit's sound** *(default)* — the unit you already picked under
-  *Use another unit as base* also supplies the voice. Its stats and its barks
-  come from the same place, which is nearly always what you want
+- **Use the base unit's sound** *(default)* — the unit you already picked as the
+  base also supplies the voice. Its stats and its barks come from the same place,
+  which is nearly always what you want. When you are *replacing* a unit this
+  reads **Keep "X"'s own voice** and writes nothing: the unit already has its
+  entry, and its `accent` / `voice_type` come across with its stats
 - **Use another unit's sound** — base the unit on one destination unit but take
   the voice from a different one. The accent and class dropdowns filter the list
   of units that have their own barks
@@ -365,6 +403,12 @@ point of them.
 - **Use another unit as a stat base** — port a unit's identity/models but
   inherit combat stats, cost, and ownership from an existing unit in the
   destination mod
+- **Replace an existing unit** — instead of adding a unit, write the transferred
+  one's models *into* a destination unit of the same type. No new EDU entry, no
+  new dictionary, no new name: the unit keeps everything players know it by and
+  just looks different. Officers and armour-upgrade models come across by
+  default (each can be left alone), the unit card and info card are opt-in, and
+  any single stat can be imported one at a time with the `B` buttons
 - **Per-field editor** — override any single EDU field on the way in
 - **Mercenary conversion** — flip a unit to a mercenary (attribute, texture
   skin, icon folders) as part of the transfer

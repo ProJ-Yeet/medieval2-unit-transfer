@@ -431,6 +431,14 @@ BASE_COPY_KEYS = [
     "ownership", "era 0", "era 1", "era 2",
 ]
 
+# Fields the REPLACED unit provides when a transfer overwrites an existing unit
+# ("replace an existing unit" mode). Same stats as a base template, plus the two
+# icon-folder pins: the replaced unit keeps its identity, so its card and info
+# card must still be looked up where they have always been — carrying the source
+# unit's `card_pic_dir` across would send the game to a folder that only makes
+# sense in the mod the unit came from.
+REPLACE_COPY_KEYS = BASE_COPY_KEYS + ["card_pic_dir", "info_pic_dir"]
+
 
 def apply_base_template(unit_block: str, base_block: str,
                         copy_keys=BASE_COPY_KEYS) -> str:
@@ -606,16 +614,30 @@ def strip_trailing_filler(block: str) -> str:
     dragged along when this one unit is copied alone into a different file.
     """
     lines = block.splitlines(keepends=True)
-    cut = 0
-    for i in range(len(lines) - 1, -1, -1):
-        s = lines[i].strip()
-        if s and not s.startswith(";"):
-            cut = i + 1
-            break
-    kept = "".join(lines[:cut])
+    kept = "".join(lines[:_filler_cut(lines)])
     if kept and not kept.endswith("\n"):
         kept += "\n"
     return kept
+
+
+def trailing_filler(block: str) -> str:
+    """The blank/comment lines :func:`strip_trailing_filler` would drop.
+
+    What separates a block from the next one in the file. Rewriting a unit in
+    place (replacing it with another mod's) keeps this, so the file's own spacing
+    and section banners survive an edit that swaps only the block above them.
+    """
+    lines = block.splitlines(keepends=True)
+    return "".join(lines[_filler_cut(lines):])
+
+
+def _filler_cut(lines: List[str]) -> int:
+    """Index of the first trailing blank/comment line in a block's lines."""
+    for i in range(len(lines) - 1, -1, -1):
+        s = lines[i].strip()
+        if s and not s.startswith(";"):
+            return i + 1
+    return 0
 
 
 def set_field_before(block: str, key: str, value: str, anchor_keys: tuple) -> str:

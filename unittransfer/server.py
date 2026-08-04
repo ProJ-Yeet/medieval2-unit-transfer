@@ -452,10 +452,15 @@ def _options_from(d: dict) -> TransferOptions:
         new_type=d.get("new_type") or None,
         new_dictionary=d.get("new_dictionary") or None,
         base_type=d.get("base_type") or None,
+        mode=d.get("mode", "new"),
+        replace_type=d.get("replace_type") or None,
+        import_card=bool(d.get("import_card", False)),
+        import_info_card=bool(d.get("import_info_card", False)),
         soldier_from=d.get("soldier_from", "source"),
         officer_from=d.get("officer_from", "source"),
         mount_from=d.get("mount_from", "source"),
         crew_from=d.get("crew_from", "source"),
+        upgrade_from=d.get("upgrade_from", "source"),
         field_overrides=dict(d.get("field_overrides") or {}),
         asset_conflict=d.get("asset_conflict", "mod_folder"),
         asset_reroute_dir=d.get("asset_reroute_dir") or None,
@@ -477,6 +482,13 @@ def _plan_payload(plan) -> dict:
         "skipped": plan.skipped,
         "on_conflict": plan.options.on_conflict,
         "base_type": plan.options.base_type or "",
+        # "replace an existing unit": the destination unit rewritten in place
+        # ("" in the normal mode). The composer uses it to say what happened and
+        # to keep the 500-unit banner honest — a replacement adds no unit.
+        "mode": plan.options.mode,
+        "replace_type": plan.replace_type,
+        "import_card": plan.options.import_card,
+        "import_info_card": plan.options.import_info_card,
         "soldier_from": plan.options.soldier_from,
         "base_field_groups": list(dict.fromkeys(plan.base_field_groups)),
         "base_error": plan.base_error,
@@ -930,30 +942,39 @@ class Handler(BaseHTTPRequestHandler):
         return out
 
     def _base_fields(self, q):
-        """EDU fields of ``unit`` after applying ``base``'s stat template."""
+        """EDU fields of ``unit`` after applying ``base``'s stat template.
+
+        Also serves replace mode (``mode=replace``), where the "base" is the unit
+        being replaced: the same composition, plus the icon-folder pins, so the
+        editor's rows are exactly the block that will be written and each B button
+        switches a field the transfer engine will actually honour.
+        """
         from . import edu as _edu
         sname = (q.get("source") or [None])[0]
         dname = (q.get("dest") or [None])[0]
         utype = (q.get("unit") or [None])[0]
         btype = (q.get("base") or [None])[0]
+        replacing = (q.get("mode") or [""])[0] == "replace"
+        what = "unit to replace" if replacing else "base"
         names = self.registry.names()
         if not (sname in names and dname in names and utype and btype):
             return {"error": "bad params"}
         unit = self.registry.get(sname).edu.by_type().get(utype)
         base = self.registry.get(dname).edu.by_type().get(btype)
         if unit is None or base is None:
-            return {"error": "unit or base not found"}
+            return {"error": f"unit or {what} not found"}
         if base.kind() != unit.kind():
-            return {"error": f"base is {base.kind() or '?'}, unit is {unit.kind() or '?'}"}
+            return {"error": f"{what} is {base.kind() or '?'}, unit is {unit.kind() or '?'}"}
         # mirror the real transfer exactly, including whole groups taken from the base
         opts = _options_from({k: (q.get(k) or ["source"])[0]
-                              for k in ("soldier_from", "officer_from",
-                                        "mount_from", "crew_from")})
+                              for k in ("soldier_from", "officer_from", "mount_from",
+                                        "crew_from", "upgrade_from")})
+        keys = _edu.REPLACE_COPY_KEYS if replacing else _edu.BASE_COPY_KEYS
         groups = base_field_groups_for(opts)
-        composed = compose_with_base(unit.raw, base.raw, groups)
+        composed = compose_with_base(unit.raw, base.raw, groups, copy_keys=keys)
         return {"unit": utype, "base": btype,
                 "fields": _edu.block_fields(composed),
-                "inherited": list(_edu.BASE_COPY_KEYS) + groups,
+                "inherited": list(keys) + groups,
                 "base_field_groups": groups}
 
     def _eop_dirs(self, body):

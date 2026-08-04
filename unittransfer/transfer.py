@@ -20,13 +20,24 @@ from __future__ import annotations
 
 import filecmp
 import shutil
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, replace as dc_replace
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from . import (config, edu as edu_mod, engines as engines_mod, eop, localization,
                modeldb, mounts, projectiles as projectiles_mod, sounds)
 from .mod import Mod
+
+
+# Human-readable names of the EDU field groups a base / replaced unit can supply,
+# keyed by the group key used in `base_field_groups`.
+_MODEL_GROUP_NAMES = {
+    "soldier": "soldier line",
+    "officer": "officers",
+    "mount": "mount",
+    "armour_ug_models": "armour upgrade models",
+    "ship": "crew",
+}
 
 
 # --------------------------------------------------------------------------
@@ -56,6 +67,27 @@ class TransferOptions:
     #   "edu"   force data/export_descr_unit.txt
     # See :mod:`unittransfer.eop`.
     eop_target: str = "auto"
+    # What the transfer produces in the destination:
+    #   "new"     the unit arrives as its OWN entry — a new unit type, a new
+    #             dictionary entry, its own icons (the default)
+    #   "replace" the unit is written INTO an existing destination unit named by
+    #             `replace_type`: no new EDU entry, no new dictionary, no new
+    #             localisation. The destination unit keeps its type, name,
+    #             description, stats, ownership and era, and only its MODELS are
+    #             swapped for the transferred unit's — one field at a time can be
+    #             switched over via `field_overrides` (the composer's B buttons),
+    #             and the card / info card only come across when asked for.
+    # The replaced unit must be the same `kind()` as the transferred one, exactly
+    # as a base unit must: swapping a cavalry model into an infantry entry gives a
+    # unit whose animations and stats don't match its models.
+    mode: str = "new"
+    replace_type: Optional[str] = None
+    # replace mode only: bring the source's unit card / info card across as the
+    # replaced unit's (renamed to ITS dictionary, written into ITS faction
+    # folders). Off by default — the replaced unit keeps the card it already has,
+    # which is usually what "just give it better models" means.
+    import_card: bool = False
+    import_info_card: bool = False
     # unit-name conflict: "overwrite" | "rename" | "skip"
     on_conflict: str = "rename"
     new_type: Optional[str] = None     # required when on_conflict == "rename"
@@ -69,12 +101,16 @@ class TransferOptions:
     #   officer_from -> every `officer` line
     #   mount_from   -> the `mount` line
     #   crew_from    -> `ship` / `engine` / `mounted_engine` / `animal`
+    #   upgrade_from -> `armour_ug_models` (the armour-upgrade model list). Only
+    #                   offered in replace mode; a base template leaves the
+    #                   upgrade models with the transferred unit, as it always has.
     # A group taken from the base needs nothing copied — those models are already
     # in the destination.
     soldier_from: str = "source"
     officer_from: str = "source"
     mount_from: str = "source"
     crew_from: str = "source"
+    upgrade_from: str = "source"
     # manual per-field EDU overrides: {field_key: full value string}
     field_overrides: Dict[str, str] = field(default_factory=dict)
     # what to do about copied mesh/texture files:
@@ -149,6 +185,11 @@ class TransferPlan:
     # base templating
     base_unit: object = None                       # edu.Unit used as stat template (or None)
     base_error: str = ""                           # non-empty -> base invalid, block apply
+    # "replace an existing unit": the destination unit whose block is rewritten in
+    # place. "" in the normal (new unit) mode. When set, `base_unit` IS that unit —
+    # replacing is a base template that also takes over the base's identity — and
+    # `resolved_type` / `resolved_dict` are its own.
+    replace_type: str = ""
     option_error: str = ""                         # non-empty -> options invalid, block apply
     icon_dir_overrides: Dict[str, str] = field(default_factory=dict)  # card/info_pic_dir fixes
     # EDU field groups taken wholesale from the base unit (officer / mount /
@@ -238,7 +279,33 @@ class TransferPlan:
         if self.option_error:
             L.append("  ! OPTION ERROR: " + self.option_error)
             return "\n".join(L)
-        if self.base_unit is not None:
+        if self.replace_type:
+            L.append(f"  REPLACING '{self.replace_type}' in {self.dest.name}: its EDU block is "
+                     "rewritten in place — no new unit type, no new dictionary entry")
+            # only the model groups the transferred unit actually has are a choice
+            src_unit = self.source.edu.by_type().get(self.unit_type)
+            has = {"soldier": bool(getattr(src_unit, "soldier_model", "")),
+                   "officer": bool(getattr(src_unit, "officers", None)),
+                   "armour_ug_models": bool(getattr(src_unit, "armour_ug_models", None)),
+                   "mount": bool(getattr(src_unit, "mount", ""))}
+            groups = [g for g in ("soldier", "officer", "armour_ug_models", "mount")
+                      if has.get(g)]
+            taken = [g for g in groups if g not in self.base_field_groups]
+            kept = [g for g in groups if g in self.base_field_groups]
+            L.append("      models taken from '" + self.unit_type + "': "
+                     + (", ".join(_MODEL_GROUP_NAMES[g] for g in taken) or "none")
+                     + (f" (kept from '{self.replace_type}': "
+                        + ", ".join(_MODEL_GROUP_NAMES[g] for g in kept) + ")" if kept else ""))
+            L.append(f"      stats/attributes/ownership/era stay '{self.replace_type}'s"
+                     + (f", overridden field(s): {', '.join(sorted(self.options.field_overrides))}"
+                        if self.options.field_overrides else ""))
+            L.append("      unit card: " + ("IMPORTED from the source"
+                                            if self.options.import_card else "kept"))
+            L.append("      info card: " + ("IMPORTED from the source"
+                                            if self.options.import_info_card else "kept"))
+            L.append(f"      localisation untouched — '{self.replace_type}' keeps its name "
+                     "and description")
+        elif self.base_unit is not None:
             L.append(f"  base template: '{self.options.base_type}' (stats/attrs/ownership/era inherited)")
         if self.mercenary:
             L.append(f"  MERCENARY ATTRIBUTE: +{MERC_ATTR} attribute, +'{MERC_TEX_FACTION}' bmdb skin")
@@ -357,7 +424,8 @@ def _secondary_model_names(source: Mod, unit, opts: TransferOptions,
     A group listed in ``base_groups`` comes from the base unit, so the source's
     models for it are neither copied nor "excluded" — nothing references them.
     Otherwise officers/mount/crew follow the include options. armour_ug_models
-    always stay from the transferred unit, so their models are always copied.
+    stay from the transferred unit unless that group too was handed to the base
+    (only replace mode offers that), so their models are normally always copied.
     """
     base_groups = set(base_groups)
     excl = {m.lower() for m in opts.exclude_models}   # individually-unticked models
@@ -372,8 +440,9 @@ def _secondary_model_names(source: Mod, unit, opts: TransferOptions,
 
     if unit.soldier_model and "soldier" not in base_groups:
         included.append(unit.soldier_model.lower())
-    for m in unit.armour_ug_models:
-        included.append(m.lower())
+    if "armour_ug_models" not in base_groups:
+        for m in unit.armour_ug_models:
+            included.append(m.lower())
 
     if "officer" not in base_groups:
         for off in unit.officers:
@@ -737,6 +806,16 @@ def _resolve_sound(plan: "TransferPlan", dest: Mod) -> None:
     """
     opts = plan.options
     mode = (opts.sound_mode or "base").lower()
+    # Replacing a unit: "the base's voice" would mean copying the replaced unit's
+    # own entry onto itself. It already has it, and its accent/voice_type come
+    # across with the rest of its stats, so the sane reading of the default is
+    # "leave the voice alone" — picking another unit still works as it does for a
+    # base template.
+    if plan.replace_type and mode == "base":
+        plan.sound_action = "none"
+        plan.sound_detail = (f"'{plan.replace_type}' keeps its own voice entry "
+                             "(accent and voice_type come across with its stats)")
+        return
     if mode == "none":
         plan.sound_action = "none"
         return
@@ -799,6 +878,28 @@ def _resolve_sound(plan: "TransferPlan", dest: Mod) -> None:
         "(the entry only works if both point at the same block).")
 
 
+def _override_projectiles(opts: TransferOptions) -> List[str]:
+    """Projectiles named by a hand-set ``stat_pri`` / ``stat_sec`` override.
+
+    With a base unit (or a replaced one) the stats — and therefore the projectile —
+    normally come from the destination, so nothing has to be ported. Switching one
+    of those two fields back to the transferred unit's value (the composer's B
+    button, which is exactly how "import the individual stats" works when
+    replacing a unit) puts a SOURCE projectile name in the block, and that name
+    means nothing in the destination unless its definition comes along too.
+    """
+    out: List[str] = []
+    for key in ("stat_pri", "stat_sec"):
+        val = opts.field_overrides.get(key)
+        if not val:
+            continue
+        parts = [p.strip() for p in val.split(",")]
+        # slot 3 of the CSV is the projectile ("no" for a melee weapon)
+        if len(parts) > 2 and parts[2] and parts[2].lower() != "no":
+            out.append(parts[2])
+    return out
+
+
 def base_field_groups_for(opts: TransferOptions) -> List[str]:
     """EDU field groups a base unit supplies, given the include/soldier options.
 
@@ -815,12 +916,21 @@ def base_field_groups_for(opts: TransferOptions) -> List[str]:
         groups.append("mount")
     if opts.crew_from == "base":
         groups += ["ship", "engine", "mounted_engine", "animal"]
+    if opts.upgrade_from == "base":
+        groups.append("armour_ug_models")
     return groups
 
 
-def compose_with_base(unit_raw: str, base_raw: str, groups: List[str]) -> str:
-    """Unit block after inheriting the base's stats plus whole field groups."""
-    block = edu_mod.apply_base_template(unit_raw, base_raw)
+def compose_with_base(unit_raw: str, base_raw: str, groups: List[str],
+                      copy_keys=None) -> str:
+    """Unit block after inheriting the base's stats plus whole field groups.
+
+    ``copy_keys`` names the stat fields taken from the base — the default set for
+    a base template, :data:`edu.REPLACE_COPY_KEYS` when replacing a unit (which
+    also hands over the icon-folder pins along with the identity).
+    """
+    block = edu_mod.apply_base_template(unit_raw, base_raw,
+                                        copy_keys or edu_mod.BASE_COPY_KEYS)
     for key in dict.fromkeys(groups):
         block = edu_mod.copy_field_group(block, base_raw, key)
     return block
@@ -935,6 +1045,18 @@ def _resolve_eop_target(plan: TransferPlan, unit) -> None:
       does not count against the vanilla cap at all.
     """
     dest, opts = plan.dest, plan.options
+    # Replacing has no choice to make: the rewritten block belongs to the replaced
+    # unit, so it stays in whichever file that unit already lives in. Moving it
+    # would mean deleting a unit from one file and adding it to another — not a
+    # replacement, and a silent way to lose an M2TWEOP unit's slot.
+    if plan.replace_type:
+        replaced = dest.edu.by_type().get(plan.replace_type)
+        if replaced is not None and replaced.is_eop:
+            plan.eop_replaced = replaced.eop_file
+            plan.eop_file = replaced.eop_file
+        plan.dest_new_units = 0
+        return
+
     existing = dest.edu.by_type().get(plan.unit_type)
     if plan.unit_conflict and opts.on_conflict == "overwrite" and existing is not None \
             and existing.is_eop:
@@ -977,20 +1099,40 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     plan = TransferPlan(unit_type=unit_type, dictionary=unit.dictionary,
                         source=source, dest=dest, options=opts)
 
-    # ---- base templating (use another destination unit's stats) ----
-    if opts.base_type:
-        base_unit = dest.edu.by_type().get(opts.base_type)
+    # ---- base templating / replacing an existing unit ----
+    # Both work the same way — a destination unit supplies the stat fields — and
+    # differ in what happens to the identity: a base template writes a NEW unit
+    # that inherits the base's numbers, while a replacement takes the destination
+    # unit's type, dictionary and icons over as well, so nothing is added at all.
+    replacing = (opts.mode or "new").lower() == "replace"
+    donor_type = (opts.replace_type if replacing else opts.base_type) or ""
+    what = "unit to replace" if replacing else "base unit"
+    if donor_type:
+        base_unit = dest.edu.by_type().get(donor_type)
         if base_unit is None:
-            plan.base_error = f"base unit '{opts.base_type}' not found in destination"
+            plan.base_error = f"{what} '{donor_type}' not found in destination"
         elif base_unit.kind() != unit.kind():
             plan.base_error = (f"type mismatch: '{unit_type}' is {unit.kind() or '?'}, "
-                               f"base '{opts.base_type}' is {base_unit.kind() or '?'} "
-                               "(base must be the same unit type)")
+                               f"{what} '{donor_type}' is {base_unit.kind() or '?'} "
+                               f"(the {what} must be the same unit type)")
         else:
             plan.base_unit = base_unit
-            plan.warnings.append(
-                f"using '{opts.base_type}' as stat base: combat stats, attributes, cost, "
-                "formation, ownership & era come from it; models/name/icons stay from the transferred unit.")
+            if replacing:
+                plan.replace_type = base_unit.type
+                plan.warnings.append(
+                    f"replacing '{base_unit.type}': its EDU block is rewritten in place, so "
+                    "no unit type and no dictionary entry are added. It keeps its name, "
+                    "description, stats, ownership and era — only the models change.")
+                plan.warnings.append(
+                    f"'{base_unit.type}'s previous battle models are left in "
+                    "battle_models.modeldb (other units may still use them). Use the BMDB "
+                    "Editor's cleanup afterwards if nothing else does.")
+            else:
+                plan.warnings.append(
+                    f"using '{donor_type}' as stat base: combat stats, attributes, cost, "
+                    "formation, ownership & era come from it; models/name/icons stay from the transferred unit.")
+    elif replacing:
+        plan.base_error = "no destination unit chosen to replace"
 
     # ---- ownership change -> bmdb texture factions ----
     # A base unit (or an explicit override) rewrites `ownership`. The copied bmdb
@@ -1021,19 +1163,28 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                 + (plan.texture_donor or "the model's existing skin") + ")")
 
     # ---- unit-name conflict ----
-    plan.unit_conflict = unit_type in dest.edu.by_type()
+    # Replacing settles this by definition: the block written IS the replaced
+    # unit's, under its own type and dictionary, so there is nothing to rename,
+    # overwrite or skip and nothing is added to the destination's unit count.
     plan.resolved_type = unit_type
     plan.resolved_dict = unit.dictionary
-    if plan.unit_conflict:
-        if opts.on_conflict == "skip":
-            plan.skipped = True
-            plan.dest_new_units = 0
-            return plan
-        if opts.on_conflict == "overwrite":
-            plan.dest_new_units = 0        # replaces an existing type, no net add
-        if opts.on_conflict == "rename":
-            plan.resolved_type = opts.new_type or (unit_type + " (copy)")
-            plan.resolved_dict = opts.new_dictionary or (unit.dictionary + "_copy")
+    if plan.replace_type:
+        plan.resolved_type = plan.base_unit.type
+        plan.resolved_dict = plan.base_unit.dictionary
+        plan.unit_conflict = False
+        plan.dest_new_units = 0
+    else:
+        plan.unit_conflict = unit_type in dest.edu.by_type()
+        if plan.unit_conflict:
+            if opts.on_conflict == "skip":
+                plan.skipped = True
+                plan.dest_new_units = 0
+                return plan
+            if opts.on_conflict == "overwrite":
+                plan.dest_new_units = 0    # replaces an existing type, no net add
+            if opts.on_conflict == "rename":
+                plan.resolved_type = opts.new_type or (unit_type + " (copy)")
+                plan.resolved_dict = opts.new_dictionary or (unit.dictionary + "_copy")
 
     # ---- M2TWEOP: which file the block lands in ----
     _resolve_eop_target(plan, unit)
@@ -1054,11 +1205,12 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
             f"{len(excluded)} secondary model(s) excluded; their EDU names are kept and "
             "must already exist in the destination.")
     if plan.base_field_groups:
-        pretty = {"soldier": "soldier line", "officer": "officers",
-                  "mount": "mount", "ship": "crew"}
-        taken = [pretty[g] for g in plan.base_field_groups if g in pretty]
+        taken = [_MODEL_GROUP_NAMES[g] for g in plan.base_field_groups
+                 if g in _MODEL_GROUP_NAMES]
         plan.warnings.append(
-            f"taken from base '{opts.base_type}': {', '.join(taken)} — those models "
+            (f"kept from '{plan.replace_type}'" if plan.replace_type
+             else f"taken from base '{opts.base_type}'")
+            + f": {', '.join(taken)} — those models "
             "already exist in the destination, so nothing is copied for them.")
 
     dest_models = dest.modeldb.by_name()
@@ -1192,7 +1344,8 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     # engine block is copied verbatim and would otherwise dangle. Effects are NOT
     # ported: any effect-set the destination lacks becomes a harmless placeholder.
     if opts.include_projectile:
-        wanted_projectiles = list(unit.projectiles()) if plan.base_unit is None else []
+        wanted_projectiles = (list(unit.projectiles()) if plan.base_unit is None
+                              else _override_projectiles(opts))
         wanted_projectiles += plan.engine_projectiles
         _resolve_projectiles(plan, source, dest, wanted_projectiles, opts)
 
@@ -1247,10 +1400,16 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     # at the source's folder. The mercs/merc fallback folder is always included
     # too, since a unit with `mercenary_unit` set (already, or via make_mercenary)
     # falls back to it whenever *_pic_dir isn't pinned.
+    # Replacing an existing unit leaves its cards alone unless asked: the point of
+    # the mode is usually "give this unit better models", and the unit already has
+    # a card that matches its name. Each is opted into on its own, because a new
+    # model often wants a new unit card while the info card still reads correctly.
     final_ownership = ([f for f in final_own if f != "slave"] or final_own
                        or [f for f in unit.ownership if f != "slave"] or list(unit.ownership))
-    card = source.find_unit_card(unit)
-    info = source.find_unit_info(unit)
+    want_card = opts.import_card if plan.replace_type else True
+    want_info = opts.import_info_card if plan.replace_type else True
+    card = source.find_unit_card(unit) if want_card else None
+    info = source.find_unit_info(unit) if want_info else None
     # A rename conflict points the EDU/loc entry at `resolved_dict`, and the game
     # looks up the card/info card BY THAT DICTIONARY NAME (`#<dict>.tga` /
     # `<dict>_info.tga`) — so a renamed unit's icons must land under the NEW name,
@@ -1272,10 +1431,15 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
             # *_pic_dir pin needed since every faction finds its own copy
             for folder in dict.fromkeys(final_ownership + [merc_folder]):
                 plan.icon_files.append((icon, f"{base_dir}/{folder}/{fname}"))
-    if card is None:
+    if card is None and want_card:
         plan.warnings.append("no unit card icon found in source")
-    if info is None:
+    if info is None and want_info:
         plan.warnings.append("no unit info icon found in source")
+    if plan.replace_type and not (want_card and want_info):
+        kept = ("its unit card and info card" if not (want_card or want_info)
+                else "its info card" if want_card else "its unit card")
+        plan.warnings.append(f"'{plan.replace_type}' keeps {kept} — the source's "
+                             "is not copied over it.")
 
     # ---- mercenary ----
     if opts.make_mercenary:
@@ -1360,9 +1524,13 @@ def _build_unit_block(plan: TransferPlan, unit) -> str:
     # introduces the NEXT source unit — meaningless (and confusing) once copied
     # alone into the destination file.
     block = edu_mod.strip_trailing_filler(unit.raw)
-    # 1) inherit stats/attrs/ownership/era from the base unit, if any
+    # 1) inherit stats/attrs/ownership/era from the base unit, if any. Replacing
+    #    inherits the icon-folder pins too — the block keeps the replaced unit's
+    #    identity, so its cards must stay findable where they already are.
     if plan.base_unit is not None:
-        block = compose_with_base(block, plan.base_unit.raw, plan.base_field_groups)
+        block = compose_with_base(
+            block, plan.base_unit.raw, plan.base_field_groups,
+            copy_keys=edu_mod.REPLACE_COPY_KEYS if plan.replace_type else None)
     # pin the icon folders (base ownership change, or the merc folders) — placed
     # right before recruit_priority_offset, matching where mods conventionally
     # keep these fields, instead of always trailing at the very end of the block.
@@ -1393,8 +1561,14 @@ def _build_unit_block(plan: TransferPlan, unit) -> str:
     #    composer locks those two fields, but a saved batch config could carry one)
     if plan.sound_action == "copy":
         block = sounds.set_voice_fields(block, plan.sound_accent, plan.sound_class)
-    # 4) manual per-field overrides
+    # 4) manual per-field overrides. `type` and `dictionary` are not editable when
+    #    replacing: they ARE the unit being replaced, and rewriting one here would
+    #    rename that unit (and orphan its localisation entry and icons) rather
+    #    than swap its models.
+    locked = ("type", "dictionary") if plan.replace_type else ()
     for k, v in plan.options.field_overrides.items():
+        if k in locked:
+            continue
         block = edu_mod.set_field(block, k, v)
     # 5) mercenary flag last, so a manual `attributes` override can't drop it
     if plan.mercenary:
@@ -1479,14 +1653,18 @@ def apply_transfer(plan: TransferPlan) -> Dict:
         eop.write_split(dest, eop_texts, eop_removes, backup_root, manifest)
 
     # ---- 2) localisation ----
-    loc_entry = source.loc.get(unit.dictionary)
+    # A replaced unit keeps its own name and description: the entry belongs to the
+    # destination unit, which still exists and is still called what it was called.
+    # Overwriting it would rename a unit the player already knows, which is not
+    # what "swap this unit's models" asks for.
+    loc_entry = None if plan.replace_type else source.loc.get(unit.dictionary)
     if loc_entry is not None:
         loc_text = dest.export_units_path.read_text(encoding=localization.ENCODING)
         loc_text = localization.upsert_record(
             loc_text, plan.resolved_dict,
             loc_entry.name or "", loc_entry.descr or "", loc_entry.descr_short or "")
         write_text("text/export_units.txt", loc_text, localization.ENCODING)
-    else:
+    elif not plan.replace_type:
         plan.warnings.append("source localisation missing; none written")
 
     # ---- 3) modeldb ----
@@ -1592,6 +1770,19 @@ def _compose_edu(plan: TransferPlan, unit) -> Tuple[str, Dict[str, str], List[st
     """
     dest = plan.dest
     block = _build_unit_block(plan, unit)
+
+    # Replacing rewrites one unit IN PLACE: the new block goes exactly where the
+    # old one was, in the file it was already in, keeping the blank lines and
+    # section banner that followed it. Nothing is appended and nothing moves, so
+    # a modder's own EDU layout survives the swap.
+    if plan.replace_type:
+        replaced = dest.edu.by_type().get(plan.replace_type)
+        stand_in = dc_replace(replaced,
+                              raw=block + edu_mod.trailing_filler(replaced.raw))
+        units = [stand_in if u.type == plan.replace_type else u for u in dest.edu.units]
+        split = eop.compose(dest, units)
+        return split.main, dict(split.files), list(split.removed)
+
     overwriting = plan.unit_conflict and plan.options.on_conflict == "overwrite"
     kept = [u for u in dest.edu.units if u.type != plan.unit_type] if overwriting \
         else list(dest.edu.units)
