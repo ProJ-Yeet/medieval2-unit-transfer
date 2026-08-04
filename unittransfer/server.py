@@ -131,24 +131,35 @@ def _progress_read(job: str) -> dict:
         return {"pct": rec["pct"], "label": rec["label"]} if rec else {}
 
 
-def _cleaner_wanted(body: dict) -> bool:
-    """Whether this job asked for ``Full Cleaner.bat``. Off unless it says so.
+def _strings_bin_wanted(body: dict) -> bool:
+    """Whether to clear ``export_units.txt.strings.bin`` after this job.
 
-    The script is named like a cache cleaner but is not one: as well as the
-    ``.strings.bin`` caches the game rebuilds, it deletes files the mod ships and
-    the game never regenerates — the whole of ``data/terrain/aerial_map/sea``
-    (the campaign map's water art, which is what rivers are drawn with), several
-    historical battle maps, and ``data/scripts/show_me``. It runs as a subprocess,
-    so nothing it removes is in a manifest and 🕑 Log → Undo cannot bring any of it
-    back. Defaulting it on cost a real mod its rivers.
+    One setting, ``clear_strings_bin`` (on by default), decides it for every
+    transfer / edit / voice change / cleanup — the game keeps showing the OLD
+    unit text until that cache is gone, and it writes a fresh one on the next
+    launch, so there is nothing to lose by clearing it every time.
 
-    So it is opt-in per job, from the tick box the page puts under every Apply.
-    ``run_full_cleaner`` in settings.json stays honoured as a hard off switch for
-    anyone who wants it never to run at all; it cannot turn it on.
+    A job body may still say ``clear_strings_bin`` explicitly to override the
+    setting for that one call (a batch transfer asks for it on its last unit
+    only, and the tests switch it off).
     """
-    if not body.get("run_cleaner"):
-        return False
-    return config.load_settings().get("run_full_cleaner", True)
+    if body.get("clear_strings_bin") is not None:
+        return bool(body.get("clear_strings_bin"))
+    return config.load_settings().get("clear_strings_bin", True)
+
+
+def _clear_cache(mod_root, out: dict, rec: dict, mod_name: str) -> None:
+    """Run the cache clear for a finished job and record what it did."""
+    res = cleaner.clear_strings_bin(mod_root)
+    out["strings_bin"] = res
+    if res.get("deleted"):
+        log.info("CACHE  cleared %s in %s", cleaner.STRINGS_BIN_REL, mod_name)
+    elif res.get("missing"):
+        log.info("CACHE  %s not present in %s — nothing to clear",
+                 cleaner.STRINGS_BIN_REL, mod_name)
+    else:
+        log.warning("CACHE  not cleared: %s", res.get("error"))
+    config.update_log(rec.get("id", ""), strings_bin=res)
 
 
 class Registry:
@@ -732,17 +743,10 @@ class Handler(BaseHTTPRequestHandler):
         log.info("APPLY  done id=%s  (%s)", rec.get("id"),
                  "skipped" if plan.skipped else f"type={plan.resolved_type!r}")
         out = {"record": rec, "plan": _plan_payload(plan)}
-        # Clear the game's regenerated caches so the new unit actually shows up.
-        # Only when ticked; a batch asks for it on its final unit and no earlier.
-        if _cleaner_wanted(body) and not plan.skipped:
-            res = cleaner.run_full_cleaner(dest.root)
-            out["cleaner"] = res
-            if res.get("ran"):
-                log.info("CLEANER ran in %s (rc=%s%s)", dest.name,
-                         res.get("returncode"), ", copied in" if res.get("copied") else "")
-            else:
-                log.warning("CLEANER did not run: %s", res.get("error"))
-            config.update_log(rec.get("id", ""), cleaner=res)
+        # Clear the localisation cache so the new unit's text actually shows up.
+        # A batch asks for it on its final unit and no earlier.
+        if _strings_bin_wanted(body) and not plan.skipped:
+            _clear_cache(dest.root, out, rec, dest.name)
         return out
 
     # ---- edit mode ----
@@ -763,14 +767,8 @@ class Handler(BaseHTTPRequestHandler):
                 log.info("   %s", line.strip())
         log.info("EDIT   done id=%s", rec.get("id"))
         out = {"record": rec, "plan": _edit_payload(plan)}
-        if _cleaner_wanted(body):
-            res = cleaner.run_full_cleaner(mod.root)
-            out["cleaner"] = res
-            if res.get("ran"):
-                log.info("CLEANER ran in %s (rc=%s)", mod.name, res.get("returncode"))
-            else:
-                log.warning("CLEANER did not run: %s", res.get("error"))
-            config.update_log(rec.get("id", ""), cleaner=res)
+        if _strings_bin_wanted(body):
+            _clear_cache(mod.root, out, rec, mod.name)
         return out
 
     # ---- sounds mode ----
@@ -787,13 +785,10 @@ class Handler(BaseHTTPRequestHandler):
                 log.info("   %s", line.strip())
         log.info("VOICE  done id=%s", rec.get("id"))
         out = {"record": rec, "plan": _sound_payload(plan)}
-        # the game bakes the voice bank into its sound caches — clear them, same
-        # as after a transfer or a unit edit
-        if _cleaner_wanted(body):
-            res = cleaner.run_full_cleaner(mod.root)
-            out["cleaner"] = res
-            log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)
-            config.update_log(rec.get("id", ""), cleaner=res)
+        # a voice change can move the `accent` / `voice_type` lines in the EDU,
+        # so clear the unit-text cache here too
+        if _strings_bin_wanted(body):
+            _clear_cache(mod.root, out, rec, mod.name)
         return out
 
     # ---- bmdb mode ----
@@ -823,15 +818,10 @@ class Handler(BaseHTTPRequestHandler):
             if line.strip():
                 log.info("   %s", line.strip())
         out = {"record": rec, "plan": _cleanup_payload(plan)}
-        # the game caches unit models; a removed entry has to be cleared out of
-        # them — but only if the cleanup dialog's box was ticked, see _cleaner_wanted
-        if _cleaner_wanted(body):
+        if _strings_bin_wanted(body):
             if sink:
-                sink(99, "clearing the game's caches (full cleaner)")
-            res = cleaner.run_full_cleaner(mod.root)
-            out["cleaner"] = res
-            log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)
-            config.update_log(rec.get("id", ""), cleaner=res)
+                sink(99, "clearing the unit-text cache")
+            _clear_cache(mod.root, out, rec, mod.name)
         return out
 
     def _base_fields(self, q):

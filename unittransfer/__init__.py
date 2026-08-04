@@ -8,6 +8,8 @@ Package layout:
   luascan.py       what the mod's .lua scripts name, so the modeldb cleanup never
                    removes a battle model an M2TWEOP script still uses
   localization.py  parse/write data/text/export_units.txt (UTF-16 name/descr records)
+  cleaner.py       delete the compiled export_units.txt.strings.bin after a job, so
+                   the game re-reads the text instead of its stale cache
   mod.py           Mod abstraction: paths, faction discovery, lazy DB access
   transfer.py      dependency resolution + cross-mod transfer (Stage 3)
   edit.py          unit EDITOR mode: change/create/delete units inside one mod
@@ -23,4 +25,4 @@ units together — so every feature is EOP-aware by default. Only the *write* si
 distinguishes them, via :func:`unittransfer.eop.compose`.
 """
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"

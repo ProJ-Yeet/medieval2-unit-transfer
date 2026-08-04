@@ -68,8 +68,29 @@ instead of two. Click any unit to open its editor:
     with **All** / **None**, and per-era **Copy ownership** / **Copy 1st
     ownership** buttons that follow whichever faction you drag to the front
   - `armour_ug_models` — position N is upgrade level N. `✎` beside a tier jumps
-    to that entry in the bmdb tab; **＋ Add armour tier** clones the tier below
-    into a brand-new entry, appends it, and bumps `armour_ug_levels` with it
+    to that entry in the bmdb tab, and the `✕` above a tier drops it *with* its
+    `armour_ug_levels` entry (removing one without the other slides every level
+    above it onto the wrong model). `＋` opens four ways to add a tier:
+    1. **Repeat the last tier** — names the same entry again, so the unit gains
+       the armour upgrade in its stats while its model stays exactly as it was.
+       No new modeldb entry is made; vanilla and DaC both do this
+    2. **Take a unit's upgrades** — find any unit in the mod with the same search
+       and faction / category / class / mercs filters as the **New unit** base
+       picker, see its `armour_ug_models` with the level each sits at, and tick
+       the ones to import
+    3. **Pick an existing entry** — type-to-search every entry in the mod's
+       `battle_models.modeldb` and point a tier straight at one
+    4. **New entry from a tier** — choose which of the unit's entries to base it
+       on, then the new-entry form opens with its own mesh/texture to fill in
+
+    Only mode 4 creates a modeldb entry: `armour_ug_models` is a list of entry
+    *names*, so a new one is worth making only when the tier will actually look
+    different. Naming an entry the list already has is allowed everywhere — it is
+    a normal pattern, not a mistake — and is labelled as a repeat.
+
+    Every mode appends to `armour_ug_levels` in step, keeping it ascending: a
+    donor's own level is kept when it is still above everything here, otherwise
+    the tier lands one past the highest
 - **Battle models (bmdb)** — one card per `battle_models.modeldb` entry the unit
   points at:
   - **Entry name** — renaming it tells you straight away whether the name is free,
@@ -290,6 +311,15 @@ point of them.
   <kbd>EOP</kbd> everywhere, edited in place in their own file, and left out of
   the 500-unit cap. A transfer can keep a unit as an EOP unit, or turn a normal
   one into one to get it out from under the cap
+- **Unit-text cache** — the game reads `data/text/export_units.txt.strings.bin`,
+  the compiled form of `export_units.txt`, and only rebuilds it when it is
+  missing, so until it is deleted a transferred or renamed unit keeps showing its
+  *old* name and description. Every transfer, save, voice change and cleanup
+  deletes it; the next launch writes a fresh one. Switch it off in ⚙ Settings, or
+  from the box at the bottom of any Apply dialog — the two are the same setting.
+  (This replaced running `Full Cleaner.bat`, which also deleted mod files the game
+  never rebuilds — the campaign map's water art, some battle maps — with no way to
+  undo it. The script still ships in the app folder to run by hand)
 - **Undo** — every applied transfer is logged with a full backup; revert it
   from the log with one click
 - **Live reload** — edits to the source mod's files are picked up on the next

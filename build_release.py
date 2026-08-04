@@ -37,9 +37,9 @@ EMBED_URL = (f"https://www.python.org/ftp/python/{PY_VERSION}/"
              f"python-{PY_VERSION}-embed-amd64.zip")
 
 #: everything the tool needs at runtime, and nothing else
-#: Full Cleaner.bat ships unconditionally: unittransfer/cleaner.py copies it out
-#: of the app root into a destination mod after a transfer, so it must exist
-#: there even in the portable build.
+#: Full Cleaner.bat is not run by the tool any more — unittransfer/cleaner.py
+#: deletes export_units.txt.strings.bin itself instead. It still ships so anyone
+#: who wants the full sweep can copy it into a mod and run it by hand.
 INCLUDE_FILES = ("app.py", "transfer_cli.py", "Full Cleaner.bat")
 INCLUDE_DIRS = ("unittransfer", "web")
 #: never ship these, whatever they contain

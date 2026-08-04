@@ -303,6 +303,33 @@
   .chipd .first{color:var(--accent);font-weight:600}
   .afrow.wide{align-items:flex-start;flex-wrap:wrap}
   .afrow.wide label{padding-top:4px}
+  /* armour upgrade tiers: the ✕ sits above the chip so a tier can be dropped
+     without hunting for the small inline one the other chip lists use */
+  .chips.ug{margin-top:10px;row-gap:10px}
+  .chipd.ug{position:relative;padding-right:9px}
+  .chipd .xup{position:absolute;top:-8px;right:-7px;width:16px;height:16px;padding:0;
+    border-radius:50%;background:var(--panel2);border:1px solid var(--edge);color:var(--dim);
+    font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .chipd .xup:hover{background:var(--bad);border-color:var(--bad);color:#fff}
+  .ugadd{font-size:15px;line-height:1;padding:1px 9px 3px;font-weight:700}
+  .ugadd.on{border-color:var(--accent);color:var(--accent)}
+  /* the ＋ menu: four ways to add a tier, then that mode's body */
+  .ugpanel{border:1px solid var(--accent);border-radius:8px;background:var(--panel2);
+    padding:9px 11px 11px;margin-top:9px}
+  .ugmodes{display:flex;gap:6px;flex-wrap:wrap}
+  .ugmodes button{padding:4px 9px;font-size:11.5px;text-align:left}
+  .ugmodes button.on{border-color:var(--accent);color:var(--accent)}
+  .ugbody{margin-top:10px}
+  .uglist{max-height:230px;overflow:auto;border:1px solid var(--edge);border-radius:6px;
+    background:var(--panel);margin-top:7px}
+  .ugrow{display:flex;gap:8px;align-items:center;padding:4px 9px;border-bottom:1px solid var(--edge);
+    font-size:12.5px;cursor:pointer}
+  .ugrow:last-child{border-bottom:none}
+  .ugrow:hover{background:var(--panel2)}
+  .ugrow .nm{font-family:ui-monospace,Consolas,monospace;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ugrow.have{opacity:.55;cursor:default}
+  .ugrow.have:hover{background:none}
   /* ---- bmdb mode: the whole modeldb as a list ---- */
   .dblist{border:1px solid var(--edge);border-radius:8px;background:var(--panel);margin-top:12px}
   .dbrow{display:flex;gap:10px;align-items:center;padding:6px 11px;border-bottom:1px solid var(--edge);
@@ -1243,27 +1270,37 @@ function filterFields(){const qq=(document.getElementById('fieldFilter')?.value|
     const l=(r.dataset.label||'').toLowerCase(); r.style.display=(!qq||l.includes(qq))?'':'none';});}
 function closeModal(){overlay.classList.remove('open');
   // the unit editor widens the modal — put it back for the next dialog
-  document.getElementById('modal').className='modal';
-  cleanerOptIn=false;}   // the cleaner tick never carries into the next dialog
+  document.getElementById('modal').className='modal';}
 
-/* ---- Full Cleaner.bat: opt-in, per job ------------------------------------
-   The name oversells it. As well as the caches M2TW rebuilds on launch, the
-   script deletes files the mod ships and the game does NOT regenerate — all of
-   data/terrain/aerial_map/sea (the campaign map's water art, which is what
-   rivers are drawn with), four historical battle maps, data/scripts/show_me.
-   It runs as a subprocess, so none of that is in a backup manifest and Undo
-   cannot bring it back. It used to run after every job by default and that cost
-   a real mod its rivers.
+/* ---- clearing data/text/export_units.txt.strings.bin ----------------------
+   The game reads that compiled cache, not export_units.txt, and only rebuilds
+   it when it is missing — so until it is deleted a transferred or renamed unit
+   keeps showing the OLD name and description. Deleting it costs nothing: the
+   next launch writes a fresh one.
 
-   So: one unticked box, the same on every surface that can run it, and
-   `cleanerOptIn` is what the box writes to. It survives the re-renders a panel
-   does while it is open (renderCleanup runs on every section toggle) and is
-   cleared by closeModal, so each dialog starts unticked again. */
-let cleanerOptIn=false;
+   Unlike the Full Cleaner.bat this replaced, it removes exactly that one file
+   and nothing the mod ships, so it is a setting rather than a per-job risk to
+   weigh up: `clear_strings_bin` in settings.json, on by default, applying to
+   every transfer / save / voice change / cleanup. The box under each Apply is
+   the same setting, put where you would look for it. */
+const clearBinOn=()=>(state.settings||{}).clear_strings_bin!==false;
 function cleanerBoxHtml(){
-  return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes the caches M2TW regenerates — including export_units.txt.strings.bin, which otherwise keeps showing the OLD unit text in game. It also deletes mod files the game does not rebuild (campaign-map water art, some battle maps); those are NOT backed up and Undo cannot restore them.">
-    <input type="checkbox" ${cleanerOptIn?'checked':''} onchange="cleanerOptIn=this.checked">
-    Also run <b>Full Cleaner.bat</b> <span class="w-warn">— deletes mod files, not undoable</span></label>`;
+  return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes data/text/export_units.txt.strings.bin in the mod being written to. That is the compiled copy of export_units.txt; until it is gone the game keeps showing the OLD unit text. It is rebuilt on the next launch. This is a setting — it applies to every transfer, save, voice change and cleanup.">
+    <input type="checkbox" ${clearBinOn()?'checked':''} onchange="setClearBin(this.checked)">
+    Clear <b>export_units.txt.strings.bin</b> afterwards
+    <span class="count">— setting, applies to every job</span></label>`;
+}
+async function setClearBin(on){
+  state.settings=await api.post('/api/settings',{clear_strings_bin:on});
+  toast(on?'The unit-text cache will be cleared after every transfer / edit / cleanup.'
+          :'The unit-text cache is left alone — new unit text may not show up in game.');
+}
+// what a job's response says about the clear, appended to its toast
+function binMsg(r){
+  const b=r&&r.strings_bin; if(!b)return '';
+  if(b.deleted)return '  · unit-text cache cleared';
+  if(b.missing)return '';           // nothing was there — not worth a mention
+  return `  · cache not cleared: ${b.error||'?'}`;
 }
 
 // per-model checkboxes for a secondary group (officers / crew), so models can be
@@ -1398,12 +1435,8 @@ async function quitServer(){
   try{await api.post('/api/quit',{});}catch(e){}
   document.body.innerHTML='<div class="empty" style="padding:60px">Unit Transfer server stopped.<br>'
     +'<span class="count">Run Launch-Unit-Transfer.bat to start it again.</span></div>';}
-async function saveCleaner(){
-  // the box is phrased as "never let it run", so it stores the opposite
-  const never=document.getElementById('cleanerChk').checked;
-  state.settings=await api.post('/api/settings',{run_full_cleaner:!never});
-  toast(never?'Full Cleaner blocked — the per-job boxes will not run it.'
-             :'Full Cleaner allowed when a job’s box is ticked.');}
+async function saveClearBin(){
+  await setClearBin(document.getElementById('clearBinChk').checked);}
 async function saveSoldierBase(){
   const on=document.getElementById('soldierBaseChk').checked;
   state.settings=await api.post('/api/settings',{soldier_from_base:on});
@@ -1688,23 +1721,23 @@ async function doApply(){
       toast(`“${t}” exists in destination — choose rename / overwrite / skip, then Apply again.`);
       cfgFor(t)._resolved=true; return; }
   }
-  let ok=0,skip=0,cleaner=null;
+  let ok=0,skip=0,last=null;
   const status=types.map(()=>'pending');
   for(let i=0;i<types.length;i++){
     const t=types[i];
     status[i]='current'; renderProgress(types,status);
     const res=await api.post('/api/apply',{source:state.src,dest:state.dst,unit:t,
       options:optsPayload(t),
-      // only if ticked, and then once per batch, after the last unit
-      run_cleaner:cleanerOptIn&&i===types.length-1});
+      // once per batch, after the last unit — clearing it earlier just lets the
+      // game recompile the cache before the batch has finished writing
+      clear_strings_bin:clearBinOn()&&i===types.length-1});
     if(res.error){status[i]='error';renderProgress(types,status);toast(`${t}: ${res.error}`);return;}
-    if(res.cleaner)cleaner=res.cleaner;
+    if(res.strings_bin)last=res;
     if(res.plan&&res.plan.skipped){skip++;status[i]='skipped';} else {ok++;status[i]='done';}
     renderProgress(types,status);
   }
   closeModal();
-  const cmsg=cleaner?(cleaner.ran?'  · cleaner ran'+(cleaner.copied?' (copied in)':''):`  · cleaner failed: ${cleaner.error||'?'}`):'';
-  toast(`${state.src===state.dst?'Created':'Transferred'} ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${cmsg}  (undo in 🕑 Log)`,4200);
+  toast(`${state.src===state.dst?'Created':'Transferred'} ${ok} unit(s)${skip?`, skipped ${skip}`:''} ✓${binMsg(last)}  (undo in 🕑 Log)`,4200);
   // these ones are done — leaving them ticked invites transferring them twice
   clearSelection();
   state.cfg={};
@@ -1961,12 +1994,11 @@ async function sndDoApply(){
     <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
       <div class="count" style="margin-top:8px">${ops.length} unit(s)</div></div>`;
   let r;
-  try{ r=await api.post('/api/sounds/apply',{mod:state.src,ops,run_cleaner:cleanerOptIn}); }
+  try{ r=await api.post('/api/sounds/apply',{mod:state.src,ops,clear_strings_bin:clearBinOn()}); }
   catch(e){ r={error:''+e}; }
   if(r.error){ toast('Voice edits failed: '+r.error,4500); closeModal(); return; }
   closeModal();
-  const cl=r.cleaner?(r.cleaner.ran?'  · cleaner ran':`  · cleaner failed: ${r.cleaner.error||'?'}`):'';
-  toast(`${ops.length} voice change(s) written ✓${cl}  (undo in 🕑 Log)`,4200);
+  toast(`${ops.length} voice change(s) written ✓${binMsg(r)}  (undo in 🕑 Log)`,4200);
   state.snd=null; state.destSnd=null; loadSounds();
 }
 
@@ -2001,7 +2033,8 @@ async function openEditor(type){
             mEdits:{},newModels:[],open:{},form:null,removeOldIcons:false,added:new Set(),
             // per-entry UI state: which faction has its "unique textures" panel
             // open, and the last /api/edit/model_folder answer for its folder box
-            facOpen:{},folder:{}};
+            facOpen:{},folder:{},
+            ug:null};      // the armour-tier ＋ menu, closed
   renderEditor();
 }
 // Every unit opens in its own browser tab, so you can follow "this model is also
@@ -2081,6 +2114,14 @@ function renderEditor(){
 function edTab(t){state.ed.tab=t;renderEditor();}
 function edRenderTab(){
   const e=state.ed,b=document.getElementById('edBody');
+  // Editing anything re-renders the whole tab, and replacing innerHTML throws
+  // every scroll position back to the top — both the dialog's and the EDU field
+  // list's own box. Ticking a faction 40 rows down must leave you looking at it,
+  // not at the top of the unit, so both are put back afterwards.
+  const modal=document.getElementById('modal');
+  const wasModal=modal?modal.scrollTop:0;
+  const fields=document.getElementById('allFields');
+  const wasFields=fields?fields.scrollTop:0;
   b.innerHTML=(e.tab==='identity'?edIdentity():e.tab==='fields'?edFields():edModels())
     +'<div id="edPreview"></div>';
   // keep the last preview visible across cosmetic re-renders (tab switch, expanding
@@ -2089,6 +2130,9 @@ function edRenderTab(){
   if(e.tab==='fields')edWireFields();
   if(e.tab==='identity')edWireIdentity();
   if(e.tab==='models')edWireModels();
+  const nowFields=document.getElementById('allFields');
+  if(nowFields&&wasFields)nowFields.scrollTop=wasFields;
+  if(modal&&wasModal)modal.scrollTop=wasModal;
 }
 function edWireModels(){
   document.querySelectorAll('#edBody input[data-entry]').forEach(inp=>{
@@ -2324,15 +2368,20 @@ function edDrop(ev,label,i){
   const [moved]=list.splice(from,1); list.splice(i,0,moved);
   edDrag=null; edSetField(label,list.join(', ')); edRenderTab();
 }
-function edChips(label,items,extra){
-  return `<div class="chips">${items.map((v,i)=>`<span class="chipd" draggable="true"
+// `opt.cls` styles the list (armour tiers use it to lift their ✕ above the chip)
+// and `opt.rm` swaps in a different remove call — an armour tier has to drop its
+// armour_ug_levels entry with it, which the plain list remove knows nothing about.
+function edChips(label,items,extra,opt){
+  const o=opt||{},cls=o.cls?' '+o.cls:'';
+  return `<div class="chips${cls}">${items.map((v,i)=>`<span class="chipd${cls}" draggable="true"
       ondragstart="edDragStart(event,'${q1(esc(label))}',${i})"
       ondragover="edDragOver(event,'${q1(esc(label))}')" ondragleave="edDragLeave(event)"
       ondragend="edDragEnd(event)" ondrop="edDrop(event,'${q1(esc(label))}',${i})"
       title="drag to reorder">
       <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
       ${(extra||(()=>''))(v,i)}
-      <button class="x" title="Remove" onclick="edListRemove('${q1(esc(label))}',${i})">✕</button>
+      <button class="${o.cls==='ug'?'xup':'x'}" title="Remove ${esc(v)}"
+        onclick="${o.rm?o.rm(i,v):`edListRemove('${q1(esc(label))}',${i})`}">✕</button>
     </span>`).join('')||'<span class="count">— empty —</span>'}</div>`;
 }
 function edListRemove(label,i){
@@ -2382,20 +2431,321 @@ function edFactionField(label,cur){
     </div></div>`;
 }
 
-/* ---- armour_ug_models: reorder tiers, jump to an entry, add the next one ---- */
+/* ---- armour_ug_models: reorder tiers, jump to an entry, add the next one ----
+   Each tier carries a ✕ above its chip, because dropping one is not just a list
+   remove: armour_ug_levels is positional too and has to lose the same slot.
+   The ＋ opens a four-mode panel — see edUgPanel. */
 function edArmourField(label,cur){
   const models=csv(cur),levels=csv(edFieldVal('armour_ug_levels'));
   const jump=(v)=>`<button title="Edit ${esc(v)} in the Battle models tab"
       onclick="edJumpModel('${q1(esc(v))}')">✎</button>`;
+  const open=!!state.ed.ug;
   return `<div style="flex:1;min-width:0">
-    ${edChips(label,models,jump)}
+    ${edChips(label,models,jump,{cls:'ug',rm:i=>`edUgRemove(${i})`})}
     <div class="barrow">
-      <button onclick="edAddArmourTier()" title="Clone the last model into a new entry and add it as the next tier">＋ Add armour tier</button>
+      <button class="ugadd${open?' on':''}" onclick="edUgOpen()"
+        title="Add an armour upgrade tier">${open?'−':'＋'}</button>
       <span class="count">position = upgrade level${levels.length?` · armour_ug_levels: ${esc(levels.join(', '))}`:''}${
         levels.length&&levels.length!==models.length
           ? ` <span class="w-warn">— ${levels.length} level(s) for ${models.length} model(s)</span>`:''}</span>
-    </div></div>`;
+    </div>
+    ${edUgPanel()}</div>`;
 }
+
+/* ---- the ＋ menu: four ways to add an armour tier -------------------------
+   1 repeat the last tier — the SAME entry again, so the armour upgrade is a
+                            stat change with no model change
+   2 take a unit's ugs    — read another unit's armour_ug_models, tick what to import
+   3 pick an existing entry — search the whole modeldb and point a tier at one
+   4 new entry from a tier — clone a chosen entry and give it its own mesh/texture
+   Only mode 4 creates a modeldb entry. 1-3 just name entries that already exist:
+   armour_ug_models is a list of bmdb entry names, and a new entry is only worth
+   making when the tier is actually going to look different. */
+function edUgOpen(){const e=state.ed; e.ug=e.ug?null:{mode:''}; edRenderTab();}
+function edUgMode(m){
+  const e=state.ed,u=e.ug||(e.ug={});
+  if(m==='clone'){edUgCloneLast(); return;}          // nothing to configure
+  u.mode=m; u.filter='';
+  if(m==='unit'){u.unit='';u.donor=null;u.pick={};u.error='';u.loading=false;}
+  if(m==='new'){
+    const tiers=csv(edFieldVal('armour_ug_models'));
+    const own=(e.d.models||[]).filter(x=>!x.missing).map(x=>x.name);
+    u.from=own.slice().reverse().find(n=>tiers.includes(n))||own[own.length-1]||'';
+  }
+  edRenderTab();
+}
+function edUgPanel(){
+  const u=state.ed.ug; if(!u)return '';
+  const btn=(k,label,tip)=>`<button class="${u.mode===k?'on':''}" title="${esc(tip)}"
+    onclick="edUgMode('${k}')">${label}</button>`;
+  return `<div class="ugpanel">
+    <div class="ugmodes">
+      ${btn('clone','1 · Repeat the last tier',
+        'Name the last entry again as the next tier. The unit gains the armour upgrade in its stats while its model stays exactly as it was — no new modeldb entry is made.')}
+      ${btn('unit','2 · Take a unit’s upgrades',
+        'Read another unit’s armour_ug_models and import the tiers you tick.')}
+      ${btn('browse','3 · Pick an existing entry',
+        'Search every entry in this mod’s battle_models.modeldb and add one as a tier.')}
+      ${btn('new','4 · New entry from a tier',
+        'Create a new modeldb entry based on one this unit already uses, with its own mesh and texture.')}
+    </div>
+    ${u.mode?`<div class="ugbody">${u.mode==='unit'?edUgUnitBody()
+        :u.mode==='browse'?edUgBrowseBody():edUgNewBody()}</div>`
+      :'<div class="count" style="margin-top:9px">Choose how the new tier should be made.</div>'}
+  </div>`;
+}
+
+/* -- shared: append tiers, keeping armour_ug_levels in step -- */
+const edUgSnapshot=()=>({models:edFieldVal('armour_ug_models'),
+                         levels:edFieldVal('armour_ug_levels')});
+// `opt.repeat` allows a name the list already has. Naming the same entry twice is
+// a real M2TW pattern, not a mistake — it is how a unit gets the armour upgrade
+// without a different model — so only the accidental case is guarded against.
+function edUgAppend(names,donorLevels,opt){
+  const models=csv(edFieldVal('armour_ug_models')),levels=csv(edFieldVal('armour_ug_levels'));
+  const added=[];
+  (names||[]).forEach((raw,i)=>{
+    const name=(raw||'').trim().toLowerCase();
+    if(!name||(models.includes(name)&&!(opt||{}).repeat))return;
+    models.push(name); added.push(name);
+    // armour_ug_levels has to stay ascending — the game reads it as "this model
+    // from this armour level up". So a donor's own level is kept only when it is
+    // still above everything here; otherwise the tier goes one past the highest.
+    const nums=levels.map(x=>parseInt(x,10)).filter(x=>!isNaN(x));
+    const max=nums.length?Math.max(...nums):0;
+    const want=parseInt(((donorLevels||[])[i]||'').trim(),10);
+    levels.push(String(!isNaN(want)&&want>max ? want
+                       : nums.length?max+1:models.length));
+  });
+  if(!added.length)return added;
+  edSetField('armour_ug_models',models.join(', '));
+  edSetField('armour_ug_levels',levels.join(', '));
+  return added;
+}
+// ✕ above a tier: drop the model AND its level, or every level above it slides
+// down onto the wrong model.
+function edUgRemove(i){
+  const e=state.ed;
+  const models=csv(edFieldVal('armour_ug_models')),levels=csv(edFieldVal('armour_ug_levels'));
+  const hadLevels=!!edFieldVal('armour_ug_levels');
+  const gone=models[i]; if(gone===undefined)return;
+  models.splice(i,1);
+  if(i<levels.length)levels.splice(i,1);
+  edSetField('armour_ug_models',models.join(', '));
+  if(hadLevels)edSetField('armour_ug_levels',levels.join(', '));
+  // a pending entry that exists only to be this tier has nothing left to be —
+  // unless the tier was repeated and another slot still names it
+  const at=e.newModels.findIndex(n=>n._tier&&n.name===gone);
+  if(at>=0&&!models.includes(gone))e.newModels.splice(at,1);
+  edRenderTab(); edPreview();
+}
+
+/* -- mode 1: repeat the last tier -- */
+// The SAME entry name again, not a copy of it. armour_ug_models is a list of
+// bmdb entry names, so repeating one gives the unit the armour upgrade in its
+// stats while the model on the field stays exactly as it was — vanilla and DaC
+// both do it (isengard_bodyguard twice, at levels 3 and 6). Cloning the entry
+// instead would put a second copy of the same meshes and textures in the modeldb
+// for no visible difference.
+function edUgCloneLast(){
+  const e=state.ed,models=csv(edFieldVal('armour_ug_models'));
+  // with no tiers yet, the first one repeats the body model
+  const last=(models[models.length-1]||edFieldVal('soldier').split(',')[0]||'').trim().toLowerCase();
+  if(!last){toast('This unit has no model entry to repeat');return;}
+  if(!edUgAppend([last],null,{repeat:true}).length)return;
+  e.ug=null; edRenderTab(); edPreview();
+  const lv=csv(edFieldVal('armour_ug_levels')).slice(-1)[0];
+  toast(`“${last}” repeated as the next tier${lv?` (armour level ${lv})`:''} `
+       +`— upgrades the stats, same model.`,4200);
+}
+// Where a cloned tier comes from and what it gets called: `<stem>_ug<n>`, with n
+// walked up until nothing in the mod (or pending) has that name.
+function edUgNewSpec(srcName){
+  const e=state.ed,d=e.d,models=csv(edFieldVal('armour_ug_models'));
+  const src=(srcName||models[models.length-1]||edFieldVal('soldier').split(',')[0]||'')
+            .trim().toLowerCase();
+  if(!src||!d.models.some(m=>m.name===src)){
+    toast('No existing model entry to clone this tier from'); return null;}
+  // strip an existing tier suffix so tiers stay <stem>_ug1.._ugN rather than
+  // growing one per clone — mods write both `_ug3` and `_upg3`
+  const stem=src.replace(/_u(p)?g\d+$/i,'');
+  let n=models.length+1,name=`${stem}_ug${n}`;
+  while(d.model_names.includes(name)||e.newModels.some(x=>x.name===name)||models.includes(name))
+    name=`${stem}_ug${++n}`;
+  const from=d.models.find(m=>m.name===src)||{};
+  return {src,name,
+          dest_dir:(from.folder&&(from.folder.base||from.folder.suggestion))||'unit_models'};
+}
+
+/* -- mode 2: import another unit's armour upgrades --
+   The donor is picked with the same search + faction / category / class / mercs
+   filters as "＋ New unit"'s base picker, off the same state.data.units the
+   browser is showing, so finding a unit works the way it does everywhere else.
+   The filters live in `u.f` rather than in the DOM, because every edit
+   re-renders the whole tab and would otherwise reset them. */
+function edUgUnitBody(){
+  const e=state.ed,u=e.ug,d=e.d,dd=state.data||{};
+  const f=u.f||(u.f={q:'',fac:'',cat:'',cls:'',merc:false});
+  const have=new Set(csv(edFieldVal('armour_ug_models')));
+  const donor=u.loading?'<div class="count" style="margin-top:9px">Reading the unit…</div>'
+    :u.error?`<div class="count w-bad" style="margin-top:9px">${esc(u.error)}</div>`
+    :!u.donor?''
+    :!u.donor.models.length
+      ?`<div class="count w-warn" style="margin-top:9px"><b>${esc(u.unit)}</b> has no
+        <code>armour_ug_models</code>${u.donor.soldier?` — its body model is
+        <code>${esc(u.donor.soldier)}</code>, which mode 3 can add`:''}.</div>`
+    :`<div class="count" style="margin-top:9px">Tiers of <b>${esc(u.unit)}</b> to import:</div>
+      <div class="uglist">${u.donor.models.map((m,i)=>{
+        const dup=have.has(m),known=(d.model_names||[]).includes(m);
+        return `<label class="ugrow">
+          <input type="checkbox" ${u.pick[i]?'checked':''}
+            onchange="state.ed.ug.pick[${i}]=this.checked">
+          <span class="nm">${esc(m)}</span>
+          <span class="count">level ${esc(u.donor.levels[i]||'—')}${
+            dup?' · already a tier — imports as a repeat'
+              :known?'':' · <span class="w-warn">not in this mod’s modeldb</span>'}</span>
+        </label>`;}).join('')}</div>
+      <div class="barrow">
+        <button class="primary" onclick="edUgTakeUnit()">Add ticked tier(s)</button>
+        <span class="count">appended after the tiers this unit already has</span>
+      </div>`;
+  const rows=edUgUnitRows();          // sets u._n, so the count renders first time
+  return `<input id="ugSearch" style="width:100%" placeholder="Filter units…"
+      value="${esc(f.q)}" oninput="edUgFilterUnits('q',this.value)">
+    <div class="barrow" style="margin:6px 0 0">
+      <select onchange="edUgFilterUnits('fac',this.value)">${
+        opts('All factions',dd.factions||[],facLabel,f.fac)}</select>
+      <select onchange="edUgFilterUnits('cat',this.value)">${
+        opts('All categories',dd.categories||[],null,f.cat)}</select>
+      <select onchange="edUgFilterUnits('cls',this.value)">${
+        opts('All classes',dd.classes||[],null,f.cls)}</select>
+      <label class="chk"><input type="checkbox" ${f.merc?'checked':''}
+        onchange="edUgFilterUnits('merc',this.checked)"> mercs only</label>
+      <span class="count" id="ugCount">${u._n?`${u._n[0]}/${u._n[1]}`:''}</span>
+    </div>
+    <div class="baselist" id="ugUnitList">${rows}</div>
+    ${donor}`;
+}
+// Rows only — the filter handler rewrites just this, so typing never loses the
+// caret and the donor's tick list below is left as it is.
+function edUgUnitRows(){
+  const e=state.ed,u=e.ug,f=u.f,all=(state.data&&state.data.units)||[];
+  const qq=(f.q||'').trim().toLowerCase();
+  const units=all.filter(x=>x.type!==e.d.type
+    &&(!qq||(x.name||'').toLowerCase().includes(qq)||x.type.toLowerCase().includes(qq)
+        ||(x.dictionary||'').toLowerCase().includes(qq))
+    &&(!f.fac||(x.ownership||[]).includes(f.fac))&&(!f.cat||x.kind===f.cat)
+    &&(!f.cls||x.class===f.cls)&&(!f.merc||x.mercenary));
+  u._n=[units.length,all.length];
+  return units.slice(0,400).map(x=>`
+    <div class="baserow${u.unit===x.type?' sel':''}" onclick="edUgPickUnit('${q1(esc(x.type))}')">
+      <img onerror="iconRetry(this)" src="${iconUrl(e.mod,x.type)}">
+      <div><div class="bn">${esc(x.name||x.type)}</div>
+        <div class="bs">${esc(x.type)} · ${esc(x.kind||'?')}${x.class?' / '+esc(x.class):''}${
+          x.mercenary?' · merc':''}</div></div>
+    </div>`).join('')||'<div class="count" style="padding:8px">No units match.</div>';
+}
+function edUgFilterUnits(k,v){
+  const u=state.ed.ug; if(!u||!u.f)return;
+  u.f[k]=v;
+  const box=document.getElementById('ugUnitList');
+  if(!box){edRenderTab();return;}
+  box.innerHTML=edUgUnitRows();
+  const c=document.getElementById('ugCount');
+  if(c&&u._n)c.textContent=`${u._n[0]}/${u._n[1]}`;
+}
+async function edUgPickUnit(type){
+  const e=state.ed,u=e.ug; if(!u)return;
+  u.unit=(type||'').trim(); u.donor=null; u.pick={}; u.error='';
+  if(!u.unit){edRenderTab();return;}
+  u.loading=true; edRenderTab();
+  let r;
+  try{ r=await api.get(`/api/unit_fields?mod=${enc(e.mod)}&type=${enc(u.unit)}`); }
+  catch(err){ r={error:''+err}; }
+  if(state.ed!==e||e.ug!==u||u.unit!==(type||'').trim())return;   // moved on meanwhile
+  u.loading=false;
+  if(r.error){u.error=r.error; edRenderTab(); return;}
+  const get=k=>(((r.fields||[]).find(([l])=>l===k))||['',''])[1];
+  u.donor={models:csv(get('armour_ug_models')),levels:csv(get('armour_ug_levels')),
+           soldier:(get('soldier').split(',')[0]||'').trim()};
+  // a tier this unit already has is offered but not pre-ticked — importing it
+  // would be a deliberate repeat, not something to do by default
+  const have=new Set(csv(edFieldVal('armour_ug_models')));
+  u.donor.models.forEach((m,i)=>{u.pick[i]=!have.has(m);});
+  edRenderTab();
+}
+function edUgTakeUnit(){
+  const e=state.ed,u=e.ug; if(!u||!u.donor)return;
+  const names=[],levels=[];
+  u.donor.models.forEach((m,i)=>{
+    if(u.pick[i]){names.push(m); levels.push(u.donor.levels[i]||'');}});
+  if(!names.length){toast('Nothing ticked to import');return;}
+  const added=edUgAppend(names,levels,{repeat:true}),from=u.unit;
+  e.ug=null; edRenderTab(); edPreview();
+  toast(`${added.length} tier${added.length===1?'':'s'} taken from ${from} ✓`);
+}
+
+/* -- mode 3: search the whole modeldb -- */
+function edUgBrowseBody(){
+  const u=state.ed.ug;
+  return `<div class="prow" style="grid-template-columns:170px 1fr">
+      <span class="pl">Find an entry</span>
+      <input id="ugFind" value="${esc(u.filter||'')}" placeholder="type part of an entry name…"
+        oninput="edUgFilter(this.value)"></div>
+    <div id="ugHits">${edUgBrowseHits()}</div>`;
+}
+const UG_HITS_MAX=200;
+function edUgBrowseHits(){
+  const e=state.ed,qq=(e.ug.filter||'').trim().toLowerCase();
+  const have=new Set(csv(edFieldVal('armour_ug_models')));
+  const all=(e.d.model_names||[]).concat(e.newModels.map(n=>n.name));
+  const hits=all.filter(n=>!qq||n.includes(qq)),shown=hits.slice(0,UG_HITS_MAX);
+  // an entry already on the unit is still offered: naming it again is how a tier
+  // upgrades the stats without changing the model
+  return `<div class="uglist">${shown.map(n=>{
+      const dup=have.has(n);
+      return `<div class="ugrow" onclick="edUgAddOne('${q1(esc(n))}')">
+        <span class="nm">${esc(n)}</span>
+        <span class="count">${dup?'already a tier — click to repeat it'
+                                 :'click to add as the next tier'}</span>
+      </div>`;}).join('')
+      ||'<div class="ugrow have"><span class="count">no entry matches</span></div>'}</div>
+    <div class="count" style="margin-top:6px">${hits.length} of ${all.length} entr${
+      all.length===1?'y':'ies'}${hits.length>shown.length
+        ? ` · showing the first ${shown.length}, keep typing`:''}</div>`;
+}
+// Only the results are redrawn — re-rendering the tab would take the focus out
+// of the box on every keystroke.
+function edUgFilter(v){
+  const e=state.ed; if(!e.ug)return;
+  e.ug.filter=v;
+  const box=document.getElementById('ugHits');
+  if(box)box.innerHTML=edUgBrowseHits(); else edRenderTab();
+}
+function edUgAddOne(name){
+  const e=state.ed,again=csv(edFieldVal('armour_ug_models')).includes(name);
+  if(!edUgAppend([name],null,{repeat:true}).length)return;
+  e.ug=null; edRenderTab(); edPreview();
+  toast(`“${name}” added as ${again?'a repeated':'an'} armour tier ✓`);
+}
+
+/* -- mode 4: a new entry based on one of this unit's -- */
+function edUgNewBody(){
+  const e=state.ed,u=e.ug;
+  const own=(e.d.models||[]).filter(m=>!m.missing).map(m=>m.name);
+  if(!own.length)return `<div class="count w-warn">This unit has no readable modeldb entry
+    to base a new one on.</div>`;
+  return `<div class="prow" style="grid-template-columns:170px 1fr auto">
+      <span class="pl">Base it on</span>
+      <select onchange="state.ed.ug.from=this.value">${own.map(n=>
+        `<option value="${esc(n)}" ${u.from===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
+      <button class="primary" onclick="edUgNewFromTier()">Set it up…</button></div>
+    <div class="count" style="margin-top:7px">Appends the tier and opens the new-entry form on the
+      <b>Battle models</b> tab: name it, say which folder its files go in, and point it at its own
+      mesh and texture. Sprites, the faction texture records and the footer come from the entry
+      you based it on, so the model stays valid.</div>`;
+}
+function edUgNewFromTier(){const u=state.ed.ug; edAddArmourTier(u&&u.from);}
 // Jump straight to a model's entry in the bmdb tab (the ✎ beside an armour tier
 // and the model links elsewhere both land here).
 function edJumpModel(name){
@@ -2408,34 +2758,21 @@ function edJumpModel(name){
   const el=document.querySelector(`#edBody .mentry[data-entry="${cssq(key)}"]`);
   if(el)el.scrollIntoView({block:'center'});
 }
-// "+" beside armour_ug_models: clone the tier below into a brand-new entry, add
-// it as the next tier, bump armour_ug_levels, and open the form to give it its
-// own mesh/texture — an upgrade tier pointing at the same files as the tier
-// below it is not an upgrade.
-function edAddArmourTier(){
-  const e=state.ed,d=e.d;
-  const models=csv(edFieldVal('armour_ug_models'));
-  const src=(models[models.length-1]||edFieldVal('soldier').split(',')[0]||'').trim().toLowerCase();
-  if(!src||!d.models.some(m=>m.name===src)){
-    toast('No existing model entry to clone this tier from'); return;}
-  const levels=csv(edFieldVal('armour_ug_levels'));
-  const nextLevel=levels.length?(Math.max(...levels.map(x=>parseInt(x,10)||0))+1)
-                               :(models.length?models.length+1:1);
-  const stem=src.replace(/_ug\d+$/,'');
-  let name=`${stem}_ug${models.length+1}`,n=models.length+1;
-  while(d.model_names.includes(name)||e.newModels.some(x=>x.name===name)||models.includes(name))
-    name=`${stem}_ug${++n}`;
-  const from=d.models.find(m=>m.name===src)||{};
-  e.form={clone_from:src,name,
-          dest_dir:(from.folder&&(from.folder.base||from.folder.suggestion))||'unit_models',
+// Mode 4 of the ＋ menu: clone `src` (the last tier when unset) into a brand-new
+// entry, add it as the next tier, bump armour_ug_levels, and open the form to
+// give it its own mesh/texture — an upgrade tier pointing at the same files as
+// the tier below it is not an upgrade.
+function edAddArmourTier(src){
+  const e=state.ed,spec=edUgNewSpec(src);
+  if(!spec)return;
+  // the tier list and levels are set now so the chips show it straight away;
+  // dropping the pending entry puts both back
+  const tier=edUgSnapshot();
+  if(!edUgAppend([spec.name]).length)return;
+  e.form={clone_from:spec.src,name:spec.name,dest_dir:spec.dest_dir,
           mesh_src:'',texture_src:'',normal_src:'',sprite_src:'',
-          mesh_all_lods:true,apply_to_attach:false,assign_to:'',
-          // the tier list and levels are set now so the chips show it straight
-          // away; dropping the pending entry puts both back
-          _tier:{models:edFieldVal('armour_ug_models'),levels:edFieldVal('armour_ug_levels')}};
-  edSetField('armour_ug_models',models.concat([name]).join(', '));
-  edSetField('armour_ug_levels',levels.concat([String(nextLevel)]).join(', '));
-  e.tab='models'; renderEditor();
+          mesh_all_lods:true,apply_to_attach:false,assign_to:'',_tier:tier};
+  e.ug=null; e.tab='models'; renderEditor();
 }
 
 /* ---- battle model entries ----
@@ -2868,12 +3205,11 @@ async function edSave(){
   document.getElementById('modal').innerHTML=`<h2>Saving…</h2>
     <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
     <div class="count" style="margin-top:8px">Writing ${esc(what)} into ${esc(e.mod)}…</div></div>`;
-  const res=await api.post(edApi('apply'),edPayload({run_cleaner:cleanerOptIn}));
+  const res=await api.post(edApi('apply'),edPayload({clear_strings_bin:clearBinOn()}));
   if(res.error){toast('Save failed: '+res.error);bm?renderBmdbEditor():renderEditor();return;}
   closeModal();
-  const c=res.cleaner;
-  toast(bm?`Saved “${esc(what)}” ✓  (undo in 🕑 Log)`
-          :`Saved “${res.plan.resolved_type}” ✓${c?(c.ran?'  · cleaner ran':'  · cleaner failed'):''}  (undo in 🕑 Log)`,4200);
+  toast(bm?`Saved “${esc(what)}” ✓${binMsg(res)}  (undo in 🕑 Log)`
+          :`Saved “${res.plan.resolved_type}” ✓${binMsg(res)}  (undo in 🕑 Log)`,4200);
   state.destData=null; state.bmdb=null; loadSource();
 }
 /* =====================================================================
@@ -3257,21 +3593,16 @@ async function clApply(){
       `and ${r.export_count} file(s) out of “${c.a.mod}”?\n\nThey are copied to:\n${r.target}\n\n`+
       `${r.merges.length?`${r.merges.length} unit soldier line(s) are repointed at their twin.\n\n`:''}`+
       `${r.mount_deletes.length?`${r.mount_deletes.length} mount(s) are removed from descr_mount.txt.\n\n`:''}`+
-      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`+
-      `${cleanerOptIn?`\n\n⚠ Full Cleaner.bat is ticked. It runs afterwards and deletes mod files `+
-        `that are NOT backed up — including data/terrain/aerial_map/sea, the campaign map's water `+
-        `art. Undo will not bring those back.`:''}`))return;
+      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`))return;
   const job=newJob();
   const res=await runJob(job,'Cleaning up…',
     `Copying ${r.export_count} file(s) out, then rewriting ${esc(c.a.mod)}’s modeldb.
      Everything is backed up as it goes — 🕑 Log → Undo puts it all back.`,
-    ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job,run_cleaner:cleanerOptIn}));
+    ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job,clear_strings_bin:clearBinOn()}));
   if(res.error){toast('Cleanup failed: '+res.error);renderCleanup();return;}
   closeModal();
-  const cl=res.cleaner;
   toast(`Removed ${res.plan.entry_deletes.length} entr${res.plan.entry_deletes.length===1?'y':'ies'} `+
-        `and ${res.plan.export_count} file(s) ✓${cl?(cl.ran?' · cleaner ran':' · cleaner failed'):''}`+
-        `  (undo in 🕑 Log)`,5200);
+        `and ${res.plan.export_count} file(s) ✓${binMsg(res)}  (undo in 🕑 Log)`,5200);
   state.bmdb=null; state.destData=null; loadSource();
 }
 
@@ -3346,9 +3677,11 @@ function openNewUnitPicker(){
 }
 // A labelled list (factions) is ordered by what it SHOWS, so a picker follows the
 // same A→Z as the sidebar; a plain one keeps the order it came in.
-const opts=(allLabel,values,label)=>`<option value="">${allLabel}</option>`+
+// `sel` keeps a picker's choice through a re-render — the armour-tier menu redraws
+// on every edit, unlike this dialog, which is built once.
+const opts=(allLabel,values,label,sel)=>`<option value="">${allLabel}</option>`+
   (label?[...values].sort((a,b)=>label(a).localeCompare(label(b))):values)
-    .map(v=>`<option value="${esc(v)}">${esc(label?label(v):v)}</option>`).join('');
+    .map(v=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(label?label(v):v)}</option>`).join('');
 function renderNewUnitList(){
   const g=id=>(document.getElementById(id)||{}).value||'';
   const qq=g('nuSearch').trim().toLowerCase();
@@ -3419,12 +3752,12 @@ async function openSettings(){
           Use the base unit's <b>soldier</b> line by default</label>
         <div class="count" style="margin-top:6px">When you pick a “use another unit as base”, default the <b>Soldier</b> source to the base (so the base's soldier model &amp; projectile are used) instead of the transferred unit's. You can still flip it per unit in the composer.</div>
       </fieldset>
-      <fieldset><legend>Full Cleaner.bat</legend>
-        <div class="count">Off by default. Every Apply / Save / Move-them-out dialog has its own <b>Also run Full Cleaner.bat</b> box at the bottom — tick it there, for that one job. Nothing runs it automatically any more.</div>
-        <div class="count" style="margin-top:6px">What it is for: it deletes the caches M2TW regenerates on launch, notably <code>export_units.txt.strings.bin</code>, which otherwise keeps showing the OLD unit text in game. Tick it when a change you made is not showing up.</div>
-        <div class="count w-warn" style="margin-top:6px">Why it is not on by default: the script also deletes files the mod ships and the game does <b>not</b> rebuild — all of <code>data/terrain/aerial_map/sea</code> (the campaign map's water art, which is what rivers are drawn with), four historical battle maps, and <code>data/scripts/show_me</code>. It runs as a subprocess, so none of that is backed up and <b>Undo cannot restore it</b>. Have a copy of the mod before you tick it.</div>
-        <label class="chk" style="margin-top:8px"><input type="checkbox" id="cleanerChk" ${s.run_full_cleaner===false?'checked':''} onchange="saveCleaner()">
-          Never let it run, even if a box is ticked</label>
+      <fieldset><legend>Unit-text cache</legend>
+        <label class="chk"><input type="checkbox" id="clearBinChk" ${s.clear_strings_bin===false?'':'checked'} onchange="saveClearBin()">
+          Clear <code>export_units.txt.strings.bin</code> after every transfer / edit / cleanup</label>
+        <div class="count" style="margin-top:6px">The game reads that compiled cache, not <code>export_units.txt</code>, and only rebuilds it when it is missing — so until it is deleted a transferred or renamed unit keeps showing its <b>old</b> name and description, or none at all. Deleting it costs nothing: the next launch writes a fresh one. Leave this on unless you have a reason not to.</div>
+        <div class="count" style="margin-top:6px">Same as running <code>del data\\text\\export_units.txt.strings.bin</code> inside the mod. It is the only file this touches — the box at the bottom of each Apply / Save / Move-them-out dialog is this same setting.</div>
+        <div class="count" style="margin-top:6px">This replaced running <code>Full Cleaner.bat</code>, which also deleted mod files the game never rebuilds (the campaign map's water art, some battle maps) with no way to undo it. The script still sits in the app folder if you ever want to run it by hand.</div>
       </fieldset>
       <fieldset><legend>Unit-limit warning (500 vanilla cap)</legend>
         <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>

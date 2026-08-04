@@ -1,77 +1,59 @@
-"""Run the mod's "Full Cleaner.bat" inside a destination mod after a transfer.
+"""Clear the localisation cache M2TW rebuilds, after a job has edited a mod.
 
-M2TW caches several of the files a transfer edits — most importantly
-``data/text/export_units.txt.strings.bin``, the compiled form of the localisation
-file. Until that cache is deleted the game keeps showing the OLD text, so a newly
-transferred unit shows no name/description. The cleaner script removes those
-regenerated files (it recreates them on next launch).
+``data/text/export_units.txt.strings.bin`` is the compiled form of
+``export_units.txt``. The game reads the .bin, not the .txt, and only recompiles
+it when the .bin is missing — so until it is deleted a newly transferred or
+renamed unit keeps showing the OLD name and description (or none at all).
 
-The script uses ``pushd "%~dp0"`` and relative ``data\\...`` paths, so it has to
-live in — and run from — the mod's own root folder. We copy it there on demand.
+Deleting it is the whole of the fix, and it is safe: the game writes it back on
+the next launch. This is the batch line it replaces::
 
-NOTE: the script ends with ``pause``; it is run with stdin at EOF so that returns
-immediately instead of hanging forever.
+    if exist data\\text\\export_units.txt.strings.bin del /F/s/q data\\text\\export_units.txt.strings.bin
+
+This used to run the mod's "Full Cleaner.bat" instead. That script deletes far
+more than caches — the whole of ``data/terrain/aerial_map/sea`` (the campaign
+map's water art, i.e. its rivers), several historical battle maps and
+``data/scripts/show_me`` — none of which the game regenerates and none of which
+was in a backup manifest, so Undo could not bring it back. The one file above is
+the only one a unit edit actually needs gone. "Full Cleaner.bat" still ships in
+the app folder for anyone who wants to run it by hand.
 """
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
 from pathlib import Path
 from typing import Dict
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CLEANER_NAME = "Full Cleaner.bat"
-TIMEOUT_S = 300
+#: relative to the mod root — the only file this module ever removes
+STRINGS_BIN_REL = "data/text/export_units.txt.strings.bin"
 
 
-def cleaner_source() -> Path:
-    return PROJECT_ROOT / CLEANER_NAME
+def strings_bin_path(mod_root: str | Path) -> Path:
+    return Path(mod_root) / "data" / "text" / "export_units.txt.strings.bin"
 
 
-def run_full_cleaner(mod_root: str | Path) -> Dict:
-    """Copy the cleaner into ``mod_root`` (if absent) and run it there.
+def clear_strings_bin(mod_root: str | Path) -> Dict:
+    """Delete the mod's ``export_units.txt.strings.bin``, if it is there.
 
-    Returns a small record describing what happened; never raises.
+    Returns a small record describing what happened; never raises — a failure to
+    clear a cache must not turn a completed transfer into an error.
     """
-    result: Dict = {"ran": False, "copied": False, "cleaner": CLEANER_NAME}
-    src = cleaner_source()
-    if not src.exists():
-        result["error"] = f"{CLEANER_NAME} not found in {PROJECT_ROOT}"
-        return result
-
+    result: Dict = {"ran": True, "file": STRINGS_BIN_REL, "deleted": False}
     root = Path(mod_root)
     if not root.is_dir():
-        result["error"] = f"mod folder not found: {root}"
-        return result
+        return {**result, "ran": False, "error": f"mod folder not found: {root}"}
 
-    target = root / CLEANER_NAME
-    try:
-        if not target.exists():
-            shutil.copy2(src, target)
-            result["copied"] = True
-    except OSError as e:
-        result["error"] = f"could not copy cleaner: {e}"
-        return result
+    target = strings_bin_path(root)
     result["path"] = str(target)
-
-    if os.name != "nt":
-        result["error"] = "not Windows — cleaner not executed"
+    if not target.exists():
+        # nothing to do: the game has not compiled one since the last clear
+        result["missing"] = True
         return result
 
     try:
-        proc = subprocess.run(
-            ["cmd", "/c", str(target)],
-            cwd=str(root),
-            stdin=subprocess.DEVNULL,      # so the script's trailing `pause` returns
-            capture_output=True, text=True, timeout=TIMEOUT_S,
-        )
-        result["ran"] = True
-        result["returncode"] = proc.returncode
-        out = (proc.stdout or "") + (proc.stderr or "")
-        result["output"] = out.strip()[-1500:]
-    except subprocess.TimeoutExpired:
-        result["error"] = f"cleaner timed out after {TIMEOUT_S}s"
-    except Exception as e:                  # never let this break a transfer
-        result["error"] = f"{type(e).__name__}: {e}"
+        target.unlink()
+        result["deleted"] = True
+    except OSError as e:
+        # most often the game is running and holding the file open
+        result["ran"] = False
+        result["error"] = f"could not delete {STRINGS_BIN_REL}: {e}"
     return result
