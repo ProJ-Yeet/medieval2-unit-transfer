@@ -130,6 +130,26 @@ def _progress_read(job: str) -> dict:
         return {"pct": rec["pct"], "label": rec["label"]} if rec else {}
 
 
+def _cleaner_wanted(body: dict) -> bool:
+    """Whether this job asked for ``Full Cleaner.bat``. Off unless it says so.
+
+    The script is named like a cache cleaner but is not one: as well as the
+    ``.strings.bin`` caches the game rebuilds, it deletes files the mod ships and
+    the game never regenerates — the whole of ``data/terrain/aerial_map/sea``
+    (the campaign map's water art, which is what rivers are drawn with), several
+    historical battle maps, and ``data/scripts/show_me``. It runs as a subprocess,
+    so nothing it removes is in a manifest and 🕑 Log → Undo cannot bring any of it
+    back. Defaulting it on cost a real mod its rivers.
+
+    So it is opt-in per job, from the tick box the page puts under every Apply.
+    ``run_full_cleaner`` in settings.json stays honoured as a hard off switch for
+    anyone who wants it never to run at all; it cannot turn it on.
+    """
+    if not body.get("run_cleaner"):
+        return False
+    return config.load_settings().get("run_full_cleaner", True)
+
+
 class Registry:
     def __init__(self, cache_dir: Path):
         self.icons = IconCache(cache_dir)
@@ -689,9 +709,8 @@ class Handler(BaseHTTPRequestHandler):
                  "skipped" if plan.skipped else f"type={plan.resolved_type!r}")
         out = {"record": rec, "plan": _plan_payload(plan)}
         # Clear the game's regenerated caches so the new unit actually shows up.
-        # On by default; a batch only asks for it on its final unit.
-        if (config.load_settings().get("run_full_cleaner", True)
-                and body.get("run_cleaner", True) and not plan.skipped):
+        # Only when ticked; a batch asks for it on its final unit and no earlier.
+        if _cleaner_wanted(body) and not plan.skipped:
             res = cleaner.run_full_cleaner(dest.root)
             out["cleaner"] = res
             if res.get("ran"):
@@ -720,8 +739,7 @@ class Handler(BaseHTTPRequestHandler):
                 log.info("   %s", line.strip())
         log.info("EDIT   done id=%s", rec.get("id"))
         out = {"record": rec, "plan": _edit_payload(plan)}
-        if (config.load_settings().get("run_full_cleaner", True)
-                and body.get("run_cleaner", True)):
+        if _cleaner_wanted(body):
             res = cleaner.run_full_cleaner(mod.root)
             out["cleaner"] = res
             if res.get("ran"):
@@ -747,8 +765,7 @@ class Handler(BaseHTTPRequestHandler):
         out = {"record": rec, "plan": _sound_payload(plan)}
         # the game bakes the voice bank into its sound caches — clear them, same
         # as after a transfer or a unit edit
-        if (config.load_settings().get("run_full_cleaner", True)
-                and body.get("run_cleaner", True)):
+        if _cleaner_wanted(body):
             res = cleaner.run_full_cleaner(mod.root)
             out["cleaner"] = res
             log.info("CLEANER %s in %s", "ran" if res.get("ran") else "did not run", mod.name)
@@ -782,8 +799,9 @@ class Handler(BaseHTTPRequestHandler):
             if line.strip():
                 log.info("   %s", line.strip())
         out = {"record": rec, "plan": _cleanup_payload(plan)}
-        # the game caches unit models; a removed entry has to be cleared out of them
-        if config.load_settings().get("run_full_cleaner", True) and body.get("run_cleaner", True):
+        # the game caches unit models; a removed entry has to be cleared out of
+        # them — but only if the cleanup dialog's box was ticked, see _cleaner_wanted
+        if _cleaner_wanted(body):
             if sink:
                 sink(99, "clearing the game's caches (full cleaner)")
             res = cleaner.run_full_cleaner(mod.root)

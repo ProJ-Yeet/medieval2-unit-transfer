@@ -88,7 +88,8 @@
   .modal h2{margin:0;padding:14px 16px;border-bottom:1px solid var(--edge);font-size:16px}
   .modal .mbody{padding:16px}
   .modal .foot{padding:12px 16px;border-top:1px solid var(--edge);display:flex;gap:8px;justify-content:flex-end;
-    position:sticky;bottom:0;background:var(--panel)}
+    align-items:center;position:sticky;bottom:0;background:var(--panel)}
+  label.chk.cleanerbox{max-width:52%;line-height:1.35}
   fieldset{border:1px solid var(--edge);border-radius:8px;margin:0 0 14px;padding:10px 12px}
   legend{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:0 6px}
   .radio-row label{display:block;margin:4px 0;cursor:pointer}
@@ -925,6 +926,7 @@ async function renderComposer(){
      <div id="previewBox"></div>
    </div>
    <div class="foot">
+     ${cleanerBoxHtml()}
      <button onclick="closeModal()">Cancel</button>
      <button onclick="doPreview()">Preview${batch?' this unit':''}</button>
      <button class="primary" onclick="doApply()">${batch?'Apply all':'Apply'}</button>
@@ -1234,7 +1236,28 @@ function filterFields(){const qq=(document.getElementById('fieldFilter')?.value|
     const l=(r.dataset.label||'').toLowerCase(); r.style.display=(!qq||l.includes(qq))?'':'none';});}
 function closeModal(){overlay.classList.remove('open');
   // the unit editor widens the modal — put it back for the next dialog
-  document.getElementById('modal').className='modal';}
+  document.getElementById('modal').className='modal';
+  cleanerOptIn=false;}   // the cleaner tick never carries into the next dialog
+
+/* ---- Full Cleaner.bat: opt-in, per job ------------------------------------
+   The name oversells it. As well as the caches M2TW rebuilds on launch, the
+   script deletes files the mod ships and the game does NOT regenerate — all of
+   data/terrain/aerial_map/sea (the campaign map's water art, which is what
+   rivers are drawn with), four historical battle maps, data/scripts/show_me.
+   It runs as a subprocess, so none of that is in a backup manifest and Undo
+   cannot bring it back. It used to run after every job by default and that cost
+   a real mod its rivers.
+
+   So: one unticked box, the same on every surface that can run it, and
+   `cleanerOptIn` is what the box writes to. It survives the re-renders a panel
+   does while it is open (renderCleanup runs on every section toggle) and is
+   cleared by closeModal, so each dialog starts unticked again. */
+let cleanerOptIn=false;
+function cleanerBoxHtml(){
+  return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes the caches M2TW regenerates — including export_units.txt.strings.bin, which otherwise keeps showing the OLD unit text in game. It also deletes mod files the game does not rebuild (campaign-map water art, some battle maps); those are NOT backed up and Undo cannot restore them.">
+    <input type="checkbox" ${cleanerOptIn?'checked':''} onchange="cleanerOptIn=this.checked">
+    Also run <b>Full Cleaner.bat</b> <span class="w-warn">— deletes mod files, not undoable</span></label>`;
+}
 
 // per-model checkboxes for a secondary group (officers / crew), so models can be
 // picked individually rather than all-or-none. Disabled when the group is off.
@@ -1341,9 +1364,11 @@ async function quitServer(){
   document.body.innerHTML='<div class="empty" style="padding:60px">Unit Transfer server stopped.<br>'
     +'<span class="count">Run Launch-Unit-Transfer.bat to start it again.</span></div>';}
 async function saveCleaner(){
-  const on=document.getElementById('cleanerChk').checked;
-  state.settings=await api.post('/api/settings',{run_full_cleaner:on});
-  toast(on?'Full Cleaner will run after each transfer.':'Full Cleaner disabled.');}
+  // the box is phrased as "never let it run", so it stores the opposite
+  const never=document.getElementById('cleanerChk').checked;
+  state.settings=await api.post('/api/settings',{run_full_cleaner:!never});
+  toast(never?'Full Cleaner blocked — the per-job boxes will not run it.'
+             :'Full Cleaner allowed when a job’s box is ticked.');}
 async function saveSoldierBase(){
   const on=document.getElementById('soldierBaseChk').checked;
   state.settings=await api.post('/api/settings',{soldier_from_base:on});
@@ -1608,7 +1633,8 @@ async function doApply(){
     status[i]='current'; renderProgress(types,status);
     const res=await api.post('/api/apply',{source:state.src,dest:state.dst,unit:t,
       options:optsPayload(t),
-      run_cleaner:i===types.length-1});   // once per batch, after the last unit
+      // only if ticked, and then once per batch, after the last unit
+      run_cleaner:cleanerOptIn&&i===types.length-1});
     if(res.error){status[i]='error';renderProgress(types,status);toast(`${t}: ${res.error}`);return;}
     if(res.cleaner)cleaner=res.cleaner;
     if(res.plan&&res.plan.skipped){skip++;status[i]='skipped';} else {ok++;status[i]='done';}
@@ -1864,7 +1890,7 @@ async function sndApply(){
         Both are backed up first — 🕑 Log → Undo restores them byte-exact.</div>
       ${renderSummary(r.summary)}
     </div>
-    <div class="foot"><button onclick="closeModal()">Cancel</button>
+    <div class="foot">${cleanerBoxHtml()}<button onclick="closeModal()">Cancel</button>
       <button class="primary" ${bad?'disabled':''} onclick="sndDoApply()">Apply ${ops.length} change(s)</button></div>`;
 }
 async function sndDoApply(){
@@ -1873,7 +1899,7 @@ async function sndDoApply(){
     <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
       <div class="count" style="margin-top:8px">${ops.length} unit(s)</div></div>`;
   let r;
-  try{ r=await api.post('/api/sounds/apply',{mod:state.src,ops}); }
+  try{ r=await api.post('/api/sounds/apply',{mod:state.src,ops,run_cleaner:cleanerOptIn}); }
   catch(e){ r={error:''+e}; }
   if(r.error){ toast('Voice edits failed: '+r.error,4500); closeModal(); return; }
   closeModal();
@@ -1978,7 +2004,8 @@ function renderEditor(){
       ${tab('models','Battle models (bmdb)')}</div>
     <div class="mbody" id="edBody"></div>
     <div class="foot">
-      <button class="danger" onclick="edDeleteDialog()" style="margin-right:auto">🗑 Delete unit…</button>
+      <button class="danger" onclick="edDeleteDialog()">🗑 Delete unit…</button>
+      ${cleanerBoxHtml()}
       <button onclick="closeModal()">Close</button>
       <button onclick="edPreview()">Preview</button>
       <button class="primary" onclick="edSave()">Save changes</button>
@@ -2775,7 +2802,7 @@ async function edSave(){
   document.getElementById('modal').innerHTML=`<h2>Saving…</h2>
     <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
     <div class="count" style="margin-top:8px">Writing ${esc(what)} into ${esc(e.mod)}…</div></div>`;
-  const res=await api.post(edApi('apply'),edPayload());
+  const res=await api.post(edApi('apply'),edPayload({run_cleaner:cleanerOptIn}));
   if(res.error){toast('Save failed: '+res.error);bm?renderBmdbEditor():renderEditor();return;}
   closeModal();
   const c=res.cleaner;
@@ -2864,6 +2891,7 @@ function renderBmdbEditor(){
     </div>
     <div class="mbody" id="edBody"></div>
     <div class="foot">
+      ${cleanerBoxHtml()}
       <button onclick="closeModal()">Close</button>
       <button onclick="edPreview()">Preview</button>
       <button class="primary" onclick="edSave()">Save changes</button>
@@ -2943,6 +2971,7 @@ function renderCleanup(){
       <div id="clPreview"></div>
     </div>
     <div class="foot">
+      ${cleanerBoxHtml()}
       <button onclick="closeModal()">Close</button>
       <button onclick="clPreview()">Preview</button>
       <button class="primary" onclick="clApply()">Move them out</button>
@@ -3136,12 +3165,15 @@ async function clApply(){
       `and ${r.export_count} file(s) out of “${c.a.mod}”?\n\nThey are copied to:\n${r.target}\n\n`+
       `${r.merges.length?`${r.merges.length} unit soldier line(s) are repointed at their twin.\n\n`:''}`+
       `${r.mount_deletes.length?`${r.mount_deletes.length} mount(s) are removed from descr_mount.txt.\n\n`:''}`+
-      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`))return;
+      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`+
+      `${cleanerOptIn?`\n\n⚠ Full Cleaner.bat is ticked. It runs afterwards and deletes mod files `+
+        `that are NOT backed up — including data/terrain/aerial_map/sea, the campaign map's water `+
+        `art. Undo will not bring those back.`:''}`))return;
   const job=newJob();
   const res=await runJob(job,'Cleaning up…',
     `Copying ${r.export_count} file(s) out, then rewriting ${esc(c.a.mod)}’s modeldb.
      Everything is backed up as it goes — 🕑 Log → Undo puts it all back.`,
-    ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job}));
+    ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job,run_cleaner:cleanerOptIn}));
   if(res.error){toast('Cleanup failed: '+res.error);renderCleanup();return;}
   closeModal();
   const cl=res.cleaner;
@@ -3295,11 +3327,12 @@ async function openSettings(){
           Use the base unit's <b>soldier</b> line by default</label>
         <div class="count" style="margin-top:6px">When you pick a “use another unit as base”, default the <b>Soldier</b> source to the base (so the base's soldier model &amp; projectile are used) instead of the transferred unit's. You can still flip it per unit in the composer.</div>
       </fieldset>
-      <fieldset><legend>After every transfer</legend>
-        <label class="chk"><input type="checkbox" id="cleanerChk" ${s.run_full_cleaner===false?'':'checked'} onchange="saveCleaner()">
-          Run <b>Full Cleaner.bat</b> in the destination mod</label>
-        <div class="count" style="margin-top:6px">Copies <code>Full Cleaner.bat</code> into the destination mod folder (if not already there) and runs it, deleting the caches M2TW regenerates — notably <code>export_units.txt.strings.bin</code>, which otherwise keeps showing the OLD unit text in game.</div>
-        <div class="count w-warn" style="margin-top:6px">Note: the cleaner deletes files beyond what this tool backs up, so <b>Undo will not restore them</b> (they are regenerated by the game on next launch).</div>
+      <fieldset><legend>Full Cleaner.bat</legend>
+        <div class="count">Off by default. Every Apply / Save / Move-them-out dialog has its own <b>Also run Full Cleaner.bat</b> box at the bottom — tick it there, for that one job. Nothing runs it automatically any more.</div>
+        <div class="count" style="margin-top:6px">What it is for: it deletes the caches M2TW regenerates on launch, notably <code>export_units.txt.strings.bin</code>, which otherwise keeps showing the OLD unit text in game. Tick it when a change you made is not showing up.</div>
+        <div class="count w-warn" style="margin-top:6px">Why it is not on by default: the script also deletes files the mod ships and the game does <b>not</b> rebuild — all of <code>data/terrain/aerial_map/sea</code> (the campaign map's water art, which is what rivers are drawn with), four historical battle maps, and <code>data/scripts/show_me</code>. It runs as a subprocess, so none of that is backed up and <b>Undo cannot restore it</b>. Have a copy of the mod before you tick it.</div>
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="cleanerChk" ${s.run_full_cleaner===false?'checked':''} onchange="saveCleaner()">
+          Never let it run, even if a box is ticked</label>
       </fieldset>
       <fieldset><legend>Unit-limit warning (500 vanilla cap)</legend>
         <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>
