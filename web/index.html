@@ -56,6 +56,10 @@
   .badge{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--panel2);
     color:var(--dim);border:1px solid var(--edge);margin-right:3px}
   .badge.merc{color:var(--warn);border-color:var(--warn)}
+  /* M2TWEOP unit: defined in the extender's own files, not export_descr_unit.txt.
+     Deliberately the loudest badge on the card — which file a unit lives in
+     changes where every edit to it is written. */
+  .badge.eop{color:var(--accent);border-color:var(--accent);font-weight:600}
   /* class badge sits next to the category one — dimmer so category reads first */
   .badge.cls{background:transparent}
   .chip{display:inline-block;background:var(--panel2);border:1px solid var(--edge);border-radius:5px;
@@ -719,7 +723,7 @@ function cardHtml(u){
     <div class="tick">✓</div>
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}" alt="">
     <div class="meta"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.type)}</div>
-    <div>${u.mercenary?'<span class="badge merc">merc</span>':''}<span class="badge">${esc(u.kind||u.category||'?')}</span>${u.class?`<span class="badge cls">${esc(u.class)}</span>`:''}</div></div></div>`;
+    <div>${u.eop?`<span class="badge eop" title="M2TWEOP unit — defined in ${esc(u.eop_file||'an EOP unit file')}, not in export_descr_unit.txt">EOP</span>`:''}${u.mercenary?'<span class="badge merc">merc</span>':''}<span class="badge">${esc(u.kind||u.category||'?')}</span>${u.class?`<span class="badge cls">${esc(u.class)}</span>`:''}</div></div></div>`;
 }
 function onCard(type){
   if(state.selMode){ if(state.selected.has(type))state.selected.delete(type); else state.selected.add(type);
@@ -767,6 +771,9 @@ function cfgFor(type){
     // other destination unit's), 'none'. snd_accent/snd_class only filter the
     // donor list; the accent/class actually written are always the donor's.
     sound_mode:'base',sound_donor:'',snd_accent:'',snd_class:'',
+    // where the unit's block is written: 'auto' mirrors the source unit (an EOP
+    // unit stays one), 'eop' forces an M2TWEOP unit file, 'edu' forces the EDU
+    eop_target:'auto',
     base_fac:'',_conflict:null,_fields:null,_orig:null,_fieldsKey:null,_inherited:null};
   return state.cfg[type];
 }
@@ -1289,6 +1296,7 @@ function optsPayload(type){const c=cfgFor(type);
     soldier_from:c.soldier_from||'source',officer_from:c.officer_from||'source',
     mount_from:c.mount_from||'source',crew_from:c.crew_from||'source',
     on_conflict:c.on_conflict,new_type:c.new_type||null,new_dictionary:c.new_dictionary||null,
+    eop_target:c.eop_target||'auto',
     asset_conflict:c.asset_conflict||'mod_folder',
     asset_reroute_dir:c.asset_reroute_dir||null,
     icon_conflict:c.icon_conflict||'use_existing',
@@ -1324,28 +1332,55 @@ function renderSummary(t){
 function projectedDestCount(){
   const dd=state.destData; if(!dd) return null;
   const have=new Set(dd.units.map(u=>u.type));
-  let add=0;
+  // The cap is a property of export_descr_unit.txt, so M2TWEOP units are not
+  // counted — being outside that file is exactly what they are for.
+  const current=(dd.edu_count!=null)?dd.edu_count:dd.units.length;
+  let add=0, eopAdd=0;
   for(const t of composerList){ const c=cfgFor(t);
-    if(!have.has(t)) add++;                     // brand-new unit type
-    else if(c.on_conflict==='rename') add++;    // copied under a new name
-    // overwrite / skip add no net type
+    const toEop=eopBound(t);
+    if(have.has(t) && c.on_conflict!=='rename') continue;  // overwrite/skip: no net type
+    if(toEop) eopAdd++; else add++;
   }
-  return {current:dd.units.length, add, projected:dd.units.length+add};
+  return {current, add, eopAdd, projected:current+add, eop:dd.eop_count||0};
+}
+/* Will this unit's block be written to an M2TWEOP unit file rather than the EDU?
+   Mirrors transfer._resolve_eop_target so the banner agrees with what apply does. */
+function eopBound(type){
+  const dd=state.destData, sd=state.srcData; if(!dd) return false;
+  const want=(cfgFor(type).eop_target)||'auto';
+  if(!(dd.eop_dirs||[]).length) return false;   // nowhere to write one
+  if(want==='eop') return true;
+  if(want==='edu') return false;
+  const u=(sd&&sd.units||[]).find(x=>x.type===type);
+  return !!(u&&u.eop);
 }
 const limitIgnored=mod=>(state.settings.unit_limit_ignored||[]).includes(mod);
 function unitLimitBanner(){
   const p=projectedDestCount(); if(!p) return '';
   if(Math.max(p.current,p.projected)<=VANILLA_UNIT_LIMIT || limitIgnored(state.dst)) return '';
   const now=p.current>VANILLA_UNIT_LIMIT;
+  const dd=state.destData||{};
+  const hasEop=((dd.eop_dirs||[]).length>0);
   return `<div class="limitwarn">
     <b>⚠ Vanilla unit limit exceeded.</b>
-    “${esc(state.dst)}” ${now?`already has ${p.current}`:`will have ${p.projected}`} unit types
+    “${esc(state.dst)}” ${now?`already has ${p.current}`:`will have ${p.projected}`} units in
+    export_descr_unit.txt
     (vanilla M2TW caps at ${VANILLA_UNIT_LIMIT}${p.add?`; this transfer adds ${p.add}`:''}).
+    ${p.eop?`<div class="sub">Its ${p.eop} M2TWEOP unit${p.eop===1?'':'s'} ${p.eop===1?'is':'are'} not counted — they load from the extender's own files.${p.eopAdd?` This transfer adds ${p.eopAdd} more of those.`:''}</div>`:''}
     <div class="sub">Beyond ${VANILLA_UNIT_LIMIT}, unmodified M2TW crashes — but this is fine with the M2TWEOP / EOP engine extenders.</div>
     <div class="acts">
+      ${hasEop?`<button onclick="allToEop()">Write these units as M2TWEOP units instead</button>`:''}
       <button onclick="ignoreLimit()">Ignore for “${esc(state.dst)}” (using m2ex/eop)</button>
-      <span class="count">Re-enable anytime in ⚙ Root settings.</span>
+      <span class="count">${hasEop?'':'Set the mod’s EOP folder in ⚙ Root settings to use the first option. '}Re-enable anytime in ⚙ Root settings.</span>
     </div></div>`;
+}
+/* Flip every unit in the composer to "write as an M2TWEOP unit" — the one-click
+   answer to the limit banner, which is the moment the user is actually thinking
+   about where these units land. */
+function allToEop(){
+  for(const t of composerList) cfgFor(t).eop_target='eop';
+  renderComposer();
+  toast(`${composerList.length} unit(s) will be written as M2TWEOP unit files.`);
 }
 async function ignoreLimit(){
   const cur=(state.settings.unit_limit_ignored||[]).slice();
@@ -1527,9 +1562,36 @@ async function doPreview(){
   // doApply() for a unit whose resolution the user already saw and could adjust.
   if(r.unit_conflict) cfgFor(type)._resolved=true;
   if(r.unit_conflict) html+=conflictUI(type);
+  html+=eopUI(type,r);
   html+=assetConflictUI(type,r);
-  box.innerHTML=html; wireConflict(type); wireAssetConflict(type);
+  box.innerHTML=html; wireConflict(type); wireEop(type); wireAssetConflict(type);
   return r;
+}
+/* Where the unit's EDU block gets written. Shown whenever the destination has an
+   M2TWEOP folder OR the source unit is an EOP unit — the second case matters even
+   with no folder, because that is the transfer that silently demotes a unit into
+   the EDU and pushes the mod towards the 500 cap. */
+function eopUI(type,r){
+  const c=cfgFor(type);
+  if(!r.dest_has_eop && !r.source_is_eop) return '';
+  const auto=r.source_is_eop?'M2TWEOP unit file (the source unit is one)':'export_descr_unit.txt';
+  return `<fieldset class="assetconf" style="margin-top:10px${r.source_is_eop&&!r.dest_has_eop?';border-color:var(--warn)':''}">
+    <legend${r.source_is_eop?' class="w-warn"':''}>Which file this unit is written to</legend>
+    <div class="count">
+      ${r.source_is_eop?`“${esc(type)}” is an <b>M2TWEOP unit</b> in the source mod. `:''}
+      ${r.dest_has_eop?`“${esc(state.dst)}” has an EOP unit folder, so it can hold M2TWEOP units — those do not count against the ${VANILLA_UNIT_LIMIT}-unit cap.`
+                      :`“${esc(state.dst)}” has <b>no EOP unit folder configured</b>, so the block goes into export_descr_unit.txt and <b>does</b> count against the ${VANILLA_UNIT_LIMIT}-unit cap. Set one in ⚙ Root settings to keep it out.`}
+    </div>
+    ${r.dest_has_eop?`<div class="radio-row" style="margin-top:6px">
+      <label><input type="radio" name="eopt" value="auto" ${(c.eop_target||'auto')==='auto'?'checked':''}> Same as the source (${esc(auto)})</label>
+      <label><input type="radio" name="eopt" value="eop" ${c.eop_target==='eop'?'checked':''}> M2TWEOP unit file</label>
+      <label><input type="radio" name="eopt" value="edu" ${c.eop_target==='edu'?'checked':''}> export_descr_unit.txt</label>
+    </div>`:''}
+    ${r.eop_file?`<div class="count" style="margin-top:6px">Will be written to <span class="path">${esc(r.eop_file)}</span>.</div>`:''}
+  </fieldset>`;
+}
+function wireEop(type){const c=cfgFor(type);
+  document.querySelectorAll('input[name=eopt]').forEach(x=>x.onchange=()=>{c.eop_target=x.value;doPreview();});
 }
 function conflictUI(type){const c=cfgFor(type);const u=state.data.units.find(x=>x.type===type);
   if(!c.new_type)c.new_type=type+' (copy)'; if(!c.new_dictionary)c.new_dictionary=u.dictionary+'_copy';
@@ -1996,9 +2058,13 @@ function renderEditor(){
     <h2>Edit unit <span class="pill">${esc(e.mod)}</span></h2>
     <div class="ehead">
       <img onerror="iconRetry(this)" src="${iconUrl(e.mod,e.unit)}">
-      <div><div class="nm">${esc(e.loc.name||d.type)}</div>
+      <div><div class="nm">${esc(e.loc.name||d.type)}${
+        d.eop?'<span class="badge eop" style="margin-left:6px;vertical-align:middle">EOP</span>':''}</div>
         <div class="count">${esc(d.type)} · dictionary <code>${esc(d.dictionary)}</code>
-          · ${d.models.length} model entr${d.models.length===1?'y':'ies'}</div></div>
+          · ${d.models.length} model entr${d.models.length===1?'y':'ies'}</div>
+        <div class="count">${d.eop
+          ? `M2TWEOP unit — saves are written to <code>${esc(d.eop_file)}</code>, not to export_descr_unit.txt.`
+          : 'Defined in <code>data/export_descr_unit.txt</code>.'}</div></div>
     </div>
     <div class="tabs">${tab('identity','Identity & text')}${tab('fields','EDU fields')}
       ${tab('models','Battle models (bmdb)')}</div>
@@ -2851,7 +2917,8 @@ function renderBmdb(){
 }
 function bmdbRow(e){
   const use=e.unused?'<span class="w-warn">nothing references it</span>'
-    :e.mentioned_in?`<span class="count">no unit uses it — only named in <code>${esc(e.mentioned_in)}</code></span>`
+    :e.mentioned_in?`<span class="count">no unit uses it — ${e.mentioned_in_lua
+        ?'named by a <b class="w-good">Lua script</b>':'only named in'} <code>${esc(e.mentioned_in)}</code></span>`
     :`${esc(e.used_by.slice(0,4).join(', '))}${e.use_count>4?` +${e.use_count-4} more`:''}`;
   return `<div class="dbrow ${e.unused?'unused':''}" data-name="${esc(e.name)}">
     <span class="en">${esc(e.name)}${e.copies>1?`<span class="badge w-warn" style="margin-left:5px"
@@ -2958,6 +3025,7 @@ function renderCleanup(){
       ${sec('mounts','Mounts no unit rides',()=>clMountBody())}
       ${sec('orphans','Files under unit_models no entry mentions',()=>clOrphanBody())}
 
+      ${clLuaBox(a)}
       ${a.mentioned.length?`<div class="count">${a.mentioned.length} further entr${
         a.mentioned.length===1?'y is':'ies are'} unused by any unit but still named in another
         file (<code>${[...new Set(a.mentioned.map(m=>m.file))].slice(0,4).map(esc).join('</code>, <code>')}</code>)
@@ -2986,6 +3054,30 @@ async function clPickTarget(){
   state.clean.target=r.path; clStale(); renderCleanup();
   state.settings.last_cleanup_target=r.path;      // so reopening the dialog offers it again
   api.post('/api/settings',{last_cleanup_target:r.path});
+}
+/* What the Lua pass protected. Its own box rather than a line in the "named in
+   another file" note, because this is the safety net people do not know exists:
+   an M2TWEOP script names battle models by string and nothing in the mod's .txt
+   files records that, so without it the cleanup would delete a model the campaign
+   uses and the break would only show up in game. */
+function clLuaBox(a){
+  const kept=a.lua_kept||[];
+  const scanned=a.lua_files||0;
+  if(!scanned) return '';
+  if(!kept.length) return `<div class="count">Read <b>${scanned}</b> <code>.lua</code> script${
+    scanned===1?'':'s'} in the mod — none of them names a battle-model entry, so nothing was held back for that.</div>`;
+  const rows=kept.slice(0,60).map(m=>`<div class="frow"><span class="fp">${esc(m.entry)}</span><span class="fs">${
+    esc(m.file)}${m.in_comment?' — in a comment, still protected':''}</span></div>`).join('');
+  return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--good)">
+    <legend class="w-good">Protected by the mod's Lua scripts</legend>
+    <div class="count"><b>${kept.length}</b> entr${kept.length===1?'y is':'ies are'} named by one of the
+      <b>${scanned}</b> <code>.lua</code> script${scanned===1?'':'s'} in this mod, and nothing else references
+      ${kept.length===1?'it':'them'}. M2TWEOP scripts refer to battle models by name, so ${
+      kept.length===1?'it is':'they are'} <b>not</b> offered for removal and cannot be merged away —
+      deleting one would break that script the first time it runs.</div>
+    <div class="flist" style="margin-top:6px">${rows}${
+      kept.length>60?`<div class="count">…and ${kept.length-60} more</div>`:''}</div>
+  </fieldset>`;
 }
 function clUnusedBody(){
   const c=state.clean,rows=c.a.unused;
@@ -3338,9 +3430,65 @@ async function openSettings(){
         <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>
         ${ignHtml}
       </fieldset>
+      <fieldset><legend>M2TWEOP unit folders</legend>
+        <div class="count" style="margin-bottom:8px">M2TWEOP loads extra units from its own folder instead of
+          <code>data/export_descr_unit.txt</code>. Every <code>.txt</code> in there that holds unit blocks is read as
+          part of the mod's roster — those units are badged <span class="badge eop">EOP</span> everywhere in this tool,
+          are edited in place in their own file, and do <b>not</b> count against the ${VANILLA_UNIT_LIMIT}-unit cap.</div>
+        <div class="count" style="margin-bottom:8px">Left blank, the folder is auto-detected (a folder called
+          <code>eopData</code> near the top of the mod). Set it explicitly if your mod keeps them elsewhere.</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <select id="eopModSel" onchange="loadEopDirs()" style="max-width:260px">${
+            (state.mods||[]).map(m=>`<option value="${esc(m.name)}"${m.name===(state.dst||state.src)?' selected':''}>${esc(m.name)}</option>`).join('')}</select>
+          <button onclick="addEopDir()">Add folder…</button>
+        </div>
+        <div id="eopDirs" class="count">Loading…</div>
+      </fieldset>
     </div>
     <div class="foot"><button onclick="closeModal()">Close</button><button class="primary" onclick="saveRoot()">Save & scan</button></div>`;
   overlay.classList.add('open');
+  loadEopDirs();
+}
+
+/* ---------- M2TWEOP unit folders (per mod) ---------- */
+const eopSelMod=()=>{const s=document.getElementById('eopModSel');return s?s.value:'';};
+async function eopApi(body){
+  const mod=eopSelMod(); if(!mod) return null;
+  return api.post('/api/eop_dirs',Object.assign({mod},body||{}));
+}
+async function loadEopDirs(){
+  const box=document.getElementById('eopDirs'); if(!box)return;
+  box.textContent='Loading…';
+  const r=await eopApi({});
+  if(!r||r.error){box.innerHTML=`<span class="w-bad">${esc((r&&r.error)||'could not read')}</span>`;return;}
+  const explicit=r.configured.length>0;
+  const rows=(explicit?r.configured:r.detected).map(d=>`<div class="ovr"><span><code>${esc(d)}</code></span>${
+    explicit?`<button onclick="removeEopDir('${q1(esc(d))}')">Remove</button>`:'<span class="count">auto-detected</span>'}</div>`).join('');
+  box.innerHTML=(rows||'<div class="count">No EOP folder found or set — this mod\'s units all live in export_descr_unit.txt.</div>')
+    +`<div class="count" style="margin-top:8px"><b>${r.eop_count}</b> M2TWEOP unit(s) in <b>${r.files.length}</b> file(s);
+      <b>${r.edu_count}</b> unit(s) in export_descr_unit.txt.</div>`
+    +(r.files.length?`<div class="flist" style="margin-top:6px">${r.files.slice(0,40).map(f=>`<div class="frow"><span class="fp">${esc(f)}</span></div>`).join('')}${
+       r.files.length>40?`<div class="count">…and ${r.files.length-40} more</div>`:''}</div>`:'')
+    +(explicit?'<div class="count" style="margin-top:6px">Remove them all to go back to auto-detection.</div>':'');
+}
+async function addEopDir(){
+  const r=await api.post('/api/browse_folder',{title:'Select the mod’s M2TWEOP unit folder'});
+  if(!r.path)return;
+  const cur=await eopApi({});
+  // an explicit list replaces detection outright, so seed it with what was
+  // detected — otherwise adding one folder silently drops the others
+  const dirs=(cur.configured.length?cur.configured:cur.detected).slice();
+  if(!dirs.includes(r.path)) dirs.push(r.path);
+  await eopApi({dirs});
+  await refreshMods(state.src,state.dst);
+  loadEopDirs();
+  toast('EOP folder saved — the mod’s units were re-read.');
+}
+async function removeEopDir(dir){
+  const cur=await eopApi({});
+  await eopApi({dirs:(cur.configured||[]).filter(d=>d!==dir)});
+  await refreshMods(state.src,state.dst);
+  loadEopDirs();
 }
 async function saveRoot(){const root=document.getElementById('rootInput').value.trim();
   rootStatus.textContent='Scanning…'; await api.post('/api/settings',{med2_root:root});

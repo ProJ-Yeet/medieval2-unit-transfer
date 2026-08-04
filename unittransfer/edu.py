@@ -80,6 +80,12 @@ class Unit:
     stat_pri: List[str] = field(default_factory=list)   # CSV values of stat_pri
     stat_sec: List[str] = field(default_factory=list)   # CSV values of stat_sec
     raw: str = ""                        # verbatim block text (incl. leading blank/comment lines)
+    # M2TWEOP unit: this block lives in one of the extender's own files rather than
+    # in data/export_descr_unit.txt. Everything else about it is a normal unit —
+    # same fields, same models, same icons — so the flag exists purely to say where
+    # an edit to it gets written back. See :mod:`unittransfer.eop`.
+    is_eop: bool = False
+    eop_file: str = ""                   # absolute path of that file ("" for EDU units)
 
     def kind(self) -> str:
         """Refined category used for grouping and base-unit matching.
@@ -188,8 +194,20 @@ class Unit:
 
 @dataclass
 class EduFile:
+    """The mod's units — ``export_descr_unit.txt`` plus any M2TWEOP unit files.
+
+    ``units`` deliberately holds both kinds, because every feature in the tool
+    wants the mod's full roster: a unit is a unit whether the engine read it from
+    the EDU or from the extender's folder. What must NOT blur is where they are
+    written back, so :meth:`to_text` — the "this is the EDU file" accessor — emits
+    only the main file's units, and EOP blocks are routed by
+    :func:`unittransfer.eop.compose`.
+    """
     preamble: str                        # text before the first `type` (header comments)
     units: List[Unit]
+    # ``{eop file path: its own preamble}``, so a rewrite of one EOP file keeps
+    # whatever header comment it had instead of losing it.
+    eop_preambles: Dict[str, str] = field(default_factory=dict)
 
     def by_type(self) -> Dict[str, Unit]:
         return {u.type: u for u in self.units}
@@ -197,8 +215,19 @@ class EduFile:
     def by_dictionary(self) -> Dict[str, Unit]:
         return {u.dictionary: u for u in self.units if u.dictionary}
 
+    @property
+    def main_units(self) -> List[Unit]:
+        """Units that live in data/export_descr_unit.txt."""
+        return [u for u in self.units if not u.is_eop]
+
+    @property
+    def eop_units(self) -> List[Unit]:
+        """Units that live in an M2TWEOP unit file."""
+        return [u for u in self.units if u.is_eop]
+
     def to_text(self) -> str:
-        return self.preamble + "".join(u.raw for u in self.units)
+        """The text of ``export_descr_unit.txt`` — EOP units excluded on purpose."""
+        return self.preamble + "".join(u.raw for u in self.main_units)
 
     def write(self, path: str | Path) -> None:
         Path(path).write_text(self.to_text(), encoding=ENCODING)

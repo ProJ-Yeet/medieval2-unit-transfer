@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import bmdb, cleaner, config, edit, sounds
+from . import eop as _eop
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
 from .mod import Mod
@@ -291,6 +292,11 @@ def _unit_payload(m: Mod, u) -> dict:
         "projectiles": u.projectiles(),
         "has_card": m.find_unit_card(u) is not None,
         "has_info": m.find_unit_info(u) is not None,
+        # M2TWEOP unit: defined in one of the extender's own files rather than in
+        # data/export_descr_unit.txt. The UI badges these, and the 500-unit cap
+        # does not apply to them.
+        "eop": u.is_eop,
+        "eop_file": _eop.rel_to_root(m, u.eop_file) if u.is_eop else "",
     }
 
 
@@ -300,6 +306,12 @@ def build_units_response(m: Mod) -> dict:
     return {
         "mod": m.name,
         "factions": factions,
+        # M2TWEOP state, so the picker can show the badge legend and the settings
+        # panel can say whether the folders were configured or auto-detected
+        "eop_dirs": [str(p) for p in m.eop_dirs],
+        "eop_configured": [str(p) for p in _eop.configured_dirs(m)],
+        "eop_count": len(m.edu.eop_units),
+        "edu_count": len(m.edu.main_units),
         "faction_names": {f: m.faction_names.get(f.lower(), "") for f in factions},
         # "categories" is the refined kind (cavalry split into Cavalry /
         # Cavalry_Lance / Cavalry_Archer) — it drives the filter and the base picker.
@@ -383,6 +395,7 @@ def _options_from(d: dict) -> TransferOptions:
         include_projectile=bool(d.get("include_projectile", True)),
         include_engine=bool(d.get("include_engine", True)),
         exclude_models=[str(m).lower() for m in (d.get("exclude_models") or [])],
+        eop_target=d.get("eop_target", "auto"),
         on_conflict=d.get("on_conflict", "rename"),
         new_type=d.get("new_type") or None,
         new_dictionary=d.get("new_dictionary") or None,
@@ -445,8 +458,17 @@ def _plan_payload(plan) -> dict:
         "engine_dest_overrides": plan.engine_dest_overrides,
         "reroute_dir": plan.reroute_dir,
         "relocated_count": len(plan.path_map),
-        "dest_unit_count": len(plan.dest.edu.units),
+        # Only EDU units count against the vanilla 500 cap — M2TWEOP units are
+        # loaded from the extender's own files, which is the point of them.
+        "dest_unit_count": len(plan.dest.edu.main_units),
+        "dest_eop_count": len(plan.dest.edu.eop_units),
         "dest_new_units": plan.dest_new_units,
+        # M2TWEOP: where this unit's block will be written ("" = the EDU)
+        "eop_target": plan.options.eop_target,
+        "eop_file": _eop.rel_to_root(plan.dest, plan.eop_file) if plan.eop_file else "",
+        "dest_has_eop": bool(plan.dest.eop_dirs),
+        "source_is_eop": bool(getattr(
+            plan.source.edu.by_type().get(plan.unit_type), "is_eop", False)),
         "excluded_secondaries": plan.excluded_secondaries,
         "missing_models": plan.missing_models,
         "missing_skeletons": plan.missing_skeletons,
@@ -618,6 +640,8 @@ class Handler(BaseHTTPRequestHandler):
                 from .folder_dialog import browse_for_folder
                 path = browse_for_folder(body.get("title") or "Select a folder")
                 return self._json({"path": path})
+            if u.path == "/api/eop_dirs":
+                return self._json(self._eop_dirs(body))
             if u.path == "/api/browse_file":
                 # same reason as browse_folder: the editor needs a real path to
                 # the .mesh/.texture being imported, which a file input can't give.
@@ -836,6 +860,31 @@ class Handler(BaseHTTPRequestHandler):
                 "fields": _edu.block_fields(composed),
                 "inherited": list(_edu.BASE_COPY_KEYS) + groups,
                 "base_field_groups": groups}
+
+    def _eop_dirs(self, body):
+        """Read or set one mod's M2TWEOP unit folders.
+
+        A POST with no ``dirs`` key only reads (so the settings panel can show the
+        auto-detected folders without saving them as an explicit choice); a POST
+        that carries ``dirs`` saves it, and an empty list clears the setting and
+        goes back to detection.
+        """
+        name = body.get("mod") or ""
+        if name not in self.registry.names():
+            return {"error": f"unknown mod {name!r}"}
+        mod = self.registry.get(name)
+        if "dirs" in body:
+            _eop.set_configured_dirs(mod, [str(d) for d in (body.get("dirs") or [])])
+            edit._invalidate(mod)             # units move between files as this changes
+        return {
+            "mod": mod.name,
+            "configured": [str(p) for p in _eop.configured_dirs(mod)],
+            "detected": [str(p) for p in _eop.detect_dirs(mod)],
+            "dirs": [str(p) for p in mod.eop_dirs],
+            "files": [_eop.rel_to_root(mod, p) for p in _eop.unit_files(mod)],
+            "eop_count": len(mod.edu.eop_units),
+            "edu_count": len(mod.edu.main_units),
+        }
 
     def _dirs(self, q):
         """List sub-folders under a mod's data/ dir, for the reroute browser.

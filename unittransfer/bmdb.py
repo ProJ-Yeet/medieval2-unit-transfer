@@ -31,6 +31,10 @@ What counts as "referenced":
   * every campaign's ``descr_strat.txt`` and ``campaign_script.txt`` —
     ``battle_model`` again, but written inline in a comma-separated character
     line rather than on its own, so those two files get a looser pattern
+  * **every ``.lua`` script in the mod** — M2TWEOP mods create units, swap models
+    and spawn characters from Lua, and none of that is written down in any
+    ``.txt``. Any entry name a script mentions is off limits; see
+    :mod:`unittransfer.luascan`.
   * anything else: any ``data/descr_*.txt`` that merely *mentions* the name is
     treated as a reference too, bar the two in :data:`DESCR_SKIP` that cannot
     name a battle model at all. That is deliberately over-cautious — a false
@@ -45,7 +49,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
-from . import config, edit, modeldb
+from . import config, edit, eop, luascan, modeldb
 from . import edu as edu_mod
 from . import mounts as mounts_mod
 from .mod import Mod
@@ -179,6 +183,24 @@ def _describe_users(users: Dict[str, Dict[str, List[str]]], name: str) -> str:
     return "; ".join(parts)
 
 
+def _kept_by_mention(name: str, row: dict, merge: bool = False) -> str:
+    """The warning line for an entry a file or a script names by string.
+
+    Worth spelling out rather than saying "still used": the reference is not in
+    any unit's block, so the user looking at the mod would not find it — the point
+    of the message is to name the file they should open.
+    """
+    what = "merge skipped" if merge else "kept"
+    if row.get("lua"):
+        why = ("a Lua script names it" if not row.get("in_comment")
+               else "a Lua script names it (in a comment — left protected on purpose)")
+        return (f"'{name}' — {what}: {why}, at {row['file']}. M2TWEOP scripts refer to "
+                "battle models by name, so removing the entry would break that script "
+                "the first time it runs.")
+    return (f"'{name}' — {what}: {row['file']} names it. Nothing in the EDU points at "
+            "it, but that file does, so it is left alone.")
+
+
 def short_referrer(who: str) -> str:
     """``"mount:x"`` / ``"file:y"`` -> ``"x"`` / ``"y"``; a unit type is unchanged."""
     return who.split(":", 1)[1] if who.startswith(("mount:", "file:")) else who
@@ -235,12 +257,13 @@ def ridden_mounts(mod: Mod) -> set:
 
 def _mount_mentions(mod: Mod,
                     report: Optional[Callable[[float, str], None]] = None) -> Dict[str, str]:
-    """``mount name -> the descr_*.txt that mentions it``, for mounts.
+    """``mount name -> the file that mentions it``, for mounts.
 
     The same over-cautious net the entries get, but by whole name rather than by
     token: mount names contain spaces ("gondor horse"), so they cannot be looked
     up in :func:`_descr_tokens`. :data:`DESCR_SKIP` is left out for the reasons
-    given there.
+    given there. The mod's Lua scripts are searched the same way — a mount a
+    script hands to the engine is as ridden as one an EDU line names.
 
     Every name goes into ONE alternation so each file is scanned once. A regex per
     name per file is a hundred-odd passes over the same megabytes, and on a big
@@ -276,13 +299,15 @@ def _mount_mentions(mod: Mod,
             name = by_key.get(" ".join(m.group(0).split()))
             if name is not None:
                 out.setdefault(name, path.name)   # the first file that names it
+    for name, hit in luascan.phrase_scan(mod, names).items():
+        out.setdefault(name, hit.label())
     if report:
         report(1.0, "")
     return out
 
 
 def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
-                tokens: Dict[str, str],
+                mentions: Dict[str, dict],
                 report: Optional[Callable[[float, str], None]] = None
                 ) -> Tuple[List[dict], List[dict]]:
     """``(mounts no unit rides, mounts held back because a descr_*.txt names one)``.
@@ -314,7 +339,7 @@ def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
                         if short_referrer(w).lower() not in dead_low]
         entry = entries.get(model)
         frees = bool(model) and entry is not None and not others and not other_mounts \
-            and not entry.first_entry_pad and model not in tokens
+            and not entry.first_entry_pad and model not in mentions
         rows.append({
             "mount": m.type,
             "class": m.mount_class,
@@ -322,7 +347,7 @@ def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
             "in_db": entry is not None,
             "frees_model": frees,
             "kept_by": (others + other_mounts)[:4],
-            "mentioned_in": tokens.get(model, "") if entry is not None else "",
+            "mentioned_in": mention_file(mentions, model) if entry is not None else "",
         })
     rows.sort(key=lambda r: r["mount"].lower())
     held = [{"mount": name, "file": where} for name, where in sorted(mentions.items())]
@@ -347,6 +372,48 @@ def _descr_tokens(mod: Mod) -> Dict[str, str]:
         for tok in set(_TOKEN_RE.findall(text)):
             out.setdefault(tok, path.name)
     return out
+
+
+def name_mentions(mod: Mod,
+                  report: Optional[Callable[[float, str], None]] = None
+                  ) -> Dict[str, dict]:
+    """``token -> {"file", "lua", "in_comment"}`` — the whole "somebody names it" net.
+
+    Two sources, one lookup: the ``data/descr_*.txt`` token sweep
+    (:func:`_descr_tokens`) and every ``.lua`` script in the mod
+    (:func:`unittransfer.luascan.scan`). Membership in this dict is what keeps an
+    entry off the unused list and what makes :func:`plan_cleanup` refuse to remove
+    it, so a name a Lua script uses is protected by exactly the same machinery
+    that already protects one a definition file uses — no separate code path to
+    forget about.
+
+    A definition file wins the label when both name a token: it is the more
+    concrete answer to "why is this still here". The Lua hit is still recorded on
+    the row, so the UI can show both.
+    """
+    # Prime ``Mod.lua_tokens`` by hand rather than just reading it: the first scan
+    # is the slow one and it is the one that should drive the progress bar, but
+    # every later caller (the cleanup that follows the audit) must get the cache.
+    if "lua_tokens" not in mod.__dict__:
+        mod.__dict__["lua_tokens"] = luascan.scan(mod, report)
+    elif report:
+        report(1.0, "")
+    out: Dict[str, dict] = {}
+    for tok, hit in mod.lua_tokens.items():
+        out[tok] = {"file": hit.label(), "lua": True, "in_comment": hit.in_comment}
+    for tok, where in _descr_tokens(mod).items():
+        row = out.get(tok)
+        if row is None:
+            out[tok] = {"file": where, "lua": False, "in_comment": False}
+        else:
+            row["file"] = where            # the .txt is the better explanation
+    return out
+
+
+def mention_file(mentions: Dict[str, dict], name: str) -> str:
+    """The "kept because …" label for a name, or ``""`` when nothing names it."""
+    row = mentions.get((name or "").lower())
+    return row["file"] if row else ""
 
 
 # ---------------------------------------------------------------------------
@@ -383,7 +450,8 @@ def _unit_index(mod: Mod) -> Dict[str, "object"]:
 
 
 def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
-                     unused: set) -> List[dict]:
+                     unused: set, mentions: Optional[Dict[str, dict]] = None
+                     ) -> List[dict]:
     """Entries only a ``soldier`` line names, paired with an identical-footer twin.
 
     A unit that also lists ``armour_ug_models`` draws those models, so its
@@ -401,8 +469,14 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     are worked out per footer group rather than one entry at a time. When a group
     has somewhere safe to land the whole group can go; when it does not, one
     member is held back to be the entry the others point at.
+
+    A merge *deletes* its source entry, so anything ``mentions`` protects — a name
+    some ``descr_*.txt`` or Lua script uses — is never offered as one. Repointing
+    the EDU would not help there: the script still names the entry by string, and
+    the entry would no longer be in the file to find.
     """
     entries = mod.modeldb.by_name()
+    mentions = mentions or {}
     by_type = _unit_index(mod)
     # Entries worth pointing at, grouped by footer: the ones something in the mod
     # still names. An entry nothing references is a removal away from not being
@@ -422,6 +496,8 @@ def merge_candidates(mod: Mod, users: Dict[str, Dict[str, List[str]]],
             continue
         if any(slots[k] for k in OTHER_KINDS):
             continue                      # doing a real job somewhere else
+        if name in mentions:
+            continue                      # a script or a definition file names it
         entry = entries.get(name)
         if entry is None:
             continue
@@ -528,8 +604,11 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
     say = _reporter(progress)
     say(3, "reading units, mounts, characters and campaign scripts")
     users = entry_users(mod)
-    say(12, "reading data/descr_*.txt")
-    tokens = _descr_tokens(mod)
+    say(8, "reading data/descr_*.txt and the mod's .lua scripts")
+    mentions = name_mentions(
+        mod, lambda frac, where: say(8 + 12 * frac,
+                                     f"reading .lua scripts{' — ' + where if where else ''}"))
+    lua_count = len(mod.lua_files)
     say(20, "parsing battle_models.modeldb")
     entries = mod.modeldb.by_name()
 
@@ -551,14 +630,17 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
         slots = users.get(e.name)
         if slots and any(slots[k] for k in SLOT_KINDS):
             continue
-        where = tokens.get(e.name)
-        if where:
-            # named in a definition file we don't parse (or in a comment in one we
-            # do) — keep it and say where, rather than guess it is really dead
-            mentioned.append({"entry": e.name, "file": where})
+        row = mentions.get(e.name)
+        if row:
+            # named in a definition file we don't parse, in a comment in one we do,
+            # or by a Lua script — keep it and say where, rather than guess it is
+            # really dead
+            mentioned.append({"entry": e.name, "file": row["file"],
+                              "lua": row["lua"], "in_comment": row["in_comment"]})
             continue
         if e.first_entry_pad:
-            mentioned.append({"entry": e.name, "file": "(padded first entry — never removed)"})
+            mentioned.append({"entry": e.name, "file": "(padded first entry — never removed)",
+                              "lua": False, "in_comment": False})
             continue
         unused_names.add(e.name)
         files = _entry_files(e)
@@ -568,7 +650,7 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
                        "on_disk": sum(1 for f in files if (mod.data / f).is_file())})
 
     say(56, "looking for entries with an identical twin")
-    merges = merge_candidates(mod, users, unused_names)
+    merges = merge_candidates(mod, users, unused_names, mentions)
     say(60, "walking data/unit_models")
     orphans = orphan_files(
         mod, referenced_files,
@@ -577,7 +659,7 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
     ) if scan_orphans else []
     say(85, "checking mounts no unit rides")
     dead_mounts, held_mounts = mount_audit(
-        mod, users, tokens,
+        mod, users, mentions,
         lambda frac, where: say(85 + 14 * frac,
                                 f"checking mounts no unit rides{' — ' + where if where else ''}"))
     say(100, "done")
@@ -594,6 +676,11 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
         "unused_mounts": dead_mounts,
         "mentioned_mounts": held_mounts,
         "campaign_files": [f"{p.parent.name}/{p.name}" for p in campaign_files(mod)],
+        # the Lua safety net, so the dialog can say what it protected and why
+        "lua_files": lua_count,
+        "lua_kept": [m for m in mentioned if m.get("lua")],
+        "eop_units": len(mod.edu.eop_units),
+        "eop_dirs": [str(p) for p in mod.eop_dirs],
     }
 
 
@@ -618,7 +705,7 @@ def name_counts(mod: Mod) -> Dict[str, int]:
 def overview(mod: Mod) -> dict:
     """Every entry in the mod, light enough to render a few thousand rows."""
     users = entry_users(mod)
-    tokens = _descr_tokens(mod)
+    mentions = name_mentions(mod)
     counts = name_counts(mod)
     rows, seen = [], set()
     for e in mod.modeldb.entries:
@@ -627,9 +714,10 @@ def overview(mod: Mod) -> dict:
         seen.add(e.name)
         slots = users.get(e.name) or {k: [] for k in SLOT_KINDS}
         refs = [w for k in SLOT_KINDS for w in slots[k]]
-        # a name no slot uses but a descr_*.txt still mentions is NOT unused —
-        # say which file, so the row explains itself instead of looking blank
-        mention = "" if refs else (tokens.get(e.name) or "")
+        # a name no slot uses but a descr_*.txt or a .lua still mentions is NOT
+        # unused — say which file, so the row explains itself instead of looking blank
+        row = mentions.get(e.name) if not refs else None
+        mention = row["file"] if row else ""
         rows.append({
             "name": e.name,
             "lods": len(e.lods),
@@ -638,6 +726,7 @@ def overview(mod: Mod) -> dict:
             "use_count": len(refs),
             "kinds": [k for k in SLOT_KINDS if slots[k]],
             "mentioned_in": mention,
+            "mentioned_in_lua": bool(row and row["lua"]),
             "copies": counts[e.name],
             "unused": not refs and not mention and not e.first_entry_pad,
             "folder": edit.folder_info(e)["base"],
@@ -703,6 +792,10 @@ class CleanupPlan:
     entry_deletes: List[str] = field(default_factory=list)
     merges: List[Tuple[str, str]] = field(default_factory=list)   # (entry, into)
     edu_text: str = ""                            # "" = the EDU is not rewritten
+    # M2TWEOP unit files a soldier merge repoints: {absolute path: new text}. An
+    # EOP unit names battle models exactly like an EDU one, so a merge has to
+    # follow it into its own file.
+    eop_texts: Dict[str, str] = field(default_factory=dict)
     mount_text: str = ""                          # "" = descr_mount.txt is not rewritten
     mount_deletes: List[str] = field(default_factory=list)
     exports: List[Tuple[Path, str]] = field(default_factory=list)  # (src abs, rel in export)
@@ -761,6 +854,11 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
     # other — the merge pass below is the only way a referenced entry may go, and
     # only because it repoints that soldier line first.
     users = entry_users(mod)
+    # The same re-check for the "somebody merely names it" net, Lua included. This
+    # is the last line of defence rather than a duplicate of the audit: the audit
+    # decides what to *offer*, this decides what may actually be written, and a
+    # request can arrive from an older scan, a saved selection, or the CLI.
+    mentions = name_mentions(mod)
 
     # ---- mounts nothing rides: dropped from descr_mount.txt FIRST, because that
     # is what takes the "mount" referrer off their model and lets the entry go.
@@ -775,6 +873,10 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
             continue
         if e.first_entry_pad:
             plan.warnings.append(edit.PAD_ENTRY_KEPT.format(name=name))
+            continue
+        held = mentions.get(name)
+        if held:
+            plan.warnings.append(_kept_by_mention(name, held))
             continue
         used = _describe_users(users, name)
         if used:
@@ -798,6 +900,11 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
         name, into = m["entry"], m["into"]
         if name not in entries:
             plan.warnings.append(f"'{name}' is not in this mod's modeldb — merge skipped")
+            continue
+        if name in mentions:
+            # A merge deletes `name`. Repointing the EDU does not help a script
+            # that names it by string, so this pairing can never be safe.
+            plan.warnings.append(_kept_by_mention(name, mentions[name], merge=True))
             continue
         if into not in entries:
             plan.errors.append(f"'{into}' is not in this mod's modeldb")
@@ -825,15 +932,12 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
             doomed.append(name)
 
     if model_map:
-        blocks, touched = [], []
+        blocks, touched = {}, []
         for u in mod.edu.units:
-            hit = [s for s in ([u.soldier_model] if u.soldier_model else [])
-                   if s.lower() in model_map]
-            if hit:
-                blocks.append(edu_set_soldier(u.raw, model_map[u.soldier_model.lower()]))
+            if u.soldier_model and u.soldier_model.lower() in model_map:
+                blocks[u.type] = edu_set_soldier(
+                    u.raw, model_map[u.soldier_model.lower()])
                 touched.append(u.type)
-            else:
-                blocks.append(u.raw)
             # An entry only reachable through `soldier` cannot appear in another
             # slot — but a *different* unit could still name it, so anything left
             # pointing at a merged entry is a hard error rather than a silent break.
@@ -844,12 +948,18 @@ def plan_cleanup(mod: Mod, req: CleanupRequest) -> CleanupPlan:
                     f"'{u.type}' still names {', '.join(sorted(set(leftovers)))} outside "
                     "its soldier line — that entry cannot be merged away")
         if touched:
-            plan.edu_text = mod.edu.preamble + "".join(blocks)
+            # An M2TWEOP unit's soldier line is in that unit's own file, so the
+            # repoint is split across the EDU and whichever EOP files are involved.
+            split = eop.compose(mod, eop.edited(mod.edu.units, blocks))
+            plan.edu_text = split.main
+            plan.eop_texts = dict(split.files)
             for name, into in plan.merges:
                 plan.changes.append(f"soldier model '{name}' -> '{into}'")
             plan.changes.append(
                 f"{len(touched)} unit(s) rewritten: {', '.join(touched[:5])}"
                 f"{'…' if len(touched) > 5 else ''}")
+            for key in split.files:
+                plan.changes.append(f"EOP unit file rewritten: {eop.rel_to_root(mod, key)}")
 
     plan.entry_deletes = doomed
     if doomed:
@@ -929,18 +1039,30 @@ def _plan_mounts(plan: CleanupPlan, users: Dict[str, Dict[str, List[str]]]) -> N
     Mutates ``users`` in place: a mount that is going stops counting as a reason to
     keep its model, which is the whole point of offering the removal. Everything is
     re-checked against the mod — a unit that started riding the mount since the scan
-    keeps it, because a dangling ``mount`` line stops the unit appearing at all.
+    keeps it, because a dangling ``mount`` line stops the unit appearing at all, and
+    so does a mount some ``descr_*.txt`` or Lua script names.
+
+    The mention scan is only run when mounts were actually ticked: it reads every
+    ``descr_*.txt`` and every script in the mod, and a cleanup that touches no
+    mounts should not pay for that on each preview.
     """
     mod, req = plan.mod, plan.request
     if not req.mounts:
         return
     by_type = {m.type.lower(): m for m in mod.mount_file.mounts if m.type}
     ridden = ridden_mounts(mod)
+    mentions = {k.lower(): v for k, v in _mount_mentions(mod).items()}
     keep: List[str] = []
     for want in dict.fromkeys(m.strip().lower() for m in req.mounts):
         mount = by_type.get(want)
         if mount is None:
             plan.warnings.append(f"mount '{want}' is not in this mod's descr_mount.txt — skipped")
+            continue
+        if want in mentions:
+            plan.warnings.append(
+                f"mount '{mount.type}' is named in {mentions[want]} — kept. Nothing in "
+                "the EDU rides it, but that file does, so removing the block would "
+                "break whatever reads it.")
             continue
         if want in ridden:
             riders = [u.type for u in mod.edu.units if u.mount.lower() == want]
@@ -1096,6 +1218,9 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
     if plan.edu_text:
         say(72, "rewriting export_descr_unit.txt")
         write_text("export_descr_unit.txt", plan.edu_text, edu_mod.ENCODING)
+    if plan.eop_texts:
+        say(73, "rewriting the M2TWEOP unit files")
+        eop.write_split(mod, plan.eop_texts, (), backup_root, manifest)
     if plan.mount_text:
         say(74, "rewriting descr_mount.txt")
         write_text("descr_mount.txt", plan.mount_text, mounts_mod.ENCODING)

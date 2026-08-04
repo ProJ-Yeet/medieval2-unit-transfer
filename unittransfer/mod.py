@@ -10,9 +10,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import (edu, engines as engines_mod, localization, modeldb,
-               mounts as mounts_mod, projectiles as projectiles_mod,
-               sounds as sounds_mod)
+from . import (edu, engines as engines_mod, eop as eop_mod, localization,
+               luascan, modeldb, mounts as mounts_mod,
+               projectiles as projectiles_mod, sounds as sounds_mod)
 
 
 class Mod:
@@ -83,7 +83,39 @@ class Mod:
     # ---- parsed databases (cached) -------------------------------------
     @cached_property
     def edu(self) -> edu.EduFile:
-        return edu.parse_file(self.edu_path)
+        """Every unit the mod defines: the EDU *plus* its M2TWEOP unit files.
+
+        Merged into one list on purpose — the unit picker, the transfer planner,
+        the editor, the voice bank and the modeldb cleanup all want the mod's real
+        roster, and an EOP unit that was invisible to the cleanup is exactly how a
+        still-used battle model gets deleted. Each EOP unit keeps ``is_eop`` and
+        the file it came from so writes go back to the right place.
+        """
+        parsed = edu.parse_file(self.edu_path)
+        units, preambles = eop_mod.parse(self)
+        parsed.units.extend(units)
+        parsed.eop_preambles = preambles
+        return parsed
+
+    @cached_property
+    def eop_dirs(self) -> List[Path]:
+        """Folders this mod's M2TWEOP unit files are read from (may be empty)."""
+        return eop_mod.eop_dirs(self)
+
+    @cached_property
+    def lua_files(self) -> List[Path]:
+        """Every ``.lua`` script in the mod. Cached — finding them is a tree walk."""
+        return luascan.lua_files(self)
+
+    @cached_property
+    def lua_tokens(self) -> Dict[str, "luascan.LuaHit"]:
+        """Every identifier the mod's ``.lua`` scripts name -> where it was found.
+
+        Cached on the mod because both the modeldb audit and the cleanup that
+        follows it need the same answer, and re-walking a big mod's scripts for
+        the second one is pure waste.
+        """
+        return luascan.scan(self)
 
     @cached_property
     def loc(self) -> localization.Localization:

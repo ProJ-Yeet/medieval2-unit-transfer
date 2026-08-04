@@ -24,7 +24,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from . import (config, edu as edu_mod, engines as engines_mod, localization,
+from . import (config, edu as edu_mod, engines as engines_mod, eop, localization,
                modeldb, mounts, projectiles as projectiles_mod, sounds)
 from .mod import Mod
 
@@ -46,6 +46,16 @@ class TransferOptions:
     # all-or-none. Lowercased model names. Excluded models keep their EDU name and
     # must already exist in the destination (same rule as an unticked group).
     exclude_models: List[str] = field(default_factory=list)
+    # Where the transferred unit's EDU block is written in the destination:
+    #   "auto"  mirror the source unit — an M2TWEOP unit stays an M2TWEOP unit
+    #           when the destination has an EOP folder, otherwise it lands in the
+    #           EDU (the destination is not running the extender, so a file in a
+    #           folder nothing reads would just make the unit vanish)
+    #   "eop"   force its own M2TWEOP unit file, which keeps it off the 500-unit
+    #           vanilla cap — the reason to want this for a normal unit
+    #   "edu"   force data/export_descr_unit.txt
+    # See :mod:`unittransfer.eop`.
+    eop_target: str = "auto"
     # unit-name conflict: "overwrite" | "rename" | "skip"
     on_conflict: str = "rename"
     new_type: Optional[str] = None     # required when on_conflict == "rename"
@@ -203,8 +213,16 @@ class TransferPlan:
     sound_text: str = ""             # whole new voice-bank file ("" = unchanged)
     sound_detail: str = ""           # human-readable note for the summary
     # 1 if this transfer adds a NEW unit type to the destination EDU, else 0
-    # (overwrite/skip add none) — drives the 500 vanilla unit-limit warning.
+    # (overwrite/skip add none) — drives the 500 vanilla unit-limit warning. A
+    # unit written as an M2TWEOP unit adds none either: the cap is a property of
+    # export_descr_unit.txt, and staying out of it is the whole point of EOP.
     dest_new_units: int = 1
+    # M2TWEOP: absolute path of the unit file this transfer writes ("" = the unit
+    # goes into data/export_descr_unit.txt like any other).
+    eop_file: str = ""
+    # An existing EOP unit this transfer overwrites, so its old file is rewritten
+    # (or removed) instead of the EDU. "" when no such conflict.
+    eop_replaced: str = ""
     # diagnostics
     excluded_secondaries: List[str] = field(default_factory=list)
     missing_models: List[str] = field(default_factory=list)
@@ -245,6 +263,9 @@ class TransferPlan:
                 L.append(f"  unit exists -> RENAMED to '{self.resolved_type}' (dict '{self.resolved_dict}')")
             elif mode == "overwrite":
                 L.append("  unit exists -> OVERWRITE")
+        if self.eop_file:
+            L.append(f"  M2TWEOP UNIT: written to {eop.rel_to_root(self.dest, self.eop_file)} "
+                     "(outside export_descr_unit.txt, so outside the 500-unit cap)")
         adds = [a for a in self.model_actions if a.action == "add"]
         reuse = [a for a in self.model_actions if a.action == "reuse_identical"]
         ren = [a for a in self.model_actions if a.action == "rename"]
@@ -897,6 +918,55 @@ def _unique_name(base: str, taken: set) -> str:
     return f"{base}_{i}"
 
 
+def _resolve_eop_target(plan: TransferPlan, unit) -> None:
+    """Decide whether the transferred unit becomes an M2TWEOP unit, and where.
+
+    Three things get settled here, and they interact:
+
+    * **Which file the new block goes in.** "auto" mirrors the source unit,
+      because an overhaul's EOP unit is EOP for a reason and quietly demoting it
+      into the EDU is how a destination silently blows past the 500-unit cap. The
+      mirror only holds when the destination actually has an EOP folder — writing
+      into a folder the extender is not configured to read makes the unit vanish
+      with no error anywhere, which is far worse than landing in the EDU.
+    * **What is being replaced.** Overwriting a destination unit that is itself an
+      EOP unit rewrites *that unit's* file, not the EDU.
+    * **The unit-limit count.** A unit that lands outside export_descr_unit.txt
+      does not count against the vanilla cap at all.
+    """
+    dest, opts = plan.dest, plan.options
+    existing = dest.edu.by_type().get(plan.unit_type)
+    if plan.unit_conflict and opts.on_conflict == "overwrite" and existing is not None \
+            and existing.is_eop:
+        plan.eop_replaced = existing.eop_file
+
+    want = (opts.eop_target or "auto").lower()
+    if want == "auto":
+        want = "eop" if unit.is_eop else "edu"
+    if want != "eop":
+        return
+
+    if not dest.eop_dirs:
+        # Only worth saying out loud when the unit came in as an EOP unit or the
+        # user asked for one — otherwise "auto" simply resolved to the EDU.
+        plan.warnings.append(
+            f"'{dest.name}' has no M2TWEOP unit folder configured, so "
+            f"'{plan.resolved_type}' goes into export_descr_unit.txt instead. Set the "
+            "mod's EOP folder in Settings to keep it out of the 500-unit cap.")
+        return
+
+    # Overwriting an existing EOP unit reuses its file — a rewrite in place, so
+    # the modder's own layout survives the transfer.
+    if plan.eop_replaced:
+        plan.eop_file = plan.eop_replaced
+    else:
+        target = eop.new_unit_file(dest, plan.resolved_type)
+        if target is None:
+            return
+        plan.eop_file = str(target)
+    plan.dest_new_units = 0                # outside the EDU -> outside the cap
+
+
 def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                   options: Optional[TransferOptions] = None) -> TransferPlan:
     opts = options or TransferOptions()
@@ -964,6 +1034,9 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
         if opts.on_conflict == "rename":
             plan.resolved_type = opts.new_type or (unit_type + " (copy)")
             plan.resolved_dict = opts.new_dictionary or (unit.dictionary + "_copy")
+
+    # ---- M2TWEOP: which file the block lands in ----
+    _resolve_eop_target(plan, unit)
 
     # ---- models: dedup / rename / add ----
     # With a base unit, an unticked officers/mount/crew box means "use the base's"
@@ -1398,9 +1471,12 @@ def apply_transfer(plan: TransferPlan) -> Dict:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src_abs, target)
 
-    # ---- 1) EDU ----
-    edu_text = _compose_edu(plan, unit)
-    write_text("export_descr_unit.txt", edu_text, edu_mod.ENCODING)
+    # ---- 1) EDU (and/or the M2TWEOP unit files) ----
+    edu_text, eop_texts, eop_removes = _compose_edu(plan, unit)
+    if edu_text:
+        write_text("export_descr_unit.txt", edu_text, edu_mod.ENCODING)
+    if eop_texts or eop_removes:
+        eop.write_split(dest, eop_texts, eop_removes, backup_root, manifest)
 
     # ---- 2) localisation ----
     loc_entry = source.loc.get(unit.dictionary)
@@ -1502,20 +1578,46 @@ def apply_transfer(plan: TransferPlan) -> Dict:
     return rec
 
 
-def _compose_edu(plan: TransferPlan, unit) -> str:
-    """Full destination EDU text after applying the conflict resolution."""
+def _compose_edu(plan: TransferPlan, unit) -> Tuple[str, Dict[str, str], List[str]]:
+    """The destination's unit files after applying the conflict resolution.
+
+    Returns ``(EDU text or "", {M2TWEOP file: text}, [EOP files to remove])``. The
+    EDU text is "" only when nothing about that file changes — which happens when
+    the unit is written as an M2TWEOP unit and did not replace an EDU unit.
+
+    Overwriting is the case that needs care: the unit being replaced can live in
+    the EDU while the replacement is going to an EOP file (or the other way
+    round), so the old block has to be taken out of *its* file rather than out of
+    whichever file the new one lands in.
+    """
     dest = plan.dest
     block = _build_unit_block(plan, unit)
-    if plan.unit_conflict and plan.options.on_conflict == "overwrite":
-        # rebuild EDU with the existing unit block removed, then append the new one
-        kept = [u for u in dest.edu.units if u.type != plan.unit_type]
-        text = dest.edu.preamble + "".join(u.raw for u in kept)
-    else:
-        text = dest.edu.to_text()
-    # Separate the appended unit from the previous one with exactly two blank
-    # lines, regardless of how the existing file happened to end.
-    text = text.rstrip("\r\n") + "\n" + "\n\n"
-    return text + block
+    overwriting = plan.unit_conflict and plan.options.on_conflict == "overwrite"
+    kept = [u for u in dest.edu.units if u.type != plan.unit_type] if overwriting \
+        else list(dest.edu.units)
+    split = eop.compose(dest, kept)
+    edu_text, eop_texts = split.main, dict(split.files)
+    removes = list(split.removed)
+
+    if plan.eop_file:
+        # its own file: the removal of an emptied file it is about to rewrite is
+        # not a removal at all, so take it back off that list
+        removes = [r for r in removes if r != plan.eop_file]
+        preamble = (dest.edu.eop_preambles.get(plan.eop_file, "")
+                    if plan.eop_file in dest.edu.eop_preambles else "")
+        base = eop_texts.get(plan.eop_file)
+        if base is None and plan.eop_file != plan.eop_replaced:
+            eop_texts[plan.eop_file] = eop.unit_file_text(preamble, block)
+        else:
+            body = (base if base is not None
+                    else eop.unit_file_text(preamble, "")).rstrip("\r\n")
+            eop_texts[plan.eop_file] = (body + "\n\n\n" if body else "") + block
+        return edu_text, eop_texts, removes
+
+    # the EDU: append after exactly two blank lines, regardless of how the
+    # existing file happened to end
+    text = (edu_text or dest.edu.to_text()).rstrip("\r\n") + "\n" + "\n\n"
+    return text + block, eop_texts, removes
 
 
 def _base_record(plan: TransferPlan, applied: bool, transfer_id: str = "",
@@ -1541,7 +1643,8 @@ def _base_record(plan: TransferPlan, applied: bool, transfer_id: str = "",
 def _invalidate(mod: Mod):
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file", "sounds"):
+                 "mounted_engine_file", "engine_skeleton_file", "sounds",
+                 "eop_dirs", "lua_tokens"):
         mod.__dict__.pop(attr, None)
 
 
@@ -1574,6 +1677,10 @@ def undo(transfer_id: str) -> Dict:
                 target.unlink()
         except OSError:
             pass
+    # M2TWEOP unit files: these are absolute paths outside data/ (often outside
+    # the mod), so they carry their own backup location rather than being resolved
+    # against `data` like everything above.
+    eop.restore_split(manifest)
 
     config.update_log(transfer_id, undone=True)
     rec["undone"] = True

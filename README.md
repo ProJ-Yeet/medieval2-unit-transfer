@@ -126,10 +126,18 @@ per-row checkboxes and **Select all** / **None**:
 
 1. **Entries nothing references** — no unit's `soldier` / `officer` /
    `armour_ug_models`, no mount in `descr_mount.txt`, no `battle_model` in
-   `descr_character.txt`, and no mention anywhere in any `data/descr_*.txt`.
-   That last check is deliberately over-cautious: an entry merely *named* in one
+   `descr_character.txt`, **no mention in any of the mod's `.lua` scripts**, and
+   no mention anywhere in any `data/descr_*.txt`.
+   Those last two are deliberately over-cautious: an entry merely *named* in one
    of those files is held back and listed separately, because a wrong "unused"
-   silently breaks a mod while a wrong "still used" costs nothing
+   silently breaks a mod while a wrong "still used" costs nothing.
+   The Lua pass matters most — M2TWEOP scripts create units and swap battle
+   models by *name*, and nothing in the mod's `.txt` files records that, so
+   without it the cleanup would delete a model the campaign needs and you would
+   only find out in game. Every `.lua` under the mod is read (including
+   `eopData/`), and the dialog lists exactly what was protected and which
+   script line named it. A name behind a `--` comment counts too: a Lua file is
+   a program you are still working on, not data the game reads
 2. **Soldier-only entries with an identical twin** — an entry named *only* by a
    unit's `soldier` line (never as an armour upgrade tier, an officer, a mount or
    a character model) where another entry has the **exact same footer**:
@@ -215,6 +223,44 @@ entry is not in. The `accent` and `voice_type` rows in the field editor lock wit
 it, showing what will actually be written — including when the source unit had no
 `accent` line at all and one is being added.
 
+## M2TWEOP units
+
+M2TWEOP lifts the game's 500-unit ceiling by loading extra unit definitions from
+its own folder instead of `data/export_descr_unit.txt`. Those files are plain EDU
+text — the same `type` / `soldier` / `stat_pri` block a normal unit has — they
+just are not in the EDU.
+
+The tool reads them as part of the mod's roster, so **every mode works on them
+unchanged**: they show up in the unit picker (badged <kbd>EOP</kbd>), can be
+transferred, edited, given a voice, and their battle models count as referenced
+by the BMDB cleanup. The only thing that differs is where a change is written —
+an EOP unit's edit goes back to *its own file* and leaves
+`export_descr_unit.txt` byte-identical. Deleting one removes its file. Undo
+restores either, byte-exact, like any other change.
+
+**Setting the folder.** ⚙ **Root settings → M2TWEOP unit folders** picks a mod and
+shows what it found. Left alone, a folder called `eopData` near the top of the mod
+is auto-detected; **Add folder…** pins an explicit list instead if your mod keeps
+them elsewhere (remove them all to go back to auto-detection). Only `.txt` files
+that really contain unit blocks are read, so scripts, JSON and notes sitting in
+the same folder are ignored.
+
+**On a transfer**, the preview gains a *Which file this unit is written to* box:
+
+- **Same as the source** (default) — an EOP unit stays an EOP unit, a normal unit
+  stays a normal unit
+- **M2TWEOP unit file** — write it to its own file, keeping it out of the
+  500-unit cap. The unit-limit banner offers this for the whole batch in one click
+- **export_descr_unit.txt** — force it into the EDU
+
+If the destination has no EOP folder configured, the block goes into the EDU and
+the preview says so — writing into a folder the extender is not set up to read
+would make the unit vanish with no error anywhere.
+
+The 500-unit warning counts only what is in `export_descr_unit.txt`. EOP units are
+listed separately and never counted, because being outside that file is the whole
+point of them.
+
 ## Features
 
 - **Faction-wise browser** — units grouped by owning faction, with real faction
@@ -237,7 +283,13 @@ it, showing what will actually be written — including when the source unit had
   file is edited by splicing, so every line you didn't touch stays byte-exact
 - **Modeldb cleanup** — find the battle-model entries nothing references and the
   files under `unit_models` nothing mentions, and move them out of the mod into
-  a folder laid out like the mod itself
+  a folder laid out like the mod itself. Anything a `.lua` script names is
+  protected and never offered
+- **M2TWEOP units** — units defined in the extender's own folder instead of
+  `export_descr_unit.txt` are read as part of the mod's roster, badged
+  <kbd>EOP</kbd> everywhere, edited in place in their own file, and left out of
+  the 500-unit cap. A transfer can keep a unit as an EOP unit, or turn a normal
+  one into one to get it out from under the cap
 - **Undo** — every applied transfer is logged with a full backup; revert it
   from the log with one click
 - **Live reload** — edits to the source mod's files are picked up on the next
@@ -324,6 +376,8 @@ open, and print the address.
   `descr_engines`/`descr_engine_skeleton`,
   `export_descr_sounds_units_voice`), the dependency-resolution and transfer
   engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
-  the mod-wide modeldb audit and cleanup (`bmdb.py`), and the local HTTP server
+  the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
+  (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), and the
+  local HTTP server
 - `web/` — the browser UI
 - `tests/` — one module per area, runnable individually

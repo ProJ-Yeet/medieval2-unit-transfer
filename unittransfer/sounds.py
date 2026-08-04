@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from . import config, edu as edu_mod
+from . import config, edu as edu_mod, eop
 
 # Same reasoning as the EDU: 8-bit text, and latin-1 round-trips every byte.
 ENCODING = "latin-1"
@@ -447,6 +447,9 @@ class SoundPlan:
     ops: List[SoundOp] = field(default_factory=list)
     eds_text: str = ""            # "" = voice bank unchanged
     edu_text: str = ""            # "" = EDU unchanged
+    # accent / voice_type on an M2TWEOP unit lives in that unit's own file, not in
+    # the EDU: {absolute path: new text}. See :mod:`unittransfer.eop`.
+    eop_texts: Dict[str, str] = field(default_factory=dict)
     changes: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
@@ -551,22 +554,27 @@ def plan_sounds(mod, ops: List[SoundOp]) -> SoundPlan:
     if text != mod.sounds.to_text():
         plan.eds_text = text
     if edu_edits:
-        plan.edu_text = _edu_with_voice(mod, edu_edits)
+        split = _edu_with_voice(mod, edu_edits)
+        plan.edu_text = split.main
+        plan.eop_texts = dict(split.files)
         for utype, (accent, cls) in edu_edits.items():
             plan.changes.append(f"{utype}: EDU accent={accent}, voice_type={cls}")
+        for key in split.files:
+            plan.changes.append(
+                f"EOP unit file rewritten: {eop.rel_to_root(mod, key)}")
     return plan
 
 
-def _edu_with_voice(mod, edits: Dict[str, Tuple[str, str]]) -> str:
-    """The whole EDU text with only the named units' voice fields changed."""
-    out = [mod.edu.preamble]
-    for u in mod.edu.units:
-        if u.type in edits:
-            accent, cls = edits[u.type]
-            out.append(set_voice_fields(u.raw, accent, cls))
-        else:
-            out.append(u.raw)
-    return "".join(out)
+def _edu_with_voice(mod, edits: Dict[str, Tuple[str, str]]) -> "eop.Split":
+    """The mod's unit files with only the named units' voice fields changed.
+
+    An M2TWEOP unit's ``accent`` / ``voice_type`` are in its own file, so this
+    returns a split rather than one blob — writing the change into
+    export_descr_unit.txt would both miss the unit and corrupt the EDU.
+    """
+    blocks = {u.type: set_voice_fields(u.raw, *edits[u.type])
+              for u in mod.edu.units if u.type in edits}
+    return eop.compose(mod, eop.edited(mod.edu.units, blocks))
 
 
 def apply_sounds(plan: SoundPlan) -> Dict:
@@ -600,6 +608,8 @@ def apply_sounds(plan: SoundPlan) -> Dict:
         write_text(EDS_REL, plan.eds_text, ENCODING)
     if plan.edu_text:
         write_text("export_descr_unit.txt", plan.edu_text, edu_mod.ENCODING)
+    if plan.eop_texts:
+        eop.write_split(mod, plan.eop_texts, (), backup_root, manifest)
 
     units = [op.unit for op in plan.ops]
     rec = {

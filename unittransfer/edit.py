@@ -32,13 +32,13 @@ from __future__ import annotations
 
 import shutil
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as _dc_replace
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from . import config
 from . import edu as edu_mod
-from . import localization, modeldb
+from . import eop, localization, modeldb
 from .mod import Mod
 
 # ---------------------------------------------------------------------------
@@ -203,6 +203,11 @@ class EditPlan:
     resolved_dict: str = ""
     edu_block: str = ""                          # the unit's block after editing
     edu_text: str = ""                           # whole file after editing ("" = unchanged)
+    # M2TWEOP unit files this edit rewrites: {absolute path: new text}. Separate
+    # from ``edu_text`` because an EOP unit's block does not live in the EDU —
+    # editing one must leave export_descr_unit.txt byte-identical.
+    eop_texts: Dict[str, str] = field(default_factory=dict)
+    eop_removes: List[str] = field(default_factory=list)   # files whose last unit went
     loc_text: str = ""                           # whole file after editing ("" = unchanged)
     entry_updates: Dict[str, str] = field(default_factory=dict)   # name -> new raw
     entry_renames: Dict[str, str] = field(default_factory=dict)   # old -> new
@@ -372,7 +377,7 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
                 f"mount(s) {', '.join(mounted)} name the renamed entry in "
                 "descr_mount.txt — that file is not rewritten, fix it by hand.")
     if block != unit.raw or plan.entry_renames:
-        plan.edu_text = _replace_block(mod, unit, block, model_map=plan.entry_renames)
+        _take_split(plan, _replace_block(mod, unit, block, model_map=plan.entry_renames))
 
     # ---- 6) localisation ----
     old_entry = mod.loc.get(unit.dictionary)
@@ -455,18 +460,18 @@ def plan_bmdb(mod: Mod, req: EditRequest) -> EditPlan:
         _plan_model_edit(plan, mod, me, entries, taken)
 
     if plan.entry_renames:
-        plan.edu_text = mod.edu.preamble + "".join(
-            edu_mod.rewrite_block(u.raw, model_map=plan.entry_renames)
-            for u in mod.edu.units)
         users = sorted({u.type for u in mod.edu.units
                         if any(m in plan.entry_renames for m in u.model_names())})
         if users:
+            # the rename is chased through EOP unit files too — an EOP unit naming
+            # the old entry would break exactly like an EDU one
+            _take_split(plan, eop.compose(mod, eop.rewrite_all(
+                mod.edu.units,
+                lambda raw: edu_mod.rewrite_block(raw, model_map=plan.entry_renames))))
             plan.changes.append(
                 f"{len(users)} unit(s) repointed at the renamed entr"
                 f"{'y' if len(plan.entry_renames) == 1 else 'ies'}: "
                 f"{', '.join(users[:4])}{'…' if len(users) > 4 else ''}")
-        else:
-            plan.edu_text = ""              # nothing referenced it — leave the EDU alone
         mounted = sorted({n for n, m in (mod.mounts or {}).items()
                           if m in plan.entry_renames})
         if mounted:
@@ -888,8 +893,11 @@ def _plan_new_model(plan: EditPlan, mod: Mod, nm: NewModel,
 def _plan_delete(plan: EditPlan, unit) -> EditPlan:
     mod, opts = plan.mod, plan.request.delete_options
     kept = [u for u in mod.edu.units if u.type != unit.type]
-    plan.edu_text = mod.edu.preamble + "".join(u.raw for u in kept)
-    plan.changes.append(f"unit '{unit.type}' removed from export_descr_unit.txt")
+    _take_split(plan, eop.compose(mod, kept))
+    plan.changes.append(
+        f"unit '{unit.type}' removed from "
+        + (f"its EOP file ({eop.rel_to_root(mod, unit.eop_file)})" if unit.is_eop
+           else "export_descr_unit.txt"))
 
     others_same_dict = [u.type for u in kept if u.dictionary == unit.dictionary]
     if opts.remove_loc:
@@ -950,24 +958,42 @@ def _asset_shared(mod: Mod, rel: str, ignoring: List[str]) -> bool:
 
 
 def _replace_block(mod: Mod, unit, new_block: str,
-                   model_map: Optional[Dict[str, str]] = None) -> str:
-    """Whole EDU text with this unit's block swapped in place.
+                   model_map: Optional[Dict[str, str]] = None) -> "eop.Split":
+    """The mod's unit files with this unit's block swapped in place.
 
     In place, not appended: an edit must leave every other byte of the file
     (including the unit's position in it) untouched. ``model_map`` (a modeldb
     entry rename) is additionally applied to every *other* unit's block — a
     rename that only fixed the edited unit would leave every other unit of that
     model pointing at a name the modeldb no longer has.
+
+    A :class:`~unittransfer.eop.Split` rather than one string, because "the unit
+    files" is the EDU *and* every M2TWEOP unit file: the edited unit may live in
+    one of those, and a model rename reaches units in both. Files that did not
+    change are absent from the result, so an EOP-only edit leaves ``main`` empty
+    and export_descr_unit.txt untouched.
     """
-    out = [mod.edu.preamble]
+    units = []
     for u in mod.edu.units:
         if u.type == unit.type:
-            out.append(new_block)
+            units.append(u if new_block == u.raw else _dc_replace(u, raw=new_block))
         elif model_map:
-            out.append(edu_mod.rewrite_block(u.raw, model_map=model_map))
+            raw = edu_mod.rewrite_block(u.raw, model_map=model_map)
+            units.append(u if raw == u.raw else _dc_replace(u, raw=raw))
         else:
-            out.append(u.raw)
-    return "".join(out)
+            units.append(u)
+    return eop.compose(mod, units)
+
+
+def _take_split(plan: EditPlan, split: "eop.Split") -> None:
+    """Move a compose result onto the plan (each field keeps its "" = unchanged)."""
+    plan.edu_text = split.main
+    plan.eop_texts = dict(split.files)
+    plan.eop_removes = list(split.removed)
+    for key in split.files:
+        plan.changes.append(f"EOP unit file rewritten: {eop.rel_to_root(plan.mod, key)}")
+    for key in split.removed:
+        plan.changes.append(f"EOP unit file removed: {eop.rel_to_root(plan.mod, key)}")
 
 
 # ---------------------------------------------------------------------------
@@ -1037,6 +1063,8 @@ def apply_edit(plan: EditPlan) -> Dict:
 
     if plan.edu_text:
         write_text("export_descr_unit.txt", plan.edu_text, edu_mod.ENCODING)
+    if plan.eop_texts or plan.eop_removes:
+        eop.write_split(mod, plan.eop_texts, plan.eop_removes, backup_root, manifest)
     if plan.loc_text:
         write_text("text/export_units.txt", plan.loc_text, localization.ENCODING)
     if plan.modeldb_touched:
@@ -1082,7 +1110,8 @@ def apply_edit(plan: EditPlan) -> Dict:
 def _invalidate(mod: Mod) -> None:
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file", "sounds"):
+                 "mounted_engine_file", "engine_skeleton_file", "sounds",
+                 "eop_dirs", "lua_tokens"):
         mod.__dict__.pop(attr, None)
 
 
@@ -1126,6 +1155,10 @@ def unit_detail(mod: Mod, unit_type: str) -> dict:
         "mod": mod.name,
         "type": unit.type,
         "dictionary": unit.dictionary,
+        # M2TWEOP: which file this unit's block is in, so the editor can say where
+        # a save lands — an EOP unit's edit never touches export_descr_unit.txt.
+        "eop": unit.is_eop,
+        "eop_file": eop.rel_to_root(mod, unit.eop_file) if unit.is_eop else "",
         "fields": edu_mod.block_fields(unit.raw),
         "loc": {"name": (loc.name if loc else "") or "",
                 "descr": (loc.descr if loc else "") or "",
