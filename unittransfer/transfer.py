@@ -1487,6 +1487,16 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     for src_abs, rel in plan.icon_files:
         scan_conflict(src_abs, rel, "icon")
 
+    # An imported card lands on the replaced unit's OWN card — same folder, same
+    # `#<dict>.tga` name — so keeping the destination's file means the import
+    # writes nothing at all. Say so rather than reporting a copy that won't happen.
+    if plan.replace_type and plan.icon_files and opts.icon_conflict != "overwrite":
+        if any(c.kind == "icon" and not c.identical for c in plan.asset_conflicts):
+            plan.warnings.append(
+                f"the imported card(s) would replace '{plan.replace_type}'s own files, but "
+                "the icon rule is set to keep the destination's — nothing would be written. "
+                "Choose 'overwrite' under Unit card / info icons.")
+
     diff_conflicts = [c for c in plan.asset_conflicts if not c.identical]
     if diff_conflicts:
         plan.warnings.append(

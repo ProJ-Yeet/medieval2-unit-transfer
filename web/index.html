@@ -935,10 +935,9 @@ async function renderComposer(){
          ${hasProj?`<div class="projline">🏹 projectile: ${proj.map(p=>`<span class="chip">${esc(p)}</span>`).join('')}</div>`:''}
          ${hasEng?`<div class="projline">🏰 siege engine: <span class="chip">${esc(eng)}</span>${engMounted?'<span class="count"> (mounted)</span>':''}${engGroups.length?`<span class="count"> · ${engGroups.map(esc).join(' / ')}</span>`:''}${engClass?`<span class="count"> · class: ${esc(engClass)}</span>`:''}</div>`:''}</div>
      </div>
-     ${sameMod?'':`${projOn?`<div class="warnbox">⚠ <b>Projectile import won't import the special effects.</b> The projectile
-       definition (damage, velocity, angles…) is copied, but its visual effect/impact lines are pointed at
-       <code>invisible_placeholder_set</code> wherever ${esc(state.dst)} doesn't already define them. Re-add the
-       real effects manually in <code>descr_effect_impacts.txt</code> / the arrow-trail files.</div>`:''}
+     ${sameMod?'':`${projOn?`<div class="warnbox">⚠ <b>Projectile effects aren't imported.</b> The definition
+       (damage, velocity, angles) comes across; effect lines fall back to <code>invisible_placeholder_set</code>
+       where ${esc(state.dst)} lacks them. Re-add them in <code>descr_effect_impacts.txt</code>.</div>`:''}
      <fieldset><legend>Include secondary models</legend>
        <label class="chk${offOn?'':' off'}"><input type="checkbox" id="optOff" ${offOn&&c.include_officers?'checked':''} ${offOn?'':'disabled'}> Officers ${!hasOff?'(none)':offBase?kw:`(${u.officers.length})`}</label>
        <label class="chk${mntOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optMount" ${mntOn&&c.include_mount?'checked':''} ${mntOn?'':'disabled'}> Mount${!hasMount?' (none)':mntBase?' '+kw:` (${esc(u.mount)})`}</label>
@@ -950,54 +949,44 @@ async function renderComposer(){
        ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
        ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">${insteadMsg(c.base_type)} stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
        ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
-       <div class="count" style="margin-top:5px">Unticked groups keep their source name and must already exist in the destination — or switch them to ${rep?`“${esc(c.base_type)}”`:'the base'} above.</div>
+       <div class="count" style="margin-top:5px">An unticked group keeps its source name, which must already exist in ${esc(state.dst)} — or take it from ${rep?`“${esc(c.base_type)}”`:'the base'} above.</div>
      </fieldset>
      ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine — <code>${esc(eng)}</code></legend>
-       <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''},
+       <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''}
          ${engMounted?`and the <code>reference_points</code> file it names.`
-         :`${engGroups.length?`each group's <code>descr_engine_skeleton.txt</code> entry with its <code>animations/engine/</code> files, and `:''}every
-         <code>reference_points</code> / <code>engine_bone_map</code> / <code>engine_collision</code> / <code>engine_mesh</code>
-         file it names${engGroups.length?' — plus <b>the textures read straight out of each mesh binary</b> (no text file names them)':''}.`}</div>
-       ${engMounted?`<div class="count" style="margin-top:5px"><b>Mounted engine.</b> It has no model of its own — the visible gun is part of
-         the <b>mount's</b> model and wears the mount's textures, so only the <code>reference_points</code> file comes across.
-         ${engClass?`Its <code>class ${esc(engClass)}</code> names the animation set in <code>descr_engine_skeleton.txt</code>: if ${esc(state.dst)}
-         already defines <code>${esc(engClass)}</code> that entry is <b>kept as-is</b> (never overwritten, never renamed) and the preview flags it —
-         that normally works fine. Only when ${esc(state.dst)} lacks it is the source's entry added along with its <code>animations/engine/</code> files.`
-         :`No <code>class</code> line was found on the block, so no <code>descr_engine_skeleton.txt</code> entry is carried — check it by hand.`}</div>`:''}
-       ${engMounted?'':`<div class="count" style="margin-top:5px">Engine files can't be relocated into a mod folder the way battle models are:
-         each mesh has its texture paths <b>baked into the binary</b>. Overwriting a shared file (say
-         <code>siege_engines/textures/mangonel.texture</code>) also re-skins ${esc(state.dst)}'s own engines that use it,
-         so keeping the destination's is the safe default — the imported engine may then wear the destination's skin.
-         <b>Preview</b> lists any such file and lets you flip that choice.</div>`}
-       <div class="count" style="margin-top:5px"><b>Watch for overrides:</b> engines usually reference vanilla files without
-         overriding them. Those aren't copied — but if ${esc(state.dst)} overrides one, its version wins and may not match.
-         The preview flags every such file.</div>
-       <div class="count" style="margin-top:5px">Not ported: the block's effect/particle/sound references
-         (<code>fire_effect</code>, <code>shot_pfx_*</code>, <code>shot_sfx</code>, <code>area_effect</code>) and the crew
-         animation names in <code>crew_animations</code> — verify those exist in ${esc(state.dst)}.</div>
+         :`, ${engGroups.length?`each group's animation entry, `:''}every mesh / bone map / collision /
+         reference-points file it names${engGroups.length?', and the textures baked into those meshes':''}.`}</div>
+       ${engMounted?`<div class="count" style="margin-top:5px"><b>Mounted engine.</b> The gun is part of the <b>mount's</b>
+         model, so only the <code>reference_points</code> file comes across.
+         ${engClass?`Its animation set <code>${esc(engClass)}</code> is added only if ${esc(state.dst)} lacks it — an existing
+         one is kept as-is, which normally works fine.`
+         :`It has no <code>class</code> line, so no animation entry comes with it — check it by hand.`}</div>`:''}
+       ${engMounted?'':`<div class="count" style="margin-top:5px"><b>Engine files can't be relocated</b> — each mesh has its
+         texture paths baked in. Overwriting a shared one also re-skins ${esc(state.dst)}'s own engines, so the default keeps
+         the destination's file (the imported engine may then wear its skin). Preview lists them and lets you flip that.</div>`}
+       <div class="count" style="margin-top:5px">Vanilla files the engine uses aren't copied. If ${esc(state.dst)} overrides
+         one, its version wins and may not match — the preview flags those.</div>
+       <div class="count" style="margin-top:5px">Not ported: effect / particle / sound references and
+         <code>crew_animations</code> names — check those exist in ${esc(state.dst)}.</div>
      </fieldset>`:''}
      <fieldset><legend>What this transfer creates in ${esc(state.dst)}</legend>
        <div class="radio-row">
          <label><input type="radio" name="tmode" value="new" ${modeOf(c)==='new'?'checked':''}>
-           <b>A new unit</b> — its own EDU entry, name, description and icons</label>
+           <b>A new unit</b> — its own entry, name and icons</label>
          <label><input type="radio" name="tmode" value="base" ${modeOf(c)==='base'?'checked':''}>
-           <b>A new unit based on an existing one</b> — still a new entry, but stats,
-           attributes, cost, formation, ownership and era are inherited from a destination unit</label>
+           <b>A new unit based on an existing one</b> — a new entry that inherits a destination
+           unit's stats, cost, ownership and era</label>
          <label><input type="radio" name="tmode" value="replace" ${modeOf(c)==='replace'?'checked':''}>
-           <b>Replace an existing unit</b> — no new entry: a destination unit's block is
-           rewritten with “${esc(u.name)}”’s models, keeping its name, description and stats</label>
+           <b>Replace an existing unit</b> — no new entry: a destination unit keeps its name and
+           stats, and gets “${esc(u.name)}”’s models</label>
        </div>
        <div id="baseArea" style="margin-top:8px;${modeOf(c)==='new'?'display:none':''}">
          <div class="count" style="margin-bottom:6px">${modeOf(c)==='replace'
-           ? `Pick the <b>${esc(state.dst)}</b> unit to rewrite. Only ${esc(u.kind||u.category||'')} units are
-              listed — models and stats have to match the unit type, or the replacement fights
-              and animates wrong.<br>It keeps its type, dictionary, name, description, stats,
-              ownership, era and cards; it gets “${esc(u.type)}”’s soldier, officer and armour-upgrade
-              models. Change any of that with the <b>Take from</b> rows and the
-              <span class="ibadge">B</span> buttons under <b>Edit fields</b>, and the two boxes below
-              for the cards.`
-           : `Pick the <b>${esc(state.dst)}</b> unit to inherit the numbers from. Only
-              ${esc(u.kind||u.category||'')} units are listed — a base has to be the same unit type.`}</div>
+           ? `Pick the <b>${esc(state.dst)}</b> unit to rewrite. It keeps everything except its models —
+              change what comes across with the <b>Take from</b> rows, the
+              <span class="ibadge">B</span> buttons and the card boxes below.`
+           : `Pick the <b>${esc(state.dst)}</b> unit to inherit the numbers from.`}
+           Only ${esc(u.kind||u.category||'')} units are listed: it has to be the same unit type.</div>
          <div class="basepick">
            <img class="baseimg" id="baseImg" src="${c.base_type?iconUrl(state.dst,c.base_type):''}" style="${c.base_type?'':'visibility:hidden'}">
            <div style="flex:1">
@@ -1009,39 +998,33 @@ async function renderComposer(){
            </div>
          </div>
          ${modeOf(c)==='replace'&&!c.base_type?`<div class="count w-warn" style="margin-top:6px">
-           Pick a unit to replace — nothing can be applied until you do.</div>`:''}
+           Pick a unit to replace before applying.</div>`:''}
        </div>
      </fieldset>
      ${rep?`<fieldset><legend>Import from “${esc(u.name)}”</legend>
-       <div class="count">“${esc(c.base_type)}” keeps its own card and info card unless you say
-         otherwise — the models change, the picture in the recruitment panel doesn't have to.
-         An imported card is written under <b>${esc(c.base_type)}</b>'s dictionary name, into its
-         own faction folders, so the game still finds it.</div>
+       <div class="count">“${esc(c.base_type)}” keeps its own cards unless you tick these. An imported
+         card replaces its file, under its own name and faction folders.</div>
        <label class="chk" style="margin-top:6px"><input type="checkbox" id="optImpCard" ${c.import_card?'checked':''}>
          Unit card ${u.has_card?'':'<span class="count">— the source has none</span>'}</label>
        <label class="chk" style="margin-left:12px"><input type="checkbox" id="optImpInfo" ${c.import_info_card?'checked':''}>
          Unit info card ${u.has_info?'':'<span class="count">— the source has none</span>'}</label>
-       <div class="count" style="margin-top:6px">Individual stats are imported one at a time with the
-         <span class="ibadge">B</span> buttons in <b>Edit fields</b> below.</div>
+       <div class="count" style="margin-top:6px">Stats are imported one at a time with the
+         <span class="ibadge">B</span> buttons in <b>Edit fields</b>.</div>
      </fieldset>`:''}`}
      ${soundFieldset(c,u)}
      <fieldset><legend>Mercenary attribute</legend>
        <label class="chk"><input type="checkbox" id="optMerc" ${c.make_mercenary?'checked':''}> Make this a mercenary unit</label>
-       <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute and gives the battle
-         models a <code>merc</code> texture record.
-         ${u.mercenary?'<b class="w-good">This unit is already a mercenary in the source.</b>':''}
-         <br>Recruitment still needs a pool entry in <code>descr_mercenaries.txt</code> — not written by this tool.</div>
+       <div class="count" style="margin-top:5px">Adds the <code>mercenary_unit</code> attribute and a
+         <code>merc</code> texture record.
+         ${u.mercenary?'<b class="w-good">Already a mercenary in the source.</b>':''}
+         <br>To actually recruit it, add a pool entry in <code>descr_mercenaries.txt</code> yourself.</div>
      </fieldset>
      <fieldset><legend>Mercenary icons</legend>
        <label class="chk"><input type="checkbox" id="optMercIcons" ${c.merc_icons?'checked':''}> Put the unit card and info card in the merc folders ONLY</label>
-       <div class="count" style="margin-top:5px">Checked: puts the unit card in <code>ui/units/mercs/</code> and the info
-         card in <code>ui/unit_info/merc/</code> ONLY, pinning
-         <code>card_pic_dir</code> to <code>mercs</code> and <code>info_pic_dir</code> to
-         <code>merc</code> on the unit (added at the end of its EDU block if not already set).
-         <br>Unchecked (default): the card/info card are copied into EVERY faction folder the
-         unit ends up owned by, plus the mercs/merc folders as a fallback — no pinning needed.
-         Any target that already exists in the destination shows up below under
-         "Unit card / info icons" so you can choose to keep it or overwrite it.</div>
+       <div class="count" style="margin-top:5px"><b>On:</b> cards go to the merc folders only, pinned with
+         <code>card_pic_dir</code> / <code>info_pic_dir</code>.
+         <br><b>Off (default):</b> a copy in every faction folder the unit is owned by, plus the merc
+         folders as a fallback — no pinning needed.</div>
      </fieldset>
      <fieldset><legend>Edit fields — every EDU field (edits apply as overrides)</legend>
        ${sameMod?'':fromBasePanel(c,u)}
@@ -1051,21 +1034,16 @@ async function renderComposer(){
        </div>
        <div class="allfields" id="allFields"><div class="count" style="padding:6px">Loading fields…</div></div>
        ${sameMod?'':rep?`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
-         marks a field <b>${esc(c.base_type)}</b> keeps — every stat, attribute, cost and era
-         is one of these, which is why a replacement plays exactly as it did before.
-         <b>Click a B to import that one field from “${esc(u.type)}”</b> instead; click it again to
-         put ${esc(c.base_type)}'s value back. A greyed-out <span class="ibadge off"
-         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> is a field
-         you have imported. Fields “${esc(u.type)}” doesn't have can't be switched — their B stays on,
-         and <code>type</code> / <code>dictionary</code> are locked outright: changing those would
-         rename the unit rather than replace it.</div>`
+         marks a field <b>${esc(c.base_type)}</b> keeps. Click one to import that field from
+         “${esc(u.type)}”; click again to put it back. Greyed out <span class="ibadge off"
+         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> = imported.
+         <code>type</code> and <code>dictionary</code> are locked — changing them would rename the
+         unit instead of replacing it.</div>`
         :`<div class="count" style="margin-top:6px"><span class="ibadge">B</span>
-         marks a field that comes from the base unit${c.base_type?` <b>${esc(c.base_type)}</b>`:''}.
-         Click it to turn it off and keep <b>${esc(u.type)}</b>'s own value instead; click it again
-         to go back to the base's. A greyed-out <span class="ibadge off"
-         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> means
-         that field is currently the source unit's. Fields the source unit doesn't have at all
-         can't be switched — their B stays on.</div>`}
+         marks a field taken from the base${c.base_type?` <b>${esc(c.base_type)}</b>`:''}. Click one to keep
+         <b>${esc(u.type)}</b>'s own value instead; click again to go back. Greyed out <span class="ibadge off"
+         style="background:transparent;color:var(--dim);border-color:var(--edge)">B</span> = the source's
+         value. Fields the source unit doesn't have can't be switched.</div>`}
      </fieldset>
      <div id="previewBox"></div>
    </div>
@@ -1093,8 +1071,8 @@ async function renderComposer(){
   optMercIcons.onchange=()=>{c.merc_icons=optMercIcons.checked; doPreview();};
   // new unit / based on one / replace one — a whole different composer each time
   document.querySelectorAll('input[name=tmode]').forEach(r=>r.onchange=()=>setMode(r.value));
-  if(window.optImpCard)optImpCard.onchange=()=>{c.import_card=optImpCard.checked; doPreview();};
-  if(window.optImpInfo)optImpInfo.onchange=()=>{c.import_info_card=optImpInfo.checked; doPreview();};
+  if(window.optImpCard)optImpCard.onchange=()=>{c.import_card=optImpCard.checked; importedIcons(c); doPreview();};
+  if(window.optImpInfo)optImpInfo.onchange=()=>{c.import_info_card=optImpInfo.checked; importedIcons(c); doPreview();};
   // per-group source/base toggles — re-render so the include boxes grey out
   ['soldier_from','officer_from','mount_from','crew_from','upgrade_from'].forEach(k=>
     document.querySelectorAll(`input[name=${k}]`).forEach(r=>r.onchange=()=>{
@@ -1106,6 +1084,15 @@ async function renderComposer(){
    editor's baseline and the voice panel all mean something different in each one.
    Going back to a plain new unit drops the pick — nothing else uses it — but the
    pick SURVIVES a base<->replace switch, since it answers the same question. */
+/* Importing a card over a unit that already has one only does something if the
+   existing file is replaced: the replaced unit's card sits at the very path the
+   import writes to (ui/units/<faction>/#<its dict>.tga), and the default "use
+   existing" would keep it — the tick box would appear to do nothing. So asking
+   for a card sets the icon rule to overwrite; clearing both puts it back. The
+   radios in the preview still win if you change them afterwards. */
+function importedIcons(c){
+  c.icon_conflict=(c.import_card||c.import_info_card)?'overwrite':'use_existing';
+}
 function setMode(v){
   const c=cfgFor(state.editing);
   const prev=modeOf(c);
@@ -1147,11 +1134,10 @@ function fromBasePanel(c,u){
   // The armour-upgrade models are only a choice when replacing: a base template
   // leaves them with the transferred unit, since the new unit IS that unit.
   if(rep) rows+=row('upgrade_from','Armour upgrades',
-    `the <code>armour_ug_models</code> line — the models the unit wears once the`
-    +` blacksmith upgrades its armour`);
+    `<code>armour_ug_models</code> — the models it wears once its armour is upgraded`);
   return `<div class="basefrom${on?'':' off'}">
     <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`
-      :(rep?'the replaced unit — pick one to enable':'base unit — pick a base unit to enable')}</div>
+      :(rep?'the replaced unit — pick one first':'the base unit — pick one first')}</div>
     ${rows}</div>`;
 }
 /* ---------- voice / sound ----------
@@ -1184,16 +1170,15 @@ function soundFieldset(c,u){
     <input type="radio" name="sndmode" value="${v}" ${c.sound_mode===v?'checked':''} ${off?'disabled':''}>
     ${label}${note?` <span class="count">— ${note}</span>`:''}</label>`;
   if(!ds.has_file)return `<fieldset><legend>Voice / sound</legend>
-    <div class="count">“${esc(state.dst)}” has no
-      <code>data/export_descr_sounds_units_voice.txt</code>, so there is no voice bank to copy
-      an entry into. The unit will use the game's own sounds.</div></fieldset>`;
+    <div class="count">“${esc(state.dst)}” has no voice bank
+      (<code>export_descr_sounds_units_voice.txt</code>), so there is nothing to copy into.
+      The unit uses the game's own sounds.</div></fieldset>`;
   // why the accent/class pair is not yours to choose while a donor is set
   const why=locked
-    ? `Locked — the voice entry is a copy of “${d.name}”’s, so it goes into ${d.accent} / ${d.cls}, `
-      +`the block that unit sits in. The EDU’s accent and voice_type are written to match: `
-      +`point them anywhere else and the game looks in a block this entry is not in, and the unit `
-      +`falls back to generic barks. `
-      +(c.sound_mode==='base'?`Switch to “another unit” to choose a different voice.`
+    ? `Locked — the copied entry goes into ${d.accent} / ${d.cls}, the block “${d.name}” sits in, and `
+      +`accent / voice_type are written to match. Point them elsewhere and the unit falls back to `
+      +`generic barks. `
+      +(c.sound_mode==='base'?`Switch to “another unit” for a different voice.`
                              :`Clear the unit below to filter by accent and class again.`)
     : '';
   const donors=(ds.donors||[]).filter(x=>(!c.snd_accent||x.accent===c.snd_accent)
@@ -1206,23 +1191,18 @@ function soundFieldset(c,u){
     ${locked&&!vals.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:''}</select>`;
   let body='';
   if(d.mode==='keep')
-    body=`<div class="count" style="margin-top:6px">“${esc(d.name)}” keeps the
-      <code>Unit_Select</code> entry it already has, and its <code>accent</code> /
-      <code>voice_type</code> come across with the rest of its stats — nothing is written to
-      the voice bank. Pick “another unit” to give it a different voice.</div>`;
+    body=`<div class="count" style="margin-top:6px">“${esc(d.name)}” keeps the barks it already has —
+      the voice bank isn't touched. Pick “another unit” to give it a different voice.</div>`;
   else if(c.sound_mode==='none')
-    body=`<div class="count" style="margin-top:6px">No voice entry is written and the EDU’s
-      <code>accent</code> / <code>voice_type</code> are left exactly as the source unit had them.
-      The unit still speaks — it just falls back to whatever that accent/class block says for
-      every unit, instead of having lines of its own.</div>`;
+    body=`<div class="count" style="margin-top:6px">No entry is written and
+      <code>accent</code> / <code>voice_type</code> stay as the source unit had them. The unit still
+      speaks — it just uses its class's generic barks.</div>`;
   else if(d.blocked==='nobase')
-    body=`<div class="count w-warn" style="margin-top:6px">No base unit is chosen yet, so there is
-      no base voice to copy. Pick one under <b>Use another unit as base</b> above, or switch to
-      “another unit” and choose the voice by hand.</div>`;
+    body=`<div class="count w-warn" style="margin-top:6px">No base unit picked yet, so there is no
+      voice to copy. Pick one above, or switch to “another unit”.</div>`;
   else if(d.blocked==='silent')
-    body=`<div class="count w-warn" style="margin-top:6px">“${esc(d.name)}” has no
-      <code>Unit_Select</code> entry of its own in ${esc(state.dst)}’s voice bank — it uses its
-      class’s generic barks, so there is nothing to copy. Pick another unit${
+    body=`<div class="count w-warn" style="margin-top:6px">“${esc(d.name)}” has no barks of its own
+      in ${esc(state.dst)} — nothing to copy. Pick another unit${
       c.sound_mode==='base'?' for the voice':''}.</div>`;
   else body=`<div class="sndpick">
       <span class="count">Accent</span>${pick('snd_accent',acc,ds.accents||[],'— any —')}
@@ -1238,22 +1218,21 @@ function soundFieldset(c,u){
       </select>
       ${c.sound_donor?`<button onclick="cmpSndPick('sound_donor','')" title="unlock the accent and class filters">✕</button>`:''}
     </div>`:''}
-    ${locked?`<div class="sndlocked count">🔒 <b>${esc(d.name)}</b>’s <code>Unit_Select</code> sounds are
-      copied to <b>${esc(c.new_type||u.type)}</b> in <b>${esc(d.accent)} / ${esc(d.cls)}</b>,
-      and the unit’s EDU <code>accent</code> and <code>voice_type</code> are set to match.
-      ${esc(why)}</div>`:''}`;
+    ${locked?`<div class="sndlocked count">🔒 <b>${esc(d.name)}</b>’s sounds are copied to
+      <b>${esc(c.new_type||u.type)}</b> in <b>${esc(d.accent)} / ${esc(d.cls)}</b>, with
+      <code>accent</code> and <code>voice_type</code> set to match. ${esc(why)}</div>`:''}`;
   return `<fieldset><legend>Voice / sound</legend>
     <div class="sndopt">
       ${isReplace(c)
-        ? radio('base',`Keep “${esc(c.base_type)}”’s own voice`,'nothing is written to the voice bank')
+        ? radio('base',`Keep “${esc(c.base_type)}”’s own voice`,'the voice bank isn’t touched')
         : radio('base','Use the base unit’s sound',
-              c.base_type?`copies “${esc(c.base_type)}”’s barks`:'no base unit chosen yet')}
+              c.base_type?`copies “${esc(c.base_type)}”’s barks`:'no base unit picked yet')}
       ${radio('unit','Use another unit’s sound',
-              isReplace(c)?'copy some other destination unit’s barks over it'
-                          :'base the unit on one, take the voice from another')}
+              isReplace(c)?'copy another unit’s barks over it'
+                          :'take the voice from a different unit')}
       ${radio('none','Don’t import sound',isReplace(c)
-              ?'same as keeping it — the voice bank is left alone'
-              :'leave the unit on its class’s generic barks')}
+              ?'same as keeping it'
+              :'use the class’s generic barks')}
     </div>${body}</fieldset>`;
 }
 function cmpSndPick(key,value){
@@ -1464,13 +1443,13 @@ const clearBinOn=()=>(state.settings||{}).clear_strings_bin!==false;
 function cleanerBoxHtml(){
   return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes data/text/export_units.txt.strings.bin in the mod being written to. That is the compiled copy of export_units.txt; until it is gone the game keeps showing the OLD unit text. It is rebuilt on the next launch. This is a setting — it applies to every transfer, save, voice change and cleanup.">
     <input type="checkbox" ${clearBinOn()?'checked':''} onchange="setClearBin(this.checked)">
-    Clear <b>export_units.txt.strings.bin</b> afterwards
+    Clear the <b>unit-text cache</b> afterwards
     <span class="count">— setting, applies to every job</span></label>`;
 }
 async function setClearBin(on){
   state.settings=await api.post('/api/settings',{clear_strings_bin:on});
-  toast(on?'The unit-text cache will be cleared after every transfer / edit / cleanup.'
-          :'The unit-text cache is left alone — new unit text may not show up in game.');
+  toast(on?'Unit-text cache will be cleared after every job.'
+          :'Unit-text cache left alone — new unit text may not show in game.');
 }
 // what a job's response says about the clear, appended to its toast
 function binMsg(r){
@@ -1593,12 +1572,12 @@ function unitLimitBanner(){
     “${esc(state.dst)}” ${now?`already has ${p.current}`:`will have ${p.projected}`} units in
     export_descr_unit.txt
     (vanilla M2TW caps at ${VANILLA_UNIT_LIMIT}${p.add?`; this transfer adds ${p.add}`:''}).
-    ${p.eop?`<div class="sub">Its ${p.eop} M2TWEOP unit${p.eop===1?'':'s'} ${p.eop===1?'is':'are'} not counted — they load from the extender's own files.${p.eopAdd?` This transfer adds ${p.eopAdd} more of those.`:''}</div>`:''}
-    <div class="sub">Beyond ${VANILLA_UNIT_LIMIT}, unmodified M2TW crashes — but this is fine with the M2TWEOP / EOP engine extenders.</div>
+    ${p.eop?`<div class="sub">Its ${p.eop} M2TWEOP unit${p.eop===1?'':'s'} don't count — they load from the extender.${p.eopAdd?` This transfer adds ${p.eopAdd} more.`:''}</div>`:''}
+    <div class="sub">Past ${VANILLA_UNIT_LIMIT}, unmodified M2TW crashes. With M2TWEOP / EOP it's fine.</div>
     <div class="acts">
-      ${hasEop?`<button onclick="allToEop()">Write these units as M2TWEOP units instead</button>`:''}
+      ${hasEop?`<button onclick="allToEop()">Write these as M2TWEOP units instead</button>`:''}
       <button onclick="ignoreLimit()">Ignore for “${esc(state.dst)}” (using m2ex/eop)</button>
-      <span class="count">${hasEop?'':'Set the mod’s EOP folder in ⚙ Root settings to use the first option. '}Re-enable anytime in ⚙ Root settings.</span>
+      <span class="count">${hasEop?'':'Set the mod’s EOP folder in ⚙ Root to use the first option. '}Re-enable in ⚙ Root.</span>
     </div></div>`;
 }
 /* Flip every unit in the composer to "write as an M2TWEOP unit" — the one-click
@@ -1658,15 +1637,15 @@ function assetConflictUI(type,r){
     const warn=aDiff.length&&!reloc;
     html+=`<fieldset class="assetconf" ${warn?'':'style="border-color:var(--edge)"'}>
       <legend class="${warn?'w-warn':''}">Textures / meshes</legend>
-      <div class="count">${aConf.length} file(s) share a name &amp; path with the destination —
-        <b class="w-good">${aIdent.length}</b> byte-identical (reused),
+      <div class="count">${aConf.length} file(s) already exist at the same path —
+        <b class="w-good">${aIdent.length}</b> identical (reused),
         <b class="${aDiff.length?'w-warn':''}">${aDiff.length}</b> differ.
         ${r.reroute_dir?`<br><span class="w-good">Relocating ${r.relocated_count} file(s) → <code>${esc(r.reroute_dir)}/</code> — no conflicts.</span>`:''}</div>
       <div class="radio-row" style="margin-top:6px">
-        <label><input type="radio" name="ac" value="mod_folder" ${c.asset_conflict==='mod_folder'?'checked':''}> New folder named after the mod — <code>${esc(modFolderName())}/</code> <b class="w-good">(default)</b></label>
-        <label><input type="radio" name="ac" value="reroute" ${c.asset_conflict==='reroute'?'checked':''}> Reroute — pick/type a folder under <code>unit_models/</code></label>
-        <label><input type="radio" name="ac" value="use_existing" ${c.asset_conflict==='use_existing'?'checked':''}> Use existing — keep the destination’s files</label>
-        <label><input type="radio" name="ac" value="overwrite" ${c.asset_conflict==='overwrite'?'checked':''}> Overwrite — replace with the source’s files (backed up, undoable)</label>
+        <label><input type="radio" name="ac" value="mod_folder" ${c.asset_conflict==='mod_folder'?'checked':''}> Own folder — <code>${esc(modFolderName())}/</code> <b class="w-good">(default)</b></label>
+        <label><input type="radio" name="ac" value="reroute" ${c.asset_conflict==='reroute'?'checked':''}> Reroute — choose a folder under <code>unit_models/</code></label>
+        <label><input type="radio" name="ac" value="use_existing" ${c.asset_conflict==='use_existing'?'checked':''}> Keep the destination’s files</label>
+        <label><input type="radio" name="ac" value="overwrite" ${c.asset_conflict==='overwrite'?'checked':''}> Overwrite with the source’s (backed up, undoable)</label>
       </div>
       <div id="rerouteBox" style="${c.asset_conflict==='reroute'?'':'display:none'};margin-top:8px">
         <div class="brbar">
@@ -1684,7 +1663,7 @@ function assetConflictUI(type,r){
           </div>
         </div>
       </div>
-      ${reloc?`<div class="count" style="margin-top:6px">Files keep their structure below <code>unit_models/</code>, and the added <code>battle_models.modeldb</code> entries are rewritten to the new paths.</div>`:''}
+      ${reloc?`<div class="count" style="margin-top:6px">Files keep their folder structure, and the new modeldb entries point at the new paths.</div>`:''}
       ${aDiff.length&&!reloc?`<div class="flist">${aDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B${x.src_size===x.dst_size?' — same size, different bytes':''}</span></div>`).join('')}</div>`:''}
     </fieldset>`;
   }
@@ -1694,10 +1673,11 @@ function assetConflictUI(type,r){
       <legend class="${iDiff.length?'w-warn':''}">Unit card / info icons</legend>
       <div class="count">${iConf.length} icon(s) already exist — <b class="w-good">${iConf.length-iDiff.length}</b> identical,
         <b class="${iDiff.length?'w-warn':''}">${iDiff.length}</b> differ.
-        The game finds icons by faction folder + dictionary name, so these <b>cannot be rerouted</b>.</div>
+        Icons are found by faction folder + name, so they can't be rerouted.${
+        r.replace_type?` To import a card over <b>${esc(r.replace_type)}</b>'s, pick overwrite.`:''}</div>
       ${iDiff.length?`<div class="radio-row" style="margin-top:6px">
-        <label><input type="radio" name="ic" value="use_existing" ${c.icon_conflict!=='overwrite'?'checked':''}> Use existing icon</label>
-        <label><input type="radio" name="ic" value="overwrite" ${c.icon_conflict==='overwrite'?'checked':''}> Overwrite with the source’s icon</label>
+        <label><input type="radio" name="ic" value="use_existing" ${c.icon_conflict!=='overwrite'?'checked':''}> Keep the existing icon</label>
+        <label><input type="radio" name="ic" value="overwrite" ${c.icon_conflict==='overwrite'?'checked':''}> Overwrite with the source’s</label>
       </div>
       <div class="flist">${iDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B</span></div>`).join('')}</div>`:''}
     </fieldset>`;
@@ -1708,10 +1688,10 @@ function assetConflictUI(type,r){
       <legend class="${eDiff.length?'w-warn':''}">Siege-engine files</legend>
       <div class="count">${eConf.length} engine file(s) already exist — <b class="w-good">${eConf.length-eDiff.length}</b> identical,
         <b class="${eDiff.length?'w-warn':''}">${eDiff.length}</b> differ.
-        Each mesh carries its texture paths <b>inside the binary</b>, so these <b>cannot be relocated</b>.</div>
+        Each mesh has its texture paths baked in, so they can't be relocated.</div>
       ${eDiff.length?`<div class="radio-row" style="margin-top:6px">
         <label><input type="radio" name="ec" value="use_existing" ${c.engine_conflict!=='overwrite'?'checked':''}> Keep the destination’s <b class="w-good">(default)</b> — the imported engine may wear its skin</label>
-        <label><input type="radio" name="ec" value="overwrite" ${c.engine_conflict==='overwrite'?'checked':''}> Overwrite — also re-skins ${esc(state.dst)}’s own engines using these files</label>
+        <label><input type="radio" name="ec" value="overwrite" ${c.engine_conflict==='overwrite'?'checked':''}> Overwrite — also re-skins ${esc(state.dst)}’s own engines</label>
       </div>
       <div class="flist">${eDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B</span></div>`).join('')}</div>`:''}
     </fieldset>`;
@@ -1720,9 +1700,8 @@ function assetConflictUI(type,r){
   const ovr=r.engine_dest_overrides||[];
   if(ovr.length){
     html+=`<fieldset class="assetconf"><legend class="w-warn">Engine override warning</legend>
-      <div class="count">The engine references ${ovr.length} vanilla file(s) that <b>${esc(state.src)} does not override
-        but ${esc(state.dst)} does</b>. Nothing is copied for them — ${esc(state.dst)}’s version wins, and it may not be
-        what this engine expects. Check these by hand:</div>
+      <div class="count">${ovr.length} vanilla file(s) the engine uses are overridden by ${esc(state.dst)} but not by
+        ${esc(state.src)}. Nothing is copied — ${esc(state.dst)}’s version wins and may not match. Check by hand:</div>
       <div class="flist">${ovr.map(p=>`<div class="frow"><span class="fp">${esc(p)}</span></div>`).join('')}</div>
     </fieldset>`;
   }
@@ -1732,7 +1711,7 @@ function assetConflictUI(type,r){
     const kept=skel.filter(x=>x.action==='reuse');
     html+=`<fieldset class="assetconf" ${kept.length?'':'style="border-color:var(--edge)"'}>
       <legend class="${skel.some(x=>x.action==='vanilla')?'w-warn':''}">Engine skeletons (<code>descr_engine_skeleton.txt</code>)</legend>
-      <div class="count">An entry already present in ${esc(state.dst)} is <b>never overwritten</b> — it is reused as-is.</div>
+      <div class="count">An entry ${esc(state.dst)} already has is reused as-is, never overwritten.</div>
       <div class="flist">${skel.map(x=>`<div class="frow"><span class="fp">${esc(x.name)}</span><span class="fs ${
         x.action==='vanilla'?'w-warn':x.action==='add'?'w-good':''}">${esc(x.action)} — ${esc(x.detail)}</span></div>`).join('')}</div>
     </fieldset>`;
@@ -1800,17 +1779,17 @@ function eopUI(type,r){
   // the replaced unit already lives in, EDU or M2TWEOP.
   if(r.replace_type) return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--edge)">
     <legend>Which file this unit is written to</legend>
-    <div class="count">The block replaces <b>${esc(r.replace_type)}</b> where it already is${
-      r.eop_file?` — <span class="path">${esc(r.eop_file)}</span>`:' in <code>export_descr_unit.txt</code>'},
-      so nothing moves between files and the ${VANILLA_UNIT_LIMIT}-unit cap is untouched.</div></fieldset>`;
+    <div class="count">It replaces <b>${esc(r.replace_type)}</b> where it already is${
+      r.eop_file?` — <span class="path">${esc(r.eop_file)}</span>`:' in <code>export_descr_unit.txt</code>'}.
+      Nothing moves, and the ${VANILLA_UNIT_LIMIT}-unit cap is untouched.</div></fieldset>`;
   if(!r.dest_has_eop && !r.source_is_eop) return '';
   const auto=r.source_is_eop?'M2TWEOP unit file (the source unit is one)':'export_descr_unit.txt';
   return `<fieldset class="assetconf" style="margin-top:10px${r.source_is_eop&&!r.dest_has_eop?';border-color:var(--warn)':''}">
     <legend${r.source_is_eop?' class="w-warn"':''}>Which file this unit is written to</legend>
     <div class="count">
       ${r.source_is_eop?`“${esc(type)}” is an <b>M2TWEOP unit</b> in the source mod. `:''}
-      ${r.dest_has_eop?`“${esc(state.dst)}” has an EOP unit folder, so it can hold M2TWEOP units — those do not count against the ${VANILLA_UNIT_LIMIT}-unit cap.`
-                      :`“${esc(state.dst)}” has <b>no EOP unit folder configured</b>, so the block goes into export_descr_unit.txt and <b>does</b> count against the ${VANILLA_UNIT_LIMIT}-unit cap. Set one in ⚙ Root settings to keep it out.`}
+      ${r.dest_has_eop?`“${esc(state.dst)}” has an EOP folder, so it can hold M2TWEOP units — they don't count against the ${VANILLA_UNIT_LIMIT}-unit cap.`
+                      :`“${esc(state.dst)}” has <b>no EOP folder set</b>, so this goes into export_descr_unit.txt and <b>does</b> count against the ${VANILLA_UNIT_LIMIT}-unit cap. Set one in ⚙ Root to keep it out.`}
     </div>
     ${r.dest_has_eop?`<div class="radio-row" style="margin-top:6px">
       <label><input type="radio" name="eopt" value="auto" ${(c.eop_target||'auto')==='auto'?'checked':''}> Same as the source (${esc(auto)})</label>
@@ -2322,9 +2301,9 @@ function renderSounds(){
         ${tab('orphans','Entries with no unit',s.orphans.length)}
       </div>
     </div>
-    ${s.tab==='orphans'?`<div class="count" style="margin-top:10px">These voice entries name a unit
-       that no longer exists in <code>export_descr_unit.txt</code>. They do nothing — but the name is
-       taken, so a new unit called the same thing would inherit them. Tick one to delete it.</div>`:''}
+    ${s.tab==='orphans'?`<div class="count" style="margin-top:10px">These entries name units that no longer
+       exist. They do nothing, but the name stays taken — a new unit called the same thing would inherit
+       them. Tick one to delete it.</div>`:''}
     <div class="sndbar">
       <span class="count">Filter</span>
       <select onchange="sndFilter('fAccent',this.value)">
@@ -2406,10 +2385,9 @@ async function sndApply(){
       ${bad?`<div class="warnbox">⚠ <b>${bad} row(s) can't be written</b> — nothing is applied
         until they are fixed or removed from the selection.<br>
         ${r.errors.map(e=>esc(e)).join('<br>')}</div>`:''}
-      <div class="count" style="margin-bottom:8px">Writes
-        <code>data/export_descr_sounds_units_voice.txt</code>${r.edu_rewritten?
-        ' and <code>data/export_descr_unit.txt</code> (the matching <code>accent</code> / <code>voice_type</code> lines)':''}.
-        Both are backed up first — 🕑 Log → Undo restores them byte-exact.</div>
+      <div class="count" style="margin-bottom:8px">Writes the voice bank${r.edu_rewritten?
+        ' and <code>export_descr_unit.txt</code> (the matching <code>accent</code> / <code>voice_type</code> lines)':''},
+        backed up first — 🕑 Log → Undo restores them exactly.</div>
       ${renderSummary(r.summary)}
     </div>
     <div class="foot">${cleanerBoxHtml()}<button onclick="closeModal()">Cancel</button>
@@ -2669,17 +2647,16 @@ function edIdentity(){
       <button class="${merc?'on':''}" onclick="edToggleMerc(${merc?'false':'true'})">${
         merc?'✓ Mercenary unit':'Make this a mercenary unit'}</button>
       <div class="count" style="margin-top:6px">${merc
-        ?'The <code>mercenary_unit</code> attribute is on this unit. Pressing the button removes it.'
-        :'Adds the <code>mercenary_unit</code> attribute to its <code>attributes</code> line.'}
-        Recruitment still needs a pool entry in <code>descr_mercenaries.txt</code> — not written by
-        this tool. Its unit card is looked up under <code>ui/units/mercs/</code> once it is a merc
-        (unless <code>card_pic_dir</code> pins it elsewhere).</div>
+        ?'This unit has the <code>mercenary_unit</code> attribute; the button removes it.'
+        :'Adds the <code>mercenary_unit</code> attribute.'}
+        To recruit it, add a pool entry in <code>descr_mercenaries.txt</code> yourself. A merc's card is
+        looked up under <code>ui/units/mercs/</code> unless <code>card_pic_dir</code> says otherwise.</div>
     </fieldset>
     <fieldset style="margin-top:12px"><legend>Unit card / info card</legend>
-      <div class="count">Import a replacement from anywhere on disk. On save it is renamed to
-        the unit's dictionary name and copied into <b>every faction that owns the unit</b>
-        (plus the <code>mercs</code>/<code>merc</code> fallback), because the game looks the card
-        up under the <i>player's</i> faction folder.
+      <div class="count">Import a replacement from anywhere on disk. On save it takes the unit's
+        dictionary name and is copied into <b>every faction that owns the unit</b> (plus the
+        <code>mercs</code>/<code>merc</code> fallback) — the game looks it up under the
+        <i>player's</i> faction folder.
         ${edOwnFolders().length
           ?`Right now that is <b>${edOwnFolders().length}</b> folder(s):
              <code>${edOwnFolders().map(esc).join('</code> <code>')}</code>.`
@@ -3219,10 +3196,9 @@ function edUgNewBody(){
       <select onchange="state.ed.ug.from=this.value">${own.map(n=>
         `<option value="${esc(n)}" ${u.from===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
       <button class="primary" onclick="edUgNewFromTier()">Set it up…</button></div>
-    <div class="count" style="margin-top:7px">Appends the tier and opens the new-entry form on the
-      <b>Battle models</b> tab: name it, say which folder its files go in, and point it at its own
-      mesh and texture. Sprites, the faction texture records and the footer come from the entry
-      you based it on, so the model stays valid.</div>`;
+    <div class="count" style="margin-top:7px">Adds the tier and opens the new-entry form on the
+      <b>Battle models</b> tab: name it, pick its folder, and point it at its own mesh and texture.
+      Everything else is copied from the entry you based it on.</div>`;
 }
 function edUgNewFromTier(){const u=state.ed.ug; edAddArmourTier(u&&u.from);}
 // Jump straight to a model's entry in the bmdb tab (the ✎ beside an armour tier
@@ -3459,10 +3435,10 @@ function edFolderBox(m){
   const target=me.move_dir||(chk&&chk.target)||f.base||f.suggestion;
   if(me.move_dir) return `<div class="folderbox">
     <b class="w-good">✓ Files will move into <span class="fpath">data/${esc(me.move_dir)}</span></b>
-    <div class="count" style="margin-top:4px">Meshes go in that folder, textures in its
-      <code>textures/</code> sub-folder. Sprites are left where they are.
-      ${me.move_shared?'<b class="w-warn">Other entries using the same files are being repointed with it.</b>'
-                      :'Other entries keep their current paths.'}</div>
+    <div class="count" style="margin-top:4px">Meshes there, textures in <code>textures/</code>, sprites
+      left alone.
+      ${me.move_shared?'<b class="w-warn">Other entries using these files are repointed too.</b>'
+                      :'Other entries keep their paths.'}</div>
     <div class="barrow"><button onclick="edFolderCancel('${q1(esc(m.name))}')">Undo this move</button></div>
   </div>`;
   const head=f.standardized
@@ -3498,7 +3474,7 @@ function edFolderCheckHtml(m,chk){
     ${shared.length?`<div class="count w-warn" style="margin-top:6px">⚠ <b>${shared.length} other
       model entr${shared.length===1?'y also uses':'ies also use'} these files:</b>
       ${shared.map(n=>`<code>${esc(n)}</code>`).join(', ')}.<br>
-      Moving without updating them leaves the old files in place and those entries pointing at them.</div>
+      Moving without updating them leaves those entries pointing at the old files.</div>
       <div class="barrow">
         <button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',true)">Edit and move anyway — update all ${shared.length}</button>
         <button onclick="edFolderApply('${q1(esc(m.name))}',false)">Move only this entry</button>
@@ -3816,10 +3792,9 @@ function renderCleanup(){
   document.getElementById('modal').innerHTML=`
     <h2>Clean up ${esc(a.mod)}’s battle_models.modeldb</h2>
     <div class="mbody">
-      <div class="count" style="margin-bottom:10px">${a.entry_count} entries scanned.
-        Nothing is deleted: everything ticked is <b>moved</b> into the folder below, keeping the
-        mod's own folder layout so it can be pasted straight back. The removal itself is undoable
-        from 🕑 Log.</div>
+      <div class="count" style="margin-bottom:10px">${a.entry_count} entries scanned. Nothing is deleted —
+        everything ticked is <b>moved</b> into the folder below, in the mod's own layout, so it can be
+        pasted straight back. Undoable from 🕑 Log.</div>
 
       <fieldset><legend>Where the removed assets go</legend>
         <div class="cltarget">
@@ -3841,10 +3816,10 @@ function renderCleanup(){
       ${sec('orphans','Files under unit_models no entry mentions',()=>clOrphanBody())}
 
       ${clLuaBox(a)}
-      ${a.mentioned.length?`<div class="count">${a.mentioned.length} further entr${
-        a.mentioned.length===1?'y is':'ies are'} unused by any unit but still named in another
-        file (<code>${[...new Set(a.mentioned.map(m=>m.file))].slice(0,4).map(esc).join('</code>, <code>')}</code>)
-        — left alone on purpose.</div>`:''}
+      ${a.mentioned.length?`<div class="count">${a.mentioned.length} more entr${
+        a.mentioned.length===1?'y is':'ies are'} used by no unit but named in another file
+        (<code>${[...new Set(a.mentioned.map(m=>m.file))].slice(0,4).map(esc).join('</code>, <code>')}</code>)
+        — left alone.</div>`:''}
       ${a.mentioned_mounts.length?`<div class="count">${a.mentioned_mounts.length} mount${
         a.mentioned_mounts.length===1?' is':'s are'} ridden by no unit but still named in a
         <code>descr_*.txt</code> — not offered above.</div>`:''}
@@ -3885,11 +3860,10 @@ function clLuaBox(a){
     esc(m.file)}${m.in_comment?' — in a comment, still protected':''}</span></div>`).join('');
   return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--good)">
     <legend class="w-good">Protected by the mod's Lua scripts</legend>
-    <div class="count"><b>${kept.length}</b> entr${kept.length===1?'y is':'ies are'} named by one of the
-      <b>${scanned}</b> <code>.lua</code> script${scanned===1?'':'s'} in this mod, and nothing else references
-      ${kept.length===1?'it':'them'}. M2TWEOP scripts refer to battle models by name, so ${
-      kept.length===1?'it is':'they are'} <b>not</b> offered for removal and cannot be merged away —
-      deleting one would break that script the first time it runs.</div>
+    <div class="count"><b>${kept.length}</b> entr${kept.length===1?'y is':'ies are'} named by one of this mod's
+      <b>${scanned}</b> <code>.lua</code> script${scanned===1?'':'s'} and nothing else. Deleting
+      ${kept.length===1?'it':'them'} would break that script, so ${kept.length===1?'it is':'they are'} not
+      offered for removal.</div>
     <div class="flist" style="margin-top:6px">${rows}${
       kept.length>60?`<div class="count">…and ${kept.length-60} more</div>`:''}</div>
   </fieldset>`;
@@ -3918,11 +3892,9 @@ function clMergeBody(){
   const c=state.clean,rows=c.a.merges;
   if(!rows.length)return '<div class="count" style="margin-top:8px">None found.</div>';
   return `<div class="count" style="margin-top:7px">
-      These entries are named <b>only</b> by a unit's <code>soldier</code> line — never as an
-      <code>armour_ug_models</code> tier, an officer, a mount or a character model. Each one has a twin
-      with the <b>exact same footer</b> (animations, skeletons and torch), so the soldier line can be
-      pointed at the twin and this entry freed. It is <b>not</b> automatic: the twin's meshes and
-      textures are its own, so check the pair before ticking it.</div>
+      Each of these is used only by a unit's <code>soldier</code> line and has a twin with the same
+      footer (animations, skeletons, torch), so the line can point at the twin instead.
+      <b>Check each pair first</b> — the twin's meshes and textures are its own.</div>
     <div class="clbar">
       <button onclick="clAll('merges',true)">Agree to all</button>
       <button onclick="clAll('merges',false)">None</button></div>
@@ -3964,10 +3936,10 @@ function clInto(entry,into){
 function clMountBody(){
   const c=state.clean,rows=c.a.unused_mounts;
   if(!rows.length)return '<div class="count" style="margin-top:8px">None — every mount is ridden by a unit.</div>';
-  return `<div class="count" style="margin-top:7px">No unit in this mod has a <code>mount</code>
-      line naming these, so their <code>descr_mount.txt</code> blocks do nothing. Ticking one
-      removes that block <b>and</b> frees its modeldb entry, when nothing else names the model.
-      The removed blocks are written to <code>removed_mounts.txt</code> in the destination.</div>
+  return `<div class="count" style="margin-top:7px">No unit rides these, so their
+      <code>descr_mount.txt</code> blocks do nothing. Ticking one removes the block and frees its
+      modeldb entry if nothing else uses the model. Removed blocks are saved to
+      <code>removed_mounts.txt</code>.</div>
     <div class="clbar">
       <button onclick="clAll('mounts',true)">Select all</button>
       <button onclick="clAll('mounts',false)">None</button></div>
@@ -4136,9 +4108,9 @@ function openNewUnitPicker(){
   modal.className='modal';
   modal.innerHTML=`<h2>New unit — pick the unit to build it from</h2>
     <div class="mbody">
-      <div class="count" style="margin-bottom:8px">The new unit is a copy of the one you pick: same models,
-        icons and stats, under a new <code>type</code> and <code>dictionary</code>. Nothing is duplicated on
-        disk — identical models and cards are reused. You can then change any field in the next step.</div>
+      <div class="count" style="margin-bottom:8px">The new unit copies the one you pick — same models, icons
+        and stats under a new <code>type</code> and <code>dictionary</code>. Nothing is duplicated on disk, and
+        you can change any field in the next step.</div>
       <input id="nuSearch" placeholder="Filter units…" style="width:100%" oninput="renderNewUnitList()">
       <div class="barrow" style="margin-bottom:6px">
         <select id="nuFac" onchange="renderNewUnitList()">${
@@ -4216,39 +4188,36 @@ async function openSettings(){
       <fieldset><legend>Launcher</legend>
         <label class="chk"><input type="checkbox" id="consoleChk" ${s.show_console?'checked':''} onchange="saveConsole()">
           Keep the console window open</label>
-        <div class="count" style="margin-top:6px"><code>Launch-Unit-Transfer.bat</code> <b>always</b> opens a console so a failed
-          start is readable instead of a window that flashes and vanishes. It shows the startup checks, then the unit-card
-          TGA→PNG conversions as they run. Off (default): it hides itself once that's done. On: it stays, showing every
-          request and transfer. <b>Applies from the next launch.</b></div>
-        <div class="count" style="margin-top:6px">If anything fails — before or after startup — the console comes back with the
-          reason and stays put. Everything is also written to <code>config\\server.log</code>, console or not.
-          To re-run just the checks: <code>py app.py --check</code></div>
+        <div class="count" style="margin-top:6px">The launcher always opens a console showing the startup checks
+          and the unit-card conversions. Off (default): it closes once that's done. On: it stays, showing every
+          request. <b>Applies from the next launch.</b></div>
+        <div class="count" style="margin-top:6px">On any failure the console comes back with the reason and stays
+          put. Everything is logged to <code>config\\server.log</code> either way.
+          Checks only: <code>py app.py --check</code></div>
         <div style="margin-top:8px"><button class="danger" onclick="quitServer()">⏻ Quit server</button>
           <span class="count">stops the tool (needed when running silently)</span></div>
       </fieldset>
       <fieldset><legend>Transfer defaults</legend>
         <label class="chk"><input type="checkbox" id="soldierBaseChk" ${s.soldier_from_base?'checked':''} onchange="saveSoldierBase()">
           Use the base unit's <b>soldier</b> line by default</label>
-        <div class="count" style="margin-top:6px">When you pick a “use another unit as base”, default the <b>Soldier</b> source to the base (so the base's soldier model &amp; projectile are used) instead of the transferred unit's. You can still flip it per unit in the composer.</div>
+        <div class="count" style="margin-top:6px">With a base unit, start the <b>Soldier</b> row on the base, so its model and projectile are used instead of the transferred unit's. Still switchable per unit. Replacing a unit ignores this — swapping models is the point there.</div>
       </fieldset>
       <fieldset><legend>Unit-text cache</legend>
         <label class="chk"><input type="checkbox" id="clearBinChk" ${s.clear_strings_bin===false?'':'checked'} onchange="saveClearBin()">
           Clear <code>export_units.txt.strings.bin</code> after every transfer / edit / cleanup</label>
-        <div class="count" style="margin-top:6px">The game reads that compiled cache, not <code>export_units.txt</code>, and only rebuilds it when it is missing — so until it is deleted a transferred or renamed unit keeps showing its <b>old</b> name and description, or none at all. Deleting it costs nothing: the next launch writes a fresh one. Leave this on unless you have a reason not to.</div>
-        <div class="count" style="margin-top:6px">Same as running <code>del data\\text\\export_units.txt.strings.bin</code> inside the mod. It is the only file this touches — the box at the bottom of each Apply / Save / Move-them-out dialog is this same setting.</div>
-        <div class="count" style="margin-top:6px">This replaced running <code>Full Cleaner.bat</code>, which also deleted mod files the game never rebuilds (the campaign map's water art, some battle maps) with no way to undo it. The script still sits in the app folder if you ever want to run it by hand.</div>
+        <div class="count" style="margin-top:6px">The game reads that compiled cache instead of <code>export_units.txt</code>, and only rebuilds it when it's missing — so until it is deleted a new or renamed unit keeps showing its <b>old</b> text. Deleting costs nothing: the next launch writes a fresh one.</div>
+        <div class="count" style="margin-top:6px">It is the only file this touches, and it is the same setting as the box at the bottom of every Apply dialog. (It replaced <code>Full Cleaner.bat</code>, which also deleted mod files the game never rebuilds — that script is still in the app folder if you want it.)</div>
       </fieldset>
       <fieldset><legend>Unit-limit warning (500 vanilla cap)</legend>
         <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>
         ${ignHtml}
       </fieldset>
       <fieldset><legend>M2TWEOP unit folders</legend>
-        <div class="count" style="margin-bottom:8px">M2TWEOP loads extra units from its own folder instead of
-          <code>data/export_descr_unit.txt</code>. Every <code>.txt</code> in there that holds unit blocks is read as
-          part of the mod's roster — those units are badged <span class="badge eop">EOP</span> everywhere in this tool,
-          are edited in place in their own file, and do <b>not</b> count against the ${VANILLA_UNIT_LIMIT}-unit cap.</div>
-        <div class="count" style="margin-bottom:8px">Left blank, the folder is auto-detected (a folder called
-          <code>eopData</code> near the top of the mod). Set it explicitly if your mod keeps them elsewhere.</div>
+        <div class="count" style="margin-bottom:8px">M2TWEOP loads extra units from its own folder. Those units are
+          badged <span class="badge eop">EOP</span> here, edited in place in their own file, and don't count against the
+          ${VANILLA_UNIT_LIMIT}-unit cap.</div>
+        <div class="count" style="margin-bottom:8px">Left blank, an <code>eopData</code> folder is auto-detected. Set it
+          if your mod keeps them elsewhere.</div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
           <select id="eopModSel" onchange="loadEopDirs()" style="max-width:260px">${
             (state.mods||[]).map(m=>`<option value="${esc(m.name)}"${m.name===(state.dst||state.src)?' selected':''}>${esc(m.name)}</option>`).join('')}</select>
