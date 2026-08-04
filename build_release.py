@@ -41,7 +41,10 @@ EMBED_URL = (f"https://www.python.org/ftp/python/{PY_VERSION}/"
 #: deletes export_units.txt.strings.bin itself instead. It still ships so anyone
 #: who wants the full sweep can copy it into a mod and run it by hand.
 INCLUDE_FILES = ("app.py", "transfer_cli.py", "Full Cleaner.bat")
-INCLUDE_DIRS = ("unittransfer", "web")
+#: tools/ carries nvcompress.exe + its DLLs (NVIDIA Texture Tools 2.0), which
+#: Sprites mode shells out to for TGA -> DXT5. ~1MB, and without it the convert
+#: step can't run at all — so it ships rather than being a manual download.
+INCLUDE_DIRS = ("unittransfer", "web", "tools")
 #: never ship these, whatever they contain
 EXCLUDE_NAMES = {"__pycache__", ".pytest_cache", ".DS_Store"}
 

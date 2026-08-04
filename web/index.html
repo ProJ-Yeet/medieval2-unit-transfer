@@ -230,7 +230,11 @@
   .frm input,.frm textarea,.frm select{width:100%;margin-top:3px}
   .frm textarea{min-height:70px;resize:vertical;line-height:1.4}
   .frm .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .icoprev{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
+  .icoslot{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+  .icoslot .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+  .icoslot .fn{font-size:11px;color:var(--fg);max-width:220px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .icoprev{display:flex;gap:14px;align-items:flex-start;margin-top:12px;flex-wrap:wrap}
   .icoprev img{background:#0d0f13;border:1px solid var(--edge);border-radius:6px}
   .icoprev .card{width:96px;height:128px;object-fit:contain;padding:0}
   .icoprev .info{max-width:420px;height:auto;object-fit:contain}
@@ -368,6 +372,39 @@
   .treebox{font:11.5px/1.5 ui-monospace,Consolas,monospace;color:var(--dim);background:var(--panel);
     border:1px solid var(--edge);border-radius:6px;padding:8px 10px;margin-top:7px;overflow-x:auto}
   /* ---- Sounds mode: the unit voice bank ---- */
+  /* ---- sprites mode ---- */
+  .sprstep{border:1px solid var(--edge);border-radius:8px;background:var(--panel);margin-top:10px}
+  .sprstep>h3{margin:0;padding:8px 12px;font-size:13px;background:var(--panel2);
+    border-bottom:1px solid var(--edge);border-radius:8px 8px 0 0;display:flex;gap:8px;align-items:center}
+  .sprstep>h3 .n{width:19px;height:19px;border-radius:50%;background:var(--accent);color:var(--bg);
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+  .sprstep>h3 .grow{flex:1}
+  .sprbody{padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+  .sprrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sprrow select,.sprrow input[type=search]{padding:4px 7px;font-size:12px}
+  .sprpick{max-height:230px;overflow:auto;border:1px solid var(--edge);border-radius:6px;
+    background:var(--panel2)}
+  .sprpick label{display:flex;gap:8px;align-items:center;padding:4px 9px;font-size:12px;
+    border-bottom:1px solid var(--edge);cursor:pointer}
+  .sprpick label:last-child{border-bottom:none}
+  .sprpick label:hover{background:var(--panel)}
+  .sprpick .fac{color:var(--dim);font-size:11px;margin-left:auto}
+  .sprlua{width:100%;min-height:66px;font-family:ui-monospace,Consolas,monospace;font-size:12px;
+    padding:7px 9px;border-radius:6px;border:1px solid var(--edge);background:var(--panel2);
+    color:var(--fg);resize:vertical}
+  .sprtag{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--edge)}
+  .sprtag.on{border-color:var(--bad);color:var(--bad)}
+  .sprtag.off{border-color:var(--good);color:var(--good)}
+  .sprlist{border:1px solid var(--edge);border-radius:6px;background:var(--panel2);max-height:220px;
+    overflow:auto}
+  .sprlist .r{display:grid;grid-template-columns:1fr 120px 90px;gap:8px;padding:4px 10px;
+    font-size:12px;border-bottom:1px solid var(--edge)}
+  .sprlist .r:last-child{border-bottom:none}
+  .sprlist .r.hrow{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .sprnote{font-size:11.5px;color:var(--dim);line-height:1.5}
+  .sprhead{position:sticky;top:0;background:var(--bg);padding:10px 0 6px;z-index:2;
+    border-bottom:1px solid var(--edge)}
+  .sprhead h2{margin:0 0 3px;font-size:15px;color:var(--accent)}
   .sndhead{position:sticky;top:0;background:var(--bg);padding:10px 0 6px;z-index:2;
     border-bottom:1px solid var(--edge)}
   .sndhead h2{margin:0 0 3px;font-size:15px;color:var(--accent)}
@@ -411,6 +448,7 @@
     <option value="edit">✎ Unit Editor</option>
     <option value="bmdb">🗄 BMDB Editor</option>
     <option value="sounds">🔊 Unit Sounds</option>
+    <option value="sprites">🖼 Sprites</option>
   </select>
   <div class="sep"></div>
   <span class="lbl" id="srcLbl">From</span><select id="srcSel"></select>
@@ -669,7 +707,7 @@ function wire(){
 // source == dest.
 function applyMode(persist){
   const one=state.mode!=='transfer', edit=state.mode==='edit', bm=state.mode==='bmdb',
-        snd=state.mode==='sounds';
+        snd=state.mode==='sounds', spr=state.mode==='sprites';
   document.getElementById('srcLbl').textContent=one?'Mod':'From';
   document.getElementById('dstWrap').style.display=one?'none':'';
   selBtn.style.display=one?'none':'';
@@ -679,12 +717,13 @@ function applyMode(persist){
   cleanBtn.style.display=bm?'inline-block':'none';
   sndBtn.style.display=snd?'inline-block':'none';
   unusedWrap.style.display=bm?'inline-flex':'none';
-  mercOnly.parentElement.style.display=(bm||snd)?'none':'inline-flex';
-  // both of these bring their own filters — the sidebar's faction/era ones say
-  // nothing about a voice entry, and nothing at all about a modeldb record
-  document.querySelector('.filters').style.display=(bm||snd)?'none':'';
-  search.placeholder=bm?'Search entries…':snd?'Search units…':'Search…';
-  document.title=bm?'BMDB Editor':snd?'Unit Sounds':edit?'Unit Editor':'Unit Transfer';
+  mercOnly.parentElement.style.display=(bm||snd||spr)?'none':'inline-flex';
+  // these bring their own filters — the sidebar's faction/era ones say nothing
+  // about a voice entry, and nothing at all about a modeldb record or a sprite
+  document.querySelector('.filters').style.display=(bm||snd||spr)?'none':'';
+  search.placeholder=bm?'Search entries…':snd?'Search units…':spr?'Search models…':'Search…';
+  document.title=bm?'BMDB Editor':snd?'Unit Sounds':spr?'Sprites'
+                :edit?'Unit Editor':'Unit Transfer';
   if(one&&state.selMode)toggleSelMode();
   if(one&&state.dst!==state.src){state.dst=state.src;dstSel.value=state.src;state.destData=null;}
   if(persist)api.post('/api/settings',{mode:state.mode,last_dest:state.dst});
@@ -722,6 +761,7 @@ function unitMatches(u){
 function render(){
   if(state.mode==='bmdb')return renderBmdb();
   if(state.mode==='sounds')return renderSounds();
+  if(state.mode==='sprites')return renderSprites();
   if(!state.data)return;
   const units=state.data.units.filter(unitMatches);
   count.textContent=`${units.length}/${state.data.units.length}`;
@@ -1856,6 +1896,234 @@ function sndBulk(){
   toast(`${n} row(s) set to copy “${name}” (${d.accent}/${d['class']}).`);
 }
 const SND_CAP=150;   // selects are expensive; the filters above are how you reach the rest
+/* ---------- sprites mode ----------
+   Sprites are the flat billboards the game swaps in at the far LOD. The engine
+   renders them, but only as a side effect of booting with a magic flag, and what
+   lands on disk is raw TGA. This workspace does the prep, then owns everything
+   after generation: convert, dedup, install and point the modeldb at the result.
+   The two published methods differ only in step 1, so that is the only step that
+   branches. */
+async function loadSprites(){
+  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s models…</div>';
+  let r;
+  try{ r=await api.get('/api/sprites?mod='+enc(state.src)); }
+  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
+    <span class="count">${esc(''+e)}</span><br><br>
+    <button class="primary" onclick="loadSprites()">Retry</button></div>`; return; }
+  state.spr=Object.assign({
+    picked:new Set(),
+    // EOP is strictly nicer where it exists (no CFG edit, no restart per batch),
+    // so it leads unless the mod shows no sign of it
+    method:r.has_eop?'eop':'classic',
+    cfg:r.cfgs[0]||'', mipmaps:false, dedup:true, mounts:false, last:null
+  },r);
+  renderSprites();
+}
+function sprSet(k,v){state.spr[k]=v;renderSprites();}
+function sprPick(name,on){const s=state.spr;on?s.picked.add(name):s.picked.delete(name);renderSprites();}
+function sprPickShown(on){const s=state.spr;sprShown().forEach(m=>on?s.picked.add(m.name):s.picked.delete(m.name));renderSprites();}
+function sprShown(){
+  const s=state.spr,qq=search.value.trim().toLowerCase();
+  return s.models.filter(m=>(!qq||m.name.includes(qq))&&(s.mounts||!m.is_mount||qq));
+}
+function renderSprites(){
+  if(!state.spr||state.spr.mod!==state.src)return loadSprites();
+  const s=state.spr, a=s.audit, picked=[...s.picked];
+  const shown=sprShown(), SHOW=400;
+  count.textContent=`${picked.length} picked`;
+  const pending=s.pending.filter(p=>p.complete);
+  const cfgState=s.cfg?(s.cfg_state[s.cfg]||'absent'):'absent';
+
+  main.innerHTML=`<div class="sprhead">
+      <h2>${esc(state.src)} · unit sprites</h2>
+      <span class="count">Generate the far-LOD billboards, convert them and point the
+        modeldb at them. ${a.missing||a.misnamed_total
+        ?`<b class="w-warn">${a.missing+a.misnamed_total}</b> of
+          ${a.ok+a.missing+a.misnamed_total} sprite line(s) resolve to no file.`
+        :`All ${a.ok} sprite line(s) resolve.`}</span>
+    </div>
+
+    <div class="sprstep"><h3><span class="n">1</span> Generate
+      <span class="grow"></span>
+      <span class="count">${s.method==='eop'?'via the M2TWEOP console':'via sprite_script + CFG'}</span>
+      </h3>
+      <div class="sprbody">
+        <div class="sprnote">${s.has_eop
+          ?`This mod ships M2TWEOP, so generation goes through its console — no CFG to edit,
+            no restart between batches. ${s.method==='classic'
+            ?`<a href="#" onclick="sprSet('method','eop');return false">Use it instead</a>`
+            :`<a href="#" onclick="sprSet('method','classic');return false">Use the classic route instead</a>`}`
+          :`This mod has no M2TWEOP install, so generation uses the classic route: the game
+            renders the sprites on the next launch. Everything after that is the same either way.`}</div>
+        <div class="sprrow">
+          <span class="count">${shown.length} model(s)</span>
+          <button onclick="sprPickShown(true)">Pick all shown</button>
+          <button onclick="sprPickShown(false)">Clear</button>
+          <label class="chk"><input type="checkbox" ${s.mounts?'checked':''}
+            onchange="sprSet('mounts',this.checked)"> show mounts</label>
+          <span class="grow"></span>
+        </div>
+        <div class="sprnote">Mounts need their own sprites — pick the <b>mount's</b> model,
+          not the rider's; the game merges the two.</div>
+        <div class="sprpick">${shown.length?shown.slice(0,SHOW).map(m=>`
+          <label><input type="checkbox" ${s.picked.has(m.name)?'checked':''}
+            onchange="sprPick('${q1(m.name)}',this.checked)">
+            <span>${esc(m.name)}</span>${m.is_mount?' <span class="sprtag">mount</span>':''}
+            <span class="fac">${m.factions.length} faction(s)</span></label>`).join('')
+          :'<div class="empty" style="padding:14px">No models match.</div>'}</div>
+        ${shown.length>SHOW?`<div class="sprnote">Showing the first ${SHOW} of ${shown.length}
+          — narrow it down with the search box.</div>`:''}
+        ${s.method==='eop'?`
+          <div class="sprnote">Load to the main menu and run this in the EOP console.
+            Nothing is written to disk for this method.</div>
+          <textarea class="sprlua" readonly onclick="this.select()">${
+            picked.length?picked.map(m=>`M2TWEOP.generateSprite("${m}")`).join('\n')
+            :'— pick one or more models above —'}</textarea>
+          <div class="sprrow"><button ${picked.length?'':'disabled'}
+            onclick="sprCopyLua()">Copy to clipboard</button>
+            <span class="count">Sprites land in ${esc(s.export_dir||'export/unit_sprites')}</span></div>`
+        :`
+          <div class="sprrow">
+            <span class="count">CFG that launches the mod</span>
+            <select onchange="sprSet('cfg',this.value)" style="max-width:340px">
+              ${s.cfgs.length?s.cfgs.map(c=>`<option value="${esc(c)}" ${c===s.cfg?'selected':''}>${esc(c)}</option>`).join('')
+                :'<option value="">— none found —</option>'}
+            </select>
+            <span class="sprtag ${cfgState==='on'?'on':'off'}">bypass ${esc(cfgState)}</span>
+          </div>
+          <div class="sprnote"><code>sprite_script.txt</code> goes in the Medieval II Total War
+            <b>root</b>, never in the mod — that is the single most common reason nothing happens.
+            Leaving the bypass flag on makes the next normal launch re-render instead of starting,
+            which reads as a crash, so turn it back off when you are done.</div>
+          <div class="sprrow">
+            <button class="primary" ${picked.length?'':'disabled'} onclick="sprPrep()">
+              Write sprite_script + set flag (${picked.length})</button>
+            <button ${cfgState==='on'?'':'disabled'} onclick="sprRevert()">Turn the flag back off</button>
+          </div>`}
+      </div></div>
+
+    <div class="sprstep"><h3><span class="n">2</span> Convert
+      <span class="grow"></span>
+      <span class="count">${pending.length} waiting</span></h3>
+      <div class="sprbody">
+        ${s.have_nvcompress?'':`<div class="sprnote w-warn">nvcompress.exe is missing from
+          tools/nvtt — conversion can't run.</div>`}
+        <div class="sprnote">TGA → DXT5 DDS → <code>.texture</code>, then installed into
+          <code>${esc(s.install_dir)}</code>. No GUI and no Python 2 — both are what the
+          published route needs and neither is required here.</div>
+        ${pending.length?`<div class="sprlist">
+          <div class="r hrow"><span>Sprite</span><span>Model</span><span>Sheets</span></div>
+          ${pending.map(p=>`<div class="r"><span>${esc(p.stem)}</span>
+            <span class="count">${esc(p.model)}</span>
+            <span class="count">${p.sheets||p.textures}</span></div>`).join('')}</div>`
+        :`<div class="sprnote">Nothing waiting in <code>${esc(s.export_dir||'export/unit_sprites')}</code>.
+           Run step 1 first, then come back and hit Rescan.</div>`}
+        ${s.pending.length>pending.length?`<div class="sprnote w-warn">
+          ${s.pending.length-pending.length} incomplete set(s) ignored — missing their
+          <code>.spr</code> or their sheets.</div>`:''}
+        <div class="sprrow">
+          <button class="primary" ${pending.length&&s.have_nvcompress?'':'disabled'}
+            onclick="sprConvert()">Convert ${pending.length} sprite(s)</button>
+          <button onclick="loadSprites()">Rescan</button>
+          <label class="chk"><input type="checkbox" ${s.dedup?'checked':''}
+            onchange="sprSet('dedup',this.checked)"> collapse identical faction copies</label>
+          <label class="chk"><input type="checkbox" ${s.mipmaps?'checked':''}
+            onchange="sprSet('mipmaps',this.checked)"> mipmaps</label>
+        </div>
+        <div class="sprnote">The engine writes one sprite per faction in the entry's ownership
+          list; identical copies are the norm. Collapsing keeps one and points the rest at it.
+          Mipmaps are off because sprites almost certainly don't need them.</div>
+        ${s.last?sprResultHtml(s.last):''}
+      </div></div>
+
+    <div class="sprstep"><h3><span class="n">3</span> Wire into the modeldb</h3>
+      <div class="sprbody">
+        <div class="sprnote">Both published methods stop here and tell you to check the sprite
+          lines by hand. A line must read
+          <code>unit_sprites/&lt;faction&gt;_&lt;model&gt;_sprite.spr</code> or it points at a file
+          that will never exist.</div>
+        ${a.misnamed.length?`
+          <div class="sprnote"><b class="w-warn">${a.misnamed_total}</b> line(s) point at nothing
+            while the file the generator produced <i>is</i> on disk — a one-click fix.</div>
+          <div class="sprlist">
+            <div class="r hrow"><span>Points at</span><span>Model</span><span>Faction</span></div>
+            ${a.misnamed.slice(0,50).map(r=>`<div class="r"><span>${esc(r.path)}</span>
+              <span class="count">${esc(r.model)}</span>
+              <span class="count">${esc(r.faction)}</span></div>`).join('')}</div>
+          <div class="sprrow"><button class="primary" onclick="sprFixNames()">
+            Repoint ${a.misnamed.length} line(s)</button>
+            ${a.misnamed_total>a.misnamed.length?`<span class="count">of ${a.misnamed_total}
+              — run it again for the rest</span>`:''}</div>`
+        :'<div class="sprnote">No misnamed sprite lines.</div>'}
+        ${a.missing?`<div class="sprnote w-warn">${a.missing} line(s) name a sprite
+          that isn't on disk at all — generate those models in step 1.</div>`:''}
+        ${a.orphans?`<div class="sprnote">${a.orphans} sprite file(s) in
+          <code>unit_sprites/</code> that no modeldb line names.</div>`:''}
+      </div></div>`;
+}
+function sprResultHtml(r){
+  const dupes=Object.values(r.duplicates||{}).reduce((n,v)=>n+Object.keys(v).length,0);
+  const models=Object.keys(r.models||{}).length;
+  return `<div class="sprnote" style="border-top:1px solid var(--edge);padding-top:9px">
+    <b class="w-good">Converted ${r.converted.length} sheet(s)</b> across ${models} model(s);
+    ${r.installed.length} file(s) installed${dupes?`, ${dupes} duplicate faction copy(s) collapsed`:''}.
+    </div>
+    <div class="sprrow"><button class="primary" onclick="sprWire()">
+      Point the modeldb at these (${models} model(s))</button></div>`;
+}
+async function sprCopyLua(){
+  const t=[...state.spr.picked].map(m=>`M2TWEOP.generateSprite("${m}")`).join('\n');
+  try{ await navigator.clipboard.writeText(t); toast('Copied — paste it into the EOP console.'); }
+  catch(e){ toast('Could not reach the clipboard — select the box and copy manually.'); }
+}
+async function sprPrep(){
+  const s=state.spr;
+  const r=await api.post('/api/sprites/prep_apply',{mod:state.src,models:[...s.picked],
+    method:'classic',cfg_path:s.cfg});
+  if(r.error)return toast(r.error);
+  if(r.unknown?.length)toast(`${r.unknown.length} name(s) are not modeldb entries — skipped.`);
+  else toast(`Ready — run the mod, then come back to step 2.`);
+  await loadSprites();
+}
+async function sprRevert(){
+  const r=await api.post('/api/sprites/revert_cfg',{cfg:state.spr.cfg});
+  toast(r.error?r.error:r.changed?'Flag turned off.':'Flag was already off.');
+  await loadSprites();
+}
+async function sprConvert(){
+  const s=state.spr,job=newJob();
+  overlay.classList.add('open');
+  const r=await runJob(job,'Converting sprites',
+    `TGA → DXT5 DDS → <code>.texture</code>, then installing into
+     ${esc(s.install_dir)}. The originals in export/ are removed as they convert.`,
+    ()=>api.post('/api/sprites/convert_apply',{mod:state.src,job,mipmaps:s.mipmaps,
+      dedup:s.dedup,install:true,cleanup:true}));
+  closeModal();
+  if(r.error)return toast('Convert failed: '+r.error);
+  const last=r.record;
+  await loadSprites();           // re-reads the mod: export/ and data/ both changed
+  state.spr.last=last; renderSprites();
+  toast(`Converted ${last.converted.length} sheet(s) ✓`);
+}
+async function sprWire(){
+  const last=state.spr.last; if(!last)return;
+  const r=await api.post('/api/sprites/wire',{mod:state.src,models:last.models,
+    duplicates:last.duplicates});
+  if(r.error)return toast(r.error);
+  toast('Modeldb updated — undo is in the log.');
+  await loadSprites();
+}
+async function sprFixNames(){
+  // rebuild the sprite line for every faction record the audit flagged; the
+  // server derives the correct casing from the modeldb itself
+  const models={};
+  for(const r of state.spr.audit.misnamed)(models[r.model]||(models[r.model]=[])).push(r.faction);
+  const res=await api.post('/api/sprites/wire',{mod:state.src,models});
+  if(res.error)return toast(res.error);
+  toast('Sprite lines repointed — undo is in the log.');
+  await loadSprites();
+}
+
 function renderSounds(){
   if(!state.snd||state.snd.mod!==state.src)return loadSounds();
   const s=state.snd;
@@ -2031,6 +2299,8 @@ async function openEditor(type){
   state.ed={mod:state.src,unit:type,d,tab:'identity',ov:{},rm:new Set(),
             loc:Object.assign({},d.loc),newType:'',newDict:'',
             mEdits:{},newModels:[],open:{},form:null,removeOldIcons:false,added:new Set(),
+            // replacement card / info card picked off disk, applied on save
+            cardSrc:'',infoSrc:'',
             // per-entry UI state: which faction has its "unique textures" panel
             // open, and the last /api/edit/model_folder answer for its folder box
             facOpen:{},folder:{},
@@ -2082,6 +2352,7 @@ function edPayload(extra){
   return Object.assign({mod:e.mod,unit:e.unit,new_type:e.newType,new_dictionary:e.newDict,
     field_overrides:e.ov,remove_fields:[...e.rm],loc:locChanged?e.loc:null,
     model_edits:edModelEdits(),new_models:e.newModels,
+    card_src:e.cardSrc||'',info_src:e.infoSrc||'',
     remove_old_icons:!!e.removeOldIcons},extra||{});
 }
 function renderEditor(){
@@ -2245,11 +2516,60 @@ function edIdentity(){
         this tool. Its unit card is looked up under <code>ui/units/mercs/</code> once it is a merc
         (unless <code>card_pic_dir</code> pins it elsewhere).</div>
     </fieldset>
-    <div class="icoprev">
-      <img class="card" onerror="this.style.display='none'" src="${iconUrl(e.mod,e.unit)}">
-      <img class="info" onerror="this.style.display='none'" src="${iconUrl(e.mod,e.unit,'info')}">
-    </div></div>`;
+    <fieldset style="margin-top:12px"><legend>Unit card / info card</legend>
+      <div class="count">Import a replacement from anywhere on disk. On save it is renamed to
+        the unit's dictionary name and copied into <b>every faction that owns the unit</b>
+        (plus the <code>mercs</code>/<code>merc</code> fallback), because the game looks the card
+        up under the <i>player's</i> faction folder.
+        ${edOwnFolders().length
+          ?`Right now that is <b>${edOwnFolders().length}</b> folder(s):
+             <code>${edOwnFolders().map(esc).join('</code> <code>')}</code>.`
+          :`<b class="w-warn">This unit has no ownership</b>, so there is no faction folder to
+             copy into — set <code>ownership</code> first.`}
+        A <code>.png</code>/<code>.jpg</code> is converted to <code>.tga</code>; the engine reads
+        nothing else.</div>
+      <div class="icoprev">
+        <div class="icoslot">
+          <img class="card" onerror="this.style.display='none'"
+            src="${e.cardSrc?'/preview_image?path='+enc(e.cardSrc):iconUrl(e.mod,e.unit)}">
+          <div class="k">Unit card</div>
+          <div class="fn">${e.cardSrc?esc(e.cardSrc.split(/[\\/]/).pop()):'current'}</div>
+          <div class="sprrow">
+            <button onclick="edPickIcon('cardSrc')">Browse…</button>
+            ${e.cardSrc?`<button class="danger" onclick="edClearIcon('cardSrc')">✕</button>`:''}
+          </div>
+        </div>
+        <div class="icoslot">
+          <img class="info" onerror="this.style.display='none'"
+            src="${e.infoSrc?'/preview_image?path='+enc(e.infoSrc):iconUrl(e.mod,e.unit,'info')}">
+          <div class="k">Info card</div>
+          <div class="fn">${e.infoSrc?esc(e.infoSrc.split(/[\\/]/).pop()):'current'}</div>
+          <div class="sprrow">
+            <button onclick="edPickIcon('infoSrc')">Browse…</button>
+            ${e.infoSrc?`<button class="danger" onclick="edClearIcon('infoSrc')">✕</button>`:''}
+          </div>
+        </div>
+      </div>
+      ${(e.cardSrc||e.infoSrc)?`<div class="count w-good" style="margin-top:8px">
+        Staged — nothing is written until you hit Save.</div>`:''}
+    </fieldset>
+  </div>`;
 }
+// The faction folders an imported card would land in: this save's ownership if it
+// is being changed, otherwise the unit's current one. Mirrors _plan_icon_import.
+function edOwnFolders(){
+  const own=(edFieldVal('ownership')||'')
+    .split(/[,\s]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const real=own.filter(f=>f!=='slave');   // slave alone still needs a folder
+  return real.length?real:own;
+}
+async function edPickIcon(key){
+  const r=await api.post('/api/browse_file',
+    {title:'Select the image to use as the unit card',
+     filter:'Images (*.tga;*.dds;*.png;*.jpg;*.jpeg;*.bmp)|*.tga;*.dds;*.png;*.jpg;*.jpeg;*.bmp|All files (*.*)|*.*'});
+  if(r.path){state.ed[key]=r.path; edRenderTab();}
+}
+function edClearIcon(key){state.ed[key]=''; edRenderTab();}
 function edToggleMerc(on){
   const attrs=csv(edFieldVal('attributes'));
   const i=attrs.indexOf('mercenary_unit');

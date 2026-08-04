@@ -19,6 +19,9 @@ graphify-out/
 
 # Third-party reference tools kept locally for comparison (not ours to ship)
 UnitEditor11/
+# Saved TWC tutorial pages + Gigantus' sprite setup, kept for reference. The only
+# part the tool actually needs (nvcompress + its DLLs) is vendored in tools/nvtt/.
+Sprite/
 
 # Superseded work kept around locally (old builds, the Sounds Parser prototype)
 Old Files/

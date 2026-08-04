@@ -59,6 +59,15 @@ instead of two. Click any unit to open its editor:
   name), edit the displayed name, short description and info-card text, and flip
   the unit to a mercenary. Descriptions are stored on a single line, so a newline
   or tab you type becomes `\n` / `\t` when you click away
+- **Unit card / info card** — **Browse…** picks a replacement image from
+  anywhere on disk. On save it is renamed to the unit's dictionary name
+  (`#<dict>.tga` / `<dict>_info.tga`) and copied into **every faction that owns
+  the unit**, plus the `mercs`/`merc` fallback — the game looks a card up under
+  the *player's* faction folder, so one copy in one folder is the usual reason a
+  card doesn't show. Ownership changed in the same save decides the folders, and
+  `slave` is dropped unless it is the only owner. A `.png`/`.jpg` is re-encoded
+  to `.tga`, since the engine reads nothing else. Backed up and undoable like
+  any other edit
 - **EDU fields** — every field of the unit's block, edited in place. `✕` removes
   a line outright, which is not the same as blanking its value — the game still
   reads an empty field. Missing fields can be added and land in their canonical
@@ -244,6 +253,68 @@ entry is not in. The `accent` and `voice_type` rows in the field editor lock wit
 it, showing what will actually be written — including when the source unit had no
 `accent` line at all and one is being added.
 
+## Sprites mode
+
+Switch the dropdown to **🖼 Sprites** to generate the far-LOD unit sprites — the
+flat billboards the game swaps in for a unit's mesh once the camera is far
+enough away. A unit with no sprite either pops to an invisible blob at distance
+or takes the wrong unit's silhouette.
+
+This mode merges the two published methods (Caliban/Gigantus'
+[TWC thread 663024](https://www.twcenter.net/threads/creating-a-world-unit-sprite-generating.663024/)
+and the M2TWEOP console route) and replaces everything both of them leave to a
+GUI, to Python 2, or to hand-editing.
+
+**Step 1 — Generate.** Only this step differs between the two methods, because
+only the game can render a sprite:
+
+- if the mod ships **M2TWEOP**, the mode writes you a
+  `M2TWEOP.generateSprite("model")` snippet to paste into the console at the
+  main menu — no CFG edit, no restart between batches
+- otherwise it uses the **classic** route: `sprite_script.txt` written to the
+  Medieval II Total War **root** (never into the mod — that is the single most
+  common reason nothing happens) and `bypass_sprite_script = 1` added under
+  `[misc]` of whichever CFG actually launches the mod, creating the section if
+  it isn't there. **Turn the flag back off** is one click, because leaving it on
+  makes the next normal launch re-render instead of starting the game, which
+  reads as a crash
+
+Mounts need their own sprites: pick the **mount's** model, not the rider's — the
+game merges the two at render time.
+
+**Step 2 — Convert.** The game writes raw TGA, which nothing downstream reads.
+The published route pops a GUI you have to browse folders in, then runs a Python
+**2** script. This mode does the whole chain itself: TGA → DXT5 DDS via the
+bundled `nvcompress.exe` (`tools/nvtt/`, run headless), then DDS → `.texture`
+via a Python 3 port of alpaca's container format — so **no Python 2 install and
+no GUI**. Mipmaps are off by default; sprites almost certainly don't need them.
+
+The engine emits one sprite per faction in the entry's ownership list, and those
+copies are usually byte-identical. **Collapse identical faction copies** keeps
+one and points the rest at it instead of shipping a dozen duplicate sheets.
+Results are installed into `data/unit_sprites/` and the TGA/DDS intermediates
+are cleaned up.
+
+**Step 3 — Wire into the modeldb.** Both tutorials stop at "make sure your
+modeldb tallies" and leave it to you. A sprite line has to read
+
+```
+unit_sprites/<faction>_<model>_sprite.spr
+```
+
+or it points at a file that will never exist. This mode audits every sprite line
+in the modeldb against what is actually on disk and splits the result three ways:
+
+- **misnamed** — the line resolves to nothing, but the file the generator
+  produced *is* there. One click repoints them
+- **missing** — nothing on disk either; generate those models in step 1
+- **orphans** — sprite files no modeldb line names
+
+The write goes through the same planner as BMDB mode, so it gets the same
+backups and **🕑 Log → Undo**. Casing is preserved from the modeldb (real mods
+carry `england_Mount_Pony_sprite.spr`), so repointing a line that was already
+correct is a no-op rather than a diff.
+
 ## M2TWEOP units
 
 M2TWEOP lifts the game's 500-unit ceiling by loading extra unit definitions from
@@ -407,7 +478,9 @@ open, and print the address.
   `export_descr_sounds_units_voice`), the dependency-resolution and transfer
   engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
   the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
-  (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), and the
-  local HTTP server
+  (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
+  generation/conversion pipeline (`sprites.py`), and the local HTTP server
 - `web/` — the browser UI
+- `tools/nvtt/` — NVIDIA Texture Tools 2.0 (`nvcompress.exe` + its DLLs, ~1 MB),
+  driven headless by Sprites mode for TGA → DXT5
 - `tests/` — one module per area, runnable individually

@@ -40,6 +40,9 @@ from . import config
 from . import edu as edu_mod
 from . import eop, localization, modeldb
 from .mod import Mod
+# where a unit falls back to when card_pic_dir / info_pic_dir isn't pinned; shared
+# with the transfer engine so both put mercenary icons in the same place
+from .transfer import MERC_CARD_DIR, MERC_INFO_DIR
 
 # ---------------------------------------------------------------------------
 # request objects (built from the JSON body by ``from_dict``)
@@ -118,6 +121,11 @@ class EditRequest:
     loc: Optional[dict] = None                   # {name, descr, descr_short}
     model_edits: List[ModelEdit] = field(default_factory=list)
     new_models: List[NewModel] = field(default_factory=list)
+    # Replacement card / info card imported from anywhere on disk. Copied into
+    # EVERY owning faction's folder under the dictionary-derived name — see
+    # :func:`_plan_icon_import`.
+    card_src: str = ""
+    info_src: str = ""
     remove_old_icons: bool = False               # after a dictionary rename
     delete: bool = False
     delete_options: DeleteOptions = field(default_factory=DeleteOptions)
@@ -179,6 +187,8 @@ def request_from_dict(d: dict) -> EditRequest:
                              apply_to_attach=bool(n.get("apply_to_attach", False)),
                              assign_to=(n.get("assign_to") or "").strip())
                     for n in (d.get("new_models") or [])],
+        card_src=(d.get("card_src") or "").strip(),
+        info_src=(d.get("info_src") or "").strip(),
         remove_old_icons=bool(d.get("remove_old_icons", False)),
         delete=bool(d.get("delete", False)),
         delete_options=DeleteOptions(
@@ -215,6 +225,9 @@ class EditPlan:
     entry_deletes: List[str] = field(default_factory=list)
     copies: List[Tuple[Path, str]] = field(default_factory=list)  # (src abs, rel under data/)
     icon_copies: List[Tuple[Path, str]] = field(default_factory=list)
+    # imported icons in a format the engine can't read: re-encoded to TGA on
+    # apply rather than copied byte-for-byte (see :func:`_tga_bytes`)
+    icon_converts: List[Tuple[Path, str]] = field(default_factory=list)
     deletes: List[str] = field(default_factory=list)              # rel paths to remove
     changes: List[str] = field(default_factory=list)              # human-readable preview
     warnings: List[str] = field(default_factory=list)
@@ -274,6 +287,85 @@ def _model_users(mod: Mod, skip_unit: str = "") -> Dict[str, List[str]]:
         if model:
             users.setdefault(model.lower(), []).append(f"mount:{mount_name}")
     return users
+
+
+# The game only reads these for a card; anything else a user picks in the browse
+# dialog gets converted rather than copied to a name the engine will ignore.
+ICON_NATIVE_EXTS = (".tga", ".dds")
+
+
+def _tga_bytes(src: Path) -> bytes:
+    """Re-encode an imported image as a 32-bit TGA.
+
+    A .png or .jpg copied straight in would sit there under the right *name* and
+    still never render — the engine reads .tga/.dds only — so importing one of
+    those silently produces a unit with no card. Pillow already ships with the
+    tool for the icon previews, so converting costs nothing.
+    """
+    from io import BytesIO
+    from PIL import Image
+    with Image.open(src) as im:
+        im = im.convert("RGBA")
+        buf = BytesIO()
+        im.save(buf, format="TGA")
+        return buf.getvalue()
+
+
+def _plan_icon_import(plan: "EditPlan", mod: Mod, unit, req: "EditRequest") -> None:
+    """Place an imported card / info card in every owning faction's folder.
+
+    The game looks the card up in ``ui/units/<the player's faction>/`` under the
+    unit's *dictionary* name, not wherever the file came from — so one import has
+    to fan out to a copy per owning faction, renamed. The ``mercs``/``merc``
+    fallback folder is included too, since a unit whose ``*_pic_dir`` isn't
+    pinned falls back to it.
+
+    Ownership is read from this same save's edits, so importing a card and
+    changing ownership in one go still lands the file where the *new* factions
+    will look.
+    """
+    if not (req.card_src or req.info_src):
+        return
+    raw = req.field_overrides.get("ownership")
+    own = ([f for f in (x.strip().lower() for x in raw.replace(",", " ").split()) if f]
+           if raw is not None else [f.lower() for f in unit.ownership])
+    # slave alone still needs a folder; slave alongside real factions does not
+    folders = [f for f in own if f != "slave"] or own
+
+    for kind, src_str, merc_folder, base_dir, stem_fmt in (
+            ("card", req.card_src, MERC_CARD_DIR, "ui/units", "#{}"),
+            ("info", req.info_src, MERC_INFO_DIR, "ui/unit_info", "{}_info")):
+        if not src_str:
+            continue
+        src = Path(src_str)
+        if not src.is_file():
+            plan.errors.append(f"{kind} image not found: {src}")
+            continue
+        native = src.suffix.lower() in ICON_NATIVE_EXTS
+        ext = src.suffix.lower() if native else ".tga"
+        fname = stem_fmt.format(plan.resolved_dict) + ext
+        dests = [f"{base_dir}/{folder}/{fname}"
+                 for folder in dict.fromkeys(folders + [merc_folder])]
+        if not dests:
+            plan.warnings.append(
+                f"'{unit.type}' has no ownership, so there is no faction folder "
+                f"to put the {kind} in")
+            continue
+        for rel in dests:
+            if native:
+                plan.icon_copies.append((src, rel))
+            else:
+                plan.icon_converts.append((src, rel))
+        plan.changes.append(
+            f"{kind} imported from {src.name} -> {len(dests)} faction folder(s) "
+            f"as {fname}" + ("" if native else f" (converted from {src.suffix})"))
+        # A card living under the OLD dictionary name in those same folders would
+        # keep winning the lookup after a rename, so flag it rather than leaving
+        # two files that differ only by name.
+        if plan.resolved_dict != unit.dictionary:
+            plan.warnings.append(
+                f"{kind} written under the new dictionary '{plan.resolved_dict}' — "
+                f"tick 'remove the old icons' to drop the '{unit.dictionary}' ones")
 
 
 def _unit_icon_files(mod: Mod, dictionary: str) -> List[Tuple[Path, str, str]]:
@@ -421,8 +513,12 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
                 f"no unit card found for '{unit.dictionary}' — the renamed unit "
                 f"will need data/ui/units/<faction>/#{plan.resolved_dict}.tga.")
 
+    # ---- 8) an imported card / info card fans out to every owning faction ----
+    _plan_icon_import(plan, mod, unit, req)
+
     if not (plan.edu_text or plan.loc_text or plan.modeldb_touched
-            or plan.copies or plan.icon_copies or plan.deletes):
+            or plan.copies or plan.icon_copies or plan.icon_converts
+            or plan.deletes):
         plan.changes.append("no changes")
     return plan
 
@@ -1072,6 +1168,15 @@ def apply_edit(plan: EditPlan) -> Dict:
                    modeldb.ENCODING)
     for src, rel in plan.copies + plan.icon_copies:
         copy_file(src, rel)
+    # one decode per source file however many faction folders it lands in
+    _encoded: Dict[Path, bytes] = {}
+    for src, rel in plan.icon_converts:
+        data = _encoded.get(src)
+        if data is None:
+            data = _encoded[src] = _tga_bytes(src)
+        target = backup_and(rel)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
     for rel in plan.deletes:
         target = mod.data / rel
         if target.exists():

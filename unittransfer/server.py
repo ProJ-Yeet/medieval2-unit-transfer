@@ -36,6 +36,18 @@ BMDB mode (the whole battle_models.modeldb, see :mod:`unittransfer.bmdb`)
   POST /api/bmdb/cleanup_apply   -> do it (backups + undo, assets exported first)
   GET  /api/progress?job=ID      -> where a long job (audit / cleanup) has got to
 
+Sprites mode (far-LOD unit sprites, see :mod:`unittransfer.sprites`)
+  GET  /api/sprites?mod=         -> models, CFG state, what's waiting in export/,
+                                    and an audit of the modeldb's sprite lines
+  POST /api/sprites/prep_plan    -> what prepping generation would touch
+  POST /api/sprites/prep_apply   -> write sprite_script.txt / CFG flag (or the
+                                    M2TWEOP console snippet, which writes nothing)
+  POST /api/sprites/revert_cfg   -> comment the bypass flag back out
+  POST /api/sprites/convert_plan -> what the TGA -> .texture run would do
+  POST /api/sprites/convert_apply-> run it, dedup, install into the mod
+  POST /api/sprites/wire         -> point the modeldb's sprite lines at the
+                                    result (backups + undo, via bmdb mode)
+
 Sounds mode (the unit voice bank, see :mod:`unittransfer.sounds`)
   GET  /api/sounds?mod=          -> accents/classes, donors, and every unit split
                                     into "has a voice entry" / "doesn't"
@@ -54,7 +66,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import bmdb, cleaner, config, edit, sounds
+from . import bmdb, cleaner, config, edit, sounds, sprites
 from . import eop as _eop
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
@@ -349,7 +361,8 @@ def _edit_payload(plan) -> dict:
                                            ("unit_models/battle_models.modeldb",
                                             plan.modeldb_touched)) if on]),
         "copies": [rel for _src, rel in plan.copies],
-        "icon_copies": [rel for _src, rel in plan.icon_copies],
+        "icon_copies": [rel for _src, rel in plan.icon_copies]
+                       + [rel for _src, rel in plan.icon_converts],
         "deletes": list(plan.deletes),
         "new_entries": [n for n, _r, _p in plan.new_entries],
         "entry_updates": sorted(plan.entry_updates.keys()),
@@ -394,6 +407,34 @@ def _sound_payload(plan) -> dict:
         "changes": plan.changes,
         "warnings": plan.warnings,
         "errors": plan.errors,
+        "summary": plan.summary(),
+    }
+
+
+def _sprite_prep_payload(plan) -> dict:
+    return {
+        "mod": plan.mod.name,
+        "method": plan.request.method,
+        "known": plan.known,
+        "unknown": plan.unknown,
+        "mounts": plan.mounts,
+        "script_path": str(plan.script_path) if plan.script_path else "",
+        "export_dir": str(plan.export_dir) if plan.export_dir else "",
+        "cfg_edit": plan.cfg_edit,
+        "lua": plan.lua,
+        "warnings": plan.warnings,
+        "summary": plan.summary(),
+    }
+
+
+def _sprite_convert_payload(plan) -> dict:
+    return {
+        "mod": plan.mod.name,
+        "sets": [{"stem": s.stem, "model": s.model, "faction": s.faction,
+                  "sheets": len(s.sheets)} for s in plan.sets],
+        "install_dir": str(plan.install_dir) if plan.install_dir else "",
+        "incomplete": plan.incomplete,
+        "warnings": plan.warnings,
         "summary": plan.summary(),
     }
 
@@ -612,6 +653,17 @@ class Handler(BaseHTTPRequestHandler):
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
                 return self._json(sounds.overview(self.registry.get(name)))
+            if u.path == "/preview_image":
+                # Preview of a file the user just picked in the native browse
+                # dialog — it lives outside the mod, so /icon (mod + unit) can't
+                # reach it. Decoded to PNG rather than served raw, and only for
+                # image extensions, so this can't be used to read arbitrary files.
+                return self._preview_image((q.get("path") or [""])[0])
+            if u.path == "/api/sprites":
+                name = (q.get("mod") or [None])[0]
+                if not name or name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                return self._json(sprites.overview(self.registry.get(name)))
             if u.path == "/api/log":
                 return self._json(config.load_log())
             if u.path == "/icon":
@@ -689,6 +741,8 @@ class Handler(BaseHTTPRequestHandler):
                     sounds.plan_sounds(mod, sounds.ops_from_dicts(body.get("ops")))))
             if u.path == "/api/sounds/apply":
                 return self._json(self._sounds_apply(body))
+            if u.path.startswith("/api/sprites/"):
+                return self._json(self._sprites(u.path.rsplit("/", 1)[-1], body))
             if u.path == "/api/plan":
                 return self._json(self._plan(body))
             if u.path == "/api/apply":
@@ -790,6 +844,57 @@ class Handler(BaseHTTPRequestHandler):
         if _strings_bin_wanted(body):
             _clear_cache(mod.root, out, rec, mod.name)
         return out
+
+    # ---- sprites mode ----
+    def _sprites(self, action, body):
+        """Dispatch one sprite action. Split out because the five endpoints share
+        a mod lookup and the same "SpriteError means the user can fix it" rule."""
+        try:
+            if action == "revert_cfg":              # no mod needed, just the CFG
+                return sprites.revert_prep(body.get("cfg") or "")
+
+            mod = self.registry.get(body["mod"])
+
+            if action in ("prep_plan", "prep_apply"):
+                req = sprites.PrepRequest(
+                    models=[str(m) for m in (body.get("models") or [])],
+                    method=(body.get("method") or "eop").lower(),
+                    cfg_path=body.get("cfg_path") or "")
+                plan = sprites.plan_prep(mod, req)
+                out = _sprite_prep_payload(plan)
+                if action == "prep_apply":
+                    out["record"] = sprites.apply_prep(plan)
+                return out
+
+            if action in ("convert_plan", "convert_apply"):
+                req = sprites.ConvertRequest(
+                    stems=[str(s) for s in (body.get("stems") or [])],
+                    mipmaps=bool(body.get("mipmaps", False)),
+                    dedup=bool(body.get("dedup", True)),
+                    install=bool(body.get("install", True)),
+                    cleanup=bool(body.get("cleanup", True)))
+                plan = sprites.plan_convert(mod, req)
+                out = _sprite_convert_payload(plan)
+                if action == "convert_apply":
+                    sink = _progress_sink(body.get("job") or "")
+                    log.info("SPRITE convert %d set(s) in %s", len(plan.sets), mod.name)
+                    out["record"] = sprites.apply_convert(plan, progress=sink)
+                    self.registry.invalidate(body["mod"])   # data/ changed on disk
+                return out
+
+            if action == "wire":
+                # reuse bmdb mode's planner so the modeldb write inherits its
+                # backups + undo rather than us hand-rolling a second writer
+                edits = sprites.wire_model_edits(
+                    mod, {str(k): [str(f) for f in v]
+                          for k, v in (body.get("models") or {}).items()},
+                    body.get("duplicates") or {})
+                if not edits:
+                    return {"error": "nothing to wire up"}
+                return self._bmdb_apply({"mod": body["mod"], "model_edits": edits})
+        except sprites.SpriteError as e:
+            return {"error": str(e)}
+        return {"error": f"unknown sprite action {action!r}"}
 
     # ---- bmdb mode ----
     def _bmdb_apply(self, body):
@@ -904,6 +1009,29 @@ class Handler(BaseHTTPRequestHandler):
         if not p.exists():
             return self._err(404, f"missing {p.name}")
         self._send(200, p.read_bytes(), ctype)
+
+    #: what the browse dialog is allowed to preview — the formats a card can be
+    #: imported from, and nothing that would turn this into a file reader
+    PREVIEW_EXTS = {".tga", ".dds", ".png", ".jpg", ".jpeg", ".bmp", ".gif"}
+
+    def _preview_image(self, path: str):
+        """Decode an off-mod image to PNG for the editor's card preview.
+
+        Same never-500 rule as :meth:`_icon`: a failure paints a blank, because a
+        broken-image glyph in the editor reads as "your file is corrupt".
+        """
+        try:
+            p = Path(path)
+            if (path and p.is_file()
+                    and p.suffix.lower() in self.PREVIEW_EXTS
+                    and p.stat().st_size <= 64 * 1024 * 1024):
+                return self._send(200, self.registry.icons.png_bytes(p), "image/png")
+        except Exception:
+            pass
+        try:
+            self._send(200, self.registry.icons.png_bytes(None), "image/png")
+        except Exception:
+            pass
 
     def _icon(self, q):
         # Icons must NEVER 500: a failed response paints a broken-image glyph in
