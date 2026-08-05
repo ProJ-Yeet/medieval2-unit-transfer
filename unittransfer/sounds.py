@@ -635,6 +635,7 @@ def apply_sounds(plan: SoundPlan) -> Dict:
     config.append_log(rec)
     mod.__dict__.pop("sounds", None)
     mod.__dict__.pop("edu", None)
+    mod.__dict__.pop("edu_vocab", None)
     return rec
 
 

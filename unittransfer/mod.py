@@ -193,6 +193,16 @@ class Mod:
         return projectiles_mod.effect_sets(self.data)
 
     @cached_property
+    def edu_vocab(self) -> Dict[str, object]:
+        """Drop-down values for the guided EDU editor (see :mod:`vocab`).
+
+        Cached because building it walks every unit in the EDU: the guided editor
+        asks for it each time a unit is opened.
+        """
+        from . import vocab as vocab_mod
+        return vocab_mod.build(self)
+
+    @cached_property
     def faction_names(self) -> Dict[str, str]:
         """Map faction slot (code) -> localized display name, from text/expanded.txt.
 

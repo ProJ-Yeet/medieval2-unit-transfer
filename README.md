@@ -104,7 +104,8 @@ instead of two. Click any unit to open its editor:
   `slave` is dropped unless it is the only owner. A `.png`/`.jpg` is re-encoded
   to `.tga`, since the engine reads nothing else. Backed up and undoable like
   any other edit
-- **EDU fields** — every field of the unit's block, edited in place. `✕` removes
+- **EDU fields** — every field of the unit's block, edited in place, in one of
+  two views (see [Guided vs raw fields](#guided-vs-raw-fields)). `✕` removes
   a line outright, which is not the same as blanking its value — the game still
   reads an empty field. Missing fields can be added and land in their canonical
   EDU position. The four fields whose *order* is data get chip lists you can drag
@@ -169,6 +170,76 @@ instead of two. Click any unit to open its editor:
 
 Every save is previewed first and backed up, so **🕑 Log → Undo** reverts an edit
 or a deletion byte-exact, exactly like a transfer.
+
+## Guided vs raw fields
+
+An EDU line is a comma-separated tuple whose meaning is entirely positional.
+This is a real one:
+
+```
+stat_pri  14, 4, no, 0, 0, melee, melee_blade, piercing, spear, 25, 1
+```
+
+Eleven separate settings, and nothing on the line says which is which. Both the
+transfer composer's **Edit fields** panel and the unit editor's **EDU fields**
+tab show that line in one of two views, chosen with the **🧭 Guided / ⌗ Raw
+lines** switch beside the filter box. The choice is remembered between runs and
+applies to both places; **Guided is the default**, and **Raw lines** is exactly
+the single-text-box-per-line view earlier versions had.
+
+The guided view groups the unit's lines into **Basics · Men & mounts ·
+Abilities · Weapons · Defence & morale · Recruitment · Cards & misc**, and gives
+each line a card:
+
+- **Every value gets its own labelled box** — `Attack`, `Charge bonus`,
+  `Projectile`, `Range`, `Ammo`, `Weapon type`, … — so you never count commas
+- **Every number has ▴▾ beside it**, with the right step size (whole florins for
+  a cost, 0.1 for a mass or a formation spacing, 0.05 for a collision radius) and
+  its own limits. Hold <kbd>Shift</kbd> for ×10, hold the button to repeat, or
+  use <kbd>↑</kbd>/<kbd>↓</kbd> in the box. Only *stepping* clamps: attack stops
+  at the engine's cap of 63, men at 1, a ground modifier goes negative freely —
+  while **typing is never clamped**, so a value a mod already has is never
+  rewritten just because you looked at it
+- **Hover anything for the details** — the field name explains the whole line and
+  shows its exact syntax; each value box explains that one slot, what the engine
+  accepts in it and what its limits are. Written from the EDU's own header
+  comments and the TWC field guide
+- **Drop-downs wherever the engine only takes a fixed set of words** (weapon and
+  damage type, discipline, training, formation, armour hit sound). Where the set
+  comes from the mod instead — projectiles, mounts, engines, ships, animals,
+  battle-model entries, accents, attributes, banners — the box offers what the
+  mod actually defines *and* everything its EDU already uses, but still lets you
+  type anything: a mod's own attribute is never a value you can only lose
+- **`?` pins the explanation open** under the field name, for when a hover
+  tooltip is the wrong shape for what you're doing
+- **Checkboxes and pickers for the awkward bits** — `lock_morale` is a tick, not
+  a fourth CSV value; `attributes` is a chip list with the abilities and the AI
+  hints separated; `mount_effect` is up to three mount + number pairs;
+  `stat_pri_attr` knows that "none" is spelled `no` and that only one
+  `spear_bonus_N` can apply at a time
+- **Optional slots are marked as such**, including the one most editors get
+  wrong: the fire effect (`musket_shot_set`) that turns `stat_pri` from eleven
+  values into twelve. Set it or clear it and the line grows or shrinks correctly
+- **Live checks**, shown under the field they belong to and counted at the top:
+  attack above the engine's cap of 63, a missile weapon with no ammunition or a
+  projectile of `no`, a secondary missile weapon (the engine only fires the
+  primary), a projectile / mount / engine / model name no file in the mod
+  defines, a second formation that isn't paired with `square` or `horde`, a
+  `phalanx` without `long_pike`, more armour upgrade models than levels, a unit
+  with more than one of `ship` / `engine` / `mounted_engine` / `animal`, an
+  `animal` line without `category handler`, empty ownership
+- **`</>` on any card** shows that one line as raw text, edited either way and
+  kept in step both directions — so the guided boxes are a lens on the file, not
+  a layer over it
+
+Anything the guided view does not recognise — a mod's own field, a repeated
+line, a value count the engine doesn't use — is shown as a raw box for that one
+field and said to be. It never guesses.
+
+Everything else the two panels do is unchanged in either view: the composer's
+`B` switches (take this field from the base unit, or the transferred unit's own)
+and its 🔒 locks, the editor's `✕` delete and canonical-position add, and the
+faction checklists and armour-tier `＋` menu described above.
 
 ## BMDB Editor mode
 
@@ -409,7 +480,12 @@ point of them.
   just looks different. Officers and armour-upgrade models come across by
   default (each can be left alone), the unit card and info card are opt-in, and
   any single stat can be imported one at a time with the `B` buttons
-- **Per-field editor** — override any single EDU field on the way in
+- **Per-field editor** — override any single EDU field on the way in, in a
+  **guided** view that gives every value in a line its own labelled box, a
+  drop-down of what the mod actually accepts and a live check of what the engine
+  will do with it, or in the **raw** one-box-per-line view — the switch sits
+  beside the filter box in both the composer and the unit editor, and is
+  remembered (see [Guided vs raw fields](#guided-vs-raw-fields))
 - **Mercenary conversion** — flip a unit to a mercenary (attribute, texture
   skin, icon folders) as part of the transfer
 - **Conflict resolution** — for every asset that would collide with an existing
@@ -499,6 +575,12 @@ python -m tests.test_transfer_v2
 Each suite is self-contained and safe to run against real mod installs — all
 writes happen in temp directories or through the backup/undo path.
 
+`tests/test_guided_fields.py` also runs the page's own JavaScript under `node`
+to prove the guided field editor's split-and-rejoin is lossless across every
+unit of every installed mod — the one property that, if broken, would quietly
+damage a file on save. It skips that half (rather than failing) when `node`
+isn't on PATH; node is not a dependency of the tool itself.
+
 ## Logs & troubleshooting
 
 Every run is logged to `config/server.log` (and, if that folder isn't writable,
@@ -523,7 +605,8 @@ open, and print the address.
   engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
   the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
   (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
-  generation/conversion pipeline (`sprites.py`), and the local HTTP server
+  generation/conversion pipeline (`sprites.py`), the guided field editor's
+  per-mod value lists (`vocab.py`), and the local HTTP server
 - `web/` — the browser UI
 - `tools/nvtt/` — NVIDIA Texture Tools 2.0 (`nvcompress.exe` + its DLLs, ~1 MB),
   driven headless by Sprites mode for TGA → DXT5

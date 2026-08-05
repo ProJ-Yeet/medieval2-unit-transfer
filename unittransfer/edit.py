@@ -1216,7 +1216,7 @@ def _invalidate(mod: Mod) -> None:
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
                  "mounted_engine_file", "engine_skeleton_file", "sounds",
-                 "eop_dirs", "lua_tokens"):
+                 "eop_dirs", "lua_tokens", "edu_vocab"):
         mod.__dict__.pop(attr, None)
 
 

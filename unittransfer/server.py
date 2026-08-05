@@ -627,6 +627,13 @@ class Handler(BaseHTTPRequestHandler):
                     return self._err(404, "unit not found")
                 from . import edu as _edu
                 return self._json({"type": utype, "fields": _edu.block_fields(unit.raw)})
+            if u.path == "/api/edu_vocab":
+                # what the guided field editor puts in its drop-downs: the
+                # engine's fixed sets plus everything THIS mod defines or uses
+                name = (q.get("mod") or [None])[0]
+                if not name or name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                return self._json(self.registry.get(name).edu_vocab)
             if u.path == "/api/base_fields":
                 # Fields the unit would have AFTER inheriting from a destination
                 # base unit — so the editor shows what will actually be written.

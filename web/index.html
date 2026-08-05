@@ -439,6 +439,105 @@
   .sndpick .lockicon{color:var(--warn);cursor:help}
   .sndlocked{border:1px dashed var(--warn);border-radius:6px;padding:6px 8px;margin-top:6px}
   .sndlist.mini{max-height:190px;overflow:auto;margin-top:6px}
+
+  /* ================= guided field editor ==================================
+     The default view of a unit's EDU lines: every comma-separated slot gets its
+     own labelled box, a drop-down where the engine only accepts a fixed set, and
+     a one-line explanation of what it does. `.gfraw` is the escape hatch — the
+     whole line as text, exactly what the raw view shows. */
+  .allfields.guided{max-height:none;overflow:visible;border:none;padding:0;background:none}
+  .gfmode{display:inline-flex;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
+  .gfmode button{border:none;border-radius:0;padding:3px 9px;font-size:11.5px;background:var(--panel2);
+    color:var(--dim)}
+  .gfmode button+button{border-left:1px solid var(--edge)}
+  .gfmode button.on{background:var(--accent2);color:#fff}
+  .gfnav{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 2px;position:sticky;top:0;z-index:2;
+    background:var(--panel);padding-bottom:6px}
+  .gfnav button{padding:4px 10px;font-size:12px;border-radius:14px}
+  .gfnav button.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .gfnav button .n{opacity:.65;font-size:10.5px;margin-left:4px}
+  .gfnav button .bad{color:var(--warn);margin-left:4px}
+  .gfbody{max-height:min(58vh,620px);overflow:auto;border:1px solid var(--edge);border-radius:8px;
+    padding:10px;background:var(--panel2)}
+  .gfintro{font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.5}
+  .gfcard{border:1px solid var(--edge);border-radius:8px;background:var(--panel);padding:9px 11px 11px;
+    margin-bottom:9px}
+  .gfcard.changed{border-color:var(--accent)}
+  .gfcard.gone{opacity:.55}
+  .gfcard.gone .gfhead .t{text-decoration:line-through}
+  .gfhead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .gfhead .t{font-size:13px;font-weight:600}
+  .gfhead .k{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--dim)}
+  .gfhead .sp{flex:1}
+  .gfhead button{background:none;border:1px solid transparent;color:var(--dim);padding:1px 6px;
+    font-size:12px;border-radius:5px;line-height:1.5}
+  .gfhead button:hover{border-color:var(--accent);color:var(--ink)}
+  .gfhead button.on{border-color:var(--accent2);color:var(--accent2)}
+  .gfhead .rm:hover{border-color:var(--bad);color:var(--bad)}
+  .gfdoc{font-size:11.5px;color:var(--dim);margin:5px 0 0;line-height:1.5}
+  .gfdoc code{background:var(--panel2);padding:0 3px;border-radius:3px}
+  .gfgrid{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:8px}
+  .gfpart{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .gfpart>.pl{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gfpart input,.gfpart select{padding:4px 7px;font-size:12.5px}
+  .gfpart input.gfnum{width:78px;text-align:right;font-variant-numeric:tabular-nums}
+  .gfpart.w2 input,.gfpart.w2 select{width:150px}
+  .gfpart.w3 input,.gfpart.w3 select{width:210px}
+  .gfpart.grow{flex:1;min-width:190px}
+  .gfpart.grow input,.gfpart.grow select{width:100%}
+  .gfpart input.changed,.gfpart select.changed{border-color:var(--accent);background:#241f0d}
+  .gfpart .sub{font-size:10.5px;color:var(--dim)}
+  .gfrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:7px}
+  .gfraw{display:flex;gap:6px;align-items:center;margin-top:8px}
+  .gfraw input{flex:1;min-width:0;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;padding:4px 7px}
+  .gfraw .pl{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--dim)}
+  .gfnote{font-size:11.5px;margin-top:7px;padding:5px 8px;border-radius:6px;border:1px solid var(--edge);
+    background:var(--panel2);color:var(--dim)}
+  .gfnote.warn{border-color:var(--warn);color:var(--warn)}
+  .gfnote.bad{border-color:var(--bad);color:var(--bad)}
+  .gfnote.good{border-color:var(--good);color:var(--good)}
+  .gfnote.info{border-style:dashed}
+  .gfnote b{color:var(--ink)}
+  .gfmissing{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;
+    border-top:1px dashed var(--edge);padding-top:9px}
+  .gfmissing select{max-width:230px}
+  .gfempty{color:var(--dim);font-size:12.5px;padding:14px 4px}
+  .gfsum{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+  .gfsum .pill{border:1px solid var(--edge);border-radius:12px;padding:1px 9px;font-size:11.5px;
+    color:var(--dim);background:var(--panel)}
+  .gfsum .pill.warn{border-color:var(--warn);color:var(--warn);cursor:pointer}
+  .gfoff{display:flex;gap:4px;align-items:center}
+  .gfoff .idx{font-size:10.5px;color:var(--dim);width:14px;text-align:right}
+  /* number box + its own ▴▾ (see gfSpin: not <input type=number>, which refuses
+     the decimals, negatives and blanks the EDU is full of) */
+  .gfspin{display:inline-flex;align-items:stretch}
+  .gfspin input.gfnum{border-top-right-radius:0;border-bottom-right-radius:0;border-right:none}
+  .gfsp{display:flex;flex-direction:column;width:17px;flex:0 0 17px}
+  .gfsp button{flex:1;padding:0;margin:0;width:17px;min-height:0;font-size:8px;line-height:1;
+    border:1px solid var(--edge);border-radius:0;background:var(--panel);color:var(--dim);
+    display:flex;align-items:center;justify-content:center}
+  .gfsp button:first-child{border-top-right-radius:6px;border-bottom:none}
+  .gfsp button:last-child{border-bottom-right-radius:6px}
+  .gfsp button:hover{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .gfsp button:active{background:var(--accent);border-color:var(--accent);color:#1a1a1a}
+  .gfpart.grow .gfspin,.gfpart.w2 .gfspin,.gfpart.w3 .gfspin{width:100%}
+  .gfpart .gfspin input.gfnum{width:78px}
+  /* the hover card: what a field or one of its values does */
+  .gftip{position:fixed;z-index:60;display:none;max-width:390px;background:var(--panel);
+    border:1px solid var(--accent2);border-radius:8px;padding:9px 11px;
+    box-shadow:0 10px 30px #000a;pointer-events:none}
+  .gftip .tt{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .gftip .topt{font-weight:400;color:var(--dim);font-size:11px}
+  .gftip .tk{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:var(--accent);
+    margin:2px 0 5px;overflow-wrap:anywhere}
+  .gftip .tb{font-size:12px;line-height:1.5;color:var(--dim)}
+  .gftip .tb b{color:var(--ink)}
+  .gftip .tb code,.gftip .tf code{background:var(--panel2);padding:0 3px;border-radius:3px;color:var(--ink)}
+  .gftip .tf{font-size:11px;color:var(--dim);margin-top:6px;padding-top:5px;
+    border-top:1px solid var(--edge)}
+  .gfhead[data-tip] .t{border-bottom:1px dotted var(--edge);cursor:help}
+  .gfpart[data-tip] .pl{cursor:help}
 </style>
 </head>
 <body>
@@ -921,6 +1020,9 @@ async function renderComposer(){
   // crew group is taken from it
   const engBase=crwBase; const engOn=hasEng&&!engBase;
   const sameMod=state.src===state.dst;      // edit mode's "new unit from this one"
+  // the guided field editor lays its boxes out in rows — give it the same room
+  // the unit editor gets, instead of the default 640px dialog
+  m.className=gfMode()==='guided'?'modal wide':'modal';
   m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`
       :sameMod?`New unit from “${esc(u.name)}”`
       :rep?`Replace “${esc(c.base_type)}” with “${esc(u.name)}”`
@@ -1030,6 +1132,7 @@ async function renderComposer(){
        ${sameMod?'':fromBasePanel(c,u)}
        <div class="fieldbar">
          <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
+         ${gfToggleHtml()}
          <span class="count" id="fieldChanged"></span>
        </div>
        <div class="allfields" id="allFields"><div class="count" style="padding:6px">Loading fields…</div></div>
@@ -1320,6 +1423,12 @@ async function loadFields(type){
 function renderAllFields(type){
   const c=cfgFor(type); const box=document.getElementById('allFields'); if(!box)return;
   if(!c._fields.length){box.innerHTML='<div class="count" style="padding:6px">No editable fields.</div>';updateFieldChanged();return;}
+  if(gfMode()==='guided'){
+    const host=gfHostComposer();
+    box.classList.add('guided'); box.innerHTML=gfRender(host); gfWire(host);
+    updateFieldChanged(); return;
+  }
+  box.classList.remove('guided');
   const inh=new Set(c.base_type?(c._inherited||[]):[]);
   // A copied voice OWNS accent + voice_type: the entry is written into the donor's
   // block, and these two are what send the game there. Editing one here would
@@ -1409,6 +1518,14 @@ function baseBadge(c,label,cur){
 function toggleBaseField(label){
   const c=cfgFor(state.editing);
   const src=baseSrcVal(c,label); if(src===undefined)return;
+  // guided mode has no single box holding the line — the value lives in the
+  // override map and the boxes are drawn from it, so flip it there and redraw
+  if(document.querySelector('#allFields .gfwrap')){
+    const cur=(label in c.field_overrides)?c.field_overrides[label]:c._orig[label];
+    const next=(cur===c._orig[label])?src:c._orig[label];
+    if(next!==c._orig[label]) c.field_overrides[label]=next; else delete c.field_overrides[label];
+    gfRerenderBody(); updateFieldChanged(); return;
+  }
   const inp=document.querySelector(`#allFields input[data-k="${cssq(label)}"]`); if(!inp)return;
   const usingBase=inp.value===c._orig[label];
   const next=usingBase?src:c._orig[label];
@@ -1422,6 +1539,13 @@ function toggleBaseField(label){
 function updateFieldChanged(){const c=cfgFor(state.editing);const n=Object.keys(c.field_overrides).length;
   const el=document.getElementById('fieldChanged'); if(el)el.textContent=n?`${n} changed`:'';}
 function filterFields(){const qq=(document.getElementById('fieldFilter')?.value||'').toLowerCase();
+  // the guided view searches across every section (a field's friendly name and
+  // its explanation count too), so it redraws rather than hiding rows
+  if(document.querySelector('#allFields .gfwrap')){
+    const gf=state.gf; if(!gf)return;
+    if((gf.q||'')===qq)return;
+    gf.q=qq; gfRerenderBody(); return;
+  }
   document.querySelectorAll('#allFields .afrow').forEach(r=>{
     const l=(r.dataset.label||'').toLowerCase(); r.style.display=(!qq||l.includes(qq))?'':'none';});}
 function closeModal(){overlay.classList.remove('open');
@@ -2530,6 +2654,8 @@ function edRenderTab(){
   const wasModal=modal?modal.scrollTop:0;
   const fields=document.getElementById('allFields');
   const wasFields=fields?fields.scrollTop:0;
+  const gbody=document.getElementById('gfBody');
+  const wasG=gbody?gbody.scrollTop:0;
   b.innerHTML=(e.tab==='identity'?edIdentity():e.tab==='fields'?edFields():edModels())
     +'<div id="edPreview"></div>';
   // keep the last preview visible across cosmetic re-renders (tab switch, expanding
@@ -2540,6 +2666,8 @@ function edRenderTab(){
   if(e.tab==='models')edWireModels();
   const nowFields=document.getElementById('allFields');
   if(nowFields&&wasFields)nowFields.scrollTop=wasFields;
+  const nowG=document.getElementById('gfBody');
+  if(nowG&&wasG)nowG.scrollTop=wasG;
   if(modal&&wasModal)modal.scrollTop=wasModal;
 }
 function edWireModels(){
@@ -2735,6 +2863,18 @@ function edWireIdentity(){
    upgrade level N). */
 const LIST_FIELDS=new Set(['ownership','era 0','era 1','era 2']);
 function edFields(){
+  return `<fieldset><legend>EDU fields — edited in place</legend>
+    <div class="fieldbar">
+      <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
+      ${gfToggleHtml()}
+      <span class="count" id="fieldChanged"></span>
+    </div>
+    ${gfMode()==='guided'
+      ? `<div class="allfields guided" id="allFields">${gfRender(gfHostEditor())}</div>`
+      : edRawFields()}
+    </fieldset>`;
+}
+function edRawFields(){
   const e=state.ed,d=e.d;
   const present=new Set(d.fields.map(([l])=>l.replace(/#\d+$/,'')));
   const missing=(d.known_fields||[]).filter(k=>!present.has(k));
@@ -2759,22 +2899,18 @@ function edFields(){
         class="${(label in e.ov)&&e.ov[label]!==val?'changed':''}">
       ${rmBtn(label,gone)}</div>`;
   }).join('');
-  return `<fieldset><legend>EDU fields — edited in place</legend>
-    <div class="fieldbar">
-      <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
-      <span class="count" id="fieldChanged"></span>
-    </div>
-    <div class="allfields" id="allFields">${rows}</div>
+  return `<div class="allfields" id="allFields">${rows}</div>
     <div class="count" style="margin-top:6px">✕ removes the whole line — clearing a value
       leaves an empty field, which the game still reads.</div>
     <div class="prow" style="margin-top:8px;grid-template-columns:170px 1fr auto">
       <span class="pl">Add a missing field</span>
       <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">— none missing —</option>'}</select>
       <button onclick="edAddField()">Add</button>
-    </div></fieldset>`;
+    </div>`;
 }
 function edWireFields(){
   const e=state.ed;
+  if(gfMode()==='guided'){gfWire(gfHostEditor()); return;}
   document.querySelectorAll('#allFields input[data-k]').forEach(inp=>{
     inp.oninput=()=>{const k=inp.dataset.k,orig=(e.d.fields.find(f=>f[0]===k)||['',''])[1];
       if(inp.value!==orig)e.ov[k]=inp.value; else delete e.ov[k];
@@ -4334,6 +4470,1308 @@ async function doRevert(id){
   if(r.error){toast('Revert error: '+r.error);return;}
   toast(`Reverted to this stage — undid ${r.count} transfer(s) ✓`);
   state.destData=null; openLog(); if(state.data)loadSource();}
+
+/* ======================================================================
+   GUIDED FIELD EDITOR
+   ----------------------------------------------------------------------
+   An EDU line is a comma-separated tuple whose meaning is entirely positional:
+   `stat_pri 14, 4, no, 0, 0, melee, melee_blade, piercing, spear, 25, 1` is
+   eleven different settings and nothing on the line says which is which. The raw
+   view (what this tool showed before, and what every other EDU editor shows) asks
+   you to know that by heart.
+
+   The guided view gives each slot its own labelled box, a drop-down wherever the
+   engine only accepts a fixed set of words, a one-line explanation, and a warning
+   when a value would not work — while writing back the very same line, so a unit
+   edited here is byte-identical to one edited by hand. Anything it does not
+   recognise (a mod's own field, a repeated line, a value count the engine does
+   not use) falls back to the raw box for that one field rather than guessing.
+
+   The same code drives both places EDU fields are edited — the transfer composer
+   and the unit editor — through a small host object; see gfHostComposer /
+   gfHostEditor for what each supplies.
+   ====================================================================== */
+
+// Which view the two field editors open in. Guided is the default; the setting is
+// remembered like the rest of them.
+const gfMode=()=>((state.settings||{}).field_editor_mode==='raw'?'raw':'guided');
+function gfSetMode(m){
+  state.settings.field_editor_mode=m;
+  api.post('/api/settings',{field_editor_mode:m});
+  if(state.mode==='edit'&&state.ed)edRenderTab(); else if(state.editing)renderComposer();
+}
+function gfToggleHtml(){
+  const g=gfMode()==='guided';
+  return `<div class="gfmode" title="Guided: every value in its own labelled box, with drop-downs and checks.
+Raw lines: one text box per EDU line, exactly as the file stores it.">
+    <button class="${g?'on':''}" onclick="gfSetMode('guided')">🧭 Guided</button>
+    <button class="${g?'':'on'}" onclick="gfSetMode('raw')">⌗ Raw lines</button></div>`;
+}
+
+/* ---- vocabularies -------------------------------------------------------
+   Fetched per mod (/api/edu_vocab): the engine's fixed sets plus everything the
+   mod itself defines or already uses, so a drop-down never invites you to throw
+   away a mod's own attribute or accent. The page keeps a minimal copy of the
+   fixed sets so it is usable before the answer arrives. */
+const GF_STATIC={
+  category:['infantry','cavalry','siege','ship','handler','non_combatant'],
+  'class':['light','heavy','missile','spearmen','skirmish'],
+  voice_type:['Heavy','Light','General'],
+  formation_main:['square','horde'],
+  formation_special:['','schiltrom','shield_wall','phalanx','testudo','wedge'],
+  discipline:['low','normal','disciplined','impetuous'],
+  training:['untrained','trained','highly_trained'],
+  weapon_type:['no','melee','thrown','missile','siege_missile'],
+  tech_type:['melee_simple','melee_blade','missile_mechanical','missile_gunpowder',
+             'artillery_mechanical','artillery_gunpowder'],
+  damage_type:['piercing','blunt','slashing','fire'],
+  weapon_sound:['none','spear','sword','axe','mace','knife'],
+  armour_sound:['flesh','leather','metal'],
+  mount_class:['horse','camel','elephant'],
+  weapon_attr:['ap','bp','spear','light_spear','long_pike','short_pike','spear_bonus_2',
+    'spear_bonus_4','spear_bonus_6','spear_bonus_8','spear_bonus_10','spear_bonus_12',
+    'thrown','launching','area','prec'],
+  unit_attr:['sea_faring','can_swim','can_withdraw','can_run_amok','can_formed_charge',
+    'cannot_skirmish','start_not_skirmishing','fire_by_rank','hardy','very_hardy',
+    'hide_forest','hide_improved_forest','hide_long_grass','hide_anywhere','frighten_foot',
+    'frighten_mounted','power_charge','knight','general_unit','mercenary_unit',
+    'free_upkeep_unit','is_peasant','no_custom','gunpowder_unit','stakes','druid',
+    'cantabrian_circle','command','legionary_name'],
+  banner_faction:['main_infantry','main_cavalry','main_missile','main_spear'],
+  banner_holy:['crusade','jihad'],
+  projectile:[],mount:[],engine:[],mounted_engine:[],ship:[],animal:[],model:[],
+  accent:[],banner_unit:[],fire_effect:[],defined:{}};
+state.vocab={};
+function gfVocabFor(mod){
+  if(!mod)return GF_STATIC;
+  if(state.vocab[mod])return state.vocab[mod];
+  if(state.vocab['?'+mod])return GF_STATIC;      // already in flight
+  state.vocab['?'+mod]=true;
+  api.get('/api/edu_vocab?mod='+enc(mod)).then(v=>{
+    state.vocab[mod]=Object.assign({},GF_STATIC,v||{});
+    // the boxes that were drawn from the static fallback now have real lists
+    if(state.mode==='edit'&&state.ed)edRenderTab(); else if(state.editing)renderAllFields(state.editing);
+  }).catch(()=>{});
+  return GF_STATIC;
+}
+const gfV=(host,name)=>((host.vocab||GF_STATIC)[name])||[];
+// Names a mod file actually defines, for "this points at nothing" warnings. An
+// empty list means the file is missing or unparsed — then we say nothing.
+const gfDefined=(host,name)=>((host.vocab||{}).defined||{})[name]||[];
+const gfHas=(list,v)=>{const t=(v||'').trim().toLowerCase();
+  return !t||list.some(x=>(''+x).toLowerCase()===t);};
+
+/* ---- the field table ----------------------------------------------------
+   `parts` is the line, slot by slot. `arity` lists the value counts the engine
+   accepts (absent = exactly one per part); a line with any other count is shown
+   raw, because guessing which slot is missing is how an editor eats a unit.
+   `pad` normalises an accepted short form up to the full part list, `join`
+   writes it back in whichever form is still correct. */
+const gfP=(pl,type,o)=>Object.assign({pl,type},o||{});
+// one DOM id per list box, derived the same way wherever it is needed
+const gfAddId=label=>'gfadd-'+label.replace(/\W/g,'_');
+/* A number box carries its own limits: `min`/`max` are what the ▴▾ steppers and
+   the ↑/↓ keys clamp to, `step` is how far one press moves it and `dec` how many
+   decimals to keep. Only ONE of these limits is a real engine cap (attack, 63);
+   the rest sit above the highest value found across vanilla, Third Age and DaC,
+   so a stepper cannot run away while nothing a real mod does is out of reach.
+   Typing is never clamped — an existing value the engine dislikes is reported by
+   the checks, not silently rewritten under the cursor. */
+const gfN=(pl,o)=>gfP(pl,'num',o);                       // number box
+const gfS=(pl,v,o)=>gfP(pl,'sel',Object.assign({v},o));  // closed drop-down
+const gfC=(pl,v,o)=>gfP(pl,'combo',Object.assign({v},o));// drop-down you can type into
+const gfT=(pl,o)=>gfP(pl,'text',o);
+
+// stat_pri / stat_sec / stat_ter share one shape: 11 values, or 12 when the
+// optional "effect played when the weapon fires" (musket_shot_set) is present
+// between the hit sound and the delay.
+const gfWeaponParts=()=>[
+  gfN('Attack',{min:0,max:63,
+    help:'The weapon’s attack factor — how much damage a connecting blow does. <b>The engine caps this at 63</b>: '
+      +'a higher number is stored but behaves as 63, so it is the one number here with a hard ceiling.'}),
+  gfN('Charge bonus',{min:0,max:63,
+    help:'Extra attack added while the charge is running. It decays as the charge is absorbed, so it rewards '
+      +'hitting a unit that is not braced rather than a long melee.'}),
+  gfC('Projectile','projectile',{w:3,
+    help:'The ammunition this weapon fires — an entry in <code>descr_projectile.txt</code>, which is where its '
+      +'speed, arc, damage model and impact effect live. <code>no</code> means a melee weapon.'}),
+  gfN('Range',{min:0,max:2000,
+    help:'How far the missile can be fired, in metres. 0 for a melee weapon. Vanilla bows sit near 120–180 and '
+      +'artillery near 250–450.'}),
+  gfN('Ammo',{min:0,max:999,
+    help:'Shots carried <b>per man</b>, not per unit. 0 for a melee weapon.'}),
+  gfS('Weapon type','weapon_type',{w:2,
+    help:'How the weapon is used: <code>melee</code>, <code>thrown</code>, <code>missile</code> or '
+      +'<code>siege_missile</code>. <b>A missile weapon has to be the primary one</b> — the engine will not fire a '
+      +'secondary bow. The exception is artillery, where the crew’s own weapon is primary.'}),
+  gfS('Tech type','tech_type',{w:3,
+    help:'Which weapon-upgrade line a smith improves for this unit: <code>melee_simple</code>, '
+      +'<code>melee_blade</code>, <code>missile_mechanical</code>, <code>missile_gunpowder</code>, '
+      +'<code>artillery_mechanical</code> or <code>artillery_gunpowder</code>.'}),
+  gfS('Damage type','damage_type',{w:2,
+    help:'<code>piercing</code>, <code>blunt</code> or <code>slashing</code>. The EDU’s own header notes this may '
+      +'no longer be read by the engine; it is still set on every unit.'}),
+  gfS('Hit sound','weapon_sound',{w:2,
+    help:'The sound played when the weapon connects: <code>none</code>, <code>knife</code>, <code>mace</code>, '
+      +'<code>axe</code>, <code>sword</code> or <code>spear</code>. Cosmetic only.'}),
+  gfC('Fire effect','fire_effect',{w:3,optional:1,
+    help:'Optional. The effect played when the weapon <i>fires</i> — <code>musket_shot_set</code> for gunpowder '
+      +'units, and essentially nothing else. Setting it is what turns this line from 11 values into 12; clearing '
+      +'it turns it back.'}),
+  gfN('Delay',{min:0,max:9999,
+    help:'Minimum delay between attacks, in tenths of a second, on top of whatever the animation takes. Lower is '
+      +'faster. 25 is the value nearly every unit in the game uses.'}),
+  gfN('Skel. factor',{min:0,max:100,step:0.1,dec:1,
+    help:'Skeleton compensation factor in melee. The EDU header says it should be 1; a few mods use it to tune '
+      +'how a mismatched animation lands.'}),
+];
+const gfWeaponSpec=(title,doc)=>({t:title,doc,parts:gfWeaponParts(),arity:[11,12],
+  syn:'attack, charge, projectile, range, ammo, weapon type, tech type, damage type, hit sound, [fire effect,] delay, skeleton factor',
+  // 11 values -> no fire effect: open slot 9 so every box keeps its meaning
+  pad:p=>p.length>=12?p:p.slice(0,9).concat([''],p.slice(9)),
+  join:p=>{const fx=(p[9]||'').trim();
+    return p.slice(0,9).concat(fx?[fx]:[],p.slice(10)).map(x=>(''+(x==null?'':x)).trim()).join(', ');}});
+const gfExSpec=which=>({t:which+' weapon bonuses',opt:1,
+  syn:'attack bonus vs mounted, defence bonus vs mounted, armour penetration',
+  doc:'Optional. Three extra factors that apply only against mounted enemies. The engine reads the line, but most '
+    +'mods leave it out and use <code>mount_effect</code> and the <code>spear_bonus_N</code> weapon attributes '
+    +'instead — vanilla ships it commented out on every unit.',
+  parts:[gfN('Attack vs mounted',{min:-100,max:100,help:'Added to the attack factor when the target is mounted.'}),
+    gfN('Defence vs mounted',{min:-100,max:100,help:'Added to defence when the attacker is mounted.'}),
+    gfN('Armour penetration',{min:-100,max:100,help:'How much of a mounted target’s armour this weapon ignores.'})]});
+const gfAttrSpec=which=>({t:which+' weapon attributes',w:'wattr',
+  doc:'What the weapon does beyond its numbers. <code>ap</code> halves the target’s armour; <code>bp</code> lets a '
+    +'missile pass through a man and hit the one behind; <code>spear</code> and <code>light_spear</code> give the '
+    +'bracing bonuses against a cavalry charge from the front (<code>spear</code> also carries a penalty against '
+    +'infantry); <code>long_pike</code> is required by phalanx units; <code>spear_bonus_N</code> is a flat attack '
+    +'bonus against cavalry and only one of them can apply; <code>thrown</code>, <code>launching</code> and '
+    +'<code>area</code> change how the hit resolves; <code>prec</code> makes a missile unit throw one volley and '
+    +'then charge. With none of them the line is written as <code>no</code>, which is how "none" is spelled here.'});
+
+const GF_FIELDS={
+  'type':{t:'Internal name',syn:'<name>',
+    doc:'The name every <b>other</b> file uses for this unit — <code>descr_strat.txt</code>, '
+      +'<code>export_descr_buildings.txt</code>, <code>descr_mercenaries.txt</code>, '
+      +'<code>descr_rebel_factions.txt</code> and campaign scripts. Spaces are allowed here, and as a rule any '
+      +'file that names units without underscores wants this name.',
+    parts:[gfT('type',{grow:1,help:'Renaming it here does not update the other files that recruit the unit.'})]},
+  'dictionary':{t:'Dictionary key',syn:'<key>  ; <comment>',
+    doc:'The unit’s <i>other</i> name: the key its on-screen text is looked up under in '
+      +'<code>data/text/export_units.txt</code>, and the filename its unit card and info card take '
+      +'(<code>#&lt;key&gt;.tga</code>). Usually identical to the type but with underscores instead of spaces. '
+      +'Anything after a <code>;</code> is a comment the game ignores — vanilla uses it to spell the real name out.',
+    parts:[gfT('dictionary',{grow:1})]},
+  'category':{t:'Category',syn:'infantry | cavalry | siege | ship | handler',
+    doc:'The broad troop type. It sets some defaults and decides where the unit stands in an army’s formation. '
+      +'Wagons like the Great Cross count as <code>siege</code>; <code>handler</code> is for a unit whose animals '
+      +'do the fighting. <code>non_combatant</code> is listed by the file header but is a Rome leftover.',
+    parts:[gfS('category','category',{w:2})]},
+  'class':{t:'Class',syn:'light | heavy | missile | spearmen',
+    doc:'What the unit is within its category. <code>light</code> and <code>heavy</code> are used by infantry, '
+      +'cavalry and ships; <code>missile</code> by infantry, cavalry and siege; <code>spearmen</code> by infantry '
+      +'only. A wagon is the odd one out — <code>siege</code> category with <code>light</code> class.',
+    parts:[gfS('class','class',{w:2})]},
+  'voice_type':{t:'Voice type',syn:'Heavy | Light | General',
+    doc:'Which set of battlefield barks the unit uses. <code>Light</code> for ships and weak-sounding troops, '
+      +'<code>Heavy</code> for regulars, <code>General</code> for a general’s bodyguard. Together with '
+      +'<code>accent</code> this is what points the game at a block in '
+      +'<code>export_descr_sounds_units_voice.txt</code>.',
+    parts:[gfS('voice_type','voice_type',{w:2})]},
+  'accent':{t:'Accent',opt:1,syn:'<accent>',
+    doc:'Optional. Forces one accent on the unit whoever owns it — without the line it speaks with the owning '
+      +'faction’s accent, so English-owned Swiss Pikemen would sound English. Accents are declared in '
+      +'<code>descr_sounds_accents.txt</code>; vanilla has English, Scottish, French, German, Mediterranean, '
+      +'East_European, Arabic and Mongolian, and mods add their own.',
+    parts:[gfC('accent','accent',{w:3})]},
+  'banner faction':{t:'Faction banner',syn:'<banner>',
+    doc:'The unit’s big battlefield banner, from <code>descr_banners_new.xml</code>. It also decides the '
+      +'mini-banners that appear as the unit gains experience and weapon/armour upgrades. Vanilla uses '
+      +'<code>main_infantry</code>, <code>main_cavalry</code>, <code>main_missile</code> and '
+      +'<code>main_spear</code>. Ships have no line — they never appear on the battlefield.',
+    parts:[gfC('banner','banner_faction',{w:3})]},
+  'banner holy':{t:'Holy-war banner',opt:1,syn:'<banner>',
+    doc:'Optional. The secondary banner the unit carries while on a crusade or jihad — normally '
+      +'<code>crusade</code> or <code>jihad</code>. Leave the line out and it carries none.',
+    parts:[gfC('banner','banner_holy',{w:3})]},
+  'banner unit':{t:'Unit banner',opt:1,syn:'<banner>',
+    doc:'Optional and rare — a per-unit banner override, again from <code>descr_banners_new.xml</code>.',
+    parts:[gfC('banner','banner_unit',{w:3})]},
+
+  'soldier':{t:'Soldiers',syn:'model, men, extras, mass[, radius[, height]]',
+    doc:'Who the unit is made of. The model name is an entry in <code>battle_models.modeldb</code> and decides '
+      +'both how the man looks and how he moves — swapping it swaps the animation set with it.',
+    parts:[gfC('Model','model',{w:3,
+        help:'A <code>battle_models.modeldb</code> entry. It carries the meshes, the per-faction textures and the '
+          +'animation skeleton, so changing it changes how the man looks <i>and</i> how he fights.'}),
+      gfN('Men',{min:1,max:500,
+        help:'Men in the unit at the largest unit-size setting; the smaller settings scale down from it. The guide '
+          +'gives 4–100 as the range, though shipped mods field 2-man scout and monster units quite happily.'}),
+      gfN('Extras',{min:0,max:99,
+        help:'Attached siege engines or animals — 2 on a two-trebuchet unit, and 0 for ordinary troops. What the '
+          +'extras <i>are</i> comes from the <code>engine</code> / <code>animal</code> / <code>mounted_engine</code> line.'}),
+      gfN('Mass',{min:0,max:200,step:0.1,dec:1,
+        help:'Collision mass of one man; 1 is normal. A heavier man shoves people aside on the charge. Ignored for '
+          +'cavalry — a mounted unit takes its mass from the mount in <code>descr_mount.txt</code>.'}),
+      gfN('Radius',{optional:1,min:0,max:10,step:0.05,dec:2,
+        help:'Optional. Collision radius of one man in metres. Leave it empty unless the mod already sets it — '
+          +'adding it lengthens the line, and the height slot is only read when a radius is present.'}),
+      gfN('Height',{optional:1,min:0,max:10,step:0.1,dec:1,
+        help:'Optional. Collision height of one man in metres. Only read when a radius is given.'})],
+    arity:[4,5,6],
+    join:p=>{const q=p.map(x=>(''+(x==null?'':x)).trim());
+      while(q.length>4&&!q[q.length-1])q.pop(); return q.join(', ');}},
+  'officer':{t:'Officer',opt:1,syn:'<model>',
+    doc:'Optional. An extra man riding along with the unit, taken from <code>battle_models.modeldb</code> like the '
+      +'soldier model. He is decoration — losing him costs the unit nothing. Up to three <code>officer</code> '
+      +'lines are allowed and they sit directly after <code>soldier</code>.',
+    parts:[gfC('Model','model',{w:3})]},
+  'mount':{t:'Mount',opt:1,syn:'<mount>',
+    doc:'What the unit rides, named in <code>descr_mount.txt</code>. The mount is where the animal’s mass, its '
+      +'model and its own stats come from — this line only points at it. A ridden horse or camel has no separate '
+      +'hit points; an elephant does.',
+    parts:[gfC('Mount','mount',{w:3})]},
+  'ship':{t:'Ship',opt:1,syn:'<ship type>',
+    doc:'Ships only, from <code>descr_ship.txt</code>. <code>heavy warship</code> is the type that can cross deep '
+      +'ocean tiles. The line goes directly after <code>soldier</code>.',
+    parts:[gfC('Ship','ship',{w:3})]},
+  'engine':{t:'Siege engine',opt:1,syn:'<engine>',
+    doc:'The siege engine this crew operates, from <code>descr_engines.txt</code> — catapult, trebuchet, bombard, '
+      +'ram, ladder, siege tower and so on. How many of them the unit fields comes from the <i>extras</i> slot of '
+      +'the <code>soldier</code> line.',
+    parts:[gfC('Engine','engine',{w:3})]},
+  'mounted_engine':{t:'Mounted engine',opt:1,syn:'<engine>',
+    doc:'A gun carried by the unit’s mount — elephant serpentine, elephant rocket launcher, camel gun — declared '
+      +'in <code>descr_mounted_engines.txt</code>. Unlike a ground engine it has no model of its own: it rides the '
+      +'mount’s.',
+    parts:[gfC('Engine','mounted_engine',{w:3})]},
+  'animal':{t:'Animals',opt:1,syn:'<animal>',
+    doc:'Non-ridden animals that do the fighting while the men handle them — war dogs, pigs — from '
+      +'<code>descr_animals.txt</code>. This needs <code>category handler</code> to work, and the number of animals '
+      +'comes from the <i>extras</i> slot of the <code>soldier</code> line.',
+    parts:[gfC('Animal','animal',{w:3})]},
+  'mount_effect':{t:'Bonus vs mounts',opt:1,w:'meffect',
+    syn:'<mount> ±N, <mount> ±N, <mount> ±N',
+    doc:'Attack modifiers that apply only against enemies riding a particular mount. Each entry names either a '
+      +'mount <i>class</i> (<code>horse</code>, <code>camel</code>, <code>elephant</code>) or one specific mount '
+      +'out of <code>descr_mount.txt</code>, followed by a signed number. <b>The engine reads at most three.</b> '
+      +'This is where the classic "camels frighten horses" and "everything hates elephants" numbers live.'},
+  'attributes':{t:'Attributes',w:'attrs',syn:'attr, attr, attr, …',
+    doc:'Everything about the unit that is not a number, as a comma-separated list. Two different kinds share the '
+      +'line. <b>Abilities</b> change what the unit can do: where it can hide, whether it can board ships or swim, '
+      +'whether it can withdraw from a battle, how much stamina it has, whether it is a mercenary, whether it can '
+      +'lay stakes or form a Cantabrian circle — and a unit may only carry one special ability. <b>AI labels</b> '
+      +'(<code>pike</code>, <code>crossbow</code>, <code>artillery</code>, <code>gunmen</code>, …) change nothing '
+      +'about the unit itself; they tell the campaign AI what kind of unit it is looking at.'},
+  'move_speed_mod':{t:'Movement modifier',opt:1,syn:'<multiplier>',
+    doc:'Kingdoms only. Multiplies the movement speed the unit’s animation skeleton gives it — above 1 is faster, '
+      +'below is slower. Without the line the skeleton alone decides.',
+    parts:[gfN('×',{min:0,max:5,step:0.01,dec:2,help:'1 leaves the skeleton’s own speed alone.'})]},
+
+  'formation':{t:'Formation',syn:'close ↔, close ↕, loose ↔, loose ↕, ranks, formation[, second formation]',
+    doc:'How tightly the men stand and which formations the unit may adopt. The first four numbers are spacing in '
+      +'metres — side-to-side then front-to-back, first in close order and then in loose order.',
+    parts:[gfN('Close ↔',{min:0,max:200,step:0.1,dec:1,help:'Side-to-side spacing between men in metres, close order.'}),
+      gfN('Close ↕',{min:0,max:200,step:0.1,dec:1,help:'Front-to-back spacing between ranks in metres, close order.'}),
+      gfN('Loose ↔',{min:0,max:200,step:0.1,dec:1,help:'Side-to-side spacing in loose order — always wider than close.'}),
+      gfN('Loose ↕',{min:0,max:200,step:0.1,dec:1,help:'Front-to-back spacing in loose order.'}),
+      gfN('Ranks',{min:1,max:50,help:'How many ranks deep the unit forms up by default. Pikes use 8; most infantry 3–4.'}),
+      gfS('Formation','formation_main',{w:2,
+        help:'The formation the unit starts in. With a second formation set, this one <b>must</b> be '
+          +'<code>square</code> or <code>horde</code> (a circle).'}),
+      gfS('Can switch to','formation_special',{w:2,optional:1,
+        help:'Optional. The formation the unit can toggle into: <code>phalanx</code> (spear wall — needs '
+          +'<code>long_pike</code> on the primary weapon), <code>schiltrom</code>, <code>shield_wall</code>, '
+          +'<code>testudo</code> or <code>wedge</code>.'})],
+    arity:[6,7],
+    join:p=>{const q=p.map(x=>(''+(x==null?'':x)).trim());
+      if(!q[6])q.length=6; return q.join(', ');}},
+  'stat_health':{t:'Hit points',syn:'man, mount/animal',
+    doc:'How many killing blows it takes to put one man down. Almost every unit in the game uses 1 — a unit with '
+      +'more is effectively a monster. Ridden horses and camels have <i>no</i> separate hit points; the second box '
+      +'is for elephants and for attached animals.',
+    parts:[gfN('Man',{min:0,max:999,help:'Killing blows one man absorbs. 1 is normal.'}),
+      gfN('Mount / animal',{min:0,max:999,
+        help:'Hit points of the mount or attached animal, where it has its own. Horses and camels do not.'})]},
+  'stat_stl':{t:'Soldiers to stay alive',opt:1,syn:'<men>',
+    doc:'Optional. The number of men the unit has to keep for the game to still count it as alive. Only a handful '
+      +'of units in any mod set it.',
+    parts:[gfN('Men',{min:0,max:999})]},
+
+  'stat_pri':gfWeaponSpec('Primary weapon',
+    'The weapon the unit leads with. <b>If the unit has a missile weapon at all, it has to be this one</b> — the '
+    +'engine will not fire a secondary bow. The exception is artillery, where the crew’s own hand weapon goes here '
+    +'and the engine’s shot is described by the secondary line.'),
+  'stat_pri_ex':gfExSpec('Primary'),
+  'stat_pri_attr':gfAttrSpec('Primary'),
+  'stat_sec':gfWeaponSpec('Secondary weapon',
+    'The sidearm — or, on a mounted, vehicle or artillery unit, the mount’s / engine’s own attack. A missile '
+    +'unit’s melee weapon belongs here. To say the unit has no sidearm at all, the engine wants one exact line '
+    +'(<code>0, 0, no, 0, 0, no, melee_simple, blunt, none, 25, 1</code>) — the button in this card’s header '
+    +'writes it.'),
+  'stat_sec_ex':gfExSpec('Secondary'),
+  'stat_sec_attr':gfAttrSpec('Secondary'),
+  'stat_ter':gfWeaponSpec('Third weapon',
+    'Optional third weapon, read exactly like the other two. Vanilla only uses it once — for the trebuchet’s '
+    +'rotten cow carcass. Either all of the ternary lines are present or none of them is.'),
+  'stat_ter_ex':gfExSpec('Third'),
+  'stat_ter_attr':gfAttrSpec('Third'),
+
+  'stat_pri_armour':{t:'Defence',syn:'armour, defence skill, shield, hit sound',
+    doc:'What protects the man, split three ways because they work differently. <b>Armour</b> counts against '
+      +'everything. <b>Defence skill</b> is his ability to parry and is <i>not</i> used when he is shot at. '
+      +'<b>Shield</b> only counts against attacks coming from the front or the left.',
+    parts:[gfN('Armour',{min:0,max:255,help:'Armour factor. Counts against every kind of attack. Halved by an <code>ap</code> weapon.'}),
+      gfN('Defence skill',{min:0,max:255,help:'Parrying skill. Ignored when the man is shot at — armour and shield are all that protect him then.'}),
+      gfN('Shield',{min:0,max:255,help:'Shield factor. Only applies to attacks from the front or the left, which is why flanking works.'}),
+      gfS('Hit sound','armour_sound',{w:2,help:'What it sounds like when the man is hit: <code>flesh</code>, <code>leather</code> or <code>metal</code>. Cosmetic.'})]},
+  'stat_armour_ex':{t:'Defence (extended)',opt:1,
+    syn:'armour 0, armour 1, armour 2, armour 3, defence skill, shield melee, shield missile, hit sound',
+    doc:'Optional long form of the line above. It gives armour a value at the base level <i>and</i> at each of the '
+      +'three upgrade levels instead of letting the engine derive them, and splits the shield into one value '
+      +'against melee and another against missile fire. Vanilla ships it commented out.',
+    parts:[gfN('Armour 0',{min:0,max:255,help:'Armour with no smith upgrade.'}),
+      gfN('Armour 1',{min:0,max:255,help:'Armour at the first upgrade level.'}),
+      gfN('Armour 2',{min:0,max:255,help:'Armour at the second upgrade level.'}),
+      gfN('Armour 3',{min:0,max:255,help:'Armour at the third upgrade level.'}),
+      gfN('Defence skill',{min:0,max:255,help:'As in the normal line — not used against missiles.'}),
+      gfN('Shield melee',{min:0,max:255,help:'Shield factor against melee attacks from the front or left.'}),
+      gfN('Shield missile',{min:0,max:255,help:'Shield factor against missile fire — the split this longer line exists for.'}),
+      gfS('Hit sound','armour_sound',{w:2})]},
+  'stat_sec_armour':{t:'Vehicle / animal defence',syn:'armour, defence skill, hit sound',
+    doc:'The defence of the attached artillery piece, wagon or animal — note there is no shield slot here. A '
+      +'ridden horse has no separate defence, so an ordinary cavalry unit leaves this at <code>0, 0, flesh</code>.',
+    parts:[gfN('Armour',{min:0,max:255,help:'Armour of the vehicle or animal.'}),
+      gfN('Defence skill',{min:0,max:255,help:'Defence skill of the vehicle or animal.'}),
+      gfS('Hit sound','armour_sound',{w:2})]},
+  'stat_mental':{t:'Morale',syn:'morale, discipline, training[, lock_morale]',
+    doc:'The unit’s state of mind. <b>Morale</b> is how much punishment it takes before routing. <b>Discipline</b> '
+      +'is how well it answers a sudden shock — a charge in the rear, the general dying. <b>Training</b> decides '
+      +'how tidily it holds its formation.',
+    parts:[gfN('Morale',{min:0,max:100,help:'Base morale. Higher units stand longer before routing.'}),
+      gfS('Discipline','discipline',{w:2,
+        help:'<code>low</code>, <code>normal</code>, <code>disciplined</code> or <code>impetuous</code>. '
+          +'Impetuous units may charge without being told to.'}),
+      gfS('Training','training',{w:2,
+        help:'<code>untrained</code>, <code>trained</code> or <code>highly_trained</code> — how neatly the unit '
+          +'keeps its formation while it moves.'}),
+      gfP('Never routs','flag',{on:'lock_morale',
+        help:'Adds <code>lock_morale</code>, an optional fourth value: the unit will not rout, whatever happens to it.'})],
+    arity:[3,4],
+    join:p=>{const q=p.slice(0,3).map(x=>(''+(x==null?'':x)).trim());
+      if((p[3]||'').trim())q.push('lock_morale'); return q.join(', ');}},
+  'stat_heat':{t:'Heat fatigue',syn:'<extra fatigue>',
+    doc:'Extra fatigue the unit suffers in hot climates, on top of the normal rate. The higher the number the '
+      +'sooner it tires in the desert — heavily armoured units carry the most.',
+    parts:[gfN('Heat',{min:-100,max:100})]},
+  'stat_ground':{t:'Ground modifiers',syn:'scrub, sand, forest, snow',
+    doc:'Combat modifiers on each ground type, applied wherever the unit is fighting. Negative is a penalty — a '
+      +'desert unit will have a positive sand value and a negative snow one.',
+    parts:[gfN('Scrub',{min:-100,max:100,help:'Modifier while fighting on scrub.'}),
+      gfN('Sand',{min:-100,max:100,help:'Modifier on sand — positive for desert troops.'}),
+      gfN('Forest',{min:-100,max:100,help:'Modifier in forest — positive for woodsmen, negative for close formations.'}),
+      gfN('Snow',{min:-100,max:100,help:'Modifier in snow — positive for northern troops.'})]},
+  'stat_charge_dist':{t:'Charge distance',syn:'<metres>',
+    doc:'How far out from the enemy the unit breaks into its charge. A bigger number means it starts running '
+      +'sooner, which builds more charge but also tires it more.',
+    parts:[gfN('Metres',{min:0,max:999})]},
+  'stat_fire_delay':{t:'Fire delay',opt:1,syn:'<delay>',
+    doc:'Extra delay between volleys on top of what the reload animation already costs. Modders have reported it '
+      +'has no effect in Kingdoms; nearly every unit carries 0.',
+    parts:[gfN('Delay',{min:0,max:999})]},
+  'stat_food':{t:'Food',opt:1,syn:'<a>, <b>',
+    doc:'No longer used by the engine. Every unit in the game carries <code>60, 300</code> out of habit; there is '
+      +'no reason to change it and no reason to remove it.',
+    parts:[gfN('Value 1',{min:0,max:9999}),gfN('Value 2',{min:0,max:9999})]},
+  'stat_cost':{t:'Cost',syn:'turns, recruit, upkeep, weapon ug, armour ug, custom battle, free picks, price rise',
+    doc:'Everything the unit costs. All of it is florins except the first box, which is turns.',
+    parts:[gfN('Turns',{min:0,max:99,help:'Turns the unit takes to recruit.'}),
+      gfN('Recruit',{min:0,max:999999,help:'Florins to recruit it in the campaign. This does <i>not</i> set the price of hiring it as a mercenary.'}),
+      gfN('Upkeep',{min:0,max:999999,help:'Florins per turn to keep it in the field.'}),
+      gfN('Weapon ug.',{min:0,max:999999,help:'Florins the smith charges to upgrade its weapons.'}),
+      gfN('Armour ug.',{min:0,max:999999,help:'Florins the smith charges to upgrade its armour.'}),
+      gfN('Custom battle',{min:0,max:999999,help:'What it costs in a custom battle, independent of the campaign price.'}),
+      gfN('Free picks',{min:0,max:99,help:'How many you may buy in a custom battle before the price starts climbing.'}),
+      gfN('Price rise',{min:0,max:999999,help:'How much the custom-battle price goes up by after that.'})]},
+  'recruit_priority_offset':{t:'AI recruit priority',opt:1,syn:'<offset>',
+    doc:'Kingdoms only. How badly the AI wants this unit — higher means it recruits it more often, and negative '
+      +'pushes it down the list. It goes at the end of the unit’s block.',
+    parts:[gfN('Offset',{min:-1000,max:1000})]},
+  'crusading_upkeep_modifier':{t:'Crusade upkeep',opt:1,syn:'<multiplier>',
+    doc:'Multiplies the unit’s upkeep while it is part of a crusade or jihad. Vanilla uses 0.5 — half price — on '
+      +'the units it wants you to take along.',
+    parts:[gfN('×',{min:0,max:10,step:0.1,dec:2})]},
+  'armour_ug_levels':{t:'Armour upgrade levels',w:'uglevels',syn:'level, level, level, …',
+    doc:'The smith level each armour tier needs, read position by position against the models below. The first '
+      +'value is the unit’s normal level and the rest are the upgrades, and the list has to stay ascending. Having '
+      +'<i>more</i> levels than models is normal and means the last model carries the levels above it.'},
+  'armour_ug_models':{t:'Armour upgrade models',w:'ugmodels',syn:'model, model, model, …',
+    doc:'One <code>battle_models.modeldb</code> entry per armour tier: position 0 is the unit’s normal look, '
+      +'position 1 is what it looks like at the first upgrade, and so on. Naming the same entry twice is a real '
+      +'pattern, not a mistake — it is how a unit gains the armour upgrade in its stats without changing how it looks.'},
+  'ownership':{t:'Ownership',w:'factions',syn:'faction, faction, culture, …',
+    doc:'The factions and cultures allowed to have this unit. It is not optional book-keeping: <b>a faction given '
+      +'the ability to build the unit still cannot recruit it unless it is listed here</b>, and the list also '
+      +'decides which faction folders the unit’s card is looked up in.'},
+  'era 0':{t:'Custom battle — Early',w:'factions',opt:1,syn:'faction, faction, …',
+    doc:'Optional. Which factions may pick this unit in an <b>Early</b>-era custom battle. Nothing to do with the '
+      +'campaign — that is <code>ownership</code> plus the building that recruits it.'},
+  'era 1':{t:'Custom battle — High',w:'factions',opt:1,syn:'faction, faction, …',
+    doc:'Optional. Which factions may pick this unit in a <b>High</b>-era custom battle.'},
+  'era 2':{t:'Custom battle — Late',w:'factions',opt:1,syn:'faction, faction, …',
+    doc:'Optional. Which factions may pick this unit in a <b>Late</b>-era custom battle.'},
+  'card_pic_dir':{t:'Unit card folder',opt:1,syn:'<folder>',
+    doc:'Optional. Pins the unit card to one folder under <code>data/ui/units/</code> instead of letting the game '
+      +'look it up in the <i>player’s</i> faction folder. Useful for a mercenary or a shared unit; a trap '
+      +'otherwise, since it overrides every per-faction card.',
+    parts:[gfT('Folder',{grow:1,mono:1})]},
+  'info_pic_dir':{t:'Info card folder',opt:1,syn:'<folder>',
+    doc:'Optional. The same thing for the big info card, under <code>data/ui/unit_info/</code>.',
+    parts:[gfT('Folder',{grow:1,mono:1})]},
+  'unit_info':{t:'Info panel numbers',opt:1,syn:'melee attack, missile attack, defence',
+    doc:'Optional. The three summary numbers the unit-info panel shows the player. Vanilla keeps this line '
+      +'commented out on every unit and lets the engine work them out from the real stats.',
+    parts:[gfN('Melee attack',{min:0,max:999}),gfN('Missile attack',{min:0,max:999}),gfN('Defence',{min:0,max:999})]},
+};
+
+const GF_SECTIONS=[
+  {id:'basics',t:'Basics',keys:['type','dictionary','category','class','voice_type','accent',
+    'banner faction','banner holy','banner unit']},
+  {id:'men',t:'Men & mounts',keys:['soldier','officer','mount','ship','engine','mounted_engine',
+    'animal','stat_health','stat_stl','move_speed_mod','armour_ug_levels','armour_ug_models']},
+  {id:'abil',t:'Abilities',keys:['attributes','mount_effect']},
+  {id:'weapons',t:'Weapons',keys:['stat_pri','stat_pri_attr','stat_pri_ex','stat_sec','stat_sec_attr',
+    'stat_sec_ex','stat_ter','stat_ter_attr','stat_ter_ex']},
+  {id:'defence',t:'Defence & morale',keys:['stat_pri_armour','stat_armour_ex','stat_sec_armour',
+    'stat_mental','formation','stat_charge_dist','stat_fire_delay','stat_heat','stat_ground']},
+  {id:'cost',t:'Recruitment',keys:['stat_cost','recruit_priority_offset','crusading_upkeep_modifier',
+    'ownership','era 0','era 1','era 2']},
+  {id:'ui',t:'Cards & misc',keys:['card_pic_dir','info_pic_dir','unit_info','stat_food']},
+  {id:'other',t:'Other lines',keys:[]},
+];
+const GF_SECTION_OF=(()=>{const m={};GF_SECTIONS.forEach(s=>s.keys.forEach(k=>m[k]=s.id));return m;})();
+const gfKey=label=>label.replace(/#\d+$/,'');
+
+/* ---- splitting a line into its slots, and putting it back together ---- */
+function gfParse(spec,val){
+  const raw=(val==null?'':''+val);
+  const n=(spec.parts||[]).length;
+  if(!n)return {parts:[],ok:true};
+  if(!raw.trim())return {parts:new Array(n).fill(''),ok:true,empty:true};
+  let p=raw.split(',').map(s=>s.trim());
+  const allow=spec.arity||[n];
+  if(allow.indexOf(p.length)<0)return {parts:p,ok:false};
+  if(spec.pad)p=spec.pad(p);
+  while(p.length<n)p.push('');
+  return {parts:p,ok:true};
+}
+function gfBuild(spec,parts){
+  if(spec.join)return spec.join(parts);
+  return parts.map(x=>(''+(x==null?'':x)).trim()).join(', ');
+}
+
+/* ---- host adapters ------------------------------------------------------
+   The unit editor and the transfer composer keep their edits in different
+   places (`state.ed.ov` + a removal set vs a per-unit `field_overrides`), have
+   different extras (a real delete vs the base-unit B switches) and read
+   different mods. Everything the renderer needs comes through here. */
+function gfHostEditor(){
+  const e=state.ed;
+  return {
+    id:'ed', key:'ed:'+e.mod+':'+e.unit, mod:e.mod,
+    vocab:gfVocabFor(e.mod),
+    fields:()=>e.d.fields,
+    known:new Set(e.d.known_fields||[]),
+    get:edFieldVal,
+    orig:l=>{const f=e.d.fields.find(x=>x[0]===l);return f?f[1]:'';},
+    set:(l,v)=>edSetField(l,v),
+    changed:l=>(l in e.ov)&&e.ov[l]!==((e.d.fields.find(x=>x[0]===l)||['',''])[1]),
+    removed:l=>e.rm.has(l),
+    canRemove:true,
+    protectedKeys:new Set(['type','dictionary','soldier']),
+    toggleRemove:l=>{if(e.rm.has(l))e.rm.delete(l);else{e.rm.add(l);delete e.ov[l];}edRenderTab();},
+    badge:()=>'',
+    lock:()=>null,
+    factions:()=>edFactionList(),
+    facLabel:edFacLabel,
+    missing:()=>{const present=new Set(e.d.fields.map(([l])=>gfKey(l)));
+      return (e.d.known_fields||[]).filter(k=>!present.has(k));},
+    add:k=>{e.d.fields=e.d.fields.concat([[k,'']]);e.added.add(k);e.ov[k]='';edRenderTab();},
+    addLabel:(k,l)=>{e.d.fields=e.d.fields.concat([[l,'']]);e.added.add(l);e.ov[l]='';edRenderTab();},
+    richArmour:true,          // the editor's ＋ tier menu and ✎ jump-to-model
+    rerender:()=>edRenderTab(),
+    count:()=>edCount(),
+    stale:()=>edStale(),
+  };
+}
+function gfHostComposer(){
+  const c=cfgFor(state.editing);
+  const inh=new Set(c.base_type?(c._inherited||[]):[]);
+  const lockFor=gfComposerLock(c);
+  return {
+    id:'cm', key:'cm:'+state.dst+':'+state.editing, mod:state.dst,
+    vocab:gfVocabFor(state.dst),
+    fields:()=>gfComposerFields(c),
+    known:new Set(Object.keys(GF_FIELDS)),
+    get:l=>{const lk=lockFor(gfKey(l)); if(lk)return lk.val;
+      return (l in c.field_overrides)?c.field_overrides[l]:c._orig[l];},
+    orig:l=>c._orig[l],
+    set:(l,v)=>{if(v!==c._orig[l])c.field_overrides[l]=v; else delete c.field_overrides[l];},
+    changed:l=>(l in c.field_overrides)&&c.field_overrides[l]!==c._orig[l],
+    removed:()=>false,
+    canRemove:false,
+    protectedKeys:new Set(),
+    toggleRemove:()=>{},
+    badge:(l,cur)=>inh.has(gfKey(l))&&!/#\d+$/.test(l)?baseBadge(c,l,cur):'',
+    lock:l=>/#\d+$/.test(l)?null:lockFor(gfKey(l)),
+    factions:()=>gfComposerFactions(c),
+    facLabel:facLabel,
+    missing:()=>{const present=new Set(gfComposerFields(c).map(([l])=>gfKey(l)));
+      return (state.ed&&state.ed.d.known_fields||Object.keys(GF_FIELDS)).filter(k=>!present.has(k));},
+    add:k=>{c._fields=c._fields.concat([[k,'']]);c.field_overrides[k]='';renderAllFields(state.editing);},
+    addLabel:(k,l)=>{c._fields=c._fields.concat([[l,'']]);c.field_overrides[l]='';renderAllFields(state.editing);},
+    richArmour:false,
+    rerender:()=>renderAllFields(state.editing),
+    count:()=>updateFieldChanged(),
+    stale:()=>{},
+  };
+}
+// Same two locks the raw view applies: a copied voice owns accent + voice_type,
+// and replacing a unit keeps the replaced unit's type + dictionary.
+function gfComposerLock(c){
+  const snd=soundDonor(c);
+  const sndLock=snd.accent?{vals:{accent:snd.accent,voice_type:snd.cls},
+    why:`Locked by the voice panel — “${snd.name}”’s sounds are copied into ${snd.accent} / ${snd.cls}, `
+       +`and these two fields are what point the game at that block. Choose “Don’t import sound” to edit them yourself.`}:null;
+  const rb=baseUnitOf(c);
+  const idLock=(isReplace(c)&&rb)?{vals:{type:rb.type,dictionary:rb.dictionary},
+    why:`Locked — this transfer rewrites “${rb.type}” in place, so it keeps its own type and dictionary.`}:null;
+  return key=>(idLock&&(key in idLock.vals))?{val:idLock.vals[key],why:idLock.why}
+             :(sndLock&&(key in sndLock.vals))?{val:sndLock.vals[key],why:sndLock.why}:null;
+}
+function gfComposerFields(c){
+  const snd=soundDonor(c);
+  let fields=c._fields||[];
+  if(snd.accent){        // a copied voice ADDS these two lines if the unit lacks them
+    fields=fields.slice();
+    for(const k of ['voice_type','accent']){
+      if(fields.some(([l])=>l===k))continue;
+      const after=fields.findIndex(([l])=>l==='voice_type'||l==='class');
+      fields.splice(after<0?0:after+1,0,[k,k==='accent'?snd.accent:snd.cls]);
+    }
+  }
+  return fields;
+}
+// The composer has no per-unit faction list of its own: use the destination mod's,
+// widened by whatever the unit's own ownership/era lines already name.
+function gfComposerFactions(c){
+  const all=Object.keys(state.factionNames||{}).slice();
+  (state.destData&&state.destData.factions||[]).forEach(f=>all.push(f.name||f));
+  ['ownership','era 0','era 1','era 2'].forEach(l=>{
+    const v=(l in c.field_overrides)?c.field_overrides[l]:c._orig[l];
+    csv(v||'').forEach(f=>all.push(f));
+  });
+  const seen=new Set();
+  return all.filter(f=>f&&!seen.has(f)&&seen.add(f)).sort((a,b)=>facLabel(a).localeCompare(facLabel(b)));
+}
+
+/* ---- per-dialog view state (which section, the search box, which cards have
+        their raw line or help opened) ---- */
+function gfState(host){
+  if(!state.gf||state.gf.key!==host.key)
+    state.gf={key:host.key,tab:'basics',q:'',raw:new Set(),help:new Set()};
+  return state.gf;
+}
+
+/* ---- warnings ------------------------------------------------------------
+   Things the engine will not do, or will do differently from what the numbers
+   suggest. They never block a save — a mod may know better — but the point of a
+   guided editor is that you find out here rather than at the loading screen. */
+function gfWarnings(host){
+  const out={},add=(l,h,k)=>{(out[l]||(out[l]=[])).push({h,k:k||'warn'});};
+  const val=l=>host.get(l)||'';
+  const has=l=>host.fields().some(([x])=>x===l)&&!host.removed(l);
+  const parts=l=>val(l).split(',').map(s=>s.trim());
+  const num=x=>{const n=parseFloat(x);return isNaN(n)?null:n;};
+
+  const cat=(val('category')||'').toLowerCase();
+  const cls=(val('class')||'').toLowerCase();
+  if(has('class')&&cat==='infantry'&&cls==='spearmen'){/* fine */}
+  if(has('class')&&cat!=='infantry'&&cls==='spearmen')
+    add('class','<b>spearmen</b> is an infantry class — on a '+esc(cat)+' unit the engine falls back to a default.');
+  if(has('animal')&&cat!=='handler')
+    add('animal','An <code>animal</code> line needs <code>category handler</code>, otherwise the animals never appear.');
+  // a unit carries ONE kind of attachment; the engine reads whichever it finds
+  // first and the others are dead weight
+  const extras=['ship','engine','mounted_engine','animal'].filter(has);
+  if(extras.length>1)extras.forEach(k=>add(k,
+    'A unit can only use one of <code>ship</code>, <code>engine</code>, <code>mounted_engine</code> and '
+    +'<code>animal</code> — this one has <b>'+extras.join('</b>, <b>')+'</b>.','bad'));
+
+  ['stat_pri','stat_sec','stat_ter'].forEach(k=>{
+    if(!has(k))return;
+    const p=parts(k); if(p.length<11)return;
+    const atk=num(p[0]),proj=(p[2]||'').toLowerCase(),rng=num(p[3]),ammo=num(p[4]),wt=(p[5]||'').toLowerCase();
+    if(atk!==null&&atk>63)add(k,'Attack <b>'+esc(p[0])+'</b> is above the engine’s cap of 63 — it will behave as 63.');
+    const missile=(wt==='missile'||wt==='thrown'||wt==='siege_missile');
+    if(missile&&proj==='no')add(k,'Weapon type is <b>'+esc(wt)+'</b> but the projectile is <code>no</code> — it will never fire.');
+    if(!missile&&proj!=='no'&&proj)add(k,'A projectile is set but the weapon type is <b>'+esc(wt||'—')+'</b>; only missile/thrown/siege_missile weapons fire.');
+    if(missile&&!rng)add(k,'Missile weapon with range 0 — it cannot reach anything.');
+    if(missile&&!ammo)add(k,'Missile weapon with 0 ammunition — it fires nothing.');
+    if(proj&&proj!=='no'&&!gfHas(gfDefined(host,'projectile'),p[2])&&gfDefined(host,'projectile').length)
+      add(k,'Projectile <code>'+esc(p[2])+'</code> is not defined in this mod’s <code>descr_projectile.txt</code>.','bad');
+    if(p.length>=12&&(p[9]||'').trim()&&!/^[A-Za-z_][\w]*$/.test(p[9].trim()))
+      add(k,'The 12-value form puts the fire effect in slot 10 — <code>'+esc(p[9])+'</code> does not look like an effect name.');
+  });
+  if(has('stat_pri')&&has('stat_sec')){
+    const w=x=>((parts(x)[5])||'').toLowerCase();
+    const missileSec=['missile','thrown'].indexOf(w('stat_sec'))>=0;
+    if(missileSec&&['missile','thrown','siege_missile'].indexOf(w('stat_pri'))<0)
+      add('stat_sec','A missile weapon has to be the <b>primary</b> one — the engine ignores a secondary bow.');
+  }
+  if(has('stat_ter')!==has('stat_ter_attr'))
+    add(has('stat_ter')?'stat_ter':'stat_ter_attr','A third weapon needs <b>all</b> of stat_ter and stat_ter_attr, or the engine drops it.');
+
+  if(has('formation')){
+    const p=parts('formation');
+    if(p.length>=7){
+      const a=(p[5]||'').toLowerCase(),b=(p[6]||'').toLowerCase();
+      if(b&&['square','horde'].indexOf(a)<0)
+        add('formation','With two formations the first must be <b>square</b> or <b>horde</b>.');
+      if(b&&['schiltrom','shield_wall','phalanx','testudo','wedge'].indexOf(b)<0)
+        add('formation','<b>'+esc(b)+'</b> is not one of the switchable formations (schiltrom, shield_wall, phalanx, testudo, wedge).');
+      if(b==='phalanx'&&csv(val('stat_pri_attr')).indexOf('long_pike')<0)
+        add('formation','A <b>phalanx</b> unit normally needs <code>long_pike</code> in its primary weapon attributes.');
+    }
+  }
+  const lv=csv(val('armour_ug_levels')),md=csv(val('armour_ug_models'));
+  if(has('armour_ug_models')&&lv.length&&md.length&&md.length>lv.length)
+    add('armour_ug_models',`<b>${md.length}</b> upgrade model(s) but only <b>${lv.length}</b> level(s) — `
+      +'the tiers past the last level have nothing to trigger them.');
+  else if(has('armour_ug_models')&&lv.length&&md.length&&lv.length>md.length)
+    add('armour_ug_models',`<b>${lv.length}</b> armour levels share <b>${md.length}</b> model(s) — the last `
+      +'model carries the levels above it. Common and fine; add models only if the tiers should look different.','info');
+  const defModels=gfDefined(host,'model');
+  if(defModels.length){
+    md.forEach(m=>{if(!gfHas(defModels,m))add('armour_ug_models','<code>'+esc(m)+'</code> is not an entry in this mod’s battle_models.modeldb.','bad');});
+    const sm=(parts('soldier')[0]||'');
+    if(has('soldier')&&sm&&!gfHas(defModels,sm))
+      add('soldier','<code>'+esc(sm)+'</code> is not an entry in this mod’s battle_models.modeldb.','bad');
+  }
+  [['mount','mount'],['engine','engine'],['mounted_engine','mounted_engine'],
+   ['ship','ship'],['animal','animal']].forEach(([k,v])=>{
+    const list=gfDefined(host,v);
+    if(has(k)&&list.length&&!gfHas(list,val(k)))
+      add(k,'<code>'+esc(val(k))+'</code> is not defined in this mod’s <code>descr_'+
+        (k==='mounted_engine'?'mounted_engines':k==='engine'?'engines':k==='animal'?'animals':k)+'.txt</code>.','bad');
+  });
+  if(has('soldier')){
+    // NB: not "fewer than 4". The guide gives 4 as the minimum, but shipped mods
+    // field 2-man scout and monster units that work perfectly well — only a unit
+    // with no men at all is definitely wrong.
+    const men=num(parts('soldier')[1]);
+    if(men!==null&&men<1)add('soldier','A unit with no men — nothing will be recruited.','bad');
+  }
+  if(has('ownership')&&!csv(val('ownership')).length)
+    add('ownership','No owner — no faction can recruit this unit, and its unit card has no faction folder to live in.','bad');
+  const attrs=csv(val('attributes'));
+  if(attrs.indexOf('mercenary_unit')>=0&&!has('card_pic_dir'))
+    add('attributes','<code>mercenary_unit</code>: the unit card is looked up under <code>ui/units/mercs/</code> unless <code>card_pic_dir</code> says otherwise.','info');
+  if(attrs.indexOf('can_run_amok')>=0&&!has('mount'))
+    add('attributes','<code>can_run_amok</code> only does anything on a mounted unit.');
+  if(has('stat_mental')){
+    const p=parts('stat_mental');
+    if(p.length>3&&(p[3]||'').toLowerCase()!=='lock_morale')
+      add('stat_mental','The optional fourth value can only be <code>lock_morale</code>.','bad');
+  }
+  return out;
+}
+
+/* ---- rendering ---------------------------------------------------------- */
+function gfRender(host){
+  const gf=gfState(host);
+  const warns=gfWarnings(host);
+  const groups={};GF_SECTIONS.forEach(s=>groups[s.id]=[]);
+  host.fields().forEach(([label])=>{
+    const k=gfKey(label);
+    let sec=GF_SECTION_OF[k];
+    // a repeated line only has a guided shape when the field itself is repeatable
+    if(sec&&/#\d+$/.test(label)&&k!=='officer')sec=null;
+    (groups[sec||'other']).push(label);
+  });
+  const q=(gf.q||'').trim().toLowerCase();
+  let shown,heading='';
+  if(q){
+    shown=host.fields().map(([l])=>l).filter(l=>{
+      const sp=GF_FIELDS[gfKey(l)]||{};
+      return (l+' '+(sp.t||'')+' '+(sp.doc||'')).toLowerCase().indexOf(q)>=0;});
+    heading=`<div class="gfintro">${shown.length} field(s) matching “${esc(gf.q)}”.</div>`;
+  }else{
+    if(!groups[gf.tab]||(!groups[gf.tab].length&&gf.tab!=='other'))
+      gf.tab=(GF_SECTIONS.find(s=>groups[s.id].length)||GF_SECTIONS[0]).id;
+    shown=groups[gf.tab];
+  }
+  const nWarn=Object.keys(warns).length;
+  const nav=GF_SECTIONS.map(s=>{
+    const n=groups[s.id].length;
+    if(!n&&s.id==='other')return '';
+    const bad=groups[s.id].filter(l=>gfReal(warns[l]).length).length;
+    return `<button class="${!q&&gf.tab===s.id?'on':''}" onclick="gfTab('${s.id}')">${esc(s.t)}
+      <span class="n">${n}</span>${bad?`<span class="bad" title="${bad} thing(s) to look at">▲</span>`:''}</button>`;
+  }).join('');
+  return `<div class="gfwrap">
+    <div class="gfnav" id="gfNav">${nav}</div>
+    <div class="gfbody" id="gfBody">
+      <div class="gfsum" id="gfSum">${gfSumHtml(host,warns)}</div>
+      ${heading}
+      ${shown.length?shown.map(l=>gfCard(host,l,warns)).join('')
+        :'<div class="gfempty">Nothing in this group. The unit has no such lines — add one below.</div>'}
+      ${gfAddHtml(host)}
+    </div>
+    ${gfDatalists(host)}</div>`;
+}
+function gfTab(id){const gf=state.gf; if(!gf)return; gf.tab=id; gf.q='';
+  const f=document.getElementById('fieldFilter'); if(f)f.value='';
+  gfRerenderBody();}
+// Re-draw just the guided body, so switching a section or opening a raw line
+// does not throw away the rest of the dialog (or its scroll position).
+function gfRerenderBody(){
+  const box=document.getElementById('allFields'); if(!box)return;
+  if(!((state.mode==='edit'&&state.ed)||state.editing))return;
+  const host=gfHost();
+  const b=document.getElementById('gfBody'),was=b?b.scrollTop:0;
+  box.innerHTML=gfRender(host); gfWire(host);
+  const now=document.getElementById('gfBody'); if(now&&was)now.scrollTop=was;
+}
+const gfReal=list=>(list||[]).filter(x=>x.k!=='info');
+function gfSumHtml(host,warns){
+  const n=Object.values(warns).reduce((a,b)=>a+gfReal(b).length,0);
+  const bad=Object.values(warns).reduce((a,b)=>a+b.filter(x=>x.k==='bad').length,0);
+  return `<span class="count">${host.fields().length} line(s) in this unit.</span>`
+    +(n?`<span class="pill warn" onclick="gfShowWarnings()" title="Jump to the first one">
+        ${bad?'✖ '+bad+' broken':''}${bad&&n-bad?' · ':''}${n-bad?'▲ '+(n-bad)+' to check':''}</span>`
+      :`<span class="pill" style="border-color:var(--good);color:var(--good)">✓ nothing looks wrong</span>`);
+}
+function gfShowWarnings(){
+  const el=document.querySelector('#gfBody .gfnote.bad,#gfBody .gfnote.warn');
+  if(el){el.scrollIntoView({block:'center'});return;}
+  // the first problem is in another section — find it and switch there
+  const w=gfWarnings(gfHost()),first=Object.keys(w).find(k=>gfReal(w[k]).length); if(!first)return;
+  gfTab(GF_SECTION_OF[gfKey(first)]||'other');
+  setTimeout(()=>{const e2=document.querySelector('#gfBody .gfnote.bad,#gfBody .gfnote.warn');
+    if(e2)e2.scrollIntoView({block:'center'});},0);
+}
+
+// One <datalist> per open drop-down, emitted once for the whole body.
+function gfDatalists(host){
+  const want=new Set();
+  Object.values(GF_FIELDS).forEach(sp=>(sp.parts||[]).forEach(p=>{if(p.type==='combo')want.add(p.v);}));
+  return [...want].map(v=>`<datalist id="gfdl-${esc(v)}">${
+    gfV(host,v).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('');
+}
+
+function gfCard(host,label,warns){
+  const key=gfKey(label);
+  const spec=GF_FIELDS[key];
+  const gone=host.removed(label);
+  const lk=host.lock(label);
+  const cur=host.get(label);
+  const changed=host.changed(label);
+  const gf=gfState(host);
+  const rawOpen=gf.raw.has(label)||!spec;
+  const parsed=spec&&spec.parts?gfParse(spec,cur):null;
+  const title=spec?spec.t:label;
+  const canRm=host.canRemove&&!host.protectedKeys.has(key);
+  const head=`<div class="gfhead"${spec?` data-tip="${esc(key)}"`:''}>
+    <span class="t">${esc(title)}</span>
+    <span class="k">${esc(label)}</span>
+    ${spec&&spec.opt?'<span class="count" title="The engine works without this line">optional</span>':''}
+    ${lk?`<span class="ibadge" title="${esc(lk.why)}">🔒</span>`:host.badge(label,cur)}
+    <span class="sp"></span>
+    ${(!gone&&!lk&&GF_ACTIONS[key])?GF_ACTIONS[key](label,cur):''}
+    ${spec?`<button class="${gf.help.has(label)?'on':''}" title="What this line does"
+        onclick="gfHelp('${q1(esc(label))}')">?</button>`:''}
+    ${lk?'':`<button class="${rawOpen?'on':''}" title="Show the line exactly as the file stores it"
+        onclick="gfRaw('${q1(esc(label))}')">&lt;/&gt;</button>`}
+    ${canRm?`<button class="rm" title="${gone?'Keep this line':'Delete this line from the unit'}"
+        onclick="gfRemove('${q1(esc(label))}')">${gone?'↺':'✕'}</button>`:''}
+  </div>`;
+  let body='';
+  if(gone)body='<div class="gfnote">This line will be removed from the unit.</div>';
+  else if(lk)body=`<div class="gfrow"><div class="gfpart grow"><span class="pl">value</span>
+      <input value="${esc(lk.val)}" disabled title="${esc(lk.why)}"></div></div>
+    <div class="gfnote">${esc(lk.why)}</div>`;
+  else if(spec&&spec.w)body=gfWidget(host,label,spec,cur);
+  else if(spec&&parsed&&parsed.ok)body=gfParts(host,label,spec,parsed);
+  else if(spec)body=`<div class="gfnote warn">This line has ${parsed.parts.length} value(s); the engine
+      reads ${(spec.arity||[spec.parts.length]).join(' or ')} here, so it is shown as raw text.</div>`;
+  const raw=(rawOpen&&!gone&&!lk)?`<div class="gfraw">
+      <span class="pl">${esc(key)}</span>
+      <input data-gfraw="${esc(label)}" value="${esc(cur)}" spellcheck="false"
+        class="${changed?'changed':''}"></div>`:'';
+  const doc=(spec&&gf.help.has(label))?`<div class="gfdoc">${spec.doc||''}</div>`:'';
+  const empty=(parsed&&parsed.empty&&!gone)?'<div class="gfnote">This line is empty — fill it in and it gets written.</div>':'';
+  return `<div class="gfcard${changed?' changed':''}${gone?' gone':''}" data-card="${esc(label)}">
+    ${head}${doc}${body}${empty}${raw}
+    <div data-warn="${esc(label)}">${gfNotes(warns[label])}</div></div>`;
+}
+/* Quick actions in a card's header. "No secondary weapon" is not a cosmetic
+   shortcut: the engine recognises one exact line as "this unit has no sidearm"
+   (`0, 0, no, 0, 0, no, melee_simple, blunt, none, 25, 1`), and typing eleven
+   values by hand to say nothing is how the reference editor makes people do it. */
+const GF_NO_WEAPON='0, 0, no, 0, 0, no, melee_simple, blunt, none, 25, 1';
+const gfIsNoWeapon=v=>{const p=(v||'').split(',').map(x=>x.trim());
+  return p.length>=9&&p[0]==='0'&&p[2]==='no'&&(p[5]==='no'||p[5]==='');};
+const GF_ACTIONS={
+  stat_sec:(label,cur)=>gfIsNoWeapon(cur)?'':`<button title="Write the line the engine reads as
+'this unit has no sidearm', and clear its attributes"
+    onclick="gfNoWeapon('${q1(esc(label))}')">no secondary weapon</button>`,
+  stat_ter:(label,cur)=>gfIsNoWeapon(cur)?'':`<button title="Write the empty-weapon line and clear its attributes"
+    onclick="gfNoWeapon('${q1(esc(label))}')">no third weapon</button>`,
+};
+function gfNoWeapon(label){
+  const host=gfHost();
+  host.set(label,GF_NO_WEAPON);
+  const attr=label+'_attr';
+  if(host.fields().some(([l])=>l===attr))host.set(attr,'no');
+  host.stale(); gfRerenderBody();
+}
+const gfNotes=list=>(list||[]).map(m=>`<div class="gfnote ${m.k||'warn'}">${m.h}</div>`).join('');
+
+function gfParts(host,label,spec,parsed){
+  const key=gfKey(label);
+  const cells=spec.parts.map((p,i)=>{
+    const v=parsed.parts[i]==null?'':parsed.parts[i];
+    const cls='gfpart'+(p.grow?' grow':p.w===3?' w3':p.w===2?' w2':'');
+    const attr=`data-gfp="${esc(label)}" data-i="${i}"`;
+    // the hover card replaces the native tooltip; keep an accessible name on the
+    // control itself, since the label beside it is not a <label for=…>
+    const tip=` data-tip="${esc(key)}" data-tipi="${i}"`;
+    const aria=` aria-label="${esc(p.pl)}"`;
+    let ctl;
+    if(p.type==='flag'){
+      ctl=`<label class="chk" style="height:26px"><input type="checkbox" ${attr}${aria}
+        ${v?'checked':''}> ${esc(p.on||'on')}</label>`;
+    }else if(p.type==='sel'){
+      const opts=gfV(host,p.v);
+      const list=opts.indexOf(v)<0?[v].concat(opts):opts;
+      ctl=`<select ${attr}${aria}>${list.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${
+        o===''?(p.optional?'— none —':'—'):esc(o)}</option>`).join('')}</select>`;
+    }else if(p.type==='combo'){
+      ctl=`<input ${attr}${aria} list="gfdl-${esc(p.v)}" value="${esc(v)}" spellcheck="false">`;
+    }else if(p.type==='num'){
+      ctl=gfSpin(attr+aria,v);
+    }else{
+      ctl=`<input ${attr}${aria} value="${esc(v)}" spellcheck="false"
+        ${p.mono?' style="font-family:ui-monospace,Consolas,monospace"':''}>`;
+    }
+    return `<div class="${cls}"${tip}><span class="pl">${esc(p.pl)}${
+      p.optional?' <span style="opacity:.6">(opt)</span>':''}</span>${ctl}</div>`;
+  }).join('');
+  return `<div class="gfgrid">${cells}</div>`;
+}
+/* A number box with its own ▴▾. The browser's own <input type=number> is not
+   used on purpose: EDU values are decimals, negatives and occasionally blanks,
+   and a number input quietly refuses or reformats those. This keeps a plain text
+   box — so any value in the file survives being looked at — and puts the
+   stepping in buttons and the ↑/↓ keys, which are the only things that clamp. */
+const gfSpin=(attr,v)=>`<span class="gfspin"><input ${attr} class="gfnum" value="${esc(v)}"
+    spellcheck="false" inputmode="decimal"><span class="gfsp">
+    <button type="button" tabindex="-1" data-spin="1" aria-label="increase">▴</button>
+    <button type="button" tabindex="-1" data-spin="-1" aria-label="decrease">▾</button>
+  </span></span>`;
+
+/* ---- the hover card -----------------------------------------------------
+   Every field name and every value box explains itself on hover: what the slot
+   is, what the engine accepts, and where the limits come from. It is one floating
+   element driven by delegation, so it survives the guided body being redrawn
+   (which happens on nearly every edit) without rebinding anything. */
+function gfTipHtml(key,i){
+  const spec=GF_FIELDS[key]; if(!spec)return '';
+  if(i==null||i===''){
+    return `<div class="tt">${esc(spec.t)}</div>
+      <div class="tk">${esc(key)}${spec.syn?'  '+esc(spec.syn):''}</div>
+      <div class="tb">${spec.doc||''}</div>
+      ${spec.opt?'<div class="tf">Optional — the engine works without this line.</div>':''}`;
+  }
+  const p=(spec.parts||[])[+i]; if(!p)return '';
+  const range=[];
+  if(p.type==='num'){
+    if(p.min!=null&&p.max!=null)range.push(`${p.min} to ${p.max}`);
+    else if(p.min!=null)range.push(`${p.min} or more`);
+    else if(p.max!=null)range.push(`up to ${p.max}`);
+    if(p.step&&p.step!==1)range.push(`steps of ${p.step}`);
+  }
+  return `<div class="tt">${esc(p.pl)}${p.optional?' <span class="topt">optional</span>':''}</div>
+    <div class="tk">${esc(key)} — value ${(+i)+1} of ${spec.parts.length}</div>
+    <div class="tb">${p.help||spec.doc||''}</div>
+    ${range.length?`<div class="tf">▴▾ and the ↑/↓ keys step within ${range.join(', ')} —
+      hold Shift for ×10, or hold the button down to repeat. Typing is never clamped.</div>`:''}`;
+}
+let gfTipEl=null;
+function gfTipShow(el){
+  const key=el.dataset.tip,i=el.dataset.tipi;
+  const html=gfTipHtml(key,i===undefined?null:i); if(!html)return;
+  if(!gfTipEl){gfTipEl=document.createElement('div');gfTipEl.className='gftip';document.body.appendChild(gfTipEl);}
+  gfTipEl.innerHTML=html; gfTipEl.style.display='block';
+  gfTipEl.style.left='0px'; gfTipEl.style.top='0px';         // measure unconstrained
+  const r=el.getBoundingClientRect(),t=gfTipEl.getBoundingClientRect();
+  let x=r.left, y=r.bottom+7;
+  if(x+t.width>window.innerWidth-10)x=Math.max(10,window.innerWidth-10-t.width);
+  if(y+t.height>window.innerHeight-10)y=Math.max(10,r.top-7-t.height);
+  gfTipEl.style.left=x+'px'; gfTipEl.style.top=y+'px';
+}
+function gfTipHide(){if(gfTipEl)gfTipEl.style.display='none';}
+// bound once, on the document — the guided body is replaced wholesale on edits
+document.addEventListener('mouseover',ev=>{
+  const el=ev.target&&ev.target.closest&&ev.target.closest('[data-tip]');
+  if(!el){gfTipHide();return;}
+  if(el===gfTipEl)return;
+  gfTipShow(el);
+});
+document.addEventListener('mouseleave',gfTipHide,true);
+window.addEventListener('scroll',gfTipHide,true);
+
+/* ---- the widgets a plain box cannot do ---- */
+function gfWidget(host,label,spec,cur){
+  if(spec.w==='attrs')return gfAttrWidget(host,label,cur);
+  if(spec.w==='wattr')return gfWeaponAttrWidget(host,label,cur);
+  if(spec.w==='factions')return gfFactionWidget(host,label,cur);
+  if(spec.w==='meffect')return gfMountEffectWidget(host,label,cur);
+  if(spec.w==='ugmodels')return host.richArmour?`<div class="gfrow">${edArmourField(label,cur)}</div>`
+    :gfListWidget(host,label,cur,'model');
+  if(spec.w==='uglevels')return host.richArmour
+    ?`<div class="gfrow"><div class="gfpart grow"><span class="pl">smith level per tier</span>
+        <input data-gfraw="${esc(label)}" value="${esc(cur)}" spellcheck="false"></div></div>`
+    :gfListWidget(host,label,cur,'');
+  return '';
+}
+// A generic reorderable list of names (armour tiers in the composer).
+function gfListWidget(host,label,cur,vocabName){
+  const items=csv(cur);
+  return `<div class="gfrow"><div style="flex:1;min-width:0">
+    ${gfChips(host,label,items)}
+    <div class="barrow">
+      <input id="${gfAddId(label)}" placeholder="add…" style="width:190px;font-size:12px;padding:3px 7px"
+        ${vocabName?`list="gfdl-${esc(vocabName)}"`:''}>
+      <button onclick="gfListAdd('${q1(esc(label))}')">Add</button>
+    </div></div></div>`;
+}
+function gfListAdd(label){
+  const el=document.getElementById(gfAddId(label));
+  const host=gfHost(); const v=(el&&el.value||'').trim(); if(!v)return;
+  const list=csv(host.get(label)); list.push(v);
+  host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
+}
+// Drag-to-reorder chips, host-agnostic (the editor's own edChips is bound to
+// state.ed, and the composer has no such state).
+function gfChips(host,label,items){
+  return `<div class="chips">${items.map((v,i)=>`<span class="chipd" draggable="true"
+      ondragstart="gfDragStart(event,'${q1(esc(label))}',${i})"
+      ondragover="gfDragOver(event,'${q1(esc(label))}')" ondragleave="edDragLeave(event)"
+      ondragend="edDragEnd(event)" ondrop="gfDrop(event,'${q1(esc(label))}',${i})"
+      title="drag to reorder">
+      <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
+      <button class="x" title="Remove ${esc(v)}"
+        onclick="gfListRemove('${q1(esc(label))}',${i})">✕</button></span>`).join('')
+    ||'<span class="count">— empty —</span>'}</div>`;
+}
+let gfDrag=null;
+function gfDragStart(ev,label,i){gfDrag={label,i};ev.dataTransfer.effectAllowed='move';
+  try{ev.dataTransfer.setData('text/plain',String(i));}catch(_){}
+  ev.currentTarget.classList.add('drag');}
+function gfDragOver(ev,label){if(!gfDrag||gfDrag.label!==label)return;
+  ev.preventDefault();ev.currentTarget.classList.add('over');}
+function gfDrop(ev,label,i){
+  if(!gfDrag||gfDrag.label!==label)return; ev.preventDefault();
+  const host=gfHost(),list=csv(host.get(label)),from=gfDrag.i; gfDrag=null;
+  if(from===i){gfRerenderBody();return;}
+  const [m]=list.splice(from,1); list.splice(i,0,m);
+  host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
+}
+function gfListRemove(label,i){
+  const host=gfHost(),list=csv(host.get(label)); list.splice(i,1);
+  host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
+}
+
+/* attributes: tick boxes grouped into what the unit can DO and what the AI is
+   told it is, plus a free box for a mod's own attribute. */
+function gfAttrWidget(host,label,cur){
+  const have=csv(cur),haveSet=new Set(have);
+  const all=gfV(host,'unit_attr');
+  const AI=['peasant','pike','crossbow','gunmen','guncavalry','artillery','cannon','rocket','mortar',
+    'explode','incendiary','standard','foot_archers','horse_archers','foot_javelinmen','horse_javelinmen',
+    'foot_slingers','foot_pila','foot_darts','foot_francisca','wagon_fort'];
+  const isAI=a=>AI.indexOf(a)>=0;
+  const known=new Set(all);
+  const box=(a)=>`<div class="facrow"><label class="chk"><input type="checkbox" ${haveSet.has(a)?'checked':''}
+      onchange="gfListToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)"> ${esc(a)}</label></div>`;
+  const abilities=all.filter(a=>!isAI(a)),hints=all.filter(isAI);
+  const unknown=have.filter(a=>!known.has(a));
+  return `<div class="gfrow"><div style="flex:1;min-width:0">
+    ${gfChips(host,label,have)}
+    <div class="barrow">
+      <details class="drop"><summary>▾ Abilities — ${have.filter(a=>!isAI(a)).length} on</summary>
+        <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
+          ${abilities.map(box).join('')}</div></div></details>
+      <details class="drop"><summary>▾ AI hints — ${have.filter(isAI).length} on</summary>
+        <div class="dropbody"><div class="count" style="margin-bottom:6px">These change nothing about the
+          unit itself; they tell the campaign AI what kind of unit it is looking at.</div>
+          <div class="faclist" style="border:none;padding:0;max-height:none">${hints.map(box).join('')}</div>
+        </div></details>
+      <input id="${gfAddId(label)}" list="gfdl-unit_attr" placeholder="add your own…"
+        style="width:170px;font-size:12px;padding:3px 7px">
+      <button onclick="gfListAdd('${q1(esc(label))}')">Add</button>
+    </div>
+    ${unknown.length?`<div class="gfnote">Not in this mod’s usual set:
+      <b>${unknown.map(esc).join(', ')}</b> — kept as typed.</div>`:''}
+  </div></div>`;
+}
+// stat_pri_attr / stat_sec_attr / stat_ter_attr: same idea, but "empty" is the
+// word `no`, and the spear bonuses are mutually exclusive.
+function gfWeaponAttrWidget(host,label,cur){
+  const have=csv(cur).filter(a=>a.toLowerCase()!=='no');
+  const all=gfV(host,'weapon_attr');
+  const haveSet=new Set(have);
+  return `<div class="gfrow"><div style="flex:1;min-width:0">
+    ${gfChips(host,label,have.length?have:[])}
+    <div class="barrow">
+      <details class="drop"><summary>▾ Choose attributes — ${have.length} on</summary>
+        <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
+          ${all.map(a=>`<div class="facrow"><label class="chk"><input type="checkbox" ${haveSet.has(a)?'checked':''}
+            onchange="gfWAttrToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)"> ${esc(a)}</label></div>`).join('')}
+        </div></div></details>
+      <input id="${gfAddId(label)}" list="gfdl-weapon_attr" placeholder="add your own…"
+        style="width:170px;font-size:12px;padding:3px 7px">
+      <button onclick="gfListAdd('${q1(esc(label))}')">Add</button>
+    </div>
+    ${have.length?'':'<div class="gfnote">None — the line is written as <code>no</code>.</div>'}
+  </div></div>`;
+}
+function gfWAttrToggle(label,attr,on){
+  const host=gfHost(),list=csv(host.get(label)).filter(a=>a.toLowerCase()!=='no');
+  const i=list.indexOf(attr);
+  // only one spear bonus can apply, so picking one drops the other
+  if(on&&/^spear_bonus_/.test(attr))
+    for(let j=list.length-1;j>=0;j--)if(/^spear_bonus_/.test(list[j]))list.splice(j,1);
+  const at=list.indexOf(attr);
+  if(on&&at<0)list.push(attr); else if(!on&&at>=0)list.splice(at,1);
+  host.set(label,list.length?list.join(', '):'no'); host.stale(); gfRerenderBody();
+}
+function gfListToggle(label,v,on){
+  const host=gfHost(),list=csv(host.get(label)),i=list.indexOf(v);
+  if(on&&i<0)list.push(v); else if(!on&&i>=0)list.splice(i,1);
+  host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
+}
+/* ownership / era N: the editor already has a faction checklist bound to its own
+   state; the composer gets the same shape driven by the host. */
+function gfFactionWidget(host,label,cur){
+  if(host.richArmour)return `<div class="gfrow">${edFactionField(label,cur)}</div>`;
+  const list=csv(cur),chosen=new Set(list),all=host.factions();
+  const isEra=label!=='ownership';
+  const own=csv(host.get('ownership')||'');
+  return `<div class="gfrow"><div style="flex:1;min-width:0">
+    ${gfChips(host,label,list)}
+    <div class="barrow">
+      <details class="drop"><summary>▾ Choose factions — ${list.length} selected</summary>
+        <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
+          ${all.map(f=>`<div class="facrow"><label class="chk"><input type="checkbox" ${chosen.has(f)?'checked':''}
+            onchange="gfListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)">
+            ${esc(host.facLabel(f))}</label></div>`).join('')}
+        </div></div></details>
+      ${isEra&&own.length?`<button onclick="gfSetList('${q1(esc(label))}',${
+        JSON.stringify(own).replace(/"/g,'&quot;')})" title="Replace this era with the ownership line"
+        >Copy ownership (${own.length})</button>`:''}
+      <button onclick="gfSetList('${q1(esc(label))}',[])">Clear</button>
+    </div></div></div>`;
+}
+function gfSetList(label,items){const host=gfHost();
+  host.set(label,items.join(', ')); host.stale(); gfRerenderBody();}
+
+/* mount_effect: up to three "<mount> <±n>" pairs. The mount name may contain
+   spaces ("mailed horse +2"), so the number is split off the end, not the start. */
+function gfMountEffectWidget(host,label,cur){
+  const pairs=csv(cur).map(s=>{const m=/^(.*?)\s*([+-]?\d+(?:\.\d+)?)$/.exec(s.trim());
+    return m?{n:m[1].trim(),v:m[2]}:{n:s.trim(),v:''};});
+  const rows=pairs.map((p,i)=>`<div class="gfoff">
+      <span class="idx">${i+1}</span>
+      <input data-gfme="${esc(label)}" data-i="${i}" data-part="n" list="gfdl-mount_class"
+        value="${esc(p.n)}" style="width:180px;font-size:12.5px;padding:4px 7px">
+      ${gfSpin(`data-gfme="${esc(label)}" data-i="${i}" data-part="v" aria-label="modifier"`,p.v)}
+      <button class="rm" title="Remove" onclick="gfMeRemove('${q1(esc(label))}',${i})"
+        style="background:none;border:1px solid transparent;color:var(--dim);padding:2px 6px">✕</button>
+    </div>`).join('');
+  return `<div class="gfgrid" style="flex-direction:column;align-items:flex-start">${rows}
+    <div class="barrow">
+      <button ${pairs.length>=3?'disabled title="The engine reads at most three"':''}
+        onclick="gfMeAdd('${q1(esc(label))}')">＋ Add a mount effect</button>
+      <span class="count">${pairs.length}/3 · a class (horse, camel, elephant) or one specific mount</span>
+    </div></div>`;
+}
+function gfMeParts(host,label){
+  return csv(host.get(label)).map(s=>{const m=/^(.*?)\s*([+-]?\d+(?:\.\d+)?)$/.exec(s.trim());
+    return m?{n:m[1].trim(),v:m[2]}:{n:s.trim(),v:''};});
+}
+function gfMeWrite(host,label,pairs){
+  host.set(label,pairs.filter(p=>p.n).map(p=>{
+    const v=(p.v||'').trim(); const s=(/^[+-]/.test(v)||!v)?v:'+'+v;
+    return (p.n+' '+s).trim();}).join(', '));
+  host.stale();
+}
+function gfMeAdd(label){const host=gfHost();const p=gfMeParts(host,label);
+  p.push({n:'horse',v:'+1'}); gfMeWrite(host,label,p); gfRerenderBody();}
+function gfMeRemove(label,i){const host=gfHost();const p=gfMeParts(host,label);
+  p.splice(i,1); gfMeWrite(host,label,p); gfRerenderBody();}
+
+/* ---- adding a line the unit doesn't have ---- */
+function gfAddHtml(host){
+  const missing=host.missing();
+  const gf=gfState(host);
+  const offCount=host.fields().filter(([l])=>gfKey(l)==='officer').length;
+  const sec=GF_SECTIONS.find(s=>s.id===gf.tab);
+  const here=missing.filter(k=>sec&&sec.keys.indexOf(k)>=0);
+  const list=here.length?here:missing;
+  return `<div class="gfmissing">
+    <span class="count">Add a line:</span>
+    <select id="gfAddKey">${(list.length?list:missing).map(k=>{
+      const sp=GF_FIELDS[k];
+      return `<option value="${esc(k)}">${esc(k)}${sp?' — '+esc(sp.t):''}</option>`;}).join('')
+      ||'<option value="">— the unit already has every known line —</option>'}</select>
+    <button onclick="gfAdd()">Add</button>
+    ${offCount<3?`<button onclick="gfAddOfficer()" title="Officers are extra men on top of the unit; up to three"
+      >＋ Officer (${offCount}/3)</button>`:''}
+    ${here.length&&here.length!==missing.length?'<span class="count">— missing from this group</span>':''}
+  </div>`;
+}
+function gfAdd(){
+  const sel=document.getElementById('gfAddKey'),k=sel&&sel.value; if(!k)return;
+  gfHost().add(k);
+}
+function gfAddOfficer(){
+  const host=gfHost();
+  const n=host.fields().filter(([l])=>gfKey(l)==='officer').length;
+  if(n>=3)return;
+  host.addLabel('officer',n?`officer#${n+1}`:'officer');
+}
+
+/* ---- wiring ------------------------------------------------------------- */
+const gfHost=()=>((state.mode==='edit'&&state.ed)?gfHostEditor():gfHostComposer());
+function gfHelp(label){const gf=state.gf;
+  if(gf.help.has(label))gf.help.delete(label); else gf.help.add(label); gfRerenderBody();}
+function gfRaw(label){const gf=state.gf;
+  if(gf.raw.has(label))gf.raw.delete(label); else gf.raw.add(label); gfRerenderBody();}
+function gfRemove(label){gfHost().toggleRemove(label);}
+
+function gfWire(host){
+  // one slot of a line: write the whole line back, but never re-render — that
+  // would take the caret out of the box being typed into
+  const write=(label,i,value)=>{
+    const spec=GF_FIELDS[gfKey(label)];
+    const p=gfParse(spec,host.get(label));
+    if(!p.ok)return;
+    p.parts[i]=value;
+    host.set(label,gfBuild(spec,p.parts));
+    host.stale(); gfAfterEdit(host,label);
+  };
+  document.querySelectorAll('#allFields [data-gfp]').forEach(el=>{
+    const label=el.dataset.gfp,i=+el.dataset.i;
+    if(el.type==='checkbox'){
+      el.onchange=()=>{write(label,i,el.checked?(GF_FIELDS[gfKey(label)].parts[i].on||'1'):'');};
+      return;
+    }
+    const fire=()=>write(label,i,el.value);
+    el.oninput=fire; el.onchange=fire;
+    if(!el.classList.contains('gfnum'))return;
+    const spec=GF_FIELDS[gfKey(label)];
+    gfWireNum(el,spec&&spec.parts&&spec.parts[i],fire);
+  });
+  // the whole line as text
+  document.querySelectorAll('#allFields [data-gfraw]').forEach(el=>{
+    const label=el.dataset.gfraw;
+    el.oninput=()=>{host.set(label,el.value); host.stale(); gfAfterEdit(host,label,true);};
+    el.onblur=()=>{const spec=GF_FIELDS[gfKey(label)];
+      // a retyped raw line can change how many values it has, which changes the
+      // boxes above it — redraw once the user has finished with it
+      if(spec&&spec.parts)gfRerenderBody();};
+  });
+  // mount_effect's paired boxes
+  document.querySelectorAll('#allFields [data-gfme]').forEach(el=>{
+    const label=el.dataset.gfme,i=+el.dataset.i,part=el.dataset.part;
+    const fire=()=>{const p=gfMeParts(host,label);
+      if(!p[i])return; p[i][part]=el.value; gfMeWrite(host,label,p); gfAfterEdit(host,label);};
+    el.oninput=fire;
+    // a mount effect is a signed modifier, so it steps by 1 either way
+    if(part==='v')gfWireNum(el,{min:-100,max:100},fire);
+  });
+  host.count();
+}
+// The ↑/↓ keys and the ▴▾ buttons of one number box. The buttons repeat while
+// held — a cost field is a long way from 0 one click at a time.
+function gfWireNum(el,p,fire){
+  el.onkeydown=ev=>gfNumKey(ev,p,el,fire);
+  const box=el.parentElement;
+  (box?box.querySelectorAll('[data-spin]'):[]).forEach(b=>{
+    const dir=+b.dataset.spin;
+    b.onmousedown=ev=>{
+      if(ev.button)return;
+      ev.preventDefault();
+      const once=()=>{gfStep(p,el,dir,ev.shiftKey);fire();};
+      once();
+      const start=setTimeout(()=>{b._rep=setInterval(once,60);},400);
+      const stop=()=>{clearTimeout(start);clearInterval(b._rep);
+        document.removeEventListener('mouseup',stop);};
+      document.addEventListener('mouseup',stop);
+    };
+  });
+}
+/* Stepping a number box, from either the ▴▾ buttons or the ↑/↓ keys.
+   `dir` is +1 / -1 and Shift multiplies by 10. The part's own min/max clamp the
+   RESULT — and only the result: a value already outside the range (a mod's
+   attack of 65, say) is left alone until you step it, and typing is never
+   touched at all. An empty box starts from the minimum, or 0. */
+function gfStep(p,el,dir,big){
+  const step=(p&&p.step)||1;
+  const dec=(p&&p.dec!=null)?p.dec
+    :/\./.test(''+step)?(''+step).split('.')[1].length
+    :/\./.test(el.value)?(el.value.split('.')[1]||'').length:0;
+  const cur=parseFloat(el.value);
+  let n=(isNaN(cur)?((p&&p.min!=null)?p.min:0):cur)+step*(big?10:1)*dir;
+  if(p&&p.min!=null&&n<p.min)n=p.min;
+  if(p&&p.max!=null&&n>p.max)n=p.max;
+  el.value=dec?n.toFixed(dec):String(Math.round(n));
+}
+function gfNumKey(ev,p,el,fire){
+  if(ev.key!=='ArrowUp'&&ev.key!=='ArrowDown')return;
+  ev.preventDefault();
+  gfStep(p,el,ev.key==='ArrowUp'?1:-1,ev.shiftKey);
+  fire();
+}
+// After an edit that did NOT redraw: refresh the things that depend on the value
+// (the changed marks, the warnings, the base-unit B, the raw box).
+function gfAfterEdit(host,label,fromRaw){
+  const cur=host.get(label),changed=host.changed(label);
+  const card=document.querySelector(`#allFields .gfcard[data-card="${cssq(label)}"]`);
+  if(card){
+    card.classList.toggle('changed',changed);
+    card.querySelectorAll('[data-gfraw]').forEach(r=>{
+      if(r!==document.activeElement)r.value=cur;
+      r.classList.toggle('changed',changed);});
+    if(fromRaw){    // keep the guided boxes in step while the raw line is typed
+      const spec=GF_FIELDS[gfKey(label)];
+      const p=spec&&spec.parts?gfParse(spec,cur):null;
+      if(p&&p.ok)card.querySelectorAll('[data-gfp]').forEach(el=>{
+        const v=p.parts[+el.dataset.i]==null?'':p.parts[+el.dataset.i];
+        if(el.type==='checkbox')el.checked=!!v; else if(el.value!==v)el.value=v;});
+    }
+    const b=card.querySelector('button[data-b]');
+    if(b)b.outerHTML=host.badge(label,cur);
+  }
+  const w=gfWarnings(host);
+  document.querySelectorAll('#allFields [data-warn]').forEach(el=>{
+    const html=gfNotes(w[el.dataset.warn]);
+    if(el.innerHTML!==html)el.innerHTML=html;});
+  const sum=document.getElementById('gfSum'); if(sum)sum.innerHTML=gfSumHtml(host,w);
+  host.count();
+}
 
 init();
 </script>
