@@ -75,6 +75,28 @@ def get_med2_root() -> Optional[str]:
     return load_settings().get("med2_root") or detect_med2_root()
 
 
+#: Where vanilla building art is looked for when the user hasn't pointed
+#: elsewhere, best first: the packed form this repo ships (~45 MB of deduplicated
+#: lossless WebP, see ``tools/pack_vanilla_ui.py``), then a raw folder someone
+#: unpacked themselves (~305 MB of TGA, never committed).
+VANILLA_UI_DIRS = (PROJECT_ROOT / "vanilla_ui", PROJECT_ROOT / "unpackaded_vanilla_ui")
+
+
+def get_vanilla_ui_root() -> Optional[Path]:
+    """Folder holding vanilla building art, packed or raw — or None.
+
+    Mods ship only the building icons they changed and let the game fall back to
+    the vanilla ones, so without this the browser would show a placeholder for
+    most of a mod's buildings. Optional: absent just means more placeholders.
+    """
+    saved = load_settings().get("vanilla_ui_root")
+    cands = ((Path(saved),) if saved else ()) + VANILLA_UI_DIRS
+    for cand in cands:
+        if cand.is_dir():
+            return cand
+    return None
+
+
 # ---- transfer log -------------------------------------------------------
 def load_log() -> List[Dict[str, Any]]:
     return _read_json(LOG_PATH, [])

@@ -3,13 +3,16 @@
 Move units between **Medieval II: Total War** mods — and edit them once they're
 there — without hand-editing text files.
 
-Four modes, switched from the dropdown in the top-left corner:
+Six modes, switched from the dropdown in the top-left corner:
 
 - **⚔ Unit Transfer** — copy a unit from one mod into another
 - **✎ Unit Editor** — change, clone or delete the units of a single mod
 - **🗄 BMDB Editor** — edit *any* `battle_models.modeldb` entry, and clean the
   file of everything nothing uses
 - **🔊 Unit Sounds** — decide which voice-bank entry each unit speaks with
+- **🖼 Sprites** — generate and wire up the far-LOD unit sprites
+- **🏰 Buildings** — browse and edit `export_descr_buildings.txt`: every
+  building's stats, and which units it recruits
 
 Point it at two mods, pick a unit from one, and transfer it into the other. It
 figures out and carries across everything the unit actually depends on — battle
@@ -424,6 +427,160 @@ backups and **🕑 Log → Undo**. Casing is preserved from the modeldb (real mo
 carry `england_Mount_Pony_sprite.spr`), so repointing a line that was already
 correct is a no-op rather than a diff.
 
+## Buildings mode
+
+Switch the dropdown to **🏰 Buildings** to work on `data/export_descr_buildings.txt`
+— the settlement-building database. Buildings come in *lines*: a chain of levels
+that upgrade into one another (Barracks → Militia Barracks → Army Barracks…),
+declared like this:
+
+```
+building barracks
+{
+    convert_to castle_barracks
+    levels town_watch city_barracks ...
+    {
+        town_watch city requires factions { england, }
+        {
+            capability
+            {
+                recruit_pool "Peasant Militia"  1  0.4  3  0  requires factions { england, }
+                law_bonus bonus 1
+            }
+            material wooden
+            construction 3
+            cost 800
+            settlement_min village
+            upgrades { city_barracks }
+        }
+        ...
+    }
+    plugins { }
+}
+```
+
+The grid lists the lines as pictures. Open one and you get a tab per level with:
+
+- **Art** — the small browser icon and the big "constructed" picture
+- **Name & description** — the three `text/export_buildings.txt` keys, which a
+  building must have all of or the game crashes on load; renaming writes all
+  three
+- **Stats** — cost, turns to build, material, `settlement_min`/`_max`,
+  `convert_to`, whether it is a city or castle building, and its requirements
+- **Upgrade path** — the whole line drawn as a graph, and what this level
+  upgrades into (see below)
+- **Recruitment** — every `recruit_pool` on the level, as a row *or* a card grid
+  with the unit's picture and its pool stats underneath: starting points, points
+  gained per turn, the cap, starting experience, and the conditions on that pool.
+  Add units, remove them, retune the numbers, and filter the list down to what
+  one faction can train
+- **Other capabilities** — `law_bonus`, `armour`, `wall_level`, `agent` and the
+  rest, each with a note on what it does and what its number means
+
+The **✎ Edit** button on any recruited unit switches to the Unit Editor for that
+unit; the **← Back to <building>** button in the header brings you back to the
+same level with everything you had typed still in place.
+
+### Requirements, without typing code names
+
+Every condition in a `requires` clause names something declared elsewhere in the
+mod — a faction, an event counter, a hidden resource — and a typo is invisible:
+the game doesn't complain about `requires event_counter anduin_citys 1`, the
+building just never becomes available. So clauses are edited as a list of terms,
+each picked from the mod's own lists and shown by its real name:
+
+| Condition | Picked from | Shown as |
+| --- | --- | --- |
+| `factions { … }` | `descr_sm_factions.txt` + `text/expanded.txt` | a checklist of in-game names with the code in brackets — *Mordor (england)* — with cultures listed separately and `all` called out |
+| `event_counter` | `text/historic_events.txt`, `set_event_counter` in the campaign scripts, and whatever the EDB already uses | the event's written title, plus where the name came from |
+| `region_religion` | `descr_religions.txt` + `descr_regions.txt` | how many regions follow it and the highest percentage any of them reaches |
+| `hidden_resource` | the EDB's own `hidden_resources` line + `descr_regions.txt` | the regions that carry it, by display name |
+| `resource` | `descr_sm_resources.txt` + `descr_regions.txt` | same |
+| `building_present_min_level` | the EDB itself | the line, then only its own levels |
+
+Terms are joined with `and` / `or` in order, each can be negated, and the clause
+it will write is shown underneath as you build it. M2TW evaluates these strictly
+left to right with no brackets, which is why there is no tree to draw. Anything
+the parser doesn't recognise stays as raw text rather than being dropped — a
+couple of real mods have malformed clauses and they survive a round trip
+untouched.
+
+### "…but that faction doesn't own this unit"
+
+A `recruit_pool` naming a faction is only half the job. The unit also has to list
+that faction in its EDU `ownership`, or the building trains nothing for them, and
+its battle model needs a texture record for it, or their soldiers turn up
+untextured. Both fail silently in game.
+
+So ticking a faction checks both straight away and says which is missing, and
+saving fixes them: the `ownership` line is extended, and missing textures are
+copied from a faction that already has them. Untick **Fix unit ownership** at the
+bottom of the editor to leave them alone. Cultures are expanded to their factions
+before checking, and `all` to every faction.
+
+### Upgrade paths
+
+A line is not always a straight chain. Some branch — `A → B → D` alongside
+`A → C → E` — and at least one in Divide and Conquer is a single root with every
+other level hanging directly off it. So the path is laid out by depth from
+whichever levels nothing upgrades into, rather than assumed to be a ladder. Every
+building in it is clickable and opens that level.
+
+Underneath, the level's own `upgrades` list is editable: remove a branch, or add
+one from a drop-down that only ever offers levels *later* in the line, because an
+upgrade can never point backwards.
+
+### Building icons
+
+Building art is per **culture**, not per faction:
+`data/ui/<culture>/buildings/#<culture>_<level>.tga` is the small icon and
+`#<culture>_<level>_constructed.tga` the big one. The sidebar has a culture
+picker for that reason.
+
+Mods ship only the icons they changed and let the game fall back to the vanilla
+ones, so a missing file is normal rather than a fault. The lookup goes:
+
+1. the mod's own `data/ui/<culture>/buildings`
+2. vanilla art — `vanilla_ui/` next to the app, or wherever the `vanilla_ui_root`
+   setting points
+3. if the mod has no art for this culture but does for another, that culture's
+   art, badged with whose it is — otherwise most of the grid would be blank for
+   buildings the mod *has* drawn
+4. a drawn placeholder
+
+Straight out of `packs/data_*.pack` that vanilla art is ~305 MB of uncompressed
+TGA, and over half of it is the same picture saved under several names (eighteen
+buildings share one harbour "constructed" image). `tools/pack_vanilla_ui.py`
+turns such a folder into a manifest plus one lossless WebP per *distinct*
+picture — about six times smaller with no duplicate bytes at all:
+
+```bash
+python tools/pack_vanilla_ui.py unpackaded_vanilla_ui vanilla_ui
+```
+
+That packed form is what the repo carries and what the tool reads by default; a
+raw unpacked `<culture>/buildings/*.tga` folder still works unchanged, so nobody
+has to run the packer to use their own copy. It is left out of the release zip
+(it would treble the download) — `python build_release.py --with-vanilla-ui`
+puts it in.
+
+The badge in the corner of each picture says which of those you are looking at,
+and the **Missing its own art** filter lists the buildings the mod ships nothing
+for at all.
+
+### Non-destructive by construction
+
+The EDB is the biggest hand-maintained file in a mod (Divide and Conquer's is
+17 500 lines) and it is full of things a re-emitting parser destroys: trailing
+`;ok old_pool=2 new_pool=2` comments on individual recruit lines, indentation
+that mixes tabs and spaces line by line, comma-separated `levels` lists. So the
+file is kept as its verbatim lines and every edit is a splice of a known line
+range — save a level and only the lines you changed change. Capabilities are
+compared by meaning rather than by text, so re-sending `1 0.135 3 0` with
+different spacing is not an edit and opening a building does not rewrite it.
+
+Same backups and **🕑 Log → Undo** as everything else.
+
 ## M2TWEOP units
 
 M2TWEOP lifts the game's 500-unit ceiling by loading extra unit definitions from
@@ -601,8 +758,10 @@ open, and print the address.
 - `unittransfer/` — parsers and writers for each file format (EDU, localisation,
   `battle_models.modeldb`, `descr_mount`, `descr_projectile`,
   `descr_engines`/`descr_engine_skeleton`,
-  `export_descr_sounds_units_voice`), the dependency-resolution and transfer
+  `export_descr_sounds_units_voice`, `export_descr_buildings`), the
+  dependency-resolution and transfer
   engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
+  the building database (`buildings.py`),
   the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
   (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
   generation/conversion pipeline (`sprites.py`), the guided field editor's

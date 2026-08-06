@@ -10,9 +10,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import (edu, engines as engines_mod, eop as eop_mod, localization,
-               luascan, modeldb, mounts as mounts_mod,
-               projectiles as projectiles_mod, sounds as sounds_mod)
+from . import (buildings as buildings_mod, edu, engines as engines_mod,
+               eop as eop_mod, localization, luascan, modeldb,
+               mounts as mounts_mod, projectiles as projectiles_mod,
+               sounds as sounds_mod)
 
 
 class Mod:
@@ -79,6 +80,15 @@ class Mod:
     def eds_path(self) -> Path:
         """The unit voice bank (``export_descr_sounds_units_voice.txt``)."""
         return self.data / sounds_mod.EDS_REL
+
+    @property
+    def edb_path(self) -> Path:
+        """The settlement-building database (``export_descr_buildings.txt``)."""
+        return self.data / buildings_mod.EDB_REL
+
+    @property
+    def building_loc_path(self) -> Path:
+        return self.data / buildings_mod.LOC_REL
 
     # ---- parsed databases (cached) -------------------------------------
     @cached_property
@@ -186,6 +196,49 @@ class Mod:
     def sounds(self) -> "sounds_mod.SoundBank":
         """Parsed voice bank (lines kept verbatim so edits are splices)."""
         return sounds_mod.parse_file(self.eds_path)
+
+    @cached_property
+    def edb(self) -> "buildings_mod.EdbFile":
+        """Parsed export_descr_buildings.txt (lines verbatim, edits are splices)."""
+        return buildings_mod.parse_file(self.edb_path)
+
+    @cached_property
+    def building_loc(self) -> localization.Localization:
+        """Building names/descriptions — same format as export_units.txt, but
+        keyed with ``_desc`` / ``_desc_short`` instead of ``_descr``."""
+        p = self.building_loc_path
+        if not p.exists():
+            return localization.Localization()
+        try:
+            return localization.parse_file(p, descr_suffix="_desc")
+        except (OSError, UnicodeError):
+            return localization.Localization()
+
+    @cached_property
+    def edb_vocab(self) -> Dict[str, object]:
+        """What a building's ``requires`` clause may name (see :mod:`edbvocab`).
+
+        Cached on the mod: building it walks the campaign scripts for event
+        counters, which is seconds on a big mod, and the buildings browser asks
+        for it on every load.
+        """
+        from . import edbvocab
+        return edbvocab.build(self)
+
+    @cached_property
+    def cultures(self) -> List[str]:
+        """Culture folders that hold building icons (``data/ui/<culture>/buildings``)."""
+        return buildings_mod.cultures_of(self)
+
+    @cached_property
+    def faction_cultures(self) -> Dict[str, str]:
+        """faction slot -> culture, from data/descr_sm_factions.txt."""
+        return buildings_mod.faction_cultures(self)
+
+    def find_building_icon(self, culture: str, level: str, kind: str = "small",
+                           vanilla_root=None):
+        """(path, source) for one building icon — see :func:`buildings.find_icon`."""
+        return buildings_mod.find_icon(self, culture, level, kind, vanilla_root)
 
     @cached_property
     def effect_sets(self) -> set:

@@ -13,6 +13,11 @@ IMPORTANT: a key's value is whatever follows on the same line PLUS every
 subsequent line up to the next ``{key}`` or ``¬`` line. In practice the name sits
 on the key line while the descriptions sit on the lines after it, so reading only
 the key line yields an empty description.
+
+``data/text/export_buildings.txt`` is the same format with a different suffix —
+``_desc`` / ``_desc_short`` rather than ``_descr`` / ``_descr_short`` — so every
+entry point here takes a ``descr_suffix``. The two never collide: a key ending in
+``_descr`` does not end in ``_desc``.
 """
 from __future__ import annotations
 
@@ -57,7 +62,7 @@ class Localization:
         return out
 
 
-def parse_text(text: str) -> Localization:
+def parse_text(text: str, descr_suffix: str = "_descr") -> Localization:
     # normalise: detect newline style, split on \n keeping content
     newline = "\r\n" if "\r\n" in text else "\n"
     lines = text.split("\n")
@@ -89,22 +94,23 @@ def parse_text(text: str) -> Localization:
         full = value + ("\n" + "\n".join(cont) if cont else "")
         full = full.strip() if not value.strip() else full
 
-        if key.endswith("_descr_short"):
-            entries.setdefault(key[: -len("_descr_short")], LocEntry()).descr_short = full
-        elif key.endswith("_descr"):
-            entries.setdefault(key[: -len("_descr")], LocEntry()).descr = full
+        short_suffix = descr_suffix + "_short"
+        if key.endswith(short_suffix):
+            entries.setdefault(key[: -len(short_suffix)], LocEntry()).descr_short = full
+        elif key.endswith(descr_suffix):
+            entries.setdefault(key[: -len(descr_suffix)], LocEntry()).descr = full
         else:
             entries.setdefault(key, LocEntry()).name = full
         i = j
     return Localization(entries=entries, _lines=lines, _newline=newline)
 
 
-def parse_file(path: str | Path) -> Localization:
-    return parse_text(Path(path).read_text(encoding=ENCODING))
+def parse_file(path: str | Path, descr_suffix: str = "_descr") -> Localization:
+    return parse_text(Path(path).read_text(encoding=ENCODING), descr_suffix)
 
 
 def upsert_record(text: str, key: str, name: str, descr: str = "",
-                  descr_short: str = "") -> str:
+                  descr_short: str = "", descr_suffix: str = "_descr") -> str:
     """Replace the {key}/{key_descr}/{key_descr_short} lines in ``text`` in place,
     or append a fresh record block if the key is not present.
     """
@@ -114,9 +120,10 @@ def upsert_record(text: str, key: str, name: str, descr: str = "",
 
     # Replace each key's FULL span (its line + continuation lines); replacing only
     # the key line would strand the previous description underneath it.
+    short_suffix = descr_suffix + "_short"
     blocks = [("{" + key + "}", _emit(key, name, inline=True)),
-              ("{" + key + "_descr}", _emit(key + "_descr", descr)),
-              ("{" + key + "_descr_short}", _emit(key + "_descr_short", descr_short))]
+              ("{" + key + descr_suffix + "}", _emit(key + descr_suffix, descr)),
+              ("{" + key + short_suffix + "}", _emit(key + short_suffix, descr_short))]
     found = False
     for marker, new_lines in blocks:
         span = _key_span(trimmed, marker)
@@ -137,7 +144,7 @@ def upsert_record(text: str, key: str, name: str, descr: str = "",
     return text + nl.join(out) + nl
 
 
-def remove_record(text: str, key: str) -> str:
+def remove_record(text: str, key: str, descr_suffix: str = "_descr") -> str:
     """Delete a unit's three keys (and the record separator above them).
 
     Used when a unit is deleted, or when its ``dictionary`` is renamed and the
@@ -147,8 +154,8 @@ def remove_record(text: str, key: str) -> str:
     lines = text.split("\n")
     trimmed = [ln[:-1] if ln.endswith("\r") else ln for ln in lines]
     spans = []
-    for marker in ("{" + key + "}", "{" + key + "_descr}",
-                   "{" + key + "_descr_short}"):
+    for marker in ("{" + key + "}", "{" + key + descr_suffix + "}",
+                   "{" + key + descr_suffix + "_short}"):
         span = _key_span(trimmed, marker)
         if span:
             spans.append(span)

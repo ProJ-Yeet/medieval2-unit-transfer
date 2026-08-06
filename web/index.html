@@ -538,6 +538,147 @@
     border-top:1px solid var(--edge)}
   .gfhead[data-tip] .t{border-bottom:1px dotted var(--edge);cursor:help}
   .gfpart[data-tip] .pl{cursor:help}
+  /* ---- Buildings mode: export_descr_buildings.txt ---- */
+  /* Building art is landscape (78x62 small, 300x245 constructed), so these cards
+     are wider and shorter than a unit card rather than reusing .card's portrait. */
+  .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:9px}
+  .bcard{background:var(--panel);border:1px solid var(--edge);border-radius:8px;overflow:hidden;
+    cursor:pointer;transition:border-color .1s;display:flex;flex-direction:column}
+  .bcard:hover{border-color:var(--accent2)}
+  .bcard .art{position:relative;background:#0d0f13;aspect-ratio:300/245;display:block}
+  .bcard .art img{width:100%;height:100%;object-fit:contain;display:block}
+  .bcard .art .src{position:absolute;top:5px;right:5px;font-size:9px;padding:1px 5px;border-radius:4px;
+    background:#000a;border:1px solid var(--edge);color:var(--dim)}
+  .bcard .art .src.vanilla{color:var(--accent2);border-color:var(--accent2)}
+  .bcard .art .src.placeholder{color:var(--dim)}
+  .bcard .bmeta{padding:7px 9px;border-top:1px solid var(--edge)}
+  .bcard .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bcard .sub{color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bcard .tags{margin-top:4px}
+  /* level strip in the editor: one chip per building in the line, in upgrade order */
+  .lvstrip{display:flex;gap:6px;overflow:auto;padding:10px 16px;border-bottom:1px solid var(--edge);
+    background:var(--panel2)}
+  .lvchip{flex:0 0 auto;width:104px;border:1px solid var(--edge);border-radius:8px;background:var(--panel);
+    padding:5px;cursor:pointer;text-align:center}
+  .lvchip.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .lvchip.dirty{border-color:var(--warn)}
+  .lvchip img{width:100%;aspect-ratio:78/62;object-fit:contain;background:#0d0f13;border-radius:4px;display:block}
+  .lvchip .t{font-size:10.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvchip .n{font-size:9px;color:var(--dim)}
+  .bart{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .bart figure{margin:0;text-align:center}
+  .bart img{background:#0d0f13;border:1px solid var(--edge);border-radius:6px;display:block;object-fit:contain}
+  .bart .small img{width:104px;height:83px}
+  .bart .large img{width:260px;height:212px}
+  .bart figcaption{font-size:10px;color:var(--dim);margin-top:4px}
+  /* stat + capability rows */
+  .brow{display:flex;gap:8px;align-items:center;margin:5px 0}
+  .brow>.k{flex:0 0 128px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);text-align:right}
+  .brow input,.brow select{flex:1;min-width:0;padding:4px 7px;font-size:12.5px}
+  .brow input.changed,.brow select.changed,.brow textarea.changed{border-color:var(--accent);background:#241f0d}
+  .brow .mini{flex:0 0 auto;padding:3px 7px;font-size:11.5px}
+  .caplist,.poollist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2);
+    max-height:340px;overflow:auto}
+  .caprow{display:flex;gap:6px;align-items:center;padding:5px 7px;border-bottom:1px solid var(--edge)}
+  .caprow:last-child{border-bottom:none}
+  .caprow.gone{opacity:.4;text-decoration:line-through}
+  .caprow select.kw{flex:0 0 190px;font-size:12px;padding:3px 6px}
+  .caprow input{padding:3px 6px;font-size:12px;min-width:0}
+  .caprow input.val{flex:0 0 70px} .caprow input.req{flex:1}
+  .caprow .x{flex:0 0 auto;padding:2px 7px;font-size:12px}
+  /* a recruit pool: unit card, the four pool numbers, its requires clause */
+  .poolrow{display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--edge)}
+  .poolrow:last-child{border-bottom:none}
+  .poolrow.gone{opacity:.4}
+  .poolrow img{width:34px;height:45px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 34px}
+  .poolrow .who{flex:0 0 175px;min-width:0}
+  .poolrow .who .un{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .poolrow .who .ut{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .poolrow .nums{display:flex;gap:4px;flex:0 0 auto}
+  .poolrow .nums label{display:flex;flex-direction:column;font-size:9px;color:var(--dim);
+    text-transform:uppercase;letter-spacing:.4px}
+  .poolrow .nums input{width:62px;padding:3px 5px;font-size:12px;margin-top:2px}
+  .poolrow .req{flex:1;min-width:80px;padding:3px 6px;font-size:11.5px;
+    font-family:ui-monospace,Consolas,monospace}
+  .poolrow .acts{display:flex;gap:4px;flex:0 0 auto}
+  .poolrow .acts button{padding:3px 7px;font-size:11.5px}
+  .poolrow.missing .who .un{color:var(--bad)}
+  .bsec{margin-bottom:14px}
+  .bsec>h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
+    display:flex;align-items:center;gap:8px}
+  .bsec>h4 .n{color:var(--accent);font-weight:600}
+  .bsec>h4 button{margin-left:auto;padding:3px 8px;font-size:11.5px}
+  .bnote{font-size:11.5px;color:var(--dim);margin:4px 0 0}
+  /* ---- requires clauses ---- */
+  .clausebar{display:flex;gap:8px;align-items:center;min-width:0}
+  .clausebar .sum{background:none;border:none;padding:0;max-height:none;overflow:visible;
+    font-size:12px;flex:1;min-width:0}
+  .cj{color:var(--accent);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
+  .cterm{background:var(--panel2);border:1px solid var(--edge);border-radius:5px;
+    padding:1px 6px;font-size:11.5px;display:inline-block;margin:1px 0}
+  .cterm.neg{border-color:var(--bad);color:var(--bad)}
+  .reqbtn{padding:3px 8px;font-size:11.5px;flex:0 0 auto}
+  .condlist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2)}
+  .condrow{display:flex;gap:7px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--edge)}
+  .condrow:last-child{border-bottom:none}
+  .condrow .cjoin{flex:0 0 62px;font-size:11.5px;padding:3px 5px}
+  .condrow .cjoin.lead{color:var(--accent);text-transform:uppercase;font-size:10.5px;
+    letter-spacing:.5px;text-align:center}
+  .condrow .ckind{flex:0 0 160px;font-size:11.5px;color:var(--dim);cursor:help}
+  .condrow input,.condrow select{padding:3px 6px;font-size:12px;min-width:0}
+  .condrow .x{flex:0 0 auto;padding:2px 7px}
+  .facbtn{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:3px 8px;font-size:12px}
+  .fgh{margin:12px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  .faclist{max-height:210px;overflow:auto;border:1px solid var(--edge);border-radius:7px;
+    background:var(--panel2);padding:3px}
+  .facrow{display:flex;gap:8px;align-items:center;padding:3px 7px;border-radius:5px;cursor:pointer}
+  .facrow:hover{background:#2a3340}
+  .facrow.on{background:#2b3446}
+  .facrow .fn{flex:1;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .facrow .fc{font-size:10.5px;color:var(--dim);font-family:ui-monospace,Consolas,monospace}
+  .facrow.allrow{border:1px solid var(--accent);margin-bottom:4px}
+  .ownwarn{margin-top:10px;border:1px solid var(--warn);background:#2a2410;border-radius:7px;
+    padding:8px 10px;font-size:12px;line-height:1.45}
+  .ownwarn.ok{border-color:var(--good);background:#12281c;color:var(--dim)}
+  .ownwarn.bad{border-color:var(--bad);background:#2a1414}
+  .ownwarn code{color:var(--accent)}
+  .poolrow .ownflag{flex:0 0 auto;color:var(--warn);cursor:help;font-size:13px}
+  /* ---- recruitment as a card grid ---- */
+  .ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
+  .ucard{background:var(--panel2);border:1px solid var(--edge);border-radius:7px;padding:7px;
+    display:flex;flex-direction:column;gap:5px}
+  .ucard.gone{opacity:.4}
+  .ucard .top{display:flex;gap:7px;align-items:flex-start}
+  .ucard img{width:38px;height:50px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 38px}
+  .ucard .nm{font-size:12.5px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+  .ucard .ty{font-size:10px;color:var(--dim);overflow-wrap:anywhere}
+  .ucard .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+  .ucard .stats label{display:flex;flex-direction:column;font-size:8.5px;color:var(--dim);
+    text-transform:uppercase;letter-spacing:.3px}
+  .ucard .stats input{width:100%;padding:2px 4px;font-size:11.5px;margin-top:2px;text-align:center}
+  .ucard .acts{display:flex;gap:4px}
+  .ucard .acts button{padding:2px 6px;font-size:11px;flex:1}
+  .viewtoggle{display:inline-flex;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
+  .viewtoggle button{border:none;border-radius:0;padding:3px 9px;font-size:11.5px;background:var(--panel2)}
+  .viewtoggle button+button{border-left:1px solid var(--edge)}
+  .viewtoggle button.on{background:var(--accent2);color:#fff}
+  /* ---- the upgrade graph ---- */
+  .pathwrap{overflow-x:auto;border:1px solid var(--edge);border-radius:7px;background:var(--panel2);padding:10px}
+  .prow{display:flex;gap:8px;align-items:center;margin:3px 0;white-space:nowrap}
+  .pnode{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--edge);border-radius:7px;
+    background:var(--panel);padding:4px 8px 4px 4px;cursor:pointer;flex:0 0 auto}
+  .pnode:hover{border-color:var(--accent2)}
+  .pnode.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .pnode img{width:34px;height:27px;object-fit:contain;background:#0d0f13;border-radius:3px}
+  .pnode .t{font-size:11.5px}
+  .pnode .n{font-size:9.5px;color:var(--dim)}
+  .parrow{color:var(--dim);flex:0 0 auto}
+  .pbranch{color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .upgrow{display:flex;gap:6px;align-items:center;padding:4px 7px;border-bottom:1px solid var(--edge)}
+  .upgrow:last-child{border-bottom:none}
+  .upgrow .un{flex:0 0 auto}
+  .upglist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2)}
 </style>
 </head>
 <body>
@@ -548,7 +689,9 @@
     <option value="bmdb">🗄 BMDB Editor</option>
     <option value="sounds">🔊 Unit Sounds</option>
     <option value="sprites">🖼 Sprites</option>
+    <option value="buildings">🏰 Buildings</option>
   </select>
+  <button id="backBldBtn" style="display:none" title="Go back to the building you came from">← Back to building</button>
   <div class="sep"></div>
   <span class="lbl" id="srcLbl">From</span><select id="srcSel"></select>
   <span id="dstWrap"><span class="lbl">→ To</span><select id="dstSel"></select></span>
@@ -568,7 +711,7 @@
 </header>
 
 <div class="layout">
-  <aside class="filters">
+  <aside class="filters" id="unitFilters">
     <h3>Group by</h3>
     <select id="groupBy" style="width:100%">
       <option value="faction">Faction (ownership)</option>
@@ -592,6 +735,25 @@
       <label class="opt"><input type="checkbox" value="2" class="era"> Late</label>
     </div>
   </aside>
+  <!-- Buildings mode brings its own filters: the unit sidebar's category/class/era
+       say nothing about a settlement building, and which CULTURE's art to show has
+       no equivalent on the unit side at all. -->
+  <aside class="filters" id="bldFilters" style="display:none">
+    <h3>Culture (art)</h3>
+    <select id="bldCulture" style="width:100%"
+      title="Building icons are per culture — this picks whose art the grid shows"></select>
+    <h3>Settlement</h3>
+    <div id="bldSettleFilter">
+      <label class="opt"><input type="checkbox" value="city" class="bldset"> City</label>
+      <label class="opt"><input type="checkbox" value="castle" class="bldset"> Castle</label>
+      <label class="opt"><input type="checkbox" value="both" class="bldset"> Both</label>
+    </div>
+    <h3>Shows</h3>
+    <label class="opt"><input type="checkbox" id="bldRecruitOnly"> Recruits units only</label>
+    <label class="opt"><input type="checkbox" id="bldMissingArt"> Missing its own art</label>
+    <h3>Religion</h3><div id="bldReligionFilter"></div>
+    <h3>Faction</h3><div id="bldFactionFilter"></div>
+  </aside>
   <main id="main"><div class="empty">Loading…</div></main>
 </div>
 
@@ -605,8 +767,11 @@ const state={mods:[],src:null,dst:null,data:null,destData:null,factionNames:{},
   selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{},
   // 'transfer' = move units between mods; 'edit' = edit the units of ONE mod;
   // 'bmdb' = edit / clean up that mod's whole battle_models.modeldb;
-  // 'sounds' = which voice-bank entry each unit uses
-  mode:'transfer', ed:null, bmdb:null, clean:null, snd:null, destSnd:null};
+  // 'sounds' = which voice-bank entry each unit uses;
+  // 'buildings' = that mod's export_descr_buildings.txt
+  mode:'transfer', ed:null, bmdb:null, clean:null, snd:null, destSnd:null,
+  // bld survives a hop into the unit editor and back — see openUnitFromBuilding
+  bld:null, bldReturn:null};
 
 const VANILLA_UNIT_LIMIT=500;   // M2TW vanilla EDU cap; M2TWEOP/EOP raise it.
 
@@ -667,7 +832,8 @@ async function init(){
     // and opens the editor for this tab only; the remembered mod is not changed.
     const qs=new URLSearchParams(location.search);
     const qMod=qs.get('mod'),qEdit=qs.get('edit');
-    state.mode=qEdit?'edit':(['edit','bmdb','sounds'].includes(s.mode)?s.mode:'transfer');
+    state.mode=qEdit?'edit'
+      :(['edit','bmdb','sounds','sprites','buildings'].includes(s.mode)?s.mode:'transfer');
     modeSel.value=state.mode;
     await refreshMods(qMod||s.last_source,qMod||s.last_dest);
     wire(); applyMode(false);
@@ -776,6 +942,7 @@ function wire(){
     // Edit / bmdb mode works on a single mod, so both sides follow the picker.
     if(state.mode!=='transfer'){state.src=state.dst=v;dstSel.value=v;state.destData=null;
       state.cfg={};state.bmdb=null;state.snd=null;state.destSnd=null;
+      state.bld=null;state.bldReturn=null;
       await api.post('/api/settings',{last_source:v,last_dest:v});return loadSource();}
     if(v===state.dst){state.dst=state.src;dstSel.value=state.dst;state.destData=null;}
     state.src=v;srcSel.value=v;state.cfg={};
@@ -798,6 +965,7 @@ function wire(){
   settingsBtn.onclick=openSettings; logBtn.onclick=openLog;
   selBtn.onclick=toggleSelMode; batchBtn.onclick=openBatch; clearSelBtn.onclick=clearSelection;
   cleanBtn.onclick=openCleanup; unusedOnly.onchange=render; sndBtn.onclick=sndApply;
+  backBldBtn.onclick=backToBuilding;
   overlay.onclick=e=>{if(e.target.id==='overlay')closeModal();};
 }
 /* ---------- mode switching ---------- */
@@ -806,7 +974,7 @@ function wire(){
 // source == dest.
 function applyMode(persist){
   const one=state.mode!=='transfer', edit=state.mode==='edit', bm=state.mode==='bmdb',
-        snd=state.mode==='sounds', spr=state.mode==='sprites';
+        snd=state.mode==='sounds', spr=state.mode==='sprites', bld=state.mode==='buildings';
   document.getElementById('srcLbl').textContent=one?'Mod':'From';
   document.getElementById('dstWrap').style.display=one?'none':'';
   selBtn.style.display=one?'none':'';
@@ -816,13 +984,19 @@ function applyMode(persist){
   cleanBtn.style.display=bm?'inline-block':'none';
   sndBtn.style.display=snd?'inline-block':'none';
   unusedWrap.style.display=bm?'inline-flex':'none';
-  mercOnly.parentElement.style.display=(bm||snd||spr)?'none':'inline-flex';
+  mercOnly.parentElement.style.display=(bm||snd||spr||bld)?'none':'inline-flex';
   // these bring their own filters — the sidebar's faction/era ones say nothing
   // about a voice entry, and nothing at all about a modeldb record or a sprite
-  document.querySelector('.filters').style.display=(bm||snd||spr)?'none':'';
-  search.placeholder=bm?'Search entries…':snd?'Search units…':spr?'Search models…':'Search…';
+  document.getElementById('unitFilters').style.display=(bm||snd||spr||bld)?'none':'';
+  document.getElementById('bldFilters').style.display=bld?'':'none';
+  // Only offered while the unit editor is what you'd be going back FROM: in
+  // buildings mode the building is already on screen.
+  backBldBtn.style.display=(edit&&state.bldReturn)?'inline-block':'none';
+  if(state.bldReturn)backBldBtn.textContent=`← Back to ${state.bldReturn.label}`;
+  search.placeholder=bm?'Search entries…':snd?'Search units…':spr?'Search models…'
+                    :bld?'Search buildings…':'Search…';
   document.title=bm?'BMDB Editor':snd?'Unit Sounds':spr?'Sprites'
-                :edit?'Unit Editor':'Unit Transfer';
+                :bld?'Buildings':edit?'Unit Editor':'Unit Transfer';
   if(one&&state.selMode)toggleSelMode();
   if(one&&state.dst!==state.src){state.dst=state.src;dstSel.value=state.src;state.destData=null;}
   if(persist)api.post('/api/settings',{mode:state.mode,last_dest:state.dst});
@@ -861,6 +1035,7 @@ function render(){
   if(state.mode==='bmdb')return renderBmdb();
   if(state.mode==='sounds')return renderSounds();
   if(state.mode==='sprites')return renderSprites();
+  if(state.mode==='buildings')return renderBuildings();
   if(!state.data)return;
   const units=state.data.units.filter(unitMatches);
   count.textContent=`${units.length}/${state.data.units.length}`;
@@ -1564,10 +1739,13 @@ function closeModal(){overlay.classList.remove('open');
    every transfer / save / voice change / cleanup. The box under each Apply is
    the same setting, put where you would look for it. */
 const clearBinOn=()=>(state.settings||{}).clear_strings_bin!==false;
-function cleanerBoxHtml(){
-  return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes data/text/export_units.txt.strings.bin in the mod being written to. That is the compiled copy of export_units.txt; until it is gone the game keeps showing the OLD unit text. It is rebuilt on the next launch. This is a setting — it applies to every transfer, save, voice change and cleanup.">
+// `what` names the text file whose cache this job would clear — export_units.txt
+// for anything unit-shaped, export_buildings.txt for a building rename.
+function cleanerBoxHtml(what){
+  const kind=what||'unit';
+  return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes data/text/export_${kind}s.txt.strings.bin in the mod being written to. That is the compiled copy of export_${kind}s.txt; until it is gone the game keeps showing the OLD ${kind} text. It is rebuilt on the next launch. This is a setting — it applies to every transfer, save, voice change and cleanup.">
     <input type="checkbox" ${clearBinOn()?'checked':''} onchange="setClearBin(this.checked)">
-    Clear the <b>unit-text cache</b> afterwards
+    Clear the <b>${kind}-text cache</b> afterwards
     <span class="count">— setting, applies to every job</span></label>`;
 }
 async function setClearBin(on){
@@ -2636,6 +2814,8 @@ function renderEditor(){
     <div class="mbody" id="edBody"></div>
     <div class="foot">
       <button class="danger" onclick="edDeleteDialog()">🗑 Delete unit…</button>
+      ${state.bldReturn?`<button onclick="backToBuilding()"
+        title="Return to the building editor exactly as you left it">← ${esc(state.bldReturn.label)}</button>`:''}
       ${cleanerBoxHtml()}
       <button onclick="closeModal()">Close</button>
       <button onclick="edPreview()">Preview</button>
@@ -5771,6 +5951,1254 @@ function gfAfterEdit(host,label,fromRaw){
     if(el.innerHTML!==html)el.innerHTML=html;});
   const sum=document.getElementById('gfSum'); if(sum)sum.innerHTML=gfSumHtml(host,w);
   host.count();
+}
+
+/* =========================================================================
+   Buildings mode — data/export_descr_buildings.txt
+
+   A building "line" is an upgrade chain (Barracks -> Militia Barracks -> …).
+   The grid lists lines; opening one gives a tab per level with its stats, its
+   capabilities and, the point of the whole screen, its recruit pools: which
+   units it trains, at what rate, for whom.
+
+   Building art is per CULTURE, not per faction — data/ui/<culture>/buildings/
+   #<culture>_<level>.tga is the small icon and #<culture>_<level>_constructed.tga
+   the big one. A mod ships only what it changed, so anything it doesn't have
+   falls back to unpacked vanilla art and then to a drawn placeholder; the badge
+   on the picture says which you're looking at.
+   ========================================================================= */
+
+const BLD_SETTLE_LABEL={city:'City',castle:'Castle',both:'City + castle'};
+
+function bldIcon(level,kind,culture){
+  return `/building_icon?mod=${enc(state.src)}&culture=${enc(culture||bldCultureNow())}`
+       + `&level=${enc(level)}&kind=${kind||'small'}`;
+}
+function bldCultureNow(){
+  const b=state.bld; return (b&&b.culture)||'';
+}
+// One in-flight request per mod, shared by every caller. render() fires again on
+// each keystroke and filter tick, and switching mod nulls state.bld mid-await —
+// without this the second caller could resume before the first had assigned.
+let _bldLoading=null;
+async function loadBuildings(force){
+  if(state.bld&&state.bld.mod===state.src&&!force)return state.bld;
+  if(_bldLoading&&_bldLoading.mod===state.src&&!force)return _bldLoading.p;
+  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s buildings…</div>';
+  const mod=state.src;
+  const p=(async()=>{
+    const ov=await api.get('/api/buildings?mod='+enc(mod));
+    // Which culture's art leads: whatever was picked last if this mod has it,
+    // else the first culture folder that holds building art.
+    const want=state.settings.bld_culture;
+    const culture=(ov.cultures||[]).includes(want)?want:(ov.cultures||[])[0]||'';
+    const b={mod,ov,culture,line:null,d:null,work:null,lvl:0,plan:null,own:{},
+             view:state.settings.bld_view==='grid'?'grid':'rows',
+             poolFac:new Set(),fixOwnership:true,
+             sel:{settlement:new Set(),religion:new Set(),faction:new Set()}};
+    // the mod may have been switched away from while this was in flight
+    if(state.src===mod)state.bld=b;
+    return b;
+  })();
+  _bldLoading={mod,p};
+  try{ return await p; }
+  finally{ if(_bldLoading&&_bldLoading.p===p)_bldLoading=null; }
+}
+async function renderBuildings(){
+  let b;
+  try{ b=await loadBuildings(); }
+  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the buildings of “${esc(state.src)}”.<br>
+    <span class="count">${esc(''+e)}</span><br><br>
+    <button class="primary" onclick="render()">Retry</button></div>`; return; }
+  // the picker moved on while we were loading — whoever it moved to will render
+  if(!b||b.mod!==state.src||state.mode!=='buildings')return;
+  const ov=b.ov;
+  if(!ov.has_file){
+    main.innerHTML=`<div class="empty">“${esc(state.src)}” has no
+      <code>data/export_descr_buildings.txt</code>.</div>`;
+    count.textContent=''; return;
+  }
+  bldBuildFilters();
+  const lines=ov.lines.filter(bldMatches);
+  count.textContent=`${lines.length}/${ov.lines.length}`;
+  if(!lines.length){main.innerHTML='<div class="empty">No buildings match.</div>';return;}
+  main.innerHTML=`<section class="faction-group"><div class="faction-head">
+      <h2>${esc(state.src)} — buildings</h2>
+      <span class="n">${lines.length} line${lines.length===1?'':'s'}, ${
+        lines.reduce((n,l)=>n+l.level_count,0)} levels</span>
+      ${ov.vanilla_ui?'':'<span class="n w-warn">no unpacked vanilla UI — missing art shows a placeholder</span>'}
+    </div><div class="bgrid">${lines.map(bldCardHtml).join('')}</div></section>`;
+  main.querySelectorAll('.bcard').forEach(c=>c.onclick=()=>openBuilding(c.dataset.line));
+}
+function bldCardHtml(l){
+  // the last level is the finished building, so its constructed art is the one
+  // that says what the line IS at a glance
+  const top=l.top_level||l.levels[l.levels.length-1]||'';
+  const a=bldCardArt(l);
+  const tags=[`<span class="badge">${esc(BLD_SETTLE_LABEL[l.settlement]||l.settlement)}</span>`,
+    `<span class="badge">${l.level_count} level${l.level_count===1?'':'s'}</span>`];
+  if(l.recruit_count)tags.push(`<span class="badge cls">${l.recruit_count} unit${l.recruit_count===1?'':'s'}</span>`);
+  if(l.religion)tags.push(`<span class="badge merc">${esc(l.religion)}</span>`);
+  if(l.missing_units.length)tags.push(`<span class="badge" style="color:var(--bad);border-color:var(--bad)"
+      title="Named in a recruit pool but not in this mod's EDU: ${esc(l.missing_units.join(', '))}"
+      >${l.missing_units.length} unknown</span>`);
+  return `<div class="bcard" data-line="${esc(l.name)}">
+    <div class="art"><img loading="lazy" onerror="iconRetry(this)" alt=""
+        src="${bldIcon(top,'large',a.culture)}">
+      ${bldArtBadge(a)}</div>
+    <div class="bmeta"><div class="nm">${esc(l.label)}</div>
+      <div class="sub">${esc(l.name)}</div>
+      <div class="tags">${tags.join('')}</div></div></div>`;
+}
+// Where the card's picture comes from in the culture being shown: 'mod',
+// 'vanilla' or '' for nothing at all. The overview says so per line, so the grid
+// never has to ask the server about art it is already displaying.
+function bldArtSource(l,culture){
+  const a=(l.art||{})[culture||state.bld.culture]||{};
+  return a.large||a.small||'';
+}
+// Most building lines are culture-specific, so with one culture picked the
+// majority of the grid would be placeholders for buildings the mod HAS drawn —
+// just for someone else. So a line with nothing in the chosen culture borrows
+// the art of a culture that does have it, and the badge says whose.
+function bldCardArt(l){
+  const want=state.bld.culture;
+  const own=bldArtSource(l,want);
+  if(own)return {culture:want,source:own,borrowed:false};
+  for(const c of Object.keys(l.art||{})){
+    const s=bldArtSource(l,c);
+    if(s)return {culture:c,source:s,borrowed:true};
+  }
+  return {culture:want,source:'',borrowed:false};
+}
+function bldArtBadge(a){
+  if(a.borrowed)return `<span class="src vanilla"
+    title="This mod has no ${esc(state.bld.culture)} art for this building — showing its ${esc(a.culture)} art instead"
+    >${esc(a.culture)}</span>`;
+  if(a.source==='vanilla')return `<span class="src vanilla"
+    title="Borrowed from the unpacked vanilla UI — this mod ships no art for it">vanilla</span>`;
+  if(!a.source)return `<span class="src placeholder"
+    title="Neither this mod nor the unpacked vanilla UI has art for this building">no art</span>`;
+  return '';
+}
+function bldMatches(l){
+  const b=state.bld,S=b.sel,qq=search.value.trim().toLowerCase();
+  if(qq&&!(l.label.toLowerCase().includes(qq)||l.name.toLowerCase().includes(qq)
+      ||l.levels.some(x=>x.toLowerCase().includes(qq))
+      ||(l.level_labels||[]).some(x=>x.toLowerCase().includes(qq))))return false;
+  if(S.settlement.size&&!S.settlement.has(l.settlement))return false;
+  if(S.religion.size&&!S.religion.has(l.religion||'(none)'))return false;
+  if(S.faction.size&&!l.factions.some(f=>S.faction.has(f)))return false;
+  if(bldRecruitOnly.checked&&!l.recruit_count)return false;
+  // "missing its own art" = the mod ships nothing for it in ANY culture
+  if(bldMissingArt.checked&&Object.values(l.art||{}).some(a=>a.small==='mod'||a.large==='mod'))
+    return false;
+  return true;
+}
+let _bldFiltersFor='';
+function bldBuildFilters(){
+  const b=state.bld,ov=b.ov,key=b.mod+'|'+b.culture;
+  if(_bldFiltersFor===key)return;                 // only rebuild when the mod changes
+  _bldFiltersFor=key;
+  bldCulture.innerHTML=(ov.cultures||[]).map(c=>
+    `<option value="${esc(c)}" ${c===b.culture?'selected':''}>${esc(c)}</option>`).join('')
+    ||'<option value="">(no culture folders)</option>';
+  bldCulture.onchange=()=>{bldSetCulture(bldCulture.value);};
+  const religions=[...new Set(ov.lines.map(l=>l.religion||'(none)'))].sort();
+  bldReligionFilter.innerHTML=religions.map(r=>
+    `<label class="opt"><input type="checkbox" value="${esc(r)}">${esc(r)}</label>`).join('');
+  const factions=[...new Set(ov.lines.flatMap(l=>l.factions))]
+    .sort((a,b2)=>bldFacLabel(a).localeCompare(bldFacLabel(b2)));
+  bldFactionFilter.innerHTML=factions.map(f=>
+    `<label class="opt"><input type="checkbox" value="${esc(f)}">${esc(bldFacLabel(f))}</label>`).join('')
+    ||'<span class="count">—</span>';
+  const wire=(box,key2)=>box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{
+    cb.checked?b.sel[key2].add(cb.value):b.sel[key2].delete(cb.value); render();});
+  wire(bldReligionFilter,'religion'); wire(bldFactionFilter,'faction');
+  document.querySelectorAll('.bldset').forEach(cb=>cb.onchange=()=>{
+    cb.checked?b.sel.settlement.add(cb.value):b.sel.settlement.delete(cb.value); render();});
+  bldRecruitOnly.onchange=render;
+  bldMissingArt.onchange=render;
+}
+// A `requires factions { … }` clause names factions AND cultures; only the
+// factions have an in-game name to show alongside the code.
+function bldFacLabel(f){
+  return state.factionNames[f]?facTwoNames(f,state.factionNames[f]):f;
+}
+/* ---------- the building editor ---------- */
+async function openBuilding(name,keepLevel){
+  const modal=document.getElementById('modal');
+  modal.className='modal wide'; modal.innerHTML='<h2>Loading building…</h2>';
+  overlay.classList.add('open');
+  let d;
+  // the overview holds the culture list and the capability vocabulary the editor
+  // needs; a save or a mod switch can leave it not yet loaded
+  try{ await loadBuildings(); }
+  catch(e){ modal.innerHTML=`<h2>Building</h2><div class="mbody w-bad">${esc(''+e)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  try{ d=await api.get(`/api/building?mod=${enc(state.src)}&line=${enc(name)}`); }
+  catch(e){ modal.innerHTML=`<h2>Building</h2><div class="mbody w-bad">${esc(''+e)}</div>
+    <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
+  const b=state.bld;
+  b.line=name; b.d=d; b.plan=null;
+  if(!keepLevel)b.lvl=0;
+  // The working copy the form edits. Everything is sent on save and the server
+  // skips whatever still matches the file, so the page never has to diff.
+  b.work={levels:d.levels.map(lv=>({
+      name:lv.name, settlement:lv.settlement, requires:lv.requires,
+      conds:JSON.parse(JSON.stringify(lv.conditions||[])), condEdited:false,
+      scalars:Object.assign({},lv.scalars), upgrades:lv.upgrades.slice(),
+      loc:Object.assign({},lv.loc),
+      caps:lv.capabilities.map(c=>bldCapCopy(c,false)),
+      fcaps:lv.faction_capabilities.map(c=>bldCapCopy(c,true))}))};
+  b.orig=JSON.stringify(b.work);
+  b.own=b.own||{};                        // unit type -> ownership check result
+  renderBuildingEditor();
+}
+// `conds` is the structured form of `requires`; `condEdited` says whether it has
+// been touched. Only a touched clause is sent back as structure — an untouched
+// one goes back as its original text, so the server never re-emits (and quietly
+// tidies) a clause nobody edited.
+function bldCapCopy(c,faction){
+  return {line:c.line,keyword:c.keyword,args:c.args,requires:c.requires,
+          conds:JSON.parse(JSON.stringify(c.conditions||[])),condEdited:false,
+          bonus:c.bonus,value:c.value,pool:c.pool?Object.assign({},c.pool):null,
+          comment:c.comment,faction:faction,del:false};
+}
+function bldDirty(){
+  const b=state.bld;
+  return !!(b&&b.work&&JSON.stringify(b.work)!==b.orig);
+}
+function bldLevelDirty(i){
+  const b=state.bld;
+  if(!b||!b.orig)return false;
+  return JSON.stringify(b.work.levels[i])!==JSON.stringify(JSON.parse(b.orig).levels[i]);
+}
+function renderBuildingEditor(){
+  const b=state.bld,d=b.d;
+  const lv=b.work.levels[b.lvl],orig=d.levels[b.lvl];
+  document.getElementById('modal').innerHTML=`
+    <h2>Building line <span class="pill">${esc(b.mod)}</span></h2>
+    <div class="ehead">
+      <img style="width:74px;height:60px" onerror="iconRetry(this)"
+        src="${bldIcon(d.levels[d.levels.length-1].name,'small')}">
+      <div><div class="nm">${esc(d.label)}</div>
+        <div class="count"><code>${esc(d.name)}</code> · ${esc(BLD_SETTLE_LABEL[d.settlement]||d.settlement)}
+          · ${d.levels.length} level${d.levels.length===1?'':'s'}${
+          d.convert_to?` · converts to <code>${esc(d.convert_to)}</code>`:''}${
+          d.religion?` · religion <b>${esc(d.religion)}</b>`:''}</div>
+        <div class="count">Defined in <code>data/export_descr_buildings.txt</code>${
+          d.plugins.length?` · ${d.plugins.length} plugin(s): ${esc(d.plugins.map(p=>p.name).join(', '))}`:''}</div></div>
+    </div>
+    <div class="lvstrip">${d.levels.map((l,i)=>`
+      <div class="lvchip ${i===b.lvl?'on':''} ${bldLevelDirty(i)?'dirty':''}" onclick="bldPickLevel(${i})">
+        <img loading="lazy" onerror="iconRetry(this)" src="${bldIcon(l.name,'small')}" alt="">
+        <div class="t" title="${esc(l.label)}">${esc(l.label)}</div>
+        <div class="n">${l.capabilities.filter(c=>c.pool).length} units</div>
+      </div>`).join('')}</div>
+    <div class="mbody" id="bldBody"></div>
+    <div class="foot">
+      <span class="count" id="bldDirtyNote"></span>
+      <label class="chk" style="margin-right:auto" title="A recruit pool can name a faction the unit itself doesn't belong to — the building then trains nothing for them, silently. With this on, saving adds the missing EDU ownership and copies the missing battle-model textures from a faction that has them.">
+        <input type="checkbox" id="bldFixOwn" ${b.fixOwnership!==false?'checked':''}
+          onchange="state.bld.fixOwnership=this.checked;bldDirtyNote()">
+        Fix unit <b>ownership</b> to match</label>
+      ${cleanerBoxHtml('building')}
+      <button onclick="bldClose()">Close</button>
+      <button onclick="bldPreview()">Preview</button>
+      <button class="primary" onclick="bldSave()">Save changes</button>
+    </div>`;
+  bldRenderBody(lv,orig);
+}
+function bldPickLevel(i){
+  const b=state.bld; b.lvl=i; b.plan=null; renderBuildingEditor();
+}
+function bldClose(){
+  if(bldDirty()&&!confirm('Close without saving your building changes?'))return;
+  state.bld.line=null; state.bld.d=null; state.bld.work=null;
+  closeModal();
+}
+function bldRenderBody(lv,orig){
+  const b=state.bld,ov=b.ov;
+  const body=document.getElementById('bldBody');
+  const scroll=body?body.scrollTop:0;
+  const art=orig.art[b.culture]||{};
+  const sel=(key,list,cur,blank)=>`<select data-scalar="${key}">
+      ${blank?`<option value="">${esc(blank)}</option>`:''}
+      ${list.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}
+      ${cur&&!list.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)} (custom)</option>`:''}
+    </select>`;
+  const pools=[...lv.caps,...lv.fcaps].filter(c=>c.pool);
+  const plain=[...lv.caps,...lv.fcaps].filter(c=>!c.pool);
+  const shown=pools.filter(bldPoolMatches);
+  body.innerHTML=`
+    <div class="bsec"><h4>Art <span class="count">culture: ${esc(b.culture||'—')}</span></h4>
+      <div class="bart">
+        <figure class="small"><img onerror="iconRetry(this)" src="${bldIcon(orig.name,'small')}">
+          <figcaption>#${esc(b.culture)}_${esc(orig.name)}.tga<br>
+            <span class="${art.small?'':'w-warn'}">${art.small?esc(art.small):'no art — placeholder'}</span></figcaption></figure>
+        <figure class="large"><img onerror="iconRetry(this)" src="${bldIcon(orig.name,'large')}">
+          <figcaption>#${esc(b.culture)}_${esc(orig.name)}_constructed.tga<br>
+            <span class="${art.large?'':'w-warn'}">${art.large?esc(art.large):'no art — placeholder'}</span></figcaption></figure>
+        <div style="flex:1;min-width:180px">
+          <div class="bnote">Cultures with art for this level:</div>
+          <div class="tags" style="margin-top:5px">${Object.keys(orig.art).length
+            ? Object.keys(orig.art).map(c=>`<span class="badge ${c===b.culture?'cls':''}"
+                style="cursor:pointer" onclick="bldSetCulture('${q1(esc(c))}')">${esc(c)}</span>`).join('')
+            : '<span class="count">none — every culture falls back to the placeholder</span>'}</div>
+        </div>
+      </div></div>
+
+    <div class="bsec"><h4>Name &amp; description <span class="count">text/export_buildings.txt</span></h4>
+      <div class="brow"><span class="k">Name</span>
+        <input data-loc="name" value="${esc(lv.loc.name)}" placeholder="${esc(orig.name)}"></div>
+      <div class="brow"><span class="k">Short description</span>
+        <input data-loc="descr_short" value="${esc(lv.loc.descr_short)}"></div>
+      <div class="brow"><span class="k">Description</span>
+        <textarea data-loc="descr" style="flex:1;min-height:56px;padding:4px 7px;font-size:12.5px"
+          >${esc(lv.loc.descr)}</textarea></div></div>
+
+    <div class="bsec"><h4>Stats</h4>
+      <div class="brow"><span class="k">Cost</span>
+        <input data-scalar="cost" value="${esc(lv.scalars.cost||'')}" inputmode="numeric">
+        <span class="k" style="flex:0 0 88px">Turns to build</span>
+        <input data-scalar="construction" value="${esc(lv.scalars.construction||'')}" inputmode="numeric"></div>
+      <div class="brow"><span class="k">Material</span>${sel('material',ov.materials,lv.scalars.material||'','(unset)')}
+        <span class="k" style="flex:0 0 88px">Convert to</span>
+        <input data-scalar="convert_to" value="${esc(lv.scalars.convert_to||'')}"
+          title="Index (0-based) of the level in the opposite city/castle line this becomes on conversion"></div>
+      <div class="brow"><span class="k">Settlement min</span>${sel('settlement_min',ov.settlement_levels,lv.scalars.settlement_min||'','(unset)')}
+        <span class="k" style="flex:0 0 88px">max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
+      <div class="brow"><span class="k">Buildable in</span>
+        <select data-settlement>
+          <option value="" ${lv.settlement===''?'selected':''}>City and castle</option>
+          <option value="city" ${lv.settlement==='city'?'selected':''}>City only</option>
+          <option value="castle" ${lv.settlement==='castle'?'selected':''}>Castle only</option>
+        </select></div>
+      <div class="brow"><span class="k">Requires</span>
+        <div class="clausebar">
+          <div class="sum">${bldClauseSummary(lv.conds)}</div>
+          <button class="reqbtn" onclick="bldEditClause('level')">✎ Edit requirements</button>
+        </div></div>
+      ${bldRequiresHelp()}</div>
+
+    ${bldUpgradesSection(lv,orig)}
+
+    <div class="bsec"><h4>Recruitment <span class="n">${shown.length}</span>
+        <span class="count">of ${pools.filter(p=>!p.del).length}</span>
+        ${bldPoolFilterHtml(pools)}
+        <div class="viewtoggle" style="margin-left:auto">
+          <button class="${b.view!=='grid'?'on':''}" onclick="bldSetView('rows')">▤ Rows</button>
+          <button class="${b.view==='grid'?'on':''}" onclick="bldSetView('grid')">▦ Grid</button>
+        </div>
+        <button class="primary" onclick="bldAddPoolDialog()">＋ Add unit</button></h4>
+      ${b.view==='grid'
+        ? `<div class="ugrid" id="bldPools">${shown.length?shown.map(bldPoolCard).join('')
+            :'<span class="count">Nothing matches.</span>'}</div>`
+        : `<div class="poollist" id="bldPools">${shown.length?shown.map(bldPoolRow).join('')
+            :'<div class="poolrow"><span class="count">'
+             +(pools.length?'Nothing matches this filter.':'This level trains nothing.')
+             +'</span></div>'}</div>`}</div>
+
+    <div class="bsec"><h4>Other capabilities <span class="n">${plain.filter(c=>!c.del).length}</span>
+        <button onclick="bldAddCap()">＋ Add capability</button></h4>
+      <div class="caplist" id="bldCaps">${plain.length?plain.map(bldCapRow).join('')
+        :'<div class="caprow"><span class="count">None.</span></div>'}</div>
+      ${lv.fcaps.length?'<div class="bnote">Rows marked <b>faction</b> live in this level’s '
+        +'<code>faction_capability</code> block — they apply to the whole faction, not just the settlement.</div>':''}</div>
+
+    <div id="bldPlan"></div>`;
+  if(b.plan)document.getElementById('bldPlan').innerHTML=bldPlanHtml(b.plan,b.planStale);
+  bldWire();
+  if(body&&scroll)body.scrollTop=scroll;
+  const note=document.getElementById('bldDirtyNote');
+  if(note)note.textContent=bldDirty()?'unsaved changes':'';
+}
+function bldRequiresHelp(){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  const txt=bldClauseText(lv.conds);
+  return `<div class="bnote">${txt
+    ? `Written into the EDB as <code>requires ${esc(txt)}</code>`
+    : 'No conditions — anyone can build this, at any time.'}</div>`;
+}
+function bldSetCulture(c){
+  const b=state.bld;
+  b.culture=c; state.settings.bld_culture=c;
+  api.post('/api/settings',{bld_culture:c});
+  bldCulture.value=c; _bldFiltersFor='';
+  render();
+  if(b.d)renderBuildingEditor();
+}
+// index into the level's combined cap list, so one data attribute addresses both
+// the capability and the faction_capability arrays
+function bldCapList(){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  return [...lv.caps,...lv.fcaps];
+}
+/* ---- which recruit pools are shown ----
+   A big level trains hundreds of units, almost all of them gated to one faction,
+   so "who can train what here" is the question you actually arrive with. */
+function bldPoolMatches(c){
+  const sel=state.bld.poolFac;
+  if(!sel||!sel.size)return true;
+  const facs=(c.conds||[]).filter(x=>x.kind==='factions'&&!x.negate)
+    .flatMap(x=>x.values||[]);
+  if(!facs.length)return sel.has('(any)');      // no clause = anyone can train it
+  const all=(bldVocab().all_keyword)||'all';
+  if(facs.includes(all))return true;
+  return facs.some(f=>sel.has(f));
+}
+function bldPoolFilterHtml(pools){
+  const sel=state.bld.poolFac||new Set();
+  const counts=new Map();
+  let open=0;
+  const all=(bldVocab().all_keyword)||'all';
+  pools.forEach(c=>{
+    const facs=(c.conds||[]).filter(x=>x.kind==='factions'&&!x.negate)
+      .flatMap(x=>x.values||[]);
+    if(!facs.length){open++;return;}
+    new Set(facs).forEach(f=>counts.set(f,(counts.get(f)||0)+1));
+  });
+  const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  if(!rows.length&&!open)return '';
+  return `<select class="mini" onchange="bldPoolFacPick(this.value);this.value=''"
+      style="flex:0 0 auto;max-width:230px" title="Show only what these factions can train">
+      <option value="">Faction: ${sel.size?[...sel].map(f=>f==='(any)'?'anyone':bldFacName(f)).join(', ')
+        .slice(0,40):'any'}…</option>
+      ${sel.size?'<option value="(clear)">— show everything —</option>':''}
+      ${open?`<option value="(any)">no faction clause (${open})</option>`:''}
+      ${rows.map(([f,n])=>`<option value="${esc(f)}">${esc(bldFacName(f))} — ${n}</option>`).join('')}
+    </select>`;
+}
+function bldPoolFacPick(v){
+  const b=state.bld;
+  b.poolFac=b.poolFac||new Set();
+  if(!v)return;
+  if(v==='(clear)')b.poolFac.clear();
+  else if(b.poolFac.has(v))b.poolFac.delete(v); else b.poolFac.add(v);
+  bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
+}
+function bldSetView(v){
+  state.bld.view=v;
+  state.settings.bld_view=v; api.post('/api/settings',{bld_view:v});
+  bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
+}
+// The cached ownership answer for a pool, if one has been fetched — drawn as a
+// small flag on the row rather than fetched eagerly for hundreds of units.
+function bldPoolOwnFlag(c){
+  const b=state.bld;
+  const facs=(c.conds||[]).filter(x=>x.kind==='factions'&&!x.negate).flatMap(x=>x.values||[]);
+  if(!facs.length)return '';
+  const row=b.own[c.pool.unit+'|'+[...facs].sort().join(',')];
+  if(!row||(!row.missing_ownership.length&&!row.missing_textures.length))return '';
+  const bits=[];
+  if(row.missing_ownership.length)bits.push('not owned by '+row.missing_ownership.join(', '));
+  if(row.missing_textures.length)bits.push('no texture for '+row.missing_textures.join(', '));
+  return `<span class="ownflag" title="${esc(bits.join('; '))} — saving fixes this">⚠</span>`;
+}
+function bldPoolRow(c){
+  const b=state.bld,i=bldCapList().indexOf(c);
+  const info=b.d.units[(c.pool.unit||'').toLowerCase()];
+  const missing=!info||info.missing;
+  return `<div class="poolrow ${c.del?'gone':''} ${missing?'missing':''}" data-cap="${i}">
+    <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
+    <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
+      <div class="ut">${missing?'<span class="w-bad">not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
+    <div class="nums">
+      <label>start<input data-pool="initial" value="${esc(c.pool.initial)}"></label>
+      <label>per turn<input data-pool="per_turn" value="${esc(c.pool.per_turn)}"
+        title="Points gained each turn. 0.4 = a new unit roughly every 3 turns."></label>
+      <label>max<input data-pool="maximum" value="${esc(c.pool.maximum)}"></label>
+      <label>exp<input data-pool="experience" value="${esc(c.pool.experience)}"></label>
+    </div>
+    <div class="clausebar" style="flex:1;min-width:120px">
+      <div class="sum">${bldClauseSummary(c.conds)}</div>
+      ${bldPoolOwnFlag(c)}
+      <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
+    </div>
+    <div class="acts">
+      ${missing?'':`<button title="Open this unit in the Unit Editor"
+        onclick="openUnitFromBuilding('${q1(esc(c.pool.unit))}')">✎ Edit</button>`}
+      <button class="${c.del?'':'danger'}" onclick="bldToggleDel(${i})"
+        title="${c.del?'Keep this recruit pool':'Remove this recruit pool'}">${c.del?'↺':'🗑'}</button>
+    </div>
+    ${c.faction?'<span class="badge">faction</span>':''}</div>`;
+}
+function bldPoolCard(c){
+  const b=state.bld,i=bldCapList().indexOf(c);
+  const info=b.d.units[(c.pool.unit||'').toLowerCase()];
+  const missing=!info||info.missing;
+  return `<div class="ucard ${c.del?'gone':''}" data-cap="${i}">
+    <div class="top">
+      <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
+      <div style="min-width:0">
+        <div class="nm">${esc(info&&!missing?info.name:c.pool.unit)}</div>
+        <div class="ty">${missing?'<span class="w-bad">not in this mod’s EDU</span>'
+          :esc([info.kind,info.class].filter(Boolean).join(' · ')||c.pool.unit)}</div>
+      </div>
+      ${bldPoolOwnFlag(c)}
+    </div>
+    <div class="stats">
+      <label title="Points the pool starts with">start<input data-pool="initial" value="${esc(c.pool.initial)}"></label>
+      <label title="Points gained each turn. 0.4 = a new unit roughly every 3 turns.">/turn<input data-pool="per_turn" value="${esc(c.pool.per_turn)}"></label>
+      <label title="Most points the pool can hold">max<input data-pool="maximum" value="${esc(c.pool.maximum)}"></label>
+      <label title="Starting experience, 0-9">xp<input data-pool="experience" value="${esc(c.pool.experience)}"></label>
+    </div>
+    <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div></div>
+    <div class="acts">
+      <button onclick="bldEditClause('cap',${i})">✎ Requires</button>
+      ${missing?'':`<button onclick="openUnitFromBuilding('${q1(esc(c.pool.unit))}')">✎ Unit</button>`}
+      <button class="${c.del?'':'danger'}" onclick="bldToggleDel(${i})">${c.del?'↺':'🗑'}</button>
+    </div></div>`;
+}
+
+/* ---- the upgrade graph ----
+   A line is not always a straight chain. Some branch (A -> B -> D and A -> C -> E),
+   and at least one in DaC is a single root with every other level hanging off it
+   (A -> B, C, D, E). So rather than assume a ladder, the levels are laid out by
+   depth from whichever ones nothing upgrades into. */
+function bldUpgradeGraph(){
+  const b=state.bld,levels=b.work.levels;
+  const idx=new Map(levels.map((lv,i)=>[lv.name,i]));
+  const into=new Map(levels.map(lv=>[lv.name,[]]));
+  levels.forEach(lv=>lv.upgrades.forEach(u=>{
+    const name=u.split(/\s+/)[0];
+    if(into.has(name))into.get(name).push(lv.name);
+  }));
+  const roots=levels.filter(lv=>!into.get(lv.name).length).map(lv=>lv.name);
+  const depth=new Map();
+  const walk=(name,d,seen)=>{
+    if(seen.has(name))return;                 // a cycle in a hand-edited EDB
+    seen.add(name);
+    depth.set(name,Math.max(depth.get(name)||0,d));
+    const lv=levels[idx.get(name)];
+    (lv?lv.upgrades:[]).forEach(u=>{
+      const n=u.split(/\s+/)[0];
+      if(idx.has(n))walk(n,d+1,seen);
+    });
+    seen.delete(name);
+  };
+  (roots.length?roots:[levels[0]&&levels[0].name]).forEach(r=>r&&walk(r,0,new Set()));
+  levels.forEach(lv=>{if(!depth.has(lv.name))depth.set(lv.name,0);});
+  const tiers=[];
+  depth.forEach((d,name)=>{(tiers[d]=tiers[d]||[]).push(name);});
+  return {tiers,idx,into,depth};
+}
+function bldUpgradesSection(lv,orig){
+  const b=state.bld,g=bldUpgradeGraph();
+  const idx=g.idx;
+  const node=name=>{
+    const i=idx.get(name);
+    const l=b.d.levels[i];
+    return `<div class="pnode ${i===b.lvl?'on':''}" onclick="bldPickLevel(${i})"
+      title="Open ${esc(l?l.label:name)}">
+      <img loading="lazy" onerror="iconRetry(this)" src="${bldIcon(name,'small')}" alt="">
+      <div><div class="t">${esc(l?l.label:name)}</div><div class="n">${esc(name)}</div></div></div>`;
+  };
+  // what THIS level upgrades into, editable; only ever levels further along the
+  // line's own `levels` order, because M2TW upgrades never go backwards
+  const here=lv.upgrades.map(u=>u.split(/\s+/)[0]);
+  const forward=b.d.levels.map((l,i)=>l.name)
+    .filter((n,i)=>i>b.lvl&&!here.includes(n));
+  return `<div class="bsec"><h4>Upgrade path
+      <span class="count">${g.tiers.length>1?g.tiers.length+' tiers':'one tier'}</span></h4>
+    <div class="pathwrap">${g.tiers.map((names,d)=>`
+      <div class="prow">${d?'<span class="parrow">↳</span>':''}
+        ${names.map(node).join(d?'<span class="pbranch">or</span>':'<span class="parrow">·</span>')}
+      </div>`).join('')}</div>
+    <div class="bnote">Click any building to open it. Levels on the same row are
+      alternatives at the same depth.</div>
+    <h4 style="margin-top:12px">${esc(orig.label)} upgrades into
+      <span class="n">${here.length}</span></h4>
+    <div class="upglist">${here.length?lv.upgrades.map((u,i)=>{
+        const name=u.split(/\s+/)[0],extra=u.slice(name.length).trim();
+        const j=idx.get(name);
+        return `<div class="upgrow">
+          <span class="un">${j!=null?`<a class="ulink" onclick="bldPickLevel(${j})">${esc(name)}</a>`
+            :`<span class="w-bad" title="No level of this line is called that">${esc(name)}</span>`}</span>
+          ${extra?`<code class="count">${esc(extra)}</code>`:''}
+          <button class="x danger" style="margin-left:auto" onclick="bldUpgRemove(${i})"
+            title="Stop upgrading into this">🗑</button></div>`;
+      }).join(''):'<div class="upgrow"><span class="count">Nothing — this is the end of its branch.</span></div>'}
+    </div>
+    ${forward.length?`<div class="brow" style="margin-top:6px">
+      <select class="mini" id="upgAdd" style="flex:0 0 260px">
+        <option value="">＋ Also upgrade into…</option>
+        ${forward.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+      </select><span class="count">Only levels later in the line are offered —
+        an upgrade can never point backwards.</span></div>`
+      :'<div class="bnote">This is the last level in the line, so it has nothing to upgrade into.</div>'}
+  </div>`;
+}
+function bldUpgRemove(i){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  lv.upgrades.splice(i,1); bldTouched();
+}
+function bldUpgAdd(name){
+  if(!name)return;
+  const lv=state.bld.work.levels[state.bld.lvl];
+  lv.upgrades.push(name); bldTouched();
+}
+function bldCapRow(c){
+  const b=state.bld,i=bldCapList().indexOf(c);
+  const known=b.ov.capabilities.map(x=>x.keyword);
+  const help=(b.ov.capabilities.find(x=>x.keyword===c.keyword)||{}).help||'';
+  return `<div class="caprow ${c.del?'gone':''}" data-cap="${i}">
+    <select class="kw" data-kw title="${esc(help)}">
+      ${known.map(k=>`<option value="${esc(k)}" ${k===c.keyword?'selected':''}>${esc(k)}</option>`).join('')}
+      ${known.includes(c.keyword)?'':`<option value="${esc(c.keyword)}" selected>${esc(c.keyword)}</option>`}
+    </select>
+    <label class="chk"><input type="checkbox" data-bonus ${c.bonus?'checked':''}
+      title="Write the value as &quot;bonus N&quot;, which is how most modifiers are declared"> bonus</label>
+    <input class="val" data-val value="${esc(c.value)}">
+    <div class="clausebar" style="flex:1;min-width:110px">
+      <div class="sum">${bldClauseSummary(c.conds)}</div>
+      <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
+    </div>
+    ${c.faction?'<span class="badge">faction</span>':''}
+    <button class="x ${c.del?'':'danger'}" onclick="bldToggleDel(${i})">${c.del?'↺':'🗑'}</button>
+    </div>`;
+}
+function bldToggleDel(i){
+  const c=bldCapList()[i]; c.del=!c.del;
+  // a row that was only ever added by this dialog just goes away
+  if(c.del&&c.line==null){
+    const lv=state.bld.work.levels[state.bld.lvl];
+    const from=c.faction?lv.fcaps:lv.caps;
+    from.splice(from.indexOf(c),1);
+  }
+  bldTouched();
+}
+function bldTouched(){
+  state.bld.planStale=!!state.bld.plan;
+  const b=state.bld;
+  bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
+}
+function bldWire(){
+  const b=state.bld,lv=b.work.levels[b.lvl],list=bldCapList();
+  const body=document.getElementById('bldBody');
+  const mark=(el,changed)=>el.classList.toggle('changed',!!changed);
+  const orig=b.d.levels[b.lvl];
+  body.querySelectorAll('[data-scalar]').forEach(el=>{
+    const key=el.dataset.scalar;
+    mark(el,(el.value||'')!==(orig.scalars[key]||''));
+    el.oninput=el.onchange=()=>{
+      const v=el.value.trim();
+      if(v)lv.scalars[key]=v; else delete lv.scalars[key];
+      mark(el,v!==(orig.scalars[key]||'')); bldDirtyNote();};
+  });
+  const st=body.querySelector('[data-settlement]');
+  mark(st,st.value!==orig.settlement);
+  st.onchange=()=>{lv.settlement=st.value;mark(st,st.value!==orig.settlement);bldDirtyNote();};
+  const upAdd=document.getElementById('upgAdd');
+  if(upAdd)upAdd.onchange=()=>{bldUpgAdd(upAdd.value);};
+  body.querySelectorAll('[data-loc]').forEach(el=>{
+    const key=el.dataset.loc;
+    mark(el,el.value!==(orig.loc[key]||''));
+    el.oninput=()=>{lv.loc[key]=el.value;mark(el,el.value!==(orig.loc[key]||''));bldDirtyNote();};
+  });
+  body.querySelectorAll('[data-cap]').forEach(row=>{
+    const c=list[+row.dataset.cap]; if(!c)return;
+    row.querySelectorAll('[data-pool]').forEach(el=>{
+      el.oninput=()=>{c.pool[el.dataset.pool]=el.value.trim();bldDirtyNote();};});
+    const kw=row.querySelector('[data-kw]');
+    if(kw)kw.onchange=()=>{c.keyword=kw.value;bldTouched();};
+    const bo=row.querySelector('[data-bonus]');
+    if(bo)bo.onchange=()=>{c.bonus=bo.checked;bldDirtyNote();};
+    const val=row.querySelector('[data-val]');
+    if(val)val.oninput=()=>{c.value=val.value.trim();bldDirtyNote();};
+  });
+}
+function bldDirtyNote(){
+  const note=document.getElementById('bldDirtyNote');
+  if(note)note.textContent=bldDirty()?'unsaved changes':'';
+  state.bld.planStale=!!state.bld.plan;
+  const chip=document.querySelectorAll('.lvchip')[state.bld.lvl];
+  if(chip)chip.classList.toggle('dirty',bldLevelDirty(state.bld.lvl));
+}
+function bldAddCap(){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  lv.caps.push({line:null,keyword:'law_bonus',args:'',requires:'',bonus:true,value:'1',
+                pool:null,comment:'',faction:false,del:false});
+  bldTouched();
+}
+
+/* =========================================================================
+   `requires` clauses, as structure
+
+   A clause is a flat list of terms joined left-to-right by and/or — M2TW has no
+   precedence, so there is no tree to draw. Each term names something declared
+   elsewhere in the mod (a faction, an event counter, a hidden resource) by its
+   CODE name, and a typo there is invisible: the game doesn't complain, the
+   building simply never becomes available. So every term is edited by picking
+   from the mod's own lists, shown by real name with the code in brackets.
+
+   Anything the parser didn't recognise stays as raw text rather than being
+   dropped — a couple of real mods have malformed clauses and they must survive
+   a round trip untouched.
+   ========================================================================= */
+
+const COND_LABEL={factions:'Factions',hidden_resource:'Hidden resource',
+  resource:'Trade resource',event_counter:'Event',region_religion:'Region religion',
+  building_present_min_level:'Building present (min level)',
+  building_present:'Building present',settlement_min:'Settlement size',
+  market_level:'Market level',raw:'Custom text'};
+
+const bldVocab=()=>((state.bld&&state.bld.ov&&state.bld.ov.vocab)||{});
+// A `factions { }` entry may be a faction, a whole culture, or the keyword
+// `all`; the label says which, since a culture quietly covers several factions.
+function bldFacName(code){
+  const v=bldVocab();
+  if(code===(v.all_keyword||'all'))return 'All factions';
+  const f=(v.factions||[]).find(x=>x.code===code);
+  if(f)return f.name?`${f.name} (${f.code})`:f.code;
+  const c=(v.cultures||[]).find(x=>x.code===code);
+  if(c)return `${c.name?c.name+' ':''}(${c.code}) · culture`;
+  return code;
+}
+function bldEventName(name){
+  const e=(bldVocab().events||[]).find(x=>x.name===name);
+  return e&&e.title?`${e.title} (${e.name})`:name;
+}
+// The JS side of Condition.text() in unittransfer/buildings.py. Kept in step
+// with it because the page previews a clause before the server ever emits one;
+// the server's version is what actually gets written.
+function bldCondText(c){
+  if(c.kind==='raw')return c.raw||'';
+  const body=c.kind==='factions'
+    ? 'factions {'+(c.values||[]).map(v=>' '+v+',').join('')+' }'
+    : [c.kind].concat((c.values||[]).filter(v=>v!=='')).join(' ');
+  return (c.negate?'not ':'')+body;
+}
+function bldClauseText(conds){
+  return (conds||[]).map((c,i)=>(i?` ${c.join||'and'} `:'')+bldCondText(c)).join('').trim();
+}
+// One readable line for a row that has no room for the full editor.
+function bldClauseSummary(conds){
+  if(!conds||!conds.length)return '<span class="count">always</span>';
+  return conds.map((c,i)=>{
+    const j=i?`<span class="cj">${esc(c.join||'and')}</span> `:'';
+    return j+`<span class="cterm${c.negate?' neg':''}">${esc(bldCondSummary(c))}</span>`;
+  }).join(' ');
+}
+function bldCondSummary(c){
+  const v=c.values||[],n=c.negate?'not ':'';
+  switch(c.kind){
+    case 'factions':{
+      const names=v.map(x=>{const f=(bldVocab().factions||[]).find(y=>y.code===x);
+        return f&&f.name?f.name:x;});
+      return n+(names.length>3?`${names.slice(0,3).join(', ')} +${names.length-3}`
+                              :names.join(', ')||'nobody');}
+    case 'event_counter':{
+      const e=(bldVocab().events||[]).find(x=>x.name===v[0]);
+      const nm=e&&e.title?e.title:v[0];
+      return (v[1]==='0'?'before ':'after ')+(c.negate?'NOT ':'')+nm;}
+    case 'region_religion': return `${n}region ≥${v[1]}% ${v[0]}`;
+    case 'hidden_resource': return `${n}hidden: ${v[0]}`;
+    case 'resource': return `${n}resource: ${v[0]}`;
+    case 'building_present_min_level': return `${n}has ${v[0]} ≥ ${v[1]}`;
+    case 'building_present': return `${n}has ${v[0]}`;
+    default: return n+bldCondText(Object.assign({},c,{negate:false}));
+  }
+}
+/* ---- the clause dialog ----
+   Opened from a level or from one recruit pool. `ctx.conds` is edited in place
+   and `ctx.done()` is called on close, so the caller doesn't have to thread the
+   value back. The building editor's markup is stashed and restored, the same
+   trick the unit picker uses. */
+function bldEditClause(kind,index){
+  const b=state.bld,lv=b.work.levels[b.lvl];
+  const host=kind==='level'?lv:bldCapList()[index];
+  if(!host)return;
+  b.clause={host,kind,index,conds:JSON.parse(JSON.stringify(host.conds||[])),
+            unit:(host.pool&&host.pool.unit)||'',pick:null};
+  b.stash=document.getElementById('modal').innerHTML;
+  renderClauseDialog();
+  if(b.clause.unit)bldClauseOwnership();
+}
+function bldClauseCancel(){
+  const b=state.bld;
+  document.getElementById('modal').innerHTML=b.stash; b.stash=null; b.clause=null;
+  bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
+}
+function bldClauseApply(){
+  const b=state.bld,c=b.clause;
+  c.host.conds=c.conds; c.host.condEdited=true;
+  c.host.requires=bldClauseText(c.conds);
+  document.getElementById('modal').innerHTML=b.stash; b.stash=null; b.clause=null;
+  bldTouched();
+}
+function renderClauseDialog(){
+  const b=state.bld,c=b.clause;
+  const what=c.kind==='level'
+    ? `who can build <b>${esc(b.d.levels[b.lvl].label)}</b>`
+    : (c.unit?`who can recruit <b>${esc(c.unit)}</b> here`
+             :`when <b>${esc(c.host.keyword)}</b> applies`);
+  document.getElementById('modal').innerHTML=`
+    <h2>Requirements — ${what}</h2>
+    <div class="mbody">
+      <div class="condlist" id="condList"></div>
+      <div class="brow" style="margin-top:8px">
+        <select id="condAdd" style="flex:0 0 260px">
+          <option value="">＋ Add a requirement…</option>
+          ${Object.keys(COND_LABEL).map(k=>`<option value="${k}">${esc(COND_LABEL[k])}</option>`).join('')}
+        </select>
+        <span class="count">Terms are evaluated left to right — M2TW has no brackets.</span>
+      </div>
+      <div id="condOwn"></div>
+      <div class="bsec" style="margin-top:12px"><h4>Written as</h4>
+        <div class="preview" id="condText"></div></div>
+    </div>
+    <div class="foot">
+      <button onclick="bldClauseCancel()">Cancel</button>
+      <button class="primary" onclick="bldClauseApply()">Use these requirements</button>
+    </div>`;
+  document.getElementById('condAdd').onchange=e=>{
+    if(!e.target.value)return;
+    bldCondAdd(e.target.value); e.target.value='';
+  };
+  renderCondList();
+}
+function bldCondAdd(kind){
+  const c=state.bld.clause;
+  const blank={factions:[],hidden_resource:[''],resource:[''],event_counter:['','1'],
+    region_religion:['',''],building_present_min_level:['',''],building_present:[''],
+    settlement_min:[''],market_level:['1'],raw:[]};
+  c.conds.push({join:c.conds.length?'and':'',negate:false,kind,
+                values:(blank[kind]||[]).slice(),raw:''});
+  renderCondList();
+}
+function renderCondList(){
+  const c=state.bld.clause;
+  const box=document.getElementById('condList');
+  box.innerHTML=c.conds.length?c.conds.map(condRowHtml).join('')
+    :'<div class="condrow"><span class="count">No requirements — anyone, always.</span></div>';
+  document.getElementById('condText').textContent=bldClauseText(c.conds)||'(no requires clause)';
+  wireCondRows();
+  if(c.unit)bldClauseOwnership();
+}
+function condRowHtml(cond,i){
+  const v=cond.values||[];
+  let body='';
+  switch(cond.kind){
+    case 'factions': body=condFactionsHtml(cond,i); break;
+    case 'event_counter': body=
+      condPick(i,0,'event',v[0])+
+      `<select data-cv="${i}:1" style="flex:0 0 150px">
+        <option value="1" ${v[1]!=='0'?'selected':''}>has happened (1)</option>
+        <option value="0" ${v[1]==='0'?'selected':''}>has not happened (0)</option></select>`;
+      break;
+    case 'region_religion': body=
+      condPick(i,0,'religion',v[0])+
+      `<input data-cv="${i}:1" value="${esc(v[1]||'')}" inputmode="numeric"
+        style="flex:0 0 90px" placeholder="%" title="Minimum percentage of the region following it">`;
+      break;
+    case 'hidden_resource': body=condPick(i,0,'hidden_resource',v[0]); break;
+    case 'resource': body=condPick(i,0,'resource',v[0]); break;
+    case 'building_present': body=condPick(i,0,'building',v[0]); break;
+    case 'building_present_min_level':
+      body=condPick(i,0,'building',v[0])+condPick(i,1,'level',v[1],v[0]); break;
+    case 'settlement_min': body=condPick(i,0,'settlement',v[0]); break;
+    case 'raw': body=`<input data-craw="${i}" value="${esc(cond.raw||'')}"
+      style="flex:1" placeholder="written into the clause exactly as typed">`; break;
+    default: body=`<input data-cv="${i}:0" value="${esc(v[0]||'')}" style="flex:1">`;
+  }
+  return `<div class="condrow" data-cond="${i}">
+    ${i?`<select data-cjoin="${i}" class="cjoin">
+        <option value="and" ${cond.join!=='or'?'selected':''}>and</option>
+        <option value="or" ${cond.join==='or'?'selected':''}>or</option></select>`
+      :'<span class="cjoin lead">if</span>'}
+    <label class="chk" title="Invert this term"><input type="checkbox"
+      data-cneg="${i}" ${cond.negate?'checked':''}> not</label>
+    <span class="ckind" title="${esc((bldCondKindHelp(cond.kind)))}">${esc(COND_LABEL[cond.kind]||cond.kind)}</span>
+    ${body}
+    <button class="x danger" onclick="bldCondRemove(${i})" title="Remove this requirement">🗑</button>
+  </div>`;
+}
+function bldCondKindHelp(kind){
+  const k=((state.bld.ov.condition_kinds)||[]).find(x=>x.kind===kind);
+  return k&&k.help?k.help:'';
+}
+// A single-select over one of the mod's own lists. Rendered as a datalist-backed
+// input rather than a <select> because some of these lists run to two thousand
+// entries (DaC declares 1 700 event counters) and a plain dropdown is unusable
+// at that size.
+function condPick(i,slot,list,value,dep){
+  const id=`cl${i}_${slot}`;
+  return `<input data-cv="${i}:${slot}" list="${id}" value="${esc(value||'')}"
+      style="flex:1;min-width:110px" placeholder="${esc(list.replace('_',' '))}…">
+    <datalist id="${id}">${condOptions(list,dep).map(o=>
+      `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</datalist>`;
+}
+function condOptions(list,dep){
+  const v=bldVocab();
+  switch(list){
+    case 'event': return (v.events||[]).map(e=>({value:e.name,
+      label:(e.title?e.title+' — ':'')+(e.source==='edb'?'used in this EDB'
+        :e.source==='script'?'set by a script':'from historic_events.txt')}));
+    // Each of these means "the regions where it holds", so descr_regions.txt is
+    // what the picker shows — a bare code name says nothing about where it bites.
+    case 'religion': return (v.religion_rows||(v.religions||[]).map(r=>({code:r})))
+      .map(r=>({value:r.code,label:r.regions
+        ? `${r.regions} region${r.regions===1?'':'s'} follow it, up to ${r.max}%`
+        : 'no region follows this'}));
+    case 'hidden_resource': return (v.hidden_resources||[]).map(r=>({value:r.code,
+      label:r.count?`${r.count} region${r.count===1?'':'s'}: ${r.regions.slice(0,4).join(', ')}${
+        r.regions.length>4?'…':''}`:'no region carries this'}));
+    case 'resource': return (v.resources||[]).map(r=>({value:r.code||r,
+      label:r.count?`${r.count} region${r.count===1?'':'s'}: ${r.regions.slice(0,4).join(', ')}${
+        r.regions.length>4?'…':''}`:'not placed in any region'}));
+    case 'settlement': return (state.bld.ov.settlement_levels||[]).map(s=>({value:s,label:s}));
+    case 'building': return (v.building_levels||[]).map(b=>({value:b.line,
+      label:`${b.levels.length} level${b.levels.length===1?'':'s'}`}));
+    case 'level':{
+      const line=(v.building_levels||[]).find(b=>b.line===dep);
+      return (line?line.levels:[]).map(l=>({value:l,label:l}));}
+  }
+  return [];
+}
+function condFactionsHtml(cond,i){
+  const chosen=cond.values||[];
+  const label=chosen.length?chosen.map(bldFacName).join(', '):'nobody — this can never be built';
+  return `<button class="facbtn" onclick="bldFacPicker(${i})"
+      title="Pick the factions and cultures this applies to">
+      ${chosen.length?esc(label):'<span class="w-bad">'+esc(label)+'</span>'}</button>`;
+}
+function wireCondRows(){
+  const c=state.bld.clause;
+  document.querySelectorAll('[data-cjoin]').forEach(el=>el.onchange=()=>{
+    c.conds[+el.dataset.cjoin].join=el.value; condChanged();});
+  document.querySelectorAll('[data-cneg]').forEach(el=>el.onchange=()=>{
+    c.conds[+el.dataset.cneg].negate=el.checked; condChanged();});
+  document.querySelectorAll('[data-craw]').forEach(el=>el.oninput=()=>{
+    c.conds[+el.dataset.craw].raw=el.value; condChanged();});
+  document.querySelectorAll('[data-cv]').forEach(el=>{
+    const [i,slot]=el.dataset.cv.split(':').map(Number);
+    const set=()=>{const cond=c.conds[i];
+      while(cond.values.length<=slot)cond.values.push('');
+      cond.values[slot]=el.value.trim();
+      // the level list depends on which building line is picked
+      if(cond.kind==='building_present_min_level'&&slot===0)renderCondList();
+      else condChanged();};
+    el.onchange=set; el.oninput=()=>{const cond=c.conds[i];
+      while(cond.values.length<=slot)cond.values.push('');
+      cond.values[slot]=el.value.trim(); condChanged();};
+  });
+}
+function condChanged(){
+  const c=state.bld.clause;
+  document.getElementById('condText').textContent=bldClauseText(c.conds)||'(no requires clause)';
+  if(c.unit)bldClauseOwnership();
+}
+function bldCondRemove(i){
+  const c=state.bld.clause;
+  c.conds.splice(i,1);
+  if(c.conds.length)c.conds[0].join='';
+  renderCondList();
+}
+
+/* ---- the faction checklist ---- */
+function bldFacPicker(i){
+  const b=state.bld,c=b.clause;
+  c.pick={i,q:''};
+  b.stash2=document.getElementById('modal').innerHTML;
+  renderFacPicker();
+}
+function renderFacPicker(){
+  const c=state.bld.clause,v=bldVocab();
+  const cond=c.conds[c.pick.i],chosen=new Set(cond.values||[]);
+  const ALL=v.all_keyword||'all';
+  const q=(c.pick.q||'').toLowerCase();
+  const match=r=>!q||r.code.toLowerCase().includes(q)||(r.name||'').toLowerCase().includes(q);
+  const row=(r,isCulture)=>`<label class="facrow${chosen.has(r.code)?' on':''}">
+      <input type="checkbox" data-fac="${esc(r.code)}" ${chosen.has(r.code)?'checked':''}>
+      <span class="fn">${esc(r.name||r.code)}</span>
+      <span class="fc">${esc(r.code)}${isCulture?' · culture':r.culture?' · '+esc(r.culture):''}</span>
+    </label>`;
+  document.getElementById('modal').innerHTML=`
+    <h2>Which factions?</h2>
+    <div class="mbody">
+      <div class="brow"><input id="facQ" placeholder="Filter by name or code…" style="flex:1"
+        value="${esc(c.pick.q||'')}">
+        <button onclick="bldFacAll(true)">Tick all shown</button>
+        <button onclick="bldFacAll(false)">Untick all shown</button></div>
+      <label class="facrow allrow${chosen.has(ALL)?' on':''}">
+        <input type="checkbox" data-fac="${esc(ALL)}" ${chosen.has(ALL)?'checked':''}>
+        <span class="fn">All factions</span>
+        <span class="fc">${esc(ALL)} — the wildcard; ticking it makes the rest moot</span></label>
+      <h4 class="fgh">Factions</h4>
+      <div class="faclist">${(v.factions||[]).filter(match).map(r=>row(r,false)).join('')
+        ||'<span class="count">none match</span>'}</div>
+      <h4 class="fgh">Cultures <span class="count">— covers every faction of that culture</span></h4>
+      <div class="faclist">${(v.cultures||[]).filter(match).map(r=>row(r,true)).join('')
+        ||'<span class="count">none match</span>'}</div>
+      <div id="facOwn"></div>
+    </div>
+    <div class="foot">
+      <span class="count" id="facCount"></span>
+      <button class="primary" onclick="bldFacDone()">Done</button>
+    </div>`;
+  const qbox=document.getElementById('facQ');
+  qbox.oninput=()=>{c.pick.q=qbox.value;renderFacPicker();
+    const n=document.getElementById('facQ');n.focus();n.setSelectionRange(n.value.length,n.value.length);};
+  document.querySelectorAll('[data-fac]').forEach(cb=>cb.onchange=()=>{
+    const set=new Set(cond.values||[]);
+    cb.checked?set.add(cb.dataset.fac):set.delete(cb.dataset.fac);
+    cond.values=[...set];
+    renderFacPicker();});
+  document.getElementById('facCount').textContent=
+    `${(cond.values||[]).length} selected`;
+  if(c.unit)bldFacOwnership(cond.values||[]);
+}
+function bldFacAll(on){
+  const c=state.bld.clause,cond=c.conds[c.pick.i];
+  const set=new Set(cond.values||[]);
+  document.querySelectorAll('[data-fac]').forEach(cb=>{
+    if(cb.closest('.allrow'))return;         // never bulk-tick the wildcard
+    on?set.add(cb.dataset.fac):set.delete(cb.dataset.fac);});
+  cond.values=[...set];
+  renderFacPicker();
+}
+function bldFacDone(){
+  const b=state.bld;
+  document.getElementById('modal').innerHTML=b.stash2; b.stash2=null;
+  b.clause.pick=null;
+  renderClauseDialog();
+}
+
+/* ---- "…but this unit doesn't belong to them" ----
+   A recruit_pool naming a faction is only half of it: the unit must also list
+   that faction in its EDU `ownership`, and its battle model needs a texture for
+   it, or the building trains nothing / trains something untextured. Both fail
+   silently in game, so they are checked as soon as a faction is ticked. */
+async function bldOwnCheck(unit,factions){
+  const b=state.bld;
+  const key=unit+'|'+[...factions].sort().join(',');
+  if(b.own[key])return b.own[key];
+  try{
+    const r=await api.post('/api/buildings/ownership',
+      {mod:b.mod,checks:[{unit,factions}]});
+    b.own[key]=(r.rows||[])[0]||null;
+  }catch(e){ b.own[key]=null; }
+  return b.own[key];
+}
+function bldOwnHtml(row){
+  if(!row)return '';
+  if(!row.known)return `<div class="ownwarn bad">“${esc(row.unit)}” is not a unit in
+    this mod’s EDU — nothing will ever be recruited from this pool.</div>`;
+  const bits=[],fixes=[];
+  if(row.missing_ownership.length){
+    bits.push(`<b>${row.missing_ownership.map(bldFacName).map(esc).join(', ')}</b> ${
+      row.missing_ownership.length===1?'is':'are'} not in
+      <code>${esc(row.unit)}</code>’s EDU <code>ownership</code>, so the building
+      would train nothing for ${row.missing_ownership.length===1?'them':'those'}`);
+    fixes.push('the ownership line is extended');
+  }
+  if(row.missing_textures.length){
+    bits.push(`its battle model has no texture for
+      <b>${row.missing_textures.map(esc).join(', ')}</b>, so their soldiers would
+      turn up untextured`);
+    fixes.push('the missing textures are copied from a faction that has them');
+  }
+  if(!bits.length)return `<div class="ownwarn ok">Every faction here can already
+    field <code>${esc(row.unit)}</code>.</div>`;
+  return `<div class="ownwarn">${bits.join('; and ')}. Saving fixes
+    ${bits.length===1?'that':'both'} — ${fixes.join(', and ')}. Untick
+    <b>Fix unit ownership</b> at the bottom of the editor to leave it alone.</div>`;
+}
+async function bldClauseOwnership(){
+  const c=state.bld.clause; if(!c||!c.unit)return;
+  const facs=[].concat(...c.conds.filter(x=>x.kind==='factions'&&!x.negate)
+    .map(x=>x.values||[]));
+  const box=document.getElementById('condOwn');
+  if(!box)return;
+  if(!facs.length){box.innerHTML='';return;}
+  box.innerHTML=bldOwnHtml(await bldOwnCheck(c.unit,facs));
+}
+async function bldFacOwnership(facs){
+  const c=state.bld.clause; if(!c||!c.unit)return;
+  const box=document.getElementById('facOwn');
+  if(!box)return;
+  if(!facs.length){box.innerHTML='';return;}
+  box.innerHTML=bldOwnHtml(await bldOwnCheck(c.unit,facs));
+}
+
+/* ---- add a unit to this level's recruitment ---- */
+function bldAddPoolDialog(){
+  const b=state.bld,lv=b.work.levels[b.lvl];
+  const already=new Set([...lv.caps,...lv.fcaps].filter(c=>c.pool&&!c.del)
+    .map(c=>c.pool.unit.toLowerCase()));
+  b.pick={q:'',faction:'',already};
+  const modal=document.getElementById('modal');
+  b.stash=modal.innerHTML;                     // put the editor back on cancel
+  modal.innerHTML=`<h2>Add a unit to ${esc(b.d.levels[b.lvl].label)}</h2>
+    <div class="mbody">
+      <div class="basebar"><input id="bpQ" placeholder="Filter ${esc(state.src)}’s units…"
+          oninput="bldPickRender()"><select id="bpFac" onchange="bldPickRender()">
+          <option value="">All factions</option>${
+            (state.data.factions||[]).slice().sort((a,c)=>facLabel(a).localeCompare(facLabel(c)))
+              .map(f=>`<option value="${esc(f)}">${esc(facLabel(f))}</option>`).join('')}
+        </select></div>
+      <div class="baselist" style="max-height:300px" id="bpList"></div>
+      <div class="bnote">Defaults for a new pool: start 1, +0.5 a turn, max 2, 0 experience —
+        edit them in the row once it is added.</div>
+    </div>
+    <div class="foot"><button onclick="bldPickCancel()">Cancel</button></div>`;
+  bldPickRender();
+}
+function bldPickCancel(){
+  const modal=document.getElementById('modal');
+  modal.innerHTML=state.bld.stash; state.bld.stash=null;
+  bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
+}
+function bldPickRender(){
+  const q=(document.getElementById('bpQ').value||'').trim().toLowerCase();
+  const fac=document.getElementById('bpFac').value;
+  const already=state.bld.pick.already;
+  const units=(state.data.units||[]).filter(u=>
+    (!q||u.name.toLowerCase().includes(q)||u.type.toLowerCase().includes(q))
+    &&(!fac||u.ownership.includes(fac))).slice(0,300);
+  document.getElementById('bpList').innerHTML=units.map(u=>`
+    <div class="baserow" onclick="bldAddPool('${q1(esc(u.type))}')">
+      <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}">
+      <div><div class="bn">${esc(u.name)}${already.has(u.type.toLowerCase())
+        ?' <span class="badge">already here</span>':''}</div>
+        <div class="bs">${esc(u.type)} · ${esc(u.kind||u.category||'')}</div></div>
+    </div>`).join('')||'<div class="caprow"><span class="count">No units match.</span></div>';
+}
+function bldAddPool(type){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  lv.caps.push({line:null,keyword:'recruit_pool',args:'',requires:'',bonus:false,value:'',
+    pool:{unit:type,initial:'1',per_turn:'0.5',maximum:'2',experience:'0'},
+    comment:'',faction:false,del:false});
+  // the picker replaced the editor's markup — rebuild it, then show the new row
+  const modal=document.getElementById('modal');
+  modal.innerHTML=state.bld.stash; state.bld.stash=null;
+  renderBuildingEditor();
+  toast(`${type} added to ${state.bld.d.levels[state.bld.lvl].label}`);
+}
+
+/* ---- hop to the Unit Editor and back ----
+   The building editor's whole state (which line, which level, every unsaved
+   edit) lives in state.bld, which nothing here clears — so coming back is just
+   re-rendering it. bldReturn only records what the Back button should say and
+   which level to land on. */
+function openUnitFromBuilding(type){
+  const b=state.bld;
+  if(bldDirty()&&!confirm(
+      'You have unsaved building changes. They are kept while you edit the unit — '
+      +'switch to the Unit Editor now?'))return;
+  state.bldReturn={line:b.line,lvl:b.lvl,label:b.d.label};
+  closeModal();
+  state.mode='edit'; modeSel.value='edit';
+  applyMode(true);
+  openEditor(type);
+}
+async function backToBuilding(){
+  const r=state.bldReturn,b=state.bld; if(!r||!b)return;
+  if(state.ed&&edDirty()&&!confirm('Discard the unsaved unit changes and go back to the building?'))return;
+  state.ed=null; closeModal();
+  state.bldReturn=null;
+  state.mode='buildings'; modeSel.value='buildings';
+  applyMode(true);
+  // The working copy is NOT rebuilt: everything typed into the building before
+  // the hop is still in b.work, and throwing it away is exactly what makes
+  // switching back and forth useless. Only the read-only half is re-read, so a
+  // unit renamed or deleted in the meantime shows up as such in the pool rows.
+  // Capability line numbers index the EDB, which a unit edit never touches, so
+  // the working copy stays valid against it.
+  if(b.work&&b.line===r.line){
+    b.lvl=r.lvl;
+    try{
+      const fresh=await api.get(`/api/building?mod=${enc(b.mod)}&line=${enc(r.line)}`);
+      if(fresh.levels.length===b.work.levels.length)b.d=fresh;
+    }catch(e){}
+    b.planStale=!!b.plan;
+    document.getElementById('modal').className='modal wide';
+    overlay.classList.add('open');
+    renderBuildingEditor();
+    return;
+  }
+  b.lvl=r.lvl;
+  await openBuilding(r.line,true);
+}
+
+/* ---- preview / save ---- */
+function bldPayload(){
+  const b=state.bld;
+  const origLevels=JSON.parse(b.orig).levels;
+  return {mod:b.mod,line:b.line,fix_ownership:b.fixOwnership!==false,
+    levels:b.work.levels.map((lv,i)=>{
+    const o=origLevels[i],out={name:lv.name,settlement:lv.settlement,requires:lv.requires,
+      scalars:lv.scalars,upgrades:lv.upgrades,
+      capabilities:[...lv.caps].map(bldCapOp),
+      faction_capabilities:[...lv.fcaps].map(bldCapOp)};
+    if(lv.condEdited)out.conditions=lv.conds;
+    // only send `loc` when the text actually changed: its presence is what makes
+    // the server rewrite text/export_buildings.txt at all
+    if(JSON.stringify(lv.loc)!==JSON.stringify(o.loc))out.loc=lv.loc;
+    return out;})};
+}
+function bldCapOp(c){
+  const args=c.pool
+    ? `"${c.pool.unit}"  ${c.pool.initial}  ${c.pool.per_turn}  ${c.pool.maximum}  ${c.pool.experience}`
+    : ((c.bonus?'bonus ':'')+(c.value||'')).trim();
+  const op={line:c.line,keyword:c.keyword,args,requires:c.requires,delete:!!c.del};
+  // a brand-new row has no original text, so its clause always goes as structure
+  if(c.condEdited||c.line==null)op.conditions=c.conds||[];
+  return op;
+}
+async function bldPreview(){
+  const b=state.bld;
+  const box=document.getElementById('bldPlan');
+  box.innerHTML='<div class="count" style="padding:8px">Working out what would change…</div>';
+  try{
+    b.plan=await api.post('/api/buildings/plan',bldPayload());
+    b.planStale=false;
+    box.innerHTML=bldPlanHtml(b.plan,false);
+  }catch(e){ box.innerHTML=`<div class="mbody w-bad">${esc(''+e)}</div>`; }
+}
+function bldPlanHtml(p,stale){
+  if(p.error)return `<div class="sum"><div class="srow bad"><span class="sicon">✕</span>
+    <span class="stext">${esc(p.error)}</span></div></div>`;
+  const rows=[];
+  (p.changes||[]).forEach(c=>rows.push(`<div class="srow"><span class="sicon">•</span>
+    <span class="stext">${esc(c)}</span></div>`));
+  (p.warnings||[]).forEach(c=>rows.push(`<div class="srow warn"><span class="sicon">!</span>
+    <span class="stext">${esc(c)}</span></div>`));
+  (p.errors||[]).forEach(c=>rows.push(`<div class="srow bad"><span class="sicon">✕</span>
+    <span class="stext">${esc(c)}</span></div>`));
+  if(!rows.length)rows.push(`<div class="srow"><span class="sicon">–</span>
+    <span class="stext">Nothing would change.</span></div>`);
+  const files=[p.edb_rewritten?'export_descr_buildings.txt':'',
+               p.loc_rewritten?'text/export_buildings.txt':'',
+               p.edu_rewritten?'export_descr_unit.txt':'',
+               p.modeldb_rewritten?'unit_models/battle_models.modeldb':''].filter(Boolean);
+  return `<div class="bsec" style="margin-top:14px"><h4>Preview${
+      stale?' <span class="w-warn">(out of date — edited since)</span>':''}</h4>
+    <div class="sum">${rows.join('')}
+      ${files.length?`<div class="srow shead" style="margin-top:6px"><span class="sicon">→</span>
+        <span class="stext">writes ${files.map(f=>`<code>${esc(f)}</code>`)
+          .join(files.length>2?', ':' and ')}</span></div>`:''}
+    </div></div>`;
+}
+async function bldSave(){
+  const b=state.bld;
+  if(!bldDirty()){toast('Nothing to save.');return;}
+  const btn=event&&event.target; if(btn)btn.disabled=true;
+  try{
+    const res=await api.post('/api/buildings/apply',
+      Object.assign(bldPayload(),{clear_strings_bin:clearBinOn()}));
+    if(res.error){ toast(res.error,5000);
+      document.getElementById('bldPlan').innerHTML=bldPlanHtml(res.plan||{error:res.error},false);
+      return; }
+    toast(`Saved — ${(res.plan.changes||[]).length} change(s) written to ${b.mod}`);
+    state.bld.ov=await api.get('/api/buildings?mod='+enc(state.src));
+    _bldFiltersFor='';
+    await openBuilding(b.line,true);           // re-read from disk, keep the level
+    render();
+  }catch(e){ toast('Save failed: '+e,5000); }
+  finally{ if(btn)btn.disabled=false; }
 }
 
 init();

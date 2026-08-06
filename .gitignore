@@ -17,6 +17,11 @@ CLAUDE.md
 graphify-out/
 .gitattributes
 
+# Saved reference material — TWC tutorial pages with their whole _files asset
+# dumps, the ModdingTool source, the Sounds Parser and Sprite prototypes. ~100 MB
+# of other people's work, kept locally to read; none of it ours to redistribute.
+Reference/
+
 # Third-party reference tools kept locally for comparison (not ours to ship)
 UnitEditor11/
 # Saved TWC tutorial pages + Gigantus' sprite setup, kept for reference. The only
@@ -25,6 +30,13 @@ Sprite/
 
 # Superseded work kept around locally (old builds, the Sounds Parser prototype)
 Old Files/
+
+# Raw unpacked vanilla UI: ~300 MB of TGA straight out of the .pack files, over
+# half of it the same picture under several names. `tools/pack_vanilla_ui.py`
+# turns it into vanilla_ui/ — deduplicated lossless WebP, ~6x smaller — and THAT
+# is what gets committed. This stays local.
+unpackaded_vanilla_ui/
+unpackaded_vanilla_ui.7z
 
 # Runtime logs (server.log.sample IS committed as a reference; real logs are not)
 server.log

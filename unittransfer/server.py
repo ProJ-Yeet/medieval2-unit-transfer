@@ -53,6 +53,16 @@ Sounds mode (the unit voice bank, see :mod:`unittransfer.sounds`)
                                     into "has a voice entry" / "doesn't"
   POST /api/sounds/plan | /apply -> stage voice edits, then write them (backups +
                                     undo, same as a transfer)
+
+Buildings mode (export_descr_buildings.txt, see :mod:`unittransfer.buildings`)
+  GET  /api/buildings?mod=       -> every building line, light (the browser grid)
+  GET  /api/building?mod=&line=  -> one line in full: levels, stats, capabilities,
+                                    recruit pools and which cultures have art
+  GET  /building_icon?mod=&culture=&level=&kind=
+                                 -> the small / constructed icon, falling back to
+                                    unpacked vanilla art, then to a placeholder
+  POST /api/buildings/plan|/apply-> preview then write EDB + building-name edits
+                                    (backups + undo, same as a transfer)
 """
 from __future__ import annotations
 
@@ -66,7 +76,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import bmdb, cleaner, config, edit, sounds, sprites
+from . import bmdb, buildings, cleaner, config, edit, sounds, sprites
 from . import eop as _eop
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
@@ -160,15 +170,15 @@ def _strings_bin_wanted(body: dict) -> bool:
     return config.load_settings().get("clear_strings_bin", True)
 
 
-def _clear_cache(mod_root, out: dict, rec: dict, mod_name: str) -> None:
+def _clear_cache(mod_root, out: dict, rec: dict, mod_name: str,
+                 rel: str = cleaner.STRINGS_BIN_REL) -> None:
     """Run the cache clear for a finished job and record what it did."""
-    res = cleaner.clear_strings_bin(mod_root)
+    res = cleaner.clear_strings_bin(mod_root, rel)
     out["strings_bin"] = res
     if res.get("deleted"):
-        log.info("CACHE  cleared %s in %s", cleaner.STRINGS_BIN_REL, mod_name)
+        log.info("CACHE  cleared %s in %s", rel, mod_name)
     elif res.get("missing"):
-        log.info("CACHE  %s not present in %s — nothing to clear",
-                 cleaner.STRINGS_BIN_REL, mod_name)
+        log.info("CACHE  %s not present in %s — nothing to clear", rel, mod_name)
     else:
         log.warning("CACHE  not cleared: %s", res.get("error"))
     config.update_log(rec.get("id", ""), strings_bin=res)
@@ -196,7 +206,7 @@ class Registry:
                   mod.descr_mount_path, mod.descr_projectile_path,
                   mod.descr_engines_path, mod.descr_mounted_engines_path,
                   mod.descr_engine_skeleton_path, mod.expanded_path,
-                  mod.eds_path):
+                  mod.eds_path, mod.edb_path, mod.building_loc_path):
             try:
                 st = p.stat()
                 sig.append((p.name, st.st_size, int(st.st_mtime_ns)))
@@ -411,6 +421,25 @@ def _sound_payload(plan) -> dict:
     }
 
 
+def _building_payload(plan) -> dict:
+    """Preview shape of a building-edit plan.
+
+    Like the voice-edit preview, the rewritten file itself is deliberately left
+    out — the EDB is 17k lines and the page only needs the change list."""
+    return {
+        "mod": plan.mod.name,
+        "line": plan.line,
+        "edb_rewritten": bool(plan.edb_text),
+        "loc_rewritten": bool(plan.loc_text),
+        "edu_rewritten": bool(plan.edu_text or plan.eop_texts),
+        "modeldb_rewritten": bool(plan.modeldb_text),
+        "changes": plan.changes,
+        "warnings": plan.warnings,
+        "errors": plan.errors,
+        "summary": plan.summary(),
+    }
+
+
 def _sprite_prep_payload(plan) -> dict:
     return {
         "mod": plan.mod.name,
@@ -558,11 +587,13 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
     # ---- io helpers ----
-    def _send(self, code, body: bytes, ctype: str):
+    def _send(self, code, body: bytes, ctype: str, headers: Optional[dict] = None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -672,6 +703,16 @@ class Handler(BaseHTTPRequestHandler):
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
                 return self._json(sounds.overview(self.registry.get(name)))
+            if u.path in ("/api/buildings", "/api/building"):
+                name = (q.get("mod") or [None])[0]
+                if not name or name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                mod = self.registry.get(name)
+                if u.path == "/api/buildings":
+                    return self._json(buildings.overview(mod))
+                return self._json(buildings.detail(mod, (q.get("line") or [""])[0]))
+            if u.path == "/building_icon":
+                return self._building_icon(q)
             if u.path == "/preview_image":
                 # Preview of a file the user just picked in the native browse
                 # dialog — it lives outside the mod, so /icon (mod + unit) can't
@@ -695,6 +736,10 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             log.exception("GET %s failed: %s", u.path, e)
             return self._err(500, f"{type(e).__name__}: {e}")
+
+    # `_send` already withholds the body for HEAD, so the same routing serves both
+    # — without this, BaseHTTPRequestHandler answers every HEAD with a 501.
+    do_HEAD = do_GET
 
     # ---- POST ----
     def do_POST(self):
@@ -760,6 +805,17 @@ class Handler(BaseHTTPRequestHandler):
                     sounds.plan_sounds(mod, sounds.ops_from_dicts(body.get("ops")))))
             if u.path == "/api/sounds/apply":
                 return self._json(self._sounds_apply(body))
+            if u.path == "/api/buildings/plan":
+                mod = self.registry.get(body["mod"])
+                return self._json(_building_payload(buildings.plan_edit(mod, body)))
+            if u.path == "/api/buildings/apply":
+                return self._json(self._buildings_apply(body))
+            if u.path == "/api/buildings/ownership":
+                # asked on demand rather than baked into /api/building: it needs
+                # the heavy modeldb parse, and only the clause editor wants it
+                mod = self.registry.get(body["mod"])
+                return self._json({"rows": buildings.ownership_report(
+                    mod, body.get("checks"))})
             if u.path.startswith("/api/sprites/"):
                 return self._json(self._sprites(u.path.rsplit("/", 1)[-1], body))
             if u.path == "/api/plan":
@@ -862,6 +918,30 @@ class Handler(BaseHTTPRequestHandler):
         # so clear the unit-text cache here too
         if _strings_bin_wanted(body):
             _clear_cache(mod.root, out, rec, mod.name)
+        return out
+
+    # ---- buildings mode ----
+    def _buildings_apply(self, body):
+        mod = self.registry.get(body["mod"])
+        plan = buildings.plan_edit(mod, body)
+        if plan.errors:
+            return {"error": "; ".join(plan.errors), "plan": _building_payload(plan)}
+        if not (plan.edb_text or plan.loc_text or plan.edu_text or plan.eop_texts
+                or plan.modeldb_text):
+            return {"error": "nothing to change", "plan": _building_payload(plan)}
+        log.info("BUILD  %r in %s (%d change(s))", plan.line, mod.name, len(plan.changes))
+        rec = buildings.apply_edit(plan)
+        self.registry.invalidate(body["mod"])       # files changed on disk
+        for line in plan.summary().splitlines()[1:]:
+            if line.strip():
+                log.info("   %s", line.strip())
+        log.info("BUILD  done id=%s", rec.get("id"))
+        out = {"record": rec, "plan": _building_payload(plan)}
+        # a renamed building writes text/export_buildings.txt, whose compiled
+        # .strings.bin would otherwise keep showing the old name in game
+        if plan.loc_text and _strings_bin_wanted(body):
+            _clear_cache(mod.root, out, rec, mod.name,
+                         cleaner.BUILDINGS_STRINGS_BIN_REL)
         return out
 
     # ---- sprites mode ----
@@ -1058,6 +1138,45 @@ class Handler(BaseHTTPRequestHandler):
             pass
         try:
             self._send(200, self.registry.icons.png_bytes(None), "image/png")
+        except Exception:
+            pass
+
+    #: Native sizes of M2TW building art — the small browser icon and the big
+    #: "constructed" picture. Used only for the placeholder, so a missing icon
+    #: occupies exactly the space the real one would.
+    BUILDING_ICON_SIZE = {"small": (78, 62), "large": (300, 245)}
+
+    def _building_icon(self, q):
+        """Serve one building icon as PNG, or a placeholder if there is none.
+
+        Never 500s, for the same reason as :meth:`_icon`: a failed response
+        paints a broken-image glyph across the grid. The ``X-Icon-Source``
+        header says where the art came from (``mod`` / ``vanilla`` /
+        ``placeholder``) so the UI can badge borrowed art.
+        """
+        kind = (q.get("kind") or ["small"])[0]
+        source = "placeholder"
+        data = None
+        try:
+            name = (q.get("mod") or [None])[0]
+            culture = (q.get("culture") or [""])[0]
+            level = (q.get("level") or [""])[0]
+            if name and culture and level and name in self.registry.names():
+                mod = self.registry.get(name)
+                src, source = mod.find_building_icon(
+                    culture, level, kind, config.get_vanilla_ui_root())
+                if src is not None:
+                    data = self.registry.icons.png_bytes(src)
+                else:
+                    source = "placeholder"
+        except Exception:
+            log.debug("building icon failed", exc_info=True)
+            data = None
+        try:
+            if data is None:
+                w, h = self.BUILDING_ICON_SIZE.get(kind, self.BUILDING_ICON_SIZE["small"])
+                data = self.registry.icons.placeholder_png(w, h)
+            self._send(200, data, "image/png", {"X-Icon-Source": source})
         except Exception:
             pass
 

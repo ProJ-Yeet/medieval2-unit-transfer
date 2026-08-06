@@ -26,23 +26,28 @@ from typing import Dict
 #: relative to the mod root — the only file this module ever removes
 STRINGS_BIN_REL = "data/text/export_units.txt.strings.bin"
 
+#: same story for building names, which live in their own text file and so have
+#: their own compiled cache — a renamed building keeps its old name until it goes
+BUILDINGS_STRINGS_BIN_REL = "data/text/export_buildings.txt.strings.bin"
 
-def strings_bin_path(mod_root: str | Path) -> Path:
-    return Path(mod_root) / "data" / "text" / "export_units.txt.strings.bin"
+
+def strings_bin_path(mod_root: str | Path,
+                     rel: str = STRINGS_BIN_REL) -> Path:
+    return Path(mod_root) / rel
 
 
-def clear_strings_bin(mod_root: str | Path) -> Dict:
-    """Delete the mod's ``export_units.txt.strings.bin``, if it is there.
+def clear_strings_bin(mod_root: str | Path, rel: str = STRINGS_BIN_REL) -> Dict:
+    """Delete one compiled ``*.txt.strings.bin``, if it is there.
 
     Returns a small record describing what happened; never raises — a failure to
     clear a cache must not turn a completed transfer into an error.
     """
-    result: Dict = {"ran": True, "file": STRINGS_BIN_REL, "deleted": False}
+    result: Dict = {"ran": True, "file": rel, "deleted": False}
     root = Path(mod_root)
     if not root.is_dir():
         return {**result, "ran": False, "error": f"mod folder not found: {root}"}
 
-    target = strings_bin_path(root)
+    target = strings_bin_path(root, rel)
     result["path"] = str(target)
     if not target.exists():
         # nothing to do: the game has not compiled one since the last clear
@@ -55,5 +60,5 @@ def clear_strings_bin(mod_root: str | Path) -> Dict:
     except OSError as e:
         # most often the game is running and holding the file open
         result["ran"] = False
-        result["error"] = f"could not delete {STRINGS_BIN_REL}: {e}"
+        result["error"] = f"could not delete {rel}: {e}"
     return result

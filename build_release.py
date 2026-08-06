@@ -45,6 +45,10 @@ INCLUDE_FILES = ("app.py", "transfer_cli.py", "Full Cleaner.bat")
 #: Sprites mode shells out to for TGA -> DXT5. ~1MB, and without it the convert
 #: step can't run at all — so it ships rather than being a manual download.
 INCLUDE_DIRS = ("unittransfer", "web", "tools")
+#: The packed vanilla building art Buildings mode falls back to. Left OUT by
+#: default: it is ~60 MB against a ~19 MB app, and the tool works without it
+#: (missing icons just show a placeholder). `--with-vanilla-ui` puts it in.
+OPTIONAL_DIRS = ("vanilla_ui",)
 #: never ship these, whatever they contain
 EXCLUDE_NAMES = {"__pycache__", ".pytest_cache", ".DS_Store"}
 
@@ -115,7 +119,7 @@ def _copy_tree(src: Path, dst: Path) -> int:
     return n
 
 
-def stage_app(stage: Path) -> None:
+def stage_app(stage: Path, with_vanilla_ui: bool = False) -> None:
     """Copy the tool's own files into the staging folder."""
     for name in INCLUDE_FILES:
         shutil.copy2(ROOT / name, stage / name)
@@ -123,6 +127,15 @@ def stage_app(stage: Path) -> None:
     for name in INCLUDE_DIRS:
         total += _copy_tree(ROOT / name, stage / name)
     log(f"app files: {total}")
+    if with_vanilla_ui:
+        for name in OPTIONAL_DIRS:
+            src = ROOT / name
+            if not src.is_dir():
+                log(f"vanilla UI: {name}/ isn't there — skipped")
+                continue
+            n = _copy_tree(src, stage / name)
+            size = sum(p.stat().st_size for p in (stage / name).rglob("*") if p.is_file())
+            log(f"vanilla UI: {n} files, {size / 1e6:.0f} MB")
 
 
 def fetch_embed_zip() -> Path:
@@ -394,8 +407,8 @@ Using it
 * Every transfer is undoable from the clock icon — it backs up each file it
   touches first.
 
-The other three modes
----------------------
+The other modes
+---------------
 The dropdown in the top-left corner switches what you are working on:
 
 * **Unit Editor** — one mod instead of two. Click a unit to edit every EDU
@@ -414,6 +427,31 @@ The dropdown in the top-left corner switches what you are working on:
   sounds from and the row is ready; **Set all shown to copy** does a whole
   filtered list at once. It writes the voice bank AND the matching accent /
   voice_type lines in the EDU, because a unit is silent unless those two agree.
+* **Buildings** — the mod's export_descr_buildings.txt, as a picture grid of
+  every building line. Open one and you get a tab per level with its icons, its
+  name and description, its cost, build time, material and settlement size, its
+  capabilities, its upgrade path, and — the main event — its recruitment: which
+  units it trains, the starting pool, the per-turn refill, the cap, the starting
+  experience and the conditions on each, as rows or as a card grid. Add or
+  remove units, filter the list to one faction, and hit the pencil on any unit
+  to jump straight into the Unit Editor and back again with everything you had
+  typed still there.
+
+  Requirements are edited as a list of conditions rather than typed: factions
+  come as a checklist of real in-game names with the code name in brackets,
+  events carry their title out of historic_events.txt, and hidden resources and
+  religions show which regions they actually apply to. If you let a faction
+  recruit a unit it doesn't own, the editor says so and saving puts it right.
+
+  The upgrade path is drawn as a graph — lines branch, and one of DaC's is a
+  single root with everything hanging off it — and every building in it is
+  clickable.
+
+  Building icons are per culture, so there is a culture picker in the sidebar.
+  Mods ship only the art they changed, so anything missing falls back to vanilla
+  art if you have it (a `vanilla_ui` folder next to the app, or the
+  `vanilla_ui_root` setting), then to another culture's, then to a drawn
+  placeholder. The badge on each picture says which you are looking at.
 
 What gets carried across
 ------------------------
@@ -496,6 +534,9 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=None, help="output .zip path")
     ap.add_argument("--version", default=None,
                     help="name the build for a release (e.g. v1.4.0) instead of today's date")
+    ap.add_argument("--with-vanilla-ui", action="store_true",
+                    help="also bundle vanilla_ui/ (~60 MB) so Buildings mode has "
+                         "vanilla art for the icons a mod doesn't ship")
     args = ap.parse_args(argv)
     portable = not args.no_runtime
 
@@ -509,7 +550,7 @@ def main(argv=None) -> int:
         rmtree(stage)
     stage.mkdir(parents=True)
 
-    stage_app(stage)
+    stage_app(stage, with_vanilla_ui=args.with_vanilla_ui)
     if portable:
         stage_runtime(stage)
     write_docs(stage, portable)
