@@ -554,6 +554,10 @@
     font-family:system-ui,sans-serif;letter-spacing:0;text-transform:none}
   .qm:hover,.qm:focus{border-color:var(--accent);color:var(--accent);
     background:var(--panel);outline:none}
+  /* "⚠ unsaved changes" — a state to act on, not another grey line to read past */
+  .dirtychip{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;
+    font-size:11.5px;font-weight:600;color:var(--warn);border:1px solid var(--warn);
+    background:#2a2410;border-radius:5px;padding:2px 9px;white-space:nowrap}
   /* in a tight row the marker sits alone on the left of the field's label */
   .brow>.qm,.gfrow>.qm{margin-right:2px}
   .prow>.qm{justify-self:start}
@@ -614,7 +618,16 @@
   .brow{display:flex;gap:8px;align-items:center;margin:5px 0}
   .brow>.k{flex:0 0 128px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);text-align:right}
   .brow input,.brow select{flex:1;min-width:0;padding:4px 7px;font-size:12.5px}
-  .brow input.changed,.brow select.changed,.brow textarea.changed{border-color:var(--accent);background:#241f0d}
+  /* One amber for every box in this screen, not just the ones in a .brow — a
+     recruit pool's numbers and a capability's value are the values you actually
+     come here to change, and they were the two that never lit up. */
+  #bldBody input.changed,#bldBody select.changed,#bldBody textarea.changed{
+    border-color:var(--accent);background:#241f0d;color:var(--ink)}
+  #bldBody .chk input[type=checkbox].changed{outline:1px solid var(--accent);outline-offset:2px}
+  /* …and a mark on the row itself, so an edit is findable in a list of 300 */
+  #bldBody .poolrow.changed,#bldBody .caprow.changed{
+    box-shadow:inset 3px 0 0 var(--accent);background:#221f16}
+  #bldBody .ucard.changed{border-color:var(--accent)}
   .brow .mini{flex:0 0 auto;padding:3px 7px;font-size:11.5px}
   .caplist,.poollist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2);
     max-height:340px;overflow:auto}
@@ -1247,6 +1260,19 @@ function cfgSnap(){
 }
 function cfgRestore(v){ for(const t of Object.keys(v)) Object.assign(cfgFor(t),v[t]); }
 
+/* ---- "⚠ unsaved changes" ----
+   Amber and badged, because it is a state you have to act on before closing the
+   dialog — not another line of grey chrome to read past. One painter for every
+   editor, driven off the same interactions the undo stack watches, so it can
+   never fall out of step with what is actually pending. */
+const dirtyChip=on=>on?'<span class="dirtychip">⚠ unsaved changes</span>':'';
+function paintDirty(){
+  const bld=document.getElementById('bldDirtyNote');
+  if(bld)bld.innerHTML=dirtyChip(!!(state.bld&&state.bld.work&&bldDirty()));
+  const ed=document.getElementById('edDirtyNote');
+  if(ed)ed.innerHTML=dirtyChip(!!(state.ed&&edDirty()));
+}
+
 const undo={key:'',cur:null,ck:null,past:[],future:[]};
 const UNDO_LIMIT=150;
 function undoScope(){
@@ -1276,7 +1302,7 @@ function undoCapture(ck){
 let _undoPend=null;
 function undoTick(ck){
   clearTimeout(_undoPend);
-  _undoPend=setTimeout(()=>undoCapture(ck),0);
+  _undoPend=setTimeout(()=>{undoCapture(ck);paintDirty();},0);
 }
 // Text boxes coalesce per element; a fresh element (after a re-draw) starts a
 // new step. Tick boxes, dropdowns and buttons are each one step of their own.
@@ -1340,6 +1366,7 @@ function undoStep(redo){
   s.draw();
   scrollRestore(scrolled);
   undoRefocus(where);
+  paintDirty();
   // a re-draw that replaces images can settle a frame later and shift things
   requestAnimationFrame(()=>scrollRestore(scrolled));
   toast((redo?'↷ Redone':'↶ Undone')+` · ${undo.past.length} more to undo`,1400);
@@ -3099,6 +3126,7 @@ function renderEditor(){
     <div class="mbody" id="edBody"></div>
     <div class="foot">
       <button class="danger" onclick="edDeleteDialog()">🗑 Delete unit…</button>
+      <span id="edDirtyNote"></span>
       <span class="count" title="Takes back one value at a time, without closing this dialog">
         ⌨ Ctrl+Z undo · Ctrl+Y redo</span>
       ${state.bldReturn?`<button onclick="backToBuilding()"
@@ -3136,6 +3164,7 @@ function edRenderTab(){
   const nowG=document.getElementById('gfBody');
   if(nowG&&wasG)nowG.scrollTop=wasG;
   if(modal&&wasModal)modal.scrollTop=wasModal;
+  paintDirty();
 }
 function edWireModels(){
   document.querySelectorAll('#edBody input[data-entry]').forEach(inp=>{
@@ -4374,6 +4403,9 @@ function renderBmdbEditor(){
     </div>
     <div class="mbody" id="edBody"></div>
     <div class="foot">
+      <span id="edDirtyNote"></span>
+      <span class="count" title="Takes back one value at a time, without closing this dialog">
+        ⌨ Ctrl+Z undo · Ctrl+Y redo</span>
       ${cleanerBoxHtml()}
       <button onclick="closeModal()">Close</button>
       <button onclick="edPreview()">Preview</button>
@@ -6816,8 +6848,7 @@ function bldRenderBody(lv,orig){
   if(b.plan)document.getElementById('bldPlan').innerHTML=bldPlanHtml(b.plan,b.planStale);
   bldWire();
   if(body&&scroll)body.scrollTop=scroll;
-  const note=document.getElementById('bldDirtyNote');
-  if(note)note.textContent=bldDirty()?'unsaved changes':'';
+  paintDirty();
 }
 /* ---- name & description, per culture ----
    One level can be called something different for every culture — Warg Breeder
@@ -7210,6 +7241,15 @@ function bldTouched(){
   const b=state.bld;
   bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
 }
+/* The working copy as it was when the building opened, so every widget can say
+   which of its values is yours. b.orig is the JSON of that moment; it is parsed
+   once and cached, not per keystroke. */
+function bldBaseLevel(){
+  const b=state.bld;
+  if(b._baseFor!==b.orig){ b._base=JSON.parse(b.orig); b._baseFor=b.orig; }
+  const lv=b._base.levels[b.lvl]||{caps:[],fcaps:[]};
+  return [...lv.caps,...lv.fcaps];
+}
 function bldWire(){
   const b=state.bld,lv=b.work.levels[b.lvl],list=bldCapList();
   const body=document.getElementById('bldBody');
@@ -7235,26 +7275,43 @@ function bldWire(){
     el.oninput=()=>{bldLocRec()[key]=el.value;
       mark(el,el.value!==(locWas[key]||''));bldDirtyNote();};
   });
+  // A capability is matched to its baseline by the EDB LINE it came from, not by
+  // its position: adding a pool pushes onto lv.caps, which shifts every
+  // faction_capability's index in the combined list and would mis-pair them.
+  const baseCaps=new Map();
+  bldBaseLevel().forEach(c=>{ if(c.line!=null)baseCaps.set(c.line,c); });
   body.querySelectorAll('[data-cap]').forEach(row=>{
     const c=list[+row.dataset.cap]; if(!c)return;
+    const was=c.line==null?null:baseCaps.get(c.line);   // null = a row you added
+    const rowMark=()=>row.classList.toggle('changed',
+      !!row.querySelector('.changed')||c.line==null||c.del);
     row.querySelectorAll('[data-pool]').forEach(el=>{
-      el.oninput=()=>{c.pool[el.dataset.pool]=el.value.trim();
+      const k=el.dataset.pool;
+      const orig=()=>String((was&&was.pool&&was.pool[k])!=null?was.pool[k]:'');
+      const diff=()=>!was||el.value.trim()!==orig();
+      mark(el,diff());
+      el.oninput=()=>{c.pool[k]=el.value.trim();
         // the grid card keeps its "a unit every N turns" line under the boxes
-        if(el.dataset.pool==='per_turn')row.querySelectorAll('[data-turns]')
+        if(k==='per_turn')row.querySelectorAll('[data-turns]')
           .forEach(t=>{t.textContent='a unit '+poolTurns(el.value);});
-        bldDirtyNote();};});
+        mark(el,diff()); rowMark(); bldDirtyNote();};});
     const kw=row.querySelector('[data-kw]');
-    if(kw)kw.onchange=()=>{c.keyword=kw.value;bldTouched();};
+    if(kw){ mark(kw,!was||kw.value!==was.keyword);
+      kw.onchange=()=>{c.keyword=kw.value;bldTouched();}; }
     const bo=row.querySelector('[data-bonus]');
-    if(bo)bo.onchange=()=>{c.bonus=bo.checked;bldDirtyNote();};
+    if(bo){ mark(bo,!was||bo.checked!==!!was.bonus);
+      bo.onchange=()=>{c.bonus=bo.checked;mark(bo,!was||bo.checked!==!!was.bonus);
+        rowMark();bldDirtyNote();}; }
     const val=row.querySelector('[data-val]');
-    if(val)val.oninput=()=>{c.value=val.value.trim();bldDirtyNote();};
+    if(val){ const diff=()=>!was||val.value.trim()!==String(was.value==null?'':was.value);
+      mark(val,diff());
+      val.oninput=()=>{c.value=val.value.trim();mark(val,diff());rowMark();bldDirtyNote();}; }
+    rowMark();
   });
   wireNumBoxes(body);
 }
 function bldDirtyNote(){
-  const note=document.getElementById('bldDirtyNote');
-  if(note)note.textContent=bldDirty()?'unsaved changes':'';
+  paintDirty();
   state.bld.planStale=!!state.bld.plan;
   const chip=document.querySelectorAll('.lvchip')[state.bld.lvl];
   if(chip)chip.classList.toggle('dirty',bldLevelDirty(state.bld.lvl));

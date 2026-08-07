@@ -715,12 +715,15 @@ point of them.
   scroll position* back where they were. `Ctrl+Shift+Z` also redoes. This is the
   in-page working copy — nothing has been written to disk yet, and 🕑 Log → Undo
   is still what reverses a *save*
-- **You can see what you changed** — every edited value is marked amber, down to
-  the individual part of a line: change one number of `stat_pri` and that one box
-  lights up, not all thirteen. List fields go further — a faction you added is an
-  amber chip, one you removed stays as a struck-through ghost you can click to put
-  back, and the checklist behind them marks each row *added by you* / *removed by
-  you*
+- **You can see what you changed** — every edited value is marked amber, in every
+  editor and down to the individual part of a line: change one number of
+  `stat_pri` and that one box lights up, not all thirteen. A building's recruit
+  pool numbers and capability values get the same mark, and the row they sit in
+  is flagged too, so an edit is findable in a list of three hundred. List fields
+  go further — a faction you added is an amber chip, one you removed stays as a
+  struck-through ghost you can click to put back, and the checklist behind them
+  marks each row *added by you* / *removed by you*. Any dialog with something
+  pending says so with an amber **⚠ unsaved changes**
 - **Help on a ? rather than under the pointer** — each field's explanation hangs
   off a small **?** at its top-left, so crossing a form does not set off a trail
   of tooltips and a box you are reading is never covered by a card about the box
