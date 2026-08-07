@@ -861,7 +861,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const state={mods:[],src:null,dst:null,data:null,destData:null,factionNames:{},
+// `dst` is the mod being written to right now, which a single-mod mode mirrors
+// onto the source. `xferDst` is the destination the user actually PICKED, kept
+// apart so that entering Edit/Buildings doesn't quietly overwrite it — see
+// applyMode.
+const state={mods:[],src:null,dst:null,xferDst:null,data:null,destData:null,factionNames:{},
   sel:{faction:new Set(),category:new Set(),class:new Set(),era:new Set()},
   selMode:false, selected:new Set(), cfg:{}, editing:null, settings:{},
   // 'transfer' = move units between mods; 'edit' = edit the units of ONE mod;
@@ -969,6 +973,13 @@ async function refreshMods(pSrc,pDst){
   if(!state.mods.length){main.innerHTML='<div class="empty">No mods found. Click ⚙ Root to point at your Medieval II folder.</div>';return;}
   state.src=pSrc&&state.mods.some(m=>m.name===pSrc)?pSrc:state.mods[0].name;
   state.dst=pDst&&state.mods.some(m=>m.name===pDst)?pDst:(state.mods[1]?.name||state.mods[0].name);
+  // Older builds persisted a single-mod mode's mirrored destination as
+  // last_dest, so a remembered pair can arrive as A -> A. Starting Transfer
+  // pointed at the source mod reads as "copy this onto itself" — pick a real
+  // second mod instead, exactly as a first run would.
+  if(state.mode==='transfer'&&state.dst===state.src&&state.mods.length>1)
+    state.dst=state.mods.find(m=>m.name!==state.src).name;
+  state.xferDst=state.dst;
   srcSel.value=state.src; dstSel.value=state.dst;
   state.destData=null;
   await loadSource();
@@ -1057,8 +1068,9 @@ function wire(){
     if(state.mode!=='transfer'){state.src=state.dst=v;dstSel.value=v;state.destData=null;
       state.cfg={};state.bmdb=null;state.snd=null;state.destSnd=null;
       state.bld=null;state.bldReturn=null;
-      await api.post('/api/settings',{last_source:v,last_dest:v});return loadSource();}
-    if(v===state.dst){state.dst=state.src;dstSel.value=state.dst;state.destData=null;}
+      // the mirrored destination is not the user's transfer pick — don't save it
+      await api.post('/api/settings',{last_source:v,last_dest:state.xferDst||v});return loadSource();}
+    if(v===state.dst){state.dst=state.xferDst=state.src;dstSel.value=state.dst;state.destData=null;}
     state.src=v;srcSel.value=v;state.cfg={};
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
     loadSource();};
@@ -1066,7 +1078,7 @@ function wire(){
     const v=e.target.value;
     const srcChanged=(v===state.src);
     if(srcChanged){state.src=state.dst;srcSel.value=state.src;clearSelection();}
-    state.dst=v;dstSel.value=v;state.destData=null;state.destSnd=null;state.cfg={};
+    state.dst=state.xferDst=v;dstSel.value=v;state.destData=null;state.destSnd=null;state.cfg={};
     await api.post('/api/settings',{last_source:state.src,last_dest:state.dst});
     if(srcChanged)loadSource();};
   search.oninput=render; mercOnly.onchange=filtersChanged; groupBy.onchange=filtersChanged;
@@ -1112,8 +1124,23 @@ function applyMode(persist){
   document.title=bm?'BMDB Editor':snd?'Unit Sounds':spr?'Sprites'
                 :bld?'Buildings':edit?'Unit Editor':'Unit Transfer';
   if(one&&state.selMode)toggleSelMode();
-  if(one&&state.dst!==state.src){state.dst=state.src;dstSel.value=state.src;state.destData=null;}
-  if(persist)api.post('/api/settings',{mode:state.mode,last_dest:state.dst});
+  // A single-mod mode mirrors the destination onto the source, but the pick the
+  // user made in Transfer is remembered rather than overwritten — both in
+  // `xferDst` and in the persisted setting, so neither this switch nor the next
+  // run turns the transfer pair into A -> A. Transfer never shows A -> A anyway
+  // (that is what Edit's "new unit from this one" is for), so coming back to it
+  // with nothing to restore falls through to any other mod, same as a first run.
+  if(one){
+    if(state.dst!==state.src){state.xferDst=state.dst;
+      state.dst=state.src;dstSel.value=state.src;state.destData=null;}
+  }else if(state.dst===state.src&&state.mods.length>1){
+    const want=state.xferDst&&state.xferDst!==state.src
+      &&state.mods.some(m=>m.name===state.xferDst)
+        ? state.xferDst : state.mods.find(m=>m.name!==state.src).name;
+    state.dst=state.xferDst=want;dstSel.value=want;state.destData=null;state.destSnd=null;
+  }
+  if(persist)api.post('/api/settings',
+    {mode:state.mode,last_dest:one?(state.xferDst||state.dst):state.dst});
   render();
 }
 
@@ -7791,8 +7818,9 @@ function bldAddPoolDialog(){
               .map(f=>`<option value="${esc(f)}">${esc(facLabel(f))}</option>`).join('')}
         </select></div>
       <div class="baselist" style="max-height:300px" id="bpList"></div>
-      <div class="bnote">Defaults for a new pool: start 1, +0.5 a turn, max 2, 0 experience —
-        edit them in the row once it is added.</div>
+      <div class="bnote">A new pool is gated to the unit’s own <code>ownership</code>, so only
+        the factions that can field it are offered it here — open <b>Requirements</b> on the row
+        to widen or narrow that. Its numbers start at 1, +0.5 a turn, max 2, 0 experience.</div>
     </div>
     <div class="foot"><button onclick="bldPickCancel()">Cancel</button></div>`;
   bldPickRender();
@@ -7817,16 +7845,47 @@ function bldPickRender(){
         <div class="bs">${esc(u.type)} · ${esc(u.kind||u.category||'')}</div></div>
     </div>`).join('')||'<div class="caprow"><span class="count">No units match.</span></div>';
 }
+/* A pool with no clause is trained by EVERY faction that can build the level,
+   which is almost never what adding one unit means — and for the factions that
+   don't own the unit the building silently trains nothing. So a new pool starts
+   gated to the unit's own EDU `ownership`: the set that can actually field it.
+   It is a starting point, not a rule — the row's Requirements button opens the
+   clause like any other. A unit with no ownership gets no clause, because an
+   empty `factions { }` would train nothing for anyone; the editor's existing
+   "no ownership" warning is the thing to fix there. */
+const bldPickedUnit=type=>(state.data.units||[]).find(x=>x.type===type);
+function bldPoolOwnership(type){
+  const u=bldPickedUnit(type);
+  const own=[...new Set((u&&u.ownership)||[])];
+  return own.length?[{join:'',negate:false,kind:'factions',values:own,raw:''}]:[];
+}
 function bldAddPool(type){
-  const lv=state.bld.work.levels[state.bld.lvl];
-  lv.caps.push({line:null,keyword:'recruit_pool',args:'',requires:'',bonus:false,value:'',
+  const b=state.bld,lv=b.work.levels[b.lvl];
+  const conds=bldPoolOwnership(type);
+  // `d.units` only indexes the units this line ALREADY trains — the server sends
+  // it once per line rather than the mod's whole EDU. A unit added here is by
+  // definition not in it yet, so the row would call itself missing from the EDU
+  // until the next save. It came out of the picker, which reads that same EDU.
+  const u=bldPickedUnit(type);
+  if(u&&b.d&&b.d.units&&!b.d.units[type.toLowerCase()])
+    b.d.units[type.toLowerCase()]={type:u.type,name:u.name||u.type,kind:u.kind,
+      class:u.class,category:u.category,ownership:[...(u.ownership||[])],
+      mercenary:!!u.mercenary,eop:!!u.eop,missing:false};
+  const row={line:null,keyword:'recruit_pool',args:'',
+    requires:bldClauseText(conds),conds,condEdited:true,bonus:false,value:'',
     pool:{unit:type,initial:'1',per_turn:'0.5',maximum:'2',experience:'0'},
-    comment:'',faction:false,del:false});
+    comment:'',faction:false,del:false};
+  lv.caps.push(row);
+  // A gated pool can fall outside the faction filter that is narrowing the list,
+  // and a unit that vanishes the moment you add it looks like the add failed.
+  if(!bldPoolMatches(row)&&b.poolFac)b.poolFac.clear();
   // the picker replaced the editor's markup — rebuild it, then show the new row
   const modal=document.getElementById('modal');
-  modal.innerHTML=state.bld.stash; state.bld.stash=null;
+  modal.innerHTML=b.stash; b.stash=null;
   renderBuildingEditor();
-  toast(`${type} added to ${state.bld.d.levels[state.bld.lvl].label}`);
+  toast(`${type} added to ${b.d.levels[b.lvl].label}${
+    conds.length?` — restricted to its ${conds[0].values.length} owning faction(s)`
+                :' — it has no ownership, so anyone here can train it'}`,4000);
 }
 
 /* ---- hop to the Unit Editor and back ----
