@@ -43,6 +43,7 @@ Sprites mode (far-LOD unit sprites, see :mod:`unittransfer.sprites`)
   POST /api/sprites/prep_apply   -> write sprite_script.txt / CFG flag (or the
                                     M2TWEOP console snippet, which writes nothing)
   POST /api/sprites/revert_cfg   -> comment the bypass flag back out
+  POST /api/sprites/mark         -> mark models as sprited by hand (or unmark)
   POST /api/sprites/convert_plan -> what the TGA -> .texture run would do
   POST /api/sprites/convert_apply-> run it, dedup, install into the mod
   POST /api/sprites/wire         -> point the modeldb's sprite lines at the
@@ -987,6 +988,16 @@ class Handler(BaseHTTPRequestHandler):
                     out["record"] = sprites.apply_convert(plan, progress=sink)
                     self.registry.invalidate(body["mod"])   # data/ changed on disk
                 return out
+
+            if action == "mark":
+                # a toggle, not a replace: the page sends the models whose mark
+                # changed, so two tabs can't wipe each other's marks
+                cur = set(sprites.marked_done(mod))
+                names = {str(n).strip().lower()
+                         for n in (body.get("models") or []) if str(n).strip()}
+                cur |= names if body.get("done") else set()
+                cur -= set() if body.get("done") else names
+                return {"marked": sprites.set_marked_done(mod, cur)}
 
             if action == "wire":
                 # reuse bmdb mode's planner so the modeldb write inherits its

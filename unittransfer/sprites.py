@@ -683,6 +683,50 @@ def wire_model_edits(mod: Mod, models: Dict[str, List[str]],
     return out
 
 
+# ---------------------------------------------------------------------------
+# "done by hand" marks
+#
+# Plenty of models get their sprites from outside this tool — inherited from the
+# base game, copied out of another mod, built in IWTE years ago. The audit can
+# only see whether a line resolves, so it cannot tell "already handled elsewhere"
+# from "still to do" when a mod simply never wrote the line. The user says which
+# is which and we keep the answer against the mod, exactly as EOP folders are
+# kept (see :func:`unittransfer.eop.set_configured_dirs`).
+
+
+def _mod_key(mod: Mod) -> str:
+    """The settings key for one mod — its resolved root, case-folded.
+
+    Same rule as the EOP folder table: Windows paths differ only in case all the
+    time, and a key that silently fails to match reads as "my marks vanished".
+    """
+    try:
+        return str(Path(mod.root).resolve()).replace("\\", "/").casefold()
+    except OSError:
+        return str(mod.root).replace("\\", "/").casefold()
+
+
+def marked_done(mod: Mod) -> List[str]:
+    """Model names the user has marked as sprited by hand, lowercased."""
+    table = config.load_settings().get("sprites_done") or {}
+    return sorted({str(n).strip().lower()
+                   for n in (table.get(_mod_key(mod)) or []) if str(n).strip()})
+
+
+def set_marked_done(mod: Mod, names: Iterable[str]) -> List[str]:
+    """Replace this mod's marked-done set; an empty set drops the entry."""
+    settings = config.load_settings()
+    table = dict(settings.get("sprites_done") or {})
+    cleaned = sorted({str(n).strip().lower() for n in names if str(n).strip()})
+    if cleaned:
+        table[_mod_key(mod)] = cleaned
+    else:
+        table.pop(_mod_key(mod), None)
+    config.save_settings(sprites_done=table)
+    log.info("SPRITE marked %d model(s) done in %s", len(cleaned), mod.name)
+    return cleaned
+
+
 @dataclass
 class SpriteAudit:
     ok: List[dict] = field(default_factory=list)
@@ -756,6 +800,31 @@ def overview(mod: Mod) -> dict:
     entries = mod.modeldb.by_name()
     mount_models = {m.lower() for m in mod.mounts.values() if m}
     pending = scan_export(mod)
+
+    # Per-model rollup of the audit the page already pays for. Step 1 lists every
+    # modeldb entry, so on a real mod it is 2000+ rows of which only a couple of
+    # hundred have anything left to generate; without this the page has no way to
+    # tell them apart and the user scrolls a capped list hunting for work.
+    per: Dict[str, List[int]] = {}
+    for bucket, i in ((a.ok, 0), (a.misnamed, 1), (a.missing, 2), (a.unset, 3)):
+        for r in bucket:
+            per.setdefault(r["model"], [0, 0, 0, 0])[i] += 1
+
+    def state(name: str) -> str:
+        """``ok`` every record resolves | ``partial`` some do | ``none`` none do.
+
+        A *misnamed* record counts as having its file: the sprite exists, the
+        line just points at the wrong name, so it is a wire-up job and not a
+        reason to render the model again.
+        """
+        ok, misnamed, missing, unset = per.get(name, [0, 0, 0, 0])
+        if not missing and not unset and (ok or misnamed):
+            return "ok"
+        if not ok and not misnamed:
+            return "none"
+        return "partial"
+
+    done = set(marked_done(mod))
     try:
         root = str(_med2_root(mod))
     except SpriteError:
@@ -775,8 +844,11 @@ def overview(mod: Mod) -> dict:
         # all (see modeldb._read_entry) — it is not a model and can't be generated
         "models": [{"name": n,
                     "factions": sorted({t.faction for t in e.main_textures}),
-                    "is_mount": n in mount_models}
+                    "is_mount": n in mount_models,
+                    "state": state(n),
+                    "done": n in done}
                    for n, e in sorted(entries.items()) if n],
+        "done_total": len(done),
         "pending": [{"stem": s.stem, "model": s.model, "faction": s.faction,
                      "sheets": len(s.sheets), "textures": len(s.done),
                      "complete": s.complete}

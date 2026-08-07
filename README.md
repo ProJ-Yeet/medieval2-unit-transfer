@@ -415,6 +415,19 @@ only the game can render a sprite:
 Mounts need their own sprites: pick the **mount's** model, not the rider's — the
 game merges the two at render time.
 
+A real mod lists thousands of models of which only a couple of hundred have any
+work left, so the list opens filtered to **needs sprites only** — anything whose
+every faction record already resolves is hidden. Divide and Conquer goes from
+2211 rows to 422 that way. Rows carry a `has sprites` / `partly done` tag so a
+part-finished model is obvious, and a search box entry overrides the filter, so
+looking a model up by name always finds it.
+
+Models sprited outside this tool — inherited from the base game, copied from
+another mod, built in IWTE years ago — can't be told apart from real work when
+the modeldb simply has no line for them. **Mark N done by hand** puts them in a
+per-mod list (kept in `config/settings.json`, like the EOP folders) that the
+filter also hides. `Unmark` reverses it.
+
 **Step 2 — Convert.** The game writes raw TGA, which nothing downstream reads.
 The published route pops a GUI you have to browse folders in, then runs a Python
 **2** script. This mode does the whole chain itself: TGA → DXT5 DDS via the

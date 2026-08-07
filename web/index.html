@@ -2768,7 +2768,10 @@ async function loadSprites(){
     // EOP is strictly nicer where it exists (no CFG edit, no restart per batch),
     // so it leads unless the mod shows no sign of it
     method:r.has_eop?'eop':'classic',
-    cfg:r.cfgs[0]||'', mipmaps:false, dedup:true, mounts:false, last:null
+    cfg:r.cfgs[0]||'', mipmaps:false, dedup:true, mounts:false, last:null,
+    // a real mod lists 2000+ models of which a couple of hundred need anything,
+    // so the list opens on the work rather than on the whole modeldb
+    todo:true
   },r);
   renderSprites();
 }
@@ -2777,7 +2780,21 @@ function sprPick(name,on){const s=state.spr;on?s.picked.add(name):s.picked.delet
 function sprPickShown(on){const s=state.spr;sprShown().forEach(m=>on?s.picked.add(m.name):s.picked.delete(m.name));renderSprites();}
 function sprShown(){
   const s=state.spr,qq=search.value.trim().toLowerCase();
-  return s.models.filter(m=>(!qq||m.name.includes(qq))&&(s.mounts||!m.is_mount||qq));
+  // "needs sprites" hides anything whose every faction record already resolves,
+  // plus anything marked done by hand. A search overrides it, so a model you
+  // deliberately look up never silently fails to appear.
+  return s.models.filter(m=>(!qq||m.name.includes(qq))&&(s.mounts||!m.is_mount||qq)
+    &&(!s.todo||qq||(m.state!=='ok'&&!m.done)));
+}
+const SPR_STATE={ok:'has sprites',partial:'partly done',none:'no sprites'};
+async function sprMark(on){
+  const s=state.spr,names=[...s.picked];
+  if(!names.length)return toast('Pick some models first.');
+  const r=await api.post('/api/sprites/mark',{mod:state.src,models:names,done:on});
+  if(r.error)return toast(r.error);
+  s.picked.clear();
+  toast(`${names.length} model(s) ${on?'marked done':'unmarked'}.`);
+  await loadSprites();
 }
 function renderSprites(){
   if(!state.spr||state.spr.mod!==state.src)return loadSprites();
@@ -2809,12 +2826,21 @@ function renderSprites(){
           :`This mod has no M2TWEOP install, so generation uses the classic route: the game
             renders the sprites on the next launch. Everything after that is the same either way.`}</div>
         <div class="sprrow">
-          <span class="count">${shown.length} model(s)</span>
+          <span class="count">${shown.length} of ${s.models.length} model(s)</span>
           <button onclick="sprPickShown(true)">Pick all shown</button>
           <button onclick="sprPickShown(false)">Clear</button>
+          <label class="chk"><input type="checkbox" ${s.todo?'checked':''}
+            onchange="sprSet('todo',this.checked)"> needs sprites only</label>
           <label class="chk"><input type="checkbox" ${s.mounts?'checked':''}
             onchange="sprSet('mounts',this.checked)"> show mounts</label>
           <span class="grow"></span>
+        </div>
+        <div class="sprrow">
+          <button ${picked.length?'':'disabled'} onclick="sprMark(true)">
+            Mark ${picked.length} done by hand</button>
+          <button ${picked.length?'':'disabled'} onclick="sprMark(false)">Unmark</button>
+          <span class="count">${s.done_total} marked done${s.todo
+            ?' — hidden along with models whose lines all resolve':''}</span>
         </div>
         <div class="sprnote">Mounts need their own sprites — pick the <b>mount's</b> model,
           not the rider's; the game merges the two.</div>
@@ -2822,10 +2848,15 @@ function renderSprites(){
           <label><input type="checkbox" ${s.picked.has(m.name)?'checked':''}
             onchange="sprPick('${q1(m.name)}',this.checked)">
             <span>${esc(m.name)}</span>${m.is_mount?' <span class="sprtag">mount</span>':''}
+            ${m.done?' <span class="sprtag on">done</span>':''}
+            ${m.state!=='none'?` <span class="sprtag ${m.state==='ok'?'on':''}">${
+              SPR_STATE[m.state]}</span>`:''}
             <span class="fac">${m.factions.length} faction(s)</span></label>`).join('')
-          :'<div class="empty" style="padding:14px">No models match.</div>'}</div>
+          :`<div class="empty" style="padding:14px">${s.todo
+            ?'Nothing left to generate — every model\\u2019s sprite lines resolve or is marked done.'
+            :'No models match.'}</div>`}</div>
         ${shown.length>SHOW?`<div class="sprnote">Showing the first ${SHOW} of ${shown.length}
-          — narrow it down with the search box.</div>`:''}
+          — narrow it down with the search box${s.todo?'':' or tick “needs sprites only”'}.</div>`:''}
         ${s.method==='eop'?`
           <div class="sprnote">Load to the main menu and run this in the EOP console.
             Nothing is written to disk for this method.</div>
