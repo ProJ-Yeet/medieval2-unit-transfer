@@ -551,9 +551,14 @@
     background:#000a;border:1px solid var(--edge);color:var(--dim)}
   .bcard .art .src.vanilla{color:var(--accent2);border-color:var(--accent2)}
   .bcard .art .src.placeholder{color:var(--dim)}
+  /* Fixed heights, for the same reason as .ucard: a building's name changes with
+     the culture on show ("Stables" / "Warg Breeder"), and the tags below it must
+     not move when it does. */
   .bcard .bmeta{padding:7px 9px;border-top:1px solid var(--edge)}
-  .bcard .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bcard .sub{color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bcard .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;line-height:1.35;height:1.35em}
+  .bcard .sub{color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;line-height:1.35;height:1.35em}
   .bcard .tags{margin-top:4px}
   /* level strip in the editor: one chip per building in the line, in upgrade order */
   .lvstrip{display:flex;gap:6px;overflow:auto;padding:10px 16px;border-bottom:1px solid var(--edge);
@@ -563,7 +568,8 @@
   .lvchip.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
   .lvchip.dirty{border-color:var(--warn)}
   .lvchip img{width:100%;aspect-ratio:78/62;object-fit:contain;background:#0d0f13;border-radius:4px;display:block}
-  .lvchip .t{font-size:10.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvchip .t{font-size:10.5px;margin-top:3px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;line-height:1.3;height:1.3em}
   .lvchip .n{font-size:9px;color:var(--dim)}
   .bart{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
   .bart figure{margin:0;text-align:center}
@@ -571,6 +577,20 @@
   .bart .small img{width:104px;height:83px}
   .bart .large img{width:260px;height:212px}
   .bart figcaption{font-size:10px;color:var(--dim);margin-top:4px}
+  /* ---- number boxes with ▲▼ ----
+     Every number in this screen is one a modder nudges rather than retypes — a
+     cost, a build time, a recruit rate — so each gets a stepper. The buttons are
+     sized to be hit repeatedly, not to be decorative. */
+  .numwrap{display:flex;align-items:center;gap:3px;min-width:0;flex:1}
+  .numwrap>input{min-width:0;flex:1}
+  .spin{display:flex;flex-direction:column;flex:0 0 auto;gap:1px}
+  .spin button{padding:0;width:22px;height:15px;font-size:9px;line-height:1;border-radius:4px;
+    display:flex;align-items:center;justify-content:center;color:var(--dim)}
+  .spin button:hover{color:var(--accent);border-color:var(--accent)}
+  .spin button:active{background:var(--accent2);color:#fff}
+  /* "= 15 turns": what a recruit rate of 0.066667 actually means */
+  .turns{flex:0 0 auto;font-size:10.5px;color:var(--dim);white-space:nowrap;
+    text-transform:none;letter-spacing:0}
   /* stat + capability rows */
   .brow{display:flex;gap:8px;align-items:center;margin:5px 0}
   .brow>.k{flex:0 0 128px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);text-align:right}
@@ -585,6 +605,7 @@
   .caprow select.kw{flex:0 0 190px;font-size:12px;padding:3px 6px}
   .caprow input{padding:3px 6px;font-size:12px;min-width:0}
   .caprow input.val{flex:0 0 70px} .caprow input.req{flex:1}
+  .caprow .numwrap{flex:0 0 auto}
   .caprow .x{flex:0 0 auto;padding:2px 7px;font-size:12px}
   /* a recruit pool: unit card, the four pool numbers, its requires clause */
   .poolrow{display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--edge)}
@@ -594,10 +615,11 @@
   .poolrow .who{flex:0 0 175px;min-width:0}
   .poolrow .who .un{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .poolrow .who .ut{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .poolrow .nums{display:flex;gap:4px;flex:0 0 auto}
+  .poolrow .nums{display:flex;gap:6px;flex:0 0 auto}
   .poolrow .nums label{display:flex;flex-direction:column;font-size:9px;color:var(--dim);
     text-transform:uppercase;letter-spacing:.4px}
-  .poolrow .nums input{width:62px;padding:3px 5px;font-size:12px;margin-top:2px}
+  .poolrow .nums input{width:62px;padding:3px 5px;font-size:12px}
+  .poolrow .nums .numwrap{margin-top:2px;flex:0 0 auto}
   .poolrow .req{flex:1;min-width:80px;padding:3px 6px;font-size:11.5px;
     font-family:ui-monospace,Consolas,monospace}
   .poolrow .acts{display:flex;gap:4px;flex:0 0 auto}
@@ -649,14 +671,23 @@
   .ucard{background:var(--panel2);border:1px solid var(--edge);border-radius:7px;padding:7px;
     display:flex;flex-direction:column;gap:5px}
   .ucard.gone{opacity:.4}
-  .ucard .top{display:flex;gap:7px;align-items:flex-start}
+  /* The name block is a FIXED height. Names run from "Archers" to "Dunedain
+     Rangers of the North", and letting it grow to fit put the stat boxes at a
+     different height in every card — and moved them again whenever the culture
+     picker changed the names. Two lines, clamped, always. */
+  .ucard .top{display:flex;gap:7px;align-items:flex-start;height:50px}
   .ucard img{width:38px;height:50px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 38px}
-  .ucard .nm{font-size:12.5px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
-  .ucard .ty{font-size:10px;color:var(--dim);overflow-wrap:anywhere}
-  .ucard .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+  .ucard .nm{font-size:12.5px;font-weight:600;line-height:1.25;overflow-wrap:anywhere;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    height:2.5em}
+  .ucard .ty{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  /* two columns, not four: each box now carries a stepper beside it */
+  .ucard .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:3px 6px}
   .ucard .stats label{display:flex;flex-direction:column;font-size:8.5px;color:var(--dim);
-    text-transform:uppercase;letter-spacing:.3px}
-  .ucard .stats input{width:100%;padding:2px 4px;font-size:11.5px;margin-top:2px;text-align:center}
+    text-transform:uppercase;letter-spacing:.3px;min-width:0}
+  .ucard .stats input{width:100%;padding:2px 4px;font-size:11.5px;text-align:center}
+  .ucard .stats .numwrap{margin-top:2px}
   .ucard .acts{display:flex;gap:4px}
   .ucard .acts button{padding:2px 6px;font-size:11px;flex:1}
   .viewtoggle{display:inline-flex;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
@@ -1080,6 +1111,159 @@ function markCardSel(type){const on=state.selMode&&state.selected.has(type);
   main.querySelectorAll(`.card[data-type="${cssq(type)}"]`).forEach(c=>c.classList.toggle('sel',on));}
 const cssq=s=>s.replace(/"/g,'\\"');
 
+/* =========================================================================
+   Undo / redo — Ctrl+Z, Ctrl+Y (and Ctrl+Shift+Z)
+
+   Every editor on this page keeps its pending changes in one plain-object
+   working model and re-draws from it, so undo is a stack of SNAPSHOTS of that
+   model rather than a log of commands: after any interaction the model is
+   stringified and, if it differs from the top of the stack, pushed. Ctrl+Z
+   restores the snapshot below and re-draws — which is why it takes back one
+   value instead of closing the dialog and losing everything.
+
+   Consecutive keystrokes in the same box collapse into one step (the box's
+   identity is the coalesce key), so undo walks back value by value rather than
+   letter by letter. Nothing is written to disk either way: this is the
+   in-page working copy, and 🕑 Log → Undo is still what reverses a save.
+
+   To make a new editor undoable: add a scope below. `id()` returns '' when the
+   editor is not on screen and a stable string when it is (a change of string
+   means "a different thing is being edited", and clears the stack); `get`/`set`
+   move its working model in and out of a JSON-safe snapshot; `draw` re-renders.
+   ========================================================================= */
+const UNDO_SCOPES=[
+  // the building editor: one working copy of every level in the line
+  {id:()=>(modalOpen()&&state.bld&&state.bld.work)?'bld:'+state.bld.mod+':'+state.bld.line:'',
+   get:()=>state.bld.work, set:v=>{state.bld.work=v;}, draw:()=>renderBuildingEditor()},
+  // the unit editor and the bmdb editor share state.ed
+  {id:()=>(modalOpen()&&state.ed)
+      ?(state.ed.bmdb?'bmdb:':'ed:')+state.ed.mod+':'+(state.ed.unit||edBmdbName()):'',
+   get:edSnap, set:edRestore,
+   draw:()=>state.ed.bmdb?renderBmdbEditor():renderEditor()},
+  // the transfer composer: one config per unit being sent across
+  {id:()=>(modalOpen()&&!state.ed&&!(state.bld&&state.bld.work)&&state.editing&&composerList.length)
+      ?'cfg:'+state.src+'>'+state.dst:'',
+   get:cfgSnap, set:cfgRestore, draw:()=>renderComposer()},
+  // sounds mode stages its changes on the page itself, with no dialog
+  {id:()=>(!modalOpen()&&state.mode==='sounds'&&state.snd)?'snd:'+state.src:'',
+   get:()=>state.snd.ops, set:v=>{state.snd.ops=v;}, draw:()=>renderSounds()},
+];
+const modalOpen=()=>document.getElementById('overlay').classList.contains('open');
+const edBmdbName=()=>((state.ed.d.models[0]||{}).name||'');
+// state.ed carries the read-only unit alongside the edits; only the edits go in
+// a snapshot, and the two Sets have to survive the JSON round trip as arrays.
+function edSnap(){
+  const e=state.ed;
+  return {ov:e.ov,rm:[...e.rm],added:[...(e.added||[])],loc:e.loc,newType:e.newType,
+          newDict:e.newDict,mEdits:e.mEdits,newModels:e.newModels,
+          cardSrc:e.cardSrc||'',infoSrc:e.infoSrc||'',removeOldIcons:!!e.removeOldIcons};
+}
+function edRestore(v){
+  const e=state.ed;
+  e.ov=v.ov; e.rm=new Set(v.rm); e.added=new Set(v.added); e.loc=v.loc;
+  e.newType=v.newType; e.newDict=v.newDict; e.mEdits=v.mEdits; e.newModels=v.newModels;
+  e.cardSrc=v.cardSrc; e.infoSrc=v.infoSrc; e.removeOldIcons=v.removeOldIcons;
+}
+// The underscore keys of a per-unit config are server answers cached on it
+// (the field list, the conflict report) — big, and not something to undo.
+function cfgSnap(){
+  const out={};
+  for(const t of Object.keys(state.cfg)){
+    const c=state.cfg[t],o={};
+    for(const k of Object.keys(c)) if(k[0]!=='_')o[k]=c[k];
+    out[t]=o;
+  }
+  return out;
+}
+function cfgRestore(v){ for(const t of Object.keys(v)) Object.assign(cfgFor(t),v[t]); }
+
+const undo={key:'',cur:null,ck:null,past:[],future:[]};
+const UNDO_LIMIT=150;
+function undoScope(){
+  for(const s of UNDO_SCOPES){ const id=s.id(); if(id)return Object.assign({key:id},s); }
+  return null;
+}
+// Called when an editor opens, so its first edit has a baseline to go back to.
+function undoReset(){
+  const s=undoScope();
+  undo.key=s?s.key:''; undo.cur=s?JSON.stringify(s.get()):null;
+  undo.ck=null; undo.past.length=0; undo.future.length=0;
+}
+function undoCapture(ck){
+  const s=undoScope(); if(!s)return;
+  if(s.key!==undo.key){ undoReset(); return; }
+  const snap=JSON.stringify(s.get());
+  if(snap===undo.cur)return;
+  // still typing into the same box: the step already on the stack covers it
+  if(!(ck&&ck===undo.ck&&undo.past.length)){
+    undo.past.push(undo.cur);
+    if(undo.past.length>UNDO_LIMIT)undo.past.shift();
+  }
+  undo.cur=snap; undo.ck=ck||null; undo.future.length=0;
+}
+// Snapshots are taken one tick AFTER the event, because the page's own handler
+// is what puts the typed value into the model.
+let _undoPend=null;
+function undoTick(ck){
+  clearTimeout(_undoPend);
+  _undoPend=setTimeout(()=>undoCapture(ck),0);
+}
+// Text boxes coalesce per element; a fresh element (after a re-draw) starts a
+// new step. Tick boxes, dropdowns and buttons are each one step of their own.
+let _undoSeq=0;
+function undoKeyOf(el){
+  if(!el||!el.tagName)return '';
+  if(el.tagName!=='INPUT'&&el.tagName!=='TEXTAREA')return '';
+  if(el.type==='checkbox'||el.type==='radio')return '';
+  if(!el._ukey)el._ukey='k'+(++_undoSeq);
+  return el._ukey;
+}
+// Where the caret was, so undo does not throw you out of the box you are in.
+function undoFocus(){
+  const el=document.activeElement;
+  if(!el||!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName||''))return '';
+  if(el.id)return '[id="'+cssq(el.id)+'"]';
+  const own=[...el.attributes].filter(a=>a.name.indexOf('data-')===0)
+    .map(a=>`[${a.name}="${cssq(a.value)}"]`).join('');
+  if(!own)return '';
+  const row=el.closest('[data-cap]');
+  return (row?`[data-cap="${cssq(row.dataset.cap)}"] `:'')+el.tagName.toLowerCase()+own;
+}
+function undoRefocus(sel){
+  if(!sel)return;
+  const t=document.querySelector(sel); if(!t)return;
+  t.focus();
+  try{ if(t.setSelectionRange)t.setSelectionRange(t.value.length,t.value.length); }catch(e){}
+}
+function undoStep(redo){
+  const s=undoScope();
+  if(!s||s.key!==undo.key)return false;
+  const from=redo?undo.future:undo.past, to=redo?undo.past:undo.future;
+  if(!from.length){ toast(redo?'Nothing to redo.':'Nothing to undo.',1400); return true; }
+  clearTimeout(_undoPend);                 // don't let a pending capture re-push
+  const where=undoFocus();
+  to.push(undo.cur);
+  undo.cur=from.pop(); undo.ck=null;
+  s.set(JSON.parse(undo.cur));
+  s.draw();
+  undoRefocus(where);
+  toast((redo?'↷ Redone':'↶ Undone')+` · ${undo.past.length} more to undo`,1400);
+  return true;
+}
+document.addEventListener('input',e=>undoTick(undoKeyOf(e.target)));
+document.addEventListener('change',e=>undoTick(undoKeyOf(e.target)));
+document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('button,a,label,.opt,.facrow,.badge,.chk'))undoTick('');
+});
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  const k=(e.key||'').toLowerCase();
+  const redo=(k==='y')||(k==='z'&&e.shiftKey);
+  if(k!=='z'&&k!=='y')return;
+  // nothing of ours to undo here — leave the browser's own undo alone
+  if(undoStep(redo))e.preventDefault();
+});
+
 function openDrawer(type){
   const u=state.data.units.find(x=>x.type===type); if(!u)return;
   const d=document.getElementById('drawer');
@@ -1153,10 +1337,12 @@ async function ensureDestSnd(){
 let composerList=[];
 async function openComposer(types){
   composerList=types.slice(); state.editing=types[0];
+  state.ed=null;                // the composer, not a unit editor, owns this dialog
   document.getElementById('modal').className='modal';
   overlay.classList.add('open');
   await ensureDest();           // needed for the unit-limit projection + base picker
   await ensureDestSnd();        // …and to know which destination units have barks
+  undoReset();
   renderComposer();
 }
 async function renderComposer(){
@@ -2251,6 +2437,7 @@ async function loadSounds(){
   // `ops` is the staging area: unit type -> {accent, class, donor, remove}
   state.snd=Object.assign({tab:'missing',ops:{},fAccent:'',fClass:'',onlyBad:false,
                            bulkDonor:'',view:[]},r);
+  undoReset();
   renderSounds();
 }
 // Donors that live in one accent/class block. A donor from another block is no use:
@@ -2744,6 +2931,7 @@ async function openEditor(type){
             // open, and the last /api/edit/model_folder answer for its folder box
             facOpen:{},folder:{},
             ug:null};      // the armour-tier ＋ menu, closed
+  undoReset();
   renderEditor();
 }
 // Every unit opens in its own browser tab, so you can follow "this model is also
@@ -2814,6 +3002,8 @@ function renderEditor(){
     <div class="mbody" id="edBody"></div>
     <div class="foot">
       <button class="danger" onclick="edDeleteDialog()">🗑 Delete unit…</button>
+      <span class="count" title="Takes back one value at a time, without closing this dialog">
+        ⌨ Ctrl+Z undo · Ctrl+Y redo</span>
       ${state.bldReturn?`<button onclick="backToBuilding()"
         title="Return to the building editor exactly as you left it">← ${esc(state.bldReturn.label)}</button>`:''}
       ${cleanerBoxHtml()}
@@ -4051,6 +4241,7 @@ async function openBmdbEntry(name){
     facOpen:{},folder:{},
     d:{type:'',dictionary:'',fields:[],loc:{},models:[r.model],model_names:r.model_names,
        all_factions:r.all_factions,faction_names:r.faction_names}};
+  undoReset();
   renderBmdbEditor();
 }
 function renderBmdbEditor(){
@@ -5970,6 +6161,58 @@ function gfAfterEdit(host,label,fromRaw){
 
 const BLD_SETTLE_LABEL={city:'City',castle:'Castle',both:'City + castle'};
 
+/* ---- number boxes ----
+   A number box is an ordinary input with ▲▼ beside it; the arrows only set
+   .value and fire `input`, so the field's own handler stores the change exactly
+   as typing would (and so undo records it as one step).
+
+   `step` is how far one click moves the value, with one special case: 'turns'
+   moves a recruit rate by one whole TURN rather than by a fraction. A rate of
+   0.066667 is "a unit every 15 turns", and nobody thinks in the fraction — ▲
+   there gives 1/14 = 0.071429, still "the number goes up". */
+const numFmt=n=>String(+(+n).toFixed(6));
+function numBox(attrs,value,step,after){
+  return `<span class="numwrap"><input ${attrs} data-step="${esc(step)}"
+      value="${esc(value)}" inputmode="decimal">
+    <span class="spin"><button type="button" tabindex="-1" data-bump="1" title="Increase">▲</button
+      ><button type="button" tabindex="-1" data-bump="-1" title="Decrease">▼</button></span>
+    ${after||''}</span>`;
+}
+// Turns per unit, for a recruit pool's points-per-turn. 0 or nonsense = never.
+function poolTurns(v){
+  const n=parseFloat(v);
+  if(!isFinite(n)||n<=0)return 'never';
+  const t=1/n;
+  if(t<=1.02)return 'every turn';
+  return (t<10?numFmt(t.toFixed(1)):Math.round(t))+' turns';
+}
+function numBump(inp,dir){
+  const step=inp.dataset.step||'1';
+  const cur=parseFloat(inp.value);
+  let next;
+  if(step==='turns'){
+    const turns=(isFinite(cur)&&cur>0)?Math.max(1,Math.round(1/cur)):1;
+    next=1/Math.max(1,turns-dir);       // ▲ = one turn sooner = a bigger rate
+  }else{
+    next=(isFinite(cur)?cur:0)+dir*(parseFloat(step)||1);
+    if(next<0)next=0;                   // no negative costs, pools or build times
+  }
+  inp.value=numFmt(next);
+  inp.dispatchEvent(new Event('input',{bubbles:true}));
+}
+// Wire every ▲▼ under `root`, and keep any "= 15 turns" readout beside a rate
+// box in step with what is typed into it.
+function wireNumBoxes(root){
+  root.querySelectorAll('.numwrap').forEach(w=>{
+    const inp=w.querySelector('input'); if(!inp)return;
+    const turns=w.querySelector('.turns');
+    w.querySelectorAll('[data-bump]').forEach(btn=>{
+      btn.onclick=e=>{e.preventDefault();numBump(inp,+btn.dataset.bump);};
+    });
+    if(turns)inp.addEventListener('input',()=>{turns.textContent='= '+poolTurns(inp.value);});
+  });
+}
+
 function bldIcon(level,kind,culture){
   return `/building_icon?mod=${enc(state.src)}&culture=${enc(culture||bldCultureNow())}`
        + `&level=${enc(level)}&kind=${kind||'small'}`;
@@ -5980,18 +6223,25 @@ function bldCultureNow(){
 // One in-flight request per mod, shared by every caller. render() fires again on
 // each keystroke and filter tick, and switching mod nulls state.bld mid-await —
 // without this the second caller could resume before the first had assigned.
+//
+// The overview is also per CULTURE, because a building's name is: DaC names
+// every one of its buildings per culture and leaves the shared key a
+// placeholder, so the grid has to ask for the names of the culture on show.
 let _bldLoading=null;
 async function loadBuildings(force){
+  const want=state.settings.bld_culture||'';
   if(state.bld&&state.bld.mod===state.src&&!force)return state.bld;
   if(_bldLoading&&_bldLoading.mod===state.src&&!force)return _bldLoading.p;
   main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s buildings…</div>';
   const mod=state.src;
   const p=(async()=>{
-    const ov=await api.get('/api/buildings?mod='+enc(mod));
-    // Which culture's art leads: whatever was picked last if this mod has it,
-    // else the first culture folder that holds building art.
-    const want=state.settings.bld_culture;
+    let ov=await api.get('/api/buildings?mod='+enc(mod)+'&culture='+enc(want));
+    // Which culture's art and names lead: whatever was picked last if this mod
+    // has it, else the first culture folder that holds building art.
     const culture=(ov.cultures||[]).includes(want)?want:(ov.cultures||[])[0]||'';
+    // the remembered culture is not one this mod has, so the names that came
+    // back are the wrong culture's — ask again for the one actually on show
+    if(culture!==want)ov=await api.get('/api/buildings?mod='+enc(mod)+'&culture='+enc(culture));
     const b={mod,ov,culture,line:null,d:null,work:null,lvl:0,plan:null,own:{},
              view:state.settings.bld_view==='grid'?'grid':'rows',
              poolFac:new Set(),fixOwnership:true,
@@ -6136,24 +6386,50 @@ async function openBuilding(name,keepLevel){
   try{ await loadBuildings(); }
   catch(e){ modal.innerHTML=`<h2>Building</h2><div class="mbody w-bad">${esc(''+e)}</div>
     <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
-  try{ d=await api.get(`/api/building?mod=${enc(state.src)}&line=${enc(name)}`); }
+  try{ d=await api.get(`/api/building?mod=${enc(state.src)}&line=${enc(name)}`
+                       +`&culture=${enc((state.bld&&state.bld.culture)||'')}`); }
   catch(e){ modal.innerHTML=`<h2>Building</h2><div class="mbody w-bad">${esc(''+e)}</div>
     <div class="foot"><button onclick="closeModal()">Close</button></div>`; return; }
   const b=state.bld;
-  b.line=name; b.d=d; b.plan=null;
+  b.line=name; b.d=d; b.plan=null; b.locSel=null;
   if(!keepLevel)b.lvl=0;
   // The working copy the form edits. Everything is sent on save and the server
   // skips whatever still matches the file, so the page never has to diff.
+  // `locAll` is every culture's name/description keyed by culture ('' = the
+  // shared key), so the culture picker never has to go back to the server.
   b.work={levels:d.levels.map(lv=>({
       name:lv.name, settlement:lv.settlement, requires:lv.requires,
       conds:JSON.parse(JSON.stringify(lv.conditions||[])), condEdited:false,
       scalars:Object.assign({},lv.scalars), upgrades:lv.upgrades.slice(),
-      loc:Object.assign({},lv.loc),
+      locAll:JSON.parse(JSON.stringify(lv.loc_all||{'':Object.assign({present:true},lv.loc)})),
       caps:lv.capabilities.map(c=>bldCapCopy(c,false)),
       fcaps:lv.faction_capabilities.map(c=>bldCapCopy(c,true))}))};
   b.orig=JSON.stringify(b.work);
   b.own=b.own||{};                        // unit type -> ownership check result
+  undoReset();
   renderBuildingEditor();
+}
+/* ---- which of a level's per-culture names is the one on show ----
+   The same fallback the server uses (buildings._best_loc), redone here so the
+   editor stays live when the culture picker moves: the culture's own key wins,
+   then the shared key, then whichever culture DOES have text — a shared key
+   whose value is just the key itself is a placeholder, not a name. */
+function bldLocPlaceholder(rec){
+  const n=((rec&&rec.name)||'').trim();
+  return !n||n===(rec&&rec.key);
+}
+function bldLocCulture(lv,culture){
+  const all=lv.locAll||{};
+  const order=[culture,''].filter(c=>c in all)
+    .concat(Object.keys(all).filter(c=>c&&c!==culture));
+  for(const c of order) if(!bldLocPlaceholder(all[c]))return c;
+  return culture in all?culture:'';
+}
+function bldLevelLabel(i){
+  const b=state.bld, lv=b.work&&b.work.levels[i];
+  if(!lv)return (b.d.levels[i]||{}).label||'';
+  const rec=(lv.locAll||{})[bldLocCulture(lv,b.culture)]||{};
+  return ((rec.name||'').trim())||lv.name;
 }
 // `conds` is the structured form of `requires`; `condEdited` says whether it has
 // been touched. Only a touched clause is sent back as structure — an untouched
@@ -6193,12 +6469,14 @@ function renderBuildingEditor(){
     <div class="lvstrip">${d.levels.map((l,i)=>`
       <div class="lvchip ${i===b.lvl?'on':''} ${bldLevelDirty(i)?'dirty':''}" onclick="bldPickLevel(${i})">
         <img loading="lazy" onerror="iconRetry(this)" src="${bldIcon(l.name,'small')}" alt="">
-        <div class="t" title="${esc(l.label)}">${esc(l.label)}</div>
+        <div class="t" title="${esc(bldLevelLabel(i))} (${esc(l.name)})">${esc(bldLevelLabel(i))}</div>
         <div class="n">${l.capabilities.filter(c=>c.pool).length} units</div>
       </div>`).join('')}</div>
     <div class="mbody" id="bldBody"></div>
     <div class="foot">
       <span class="count" id="bldDirtyNote"></span>
+      <span class="count" title="Takes back one value at a time, without closing this dialog">
+        ⌨ Ctrl+Z undo · Ctrl+Y redo</span>
       <label class="chk" style="margin-right:auto" title="A recruit pool can name a faction the unit itself doesn't belong to — the building then trains nothing for them, silently. With this on, saving adds the missing EDU ownership and copies the missing battle-model textures from a faction that has them.">
         <input type="checkbox" id="bldFixOwn" ${b.fixOwnership!==false?'checked':''}
           onchange="state.bld.fixOwnership=this.checked;bldDirtyNote()">
@@ -6249,24 +6527,17 @@ function bldRenderBody(lv,orig){
         </div>
       </div></div>
 
-    <div class="bsec"><h4>Name &amp; description <span class="count">text/export_buildings.txt</span></h4>
-      <div class="brow"><span class="k">Name</span>
-        <input data-loc="name" value="${esc(lv.loc.name)}" placeholder="${esc(orig.name)}"></div>
-      <div class="brow"><span class="k">Short description</span>
-        <input data-loc="descr_short" value="${esc(lv.loc.descr_short)}"></div>
-      <div class="brow"><span class="k">Description</span>
-        <textarea data-loc="descr" style="flex:1;min-height:56px;padding:4px 7px;font-size:12.5px"
-          >${esc(lv.loc.descr)}</textarea></div></div>
+    ${bldLocSection(lv,orig)}
 
     <div class="bsec"><h4>Stats</h4>
       <div class="brow"><span class="k">Cost</span>
-        <input data-scalar="cost" value="${esc(lv.scalars.cost||'')}" inputmode="numeric">
+        ${numBox('data-scalar="cost"',lv.scalars.cost||'','100')}
         <span class="k" style="flex:0 0 88px">Turns to build</span>
-        <input data-scalar="construction" value="${esc(lv.scalars.construction||'')}" inputmode="numeric"></div>
+        ${numBox('data-scalar="construction"',lv.scalars.construction||'','1')}</div>
       <div class="brow"><span class="k">Material</span>${sel('material',ov.materials,lv.scalars.material||'','(unset)')}
         <span class="k" style="flex:0 0 88px">Convert to</span>
-        <input data-scalar="convert_to" value="${esc(lv.scalars.convert_to||'')}"
-          title="Index (0-based) of the level in the opposite city/castle line this becomes on conversion"></div>
+        ${numBox('data-scalar="convert_to" title="Index (0-based) of the level in the opposite city/castle line this becomes on conversion"',
+                 lv.scalars.convert_to||'','1')}</div>
       <div class="brow"><span class="k">Settlement min</span>${sel('settlement_min',ov.settlement_levels,lv.scalars.settlement_min||'','(unset)')}
         <span class="k" style="flex:0 0 88px">max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
       <div class="brow"><span class="k">Buildable in</span>
@@ -6314,6 +6585,56 @@ function bldRenderBody(lv,orig){
   const note=document.getElementById('bldDirtyNote');
   if(note)note.textContent=bldDirty()?'unsaved changes':'';
 }
+/* ---- name & description, per culture ----
+   One level can be called something different for every culture — Warg Breeder
+   for the orcs, Stables for everyone else — and DaC does exactly that for its
+   whole EDB, leaving the shared key a "DO NOT TRANSLATE" placeholder. So the
+   editor picks a culture the way the game does, and writing to one culture
+   leaves the others alone. */
+function bldLocSel(){
+  const b=state.bld,lv=b.work.levels[b.lvl];
+  const s=b.locSel;
+  return (s!=null&&s in (lv.locAll||{}))?s:bldLocCulture(lv,b.culture);
+}
+function bldLocRec(){
+  const lv=state.bld.work.levels[state.bld.lvl];
+  const c=bldLocSel();
+  return (lv.locAll||{})[c]||(lv.locAll[c]={key:c?lv.name+'_'+c:lv.name,present:false,
+                                            name:'',descr:'',descr_short:''});
+}
+function bldLocPick(c){ state.bld.locSel=c; bldTouched(); }
+function bldLocSection(lv,orig){
+  const b=state.bld,cur=bldLocSel(),rec=bldLocRec();
+  const all=lv.locAll||{};
+  const named=c=>{
+    const r=all[c]||{};
+    const tag=c===''?'shared (every culture)':c;
+    return `${tag}${bldLocPlaceholder(r)?' — no text':''}`;
+  };
+  const owner=bldLocCulture(lv,b.culture);
+  return `<div class="bsec"><h4>Name &amp; description
+      <span class="count">text/export_buildings.txt</span>
+      <select class="mini" style="margin-left:auto;flex:0 0 auto;max-width:250px"
+        onchange="bldLocPick(this.value)"
+        title="Which key in export_buildings.txt this edits. The game shows a faction the key for ITS culture, and falls back to the shared one.">
+        ${Object.keys(all).map(c=>`<option value="${esc(c)}" ${c===cur?'selected':''}
+          >${esc(named(c))}</option>`).join('')}
+      </select></h4>
+      <div class="brow"><span class="k">Name</span>
+        <input data-loc="name" value="${esc(rec.name)}" placeholder="${esc(orig.name)}"></div>
+      <div class="brow"><span class="k">Short description</span>
+        <input data-loc="descr_short" value="${esc(rec.descr_short)}"></div>
+      <div class="brow"><span class="k">Description</span>
+        <textarea data-loc="descr" style="flex:1;min-height:56px;padding:4px 7px;font-size:12.5px"
+          >${esc(rec.descr)}</textarea></div>
+      <div class="bnote">Editing <code>{${esc(rec.key)}}</code>${rec.present?''
+        :' — <b>new</b>, this key is not in the file yet'}. ${
+        cur===b.culture?`This is the culture the browser is showing.`
+        :cur===''?`Shown to any culture that has no key of its own.`
+        :`The browser is showing <b>${esc(b.culture||'the shared key')}</b>, which reads its name from
+          <code>{${esc((all[owner]||{}).key||lv.name)}}</code>.`}</div></div>
+`;
+}
 function bldRequiresHelp(){
   const lv=state.bld.work.levels[state.bld.lvl];
   const txt=bldClauseText(lv.conds);
@@ -6321,13 +6642,21 @@ function bldRequiresHelp(){
     ? `Written into the EDB as <code>requires ${esc(txt)}</code>`
     : 'No conditions — anyone can build this, at any time.'}</div>`;
 }
-function bldSetCulture(c){
+// Switching culture changes both the art and the NAMES, and the names come from
+// the server — so the grid is re-fetched. The open editor is not: it already
+// holds every culture's text (`loc_all`), and re-fetching would throw away
+// whatever has been typed into it.
+async function bldSetCulture(c){
   const b=state.bld;
   b.culture=c; state.settings.bld_culture=c;
   api.post('/api/settings',{bld_culture:c});
   bldCulture.value=c; _bldFiltersFor='';
+  if(b.d){ b.locSel=null; renderBuildingEditor(); }
+  try{
+    const ov=await api.get('/api/buildings?mod='+enc(b.mod)+'&culture='+enc(c));
+    if(state.bld===b&&b.culture===c)b.ov=ov;    // keep any open editor's working copy
+  }catch(e){}
   render();
-  if(b.d)renderBuildingEditor();
 }
 // index into the level's combined cap list, so one data attribute addresses both
 // the capability and the faction_capability arrays
@@ -6405,11 +6734,12 @@ function bldPoolRow(c){
     <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
       <div class="ut">${missing?'<span class="w-bad">not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
     <div class="nums">
-      <label>start<input data-pool="initial" value="${esc(c.pool.initial)}"></label>
-      <label>per turn<input data-pool="per_turn" value="${esc(c.pool.per_turn)}"
-        title="Points gained each turn. 0.4 = a new unit roughly every 3 turns."></label>
-      <label>max<input data-pool="maximum" value="${esc(c.pool.maximum)}"></label>
-      <label>exp<input data-pool="experience" value="${esc(c.pool.experience)}"></label>
+      <label>start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
+      <label title="Points gained each turn — one point is one unit. The arrows move it by a whole turn at a time."
+        >per turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns',
+          `<span class="turns">= ${esc(poolTurns(c.pool.per_turn))}</span>`)}</label>
+      <label>max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
+      <label>exp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
     <div class="clausebar" style="flex:1;min-width:120px">
       <div class="sum">${bldClauseSummary(c.conds)}</div>
@@ -6439,11 +6769,13 @@ function bldPoolCard(c){
       ${bldPoolOwnFlag(c)}
     </div>
     <div class="stats">
-      <label title="Points the pool starts with">start<input data-pool="initial" value="${esc(c.pool.initial)}"></label>
-      <label title="Points gained each turn. 0.4 = a new unit roughly every 3 turns.">/turn<input data-pool="per_turn" value="${esc(c.pool.per_turn)}"></label>
-      <label title="Most points the pool can hold">max<input data-pool="maximum" value="${esc(c.pool.maximum)}"></label>
-      <label title="Starting experience, 0-9">xp<input data-pool="experience" value="${esc(c.pool.experience)}"></label>
+      <label title="Points the pool starts with">start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
+      <label title="Points gained each turn — one point is one unit. The arrows move it by a whole turn at a time."
+        >/turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns')}</label>
+      <label title="Most points the pool can hold">max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
+      <label title="Starting experience, 0-9">xp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
+    <div class="turns" data-turns style="text-align:center">a unit ${esc(poolTurns(c.pool.per_turn))}</div>
     <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div></div>
     <div class="acts">
       <button onclick="bldEditClause('cap',${i})">✎ Requires</button>
@@ -6489,11 +6821,11 @@ function bldUpgradesSection(lv,orig){
   const idx=g.idx;
   const node=name=>{
     const i=idx.get(name);
-    const l=b.d.levels[i];
+    const t=i==null?name:bldLevelLabel(i);
     return `<div class="pnode ${i===b.lvl?'on':''}" onclick="bldPickLevel(${i})"
-      title="Open ${esc(l?l.label:name)}">
+      title="Open ${esc(t)}">
       <img loading="lazy" onerror="iconRetry(this)" src="${bldIcon(name,'small')}" alt="">
-      <div><div class="t">${esc(l?l.label:name)}</div><div class="n">${esc(name)}</div></div></div>`;
+      <div><div class="t">${esc(t)}</div><div class="n">${esc(name)}</div></div></div>`;
   };
   // what THIS level upgrades into, editable; only ever levels further along the
   // line's own `levels` order, because M2TW upgrades never go backwards
@@ -6508,7 +6840,7 @@ function bldUpgradesSection(lv,orig){
       </div>`).join('')}</div>
     <div class="bnote">Click any building to open it. Levels on the same row are
       alternatives at the same depth.</div>
-    <h4 style="margin-top:12px">${esc(orig.label)} upgrades into
+    <h4 style="margin-top:12px">${esc(bldLevelLabel(b.lvl))} upgrades into
       <span class="n">${here.length}</span></h4>
     <div class="upglist">${here.length?lv.upgrades.map((u,i)=>{
         const name=u.split(/\s+/)[0],extra=u.slice(name.length).trim();
@@ -6550,7 +6882,7 @@ function bldCapRow(c){
     </select>
     <label class="chk"><input type="checkbox" data-bonus ${c.bonus?'checked':''}
       title="Write the value as &quot;bonus N&quot;, which is how most modifiers are declared"> bonus</label>
-    <input class="val" data-val value="${esc(c.value)}">
+    ${numBox('class="val" data-val',c.value,'1')}
     <div class="clausebar" style="flex:1;min-width:110px">
       <div class="sum">${bldClauseSummary(c.conds)}</div>
       <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
@@ -6592,15 +6924,21 @@ function bldWire(){
   st.onchange=()=>{lv.settlement=st.value;mark(st,st.value!==orig.settlement);bldDirtyNote();};
   const upAdd=document.getElementById('upgAdd');
   if(upAdd)upAdd.onchange=()=>{bldUpgAdd(upAdd.value);};
+  const locC=bldLocSel(),locWas=((orig.loc_all||{})[locC])||{};
   body.querySelectorAll('[data-loc]').forEach(el=>{
     const key=el.dataset.loc;
-    mark(el,el.value!==(orig.loc[key]||''));
-    el.oninput=()=>{lv.loc[key]=el.value;mark(el,el.value!==(orig.loc[key]||''));bldDirtyNote();};
+    mark(el,el.value!==(locWas[key]||''));
+    el.oninput=()=>{bldLocRec()[key]=el.value;
+      mark(el,el.value!==(locWas[key]||''));bldDirtyNote();};
   });
   body.querySelectorAll('[data-cap]').forEach(row=>{
     const c=list[+row.dataset.cap]; if(!c)return;
     row.querySelectorAll('[data-pool]').forEach(el=>{
-      el.oninput=()=>{c.pool[el.dataset.pool]=el.value.trim();bldDirtyNote();};});
+      el.oninput=()=>{c.pool[el.dataset.pool]=el.value.trim();
+        // the grid card keeps its "a unit every N turns" line under the boxes
+        if(el.dataset.pool==='per_turn')row.querySelectorAll('[data-turns]')
+          .forEach(t=>{t.textContent='a unit '+poolTurns(el.value);});
+        bldDirtyNote();};});
     const kw=row.querySelector('[data-kw]');
     if(kw)kw.onchange=()=>{c.keyword=kw.value;bldTouched();};
     const bo=row.querySelector('[data-bonus]');
@@ -6608,6 +6946,7 @@ function bldWire(){
     const val=row.querySelector('[data-val]');
     if(val)val.oninput=()=>{c.value=val.value.trim();bldDirtyNote();};
   });
+  wireNumBoxes(body);
 }
 function bldDirtyNote(){
   const note=document.getElementById('bldDirtyNote');
@@ -7134,9 +7473,18 @@ function bldPayload(){
       capabilities:[...lv.caps].map(bldCapOp),
       faction_capabilities:[...lv.fcaps].map(bldCapOp)};
     if(lv.condEdited)out.conditions=lv.conds;
-    // only send `loc` when the text actually changed: its presence is what makes
-    // the server rewrite text/export_buildings.txt at all
-    if(JSON.stringify(lv.loc)!==JSON.stringify(o.loc))out.loc=lv.loc;
+    // Only send the localisation records whose text actually changed: their
+    // presence is what makes the server rewrite text/export_buildings.txt at
+    // all. `loc` is the shared key, `loc_cultures` the per-culture ones.
+    const was=o.locAll||{},cultures={};
+    for(const c of Object.keys(lv.locAll||{})){
+      const rec=lv.locAll[c],old=was[c]||{};
+      if(rec.name===(old.name||'')&&rec.descr===(old.descr||'')
+         &&rec.descr_short===(old.descr_short||''))continue;
+      const send={name:rec.name||'',descr:rec.descr||'',descr_short:rec.descr_short||''};
+      if(c)cultures[c]=send; else out.loc=send;
+    }
+    if(Object.keys(cultures).length)out.loc_cultures=cultures;
     return out;})};
 }
 function bldCapOp(c){

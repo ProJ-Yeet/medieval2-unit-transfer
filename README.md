@@ -464,16 +464,23 @@ The grid lists the lines as pictures. Open one and you get a tab per level with:
 - **Art** — the small browser icon and the big "constructed" picture
 - **Name & description** — the three `text/export_buildings.txt` keys, which a
   building must have all of or the game crashes on load; renaming writes all
-  three
+  three. A building can be called something different for **every culture**
+  (`{stables}`, `{stables_crags}`, `{stables_northern_european}` …), so the
+  section has a culture picker and edits exactly the key you choose, leaving the
+  others alone — see below
 - **Stats** — cost, turns to build, material, `settlement_min`/`_max`,
-  `convert_to`, whether it is a city or castle building, and its requirements
+  `convert_to`, whether it is a city or castle building, and its requirements.
+  Every number box has **▲▼** beside it
 - **Upgrade path** — the whole line drawn as a graph, and what this level
   upgrades into (see below)
 - **Recruitment** — every `recruit_pool` on the level, as a row *or* a card grid
   with the unit's picture and its pool stats underneath: starting points, points
   gained per turn, the cap, starting experience, and the conditions on that pool.
   Add units, remove them, retune the numbers, and filter the list down to what
-  one faction can train
+  one faction can train. **Points per turn** carries a greyed reading of what the
+  number actually means — `0.066667` is *"= 15 turns"* — and its ▲▼ move it by a
+  whole turn at a time rather than by a fraction (▲ from 15 turns gives
+  `0.071429`, i.e. 14)
 - **Other capabilities** — `law_bonus`, `armour`, `wall_level`, `agent` and the
   rest, each with a note on what it does and what its number means
 
@@ -529,6 +536,26 @@ building in it is clickable and opens that level.
 Underneath, the level's own `upgrades` list is editable: remove a branch, or add
 one from a drop-down that only ever offers levels *later* in the line, because an
 upgrade can never point backwards.
+
+### Names are per culture too
+
+`text/export_buildings.txt` names a level twice over: once for everybody
+(`{stables}`) and once per culture (`{stables_crags}`, `{stables_gondor}` …),
+each with its own `_desc` and `_desc_short`. The game shows a faction the key for
+*its* culture and falls back to the shared one.
+
+Mods that lean on this leave the shared key as a placeholder whose value is just
+the key spelled out again — Divide and Conquer does exactly that, and marks them
+`DO NOT TRANSLATE`. Reading only the shared key is why a browser can show a mod's
+whole EDB as code names. So a name is resolved the way the game reads it, plus
+one step: the culture on show wins, then the shared key, then whichever culture
+*does* have text.
+
+The culture picker in the sidebar therefore changes the **names** in the grid as
+well as the art, and the picker in the level's **Name & description** section
+chooses which key an edit lands on. The note under the boxes always says the key
+being written (`{stables_crags}`), whether it is new, and — when you are editing
+one culture while looking at another — where the name on show is coming from.
 
 ### Building icons
 
@@ -668,6 +695,13 @@ point of them.
   (This replaced running `Full Cleaner.bat`, which also deleted mod files the game
   never rebuilds — the campaign map's water art, some battle maps — with no way to
   undo it. The script still ships in the app folder to run by hand)
+- **Ctrl+Z / Ctrl+Y while editing** — takes back **one value** rather than
+  closing the dialog and losing everything. It works the same way in the unit
+  editor, the bmdb editor, the buildings editor, the transfer composer and
+  Unit Sounds; typing into one box is one step, and undo puts the caret back
+  where it was. `Ctrl+Shift+Z` also redoes. This is the in-page working copy —
+  nothing has been written to disk yet, and 🕑 Log → Undo is still what reverses
+  a *save*
 - **Undo** — every applied transfer is logged with a full backup; revert it
   from the log with one click
 - **Live reload** — edits to the source mod's files are picked up on the next

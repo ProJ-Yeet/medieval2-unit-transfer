@@ -1470,8 +1470,14 @@ def _plan_localisation(mod, body: dict, plan: BuildingPlan) -> str:
 
     Every level needs three keys (``{x}``, ``{x_desc}``, ``{x_desc_short}``) or
     the game CTDs, so a name edit always writes all three.
+
+    A level may be named once for everyone (the base key) and again for each
+    culture (``{x_<culture>}``). ``loc`` on a level payload is the base record;
+    ``loc_cultures`` maps culture -> record for the rest. Only the ones that
+    actually differ from the file are written.
     """
-    edits = [lv for lv in (body.get("levels") or []) if "loc" in lv]
+    edits = [lv for lv in (body.get("levels") or [])
+             if "loc" in lv or "loc_cultures" in lv]
     if not edits:
         return ""
     path = mod.data / LOC_REL
@@ -1482,18 +1488,26 @@ def _plan_localisation(mod, body: dict, plan: BuildingPlan) -> str:
     changed = False
     for lv in edits:
         name = str(lv.get("name") or "")
-        loc = lv.get("loc") or {}
-        cur = mod.building_loc.get(name)
-        new_name = str(loc.get("name", cur.name if cur else "") or "")
-        new_desc = str(loc.get("descr", cur.descr if cur else "") or "")
-        new_short = str(loc.get("descr_short", cur.descr_short if cur else "") or "")
-        if cur and (new_name, new_desc, new_short) == (cur.name or "", cur.descr or "",
-                                                       cur.descr_short or ""):
-            continue
-        text = localization.upsert_record(text, name, new_name, new_desc, new_short,
-                                          descr_suffix="_desc")
-        plan.changes.append(f"{name}: name -> {new_name!r}")
-        changed = True
+        targets = []
+        if "loc" in lv:
+            targets.append(("", lv.get("loc") or {}))
+        for culture, rec in (lv.get("loc_cultures") or {}).items():
+            targets.append((str(culture), rec or {}))
+        for culture, loc in targets:
+            key = loc_key(name, culture)
+            cur = mod.building_loc.get(key)
+            new_name = str(loc.get("name", cur.name if cur else "") or "")
+            new_desc = str(loc.get("descr", cur.descr if cur else "") or "")
+            new_short = str(loc.get("descr_short", cur.descr_short if cur else "") or "")
+            if cur and (new_name, new_desc, new_short) == (cur.name or "", cur.descr or "",
+                                                           cur.descr_short or ""):
+                continue
+            if not cur and not (new_name or new_desc or new_short):
+                continue          # an untouched culture the file never had
+            text = localization.upsert_record(text, key, new_name, new_desc, new_short,
+                                              descr_suffix="_desc")
+            plan.changes.append(f"{key}: name -> {new_name!r}")
+            changed = True
     return text if changed else ""
 
 
@@ -1566,6 +1580,28 @@ def apply_edit(plan: BuildingPlan) -> Dict:
 # payloads for the Buildings-mode UI
 
 
+def loc_key(level: str, culture: str = "") -> str:
+    """The export_buildings.txt key holding one level's text for one culture.
+
+    A level has a base key (``{stables}``) and one key per culture
+    (``{stables_northern_european}``). The game shows the culture's key to a
+    faction of that culture and the base key to everyone else.
+    """
+    return f"{level}_{culture}" if culture else level
+
+
+def _placeholder(key: str, name: str) -> bool:
+    """True when a key's value is not a real name.
+
+    Divide and Conquer writes the key's own text back as its value for ~3000
+    base keys — ``{stables}stables``, described as "DO NOT TRANSLATE" — because
+    every one of its buildings is named per culture instead. Treating that as a
+    name is what made the browser show code names for the whole mod.
+    """
+    n = (name or "").strip()
+    return not n or n == key
+
+
 def _loc_of(mod, key: str) -> dict:
     e = mod.building_loc.get(key)
     return {"name": (e.name or "") if e else "",
@@ -1573,15 +1609,46 @@ def _loc_of(mod, key: str) -> dict:
             "descr_short": (e.descr_short or "") if e else ""}
 
 
-def _label(mod, key: str, fallback: str = "") -> str:
-    """A level's or line's display name, falling back to its code name.
+def _loc_all(mod, level: str) -> Dict[str, dict]:
+    """Every record export_buildings.txt holds for one level.
 
-    Some mods leave a key's value equal to the key itself (DaC does for ~400 of
-    them), which reads as an untranslated placeholder rather than a name — treat
-    that as "no name" so the UI shows the code name once instead of twice.
+    Keyed by culture, with ``''`` for the base key. Cultures the file says
+    nothing about are still listed (``present: False``) so the editor can offer
+    to write them.
     """
-    name = (_loc_of(mod, key)["name"] or "").strip()
-    return name if name and name != key else (fallback or key)
+    out: Dict[str, dict] = {}
+    for culture in [""] + list(mod.cultures):
+        key = loc_key(level, culture)
+        e = mod.building_loc.get(key)
+        out[culture] = {"key": key, "present": e is not None,
+                        "name": (e.name or "") if e else "",
+                        "descr": (e.descr or "") if e else "",
+                        "descr_short": (e.descr_short or "") if e else ""}
+    return out
+
+
+def _best_loc(mod, level: str, culture: str = "") -> dict:
+    """The record a level actually shows, for the culture being looked at.
+
+    Same order the game reads them in — the culture's own key first, then the
+    base key — with one addition: a base key that is only a placeholder falls
+    through to whichever culture DOES have text, so a mod that names everything
+    per culture still reads as names rather than as code.
+    """
+    recs = _loc_all(mod, level)
+    order = ([culture] if culture in recs and culture else []) + [""]
+    order += [c for c in recs if c and c != culture]
+    for c in order:
+        r = recs[c]
+        if not _placeholder(r["key"], r["name"]):
+            return dict(r, culture=c)
+    return dict(recs.get(culture) or recs[""], culture=culture if culture in recs else "")
+
+
+def _label(mod, key: str, fallback: str = "", culture: str = "") -> str:
+    """A level's or line's display name, falling back to its code name."""
+    name = (_best_loc(mod, key, culture)["name"] or "").strip()
+    return name if name else (fallback or key)
 
 
 def _cap_payload(cap: Capability) -> dict:
@@ -1641,8 +1708,13 @@ def _art_sources(mod, level: str, vanilla) -> Dict[str, Dict[str, str]]:
     return out
 
 
-def overview(mod) -> dict:
-    """Every building line in one mod, light enough for the browser grid."""
+def overview(mod, culture: str = "") -> dict:
+    """Every building line in one mod, light enough for the browser grid.
+
+    ``culture`` picks which of a level's per-culture names is shown; sending the
+    lot would mean nine names per level over several thousand levels, so the
+    browser re-asks when the culture picker moves.
+    """
     edb = mod.edb
     units = _units_index(mod)
     vanilla = config.get_vanilla_ui_root()
@@ -1662,13 +1734,13 @@ def overview(mod) -> dict:
             "name": bl.name,
             "top_level": top,
             "art": _art_sources(mod, top, vanilla) if top else {},
-            "label": _label(mod, bl.name + "_name", bl.name),
+            "label": _label(mod, bl.name + "_name", bl.name, culture),
             "convert_to": bl.convert_to,
             "religion": bl.religion,
             "extras": dict(bl.extras),
             "settlement": bl.settlement,
             "levels": [b.name for b in bl.blocks],
-            "level_labels": [_label(mod, b.name) for b in bl.blocks],
+            "level_labels": [_label(mod, b.name, "", culture) for b in bl.blocks],
             "level_count": len(bl.blocks),
             "recruit_count": len(uniq),
             "missing_units": [u for u in uniq if u.lower() not in units],
@@ -1680,6 +1752,7 @@ def overview(mod) -> dict:
         "has_file": mod.edb_path.exists(),
         "has_loc": mod.building_loc_path.exists(),
         "lines": lines,
+        "culture": culture,
         "cultures": mod.cultures,
         "faction_cultures": mod.faction_cultures,
         "faction_names": mod.faction_names,
@@ -1700,8 +1773,13 @@ def overview(mod) -> dict:
     }
 
 
-def detail(mod, name: str) -> dict:
-    """One building line in full — every level, capability and recruit pool."""
+def detail(mod, name: str, culture: str = "") -> dict:
+    """One building line in full — every level, capability and recruit pool.
+
+    Unlike the browser grid this carries every culture's name and description
+    (``loc_all``), because the editor has to be able to show and write any of
+    them without going back to the server.
+    """
     bl = mod.edb.get(name)
     if bl is None:
         raise KeyError(name)
@@ -1725,15 +1803,20 @@ def detail(mod, name: str) -> dict:
         # which cultures actually have art for this level, so the UI can offer a
         # culture switcher that only lists the ones that will show something
         art = {}
-        for culture in mod.cultures:
-            small, s_src = find_icon(mod, culture, blk.name, "small", vanilla)
-            large, l_src = find_icon(mod, culture, blk.name, "large", vanilla)
+        for c in mod.cultures:
+            small, s_src = find_icon(mod, c, blk.name, "small", vanilla)
+            large, l_src = find_icon(mod, c, blk.name, "large", vanilla)
             if small or large:
-                art[culture] = {"small": s_src, "large": l_src}
+                art[c] = {"small": s_src, "large": l_src}
+        best = _best_loc(mod, blk.name, culture)
         levels.append({
             "name": blk.name,
-            "label": _label(mod, blk.name),
+            "label": _label(mod, blk.name, "", culture),
             "loc": _loc_of(mod, blk.name),
+            "loc_all": _loc_all(mod, blk.name),
+            # which culture's record the label above came from, so the editor
+            # opens on the text you are actually looking at
+            "loc_culture": best["culture"],
             "settlement": blk.settlement,
             "requires": blk.requires,
             "conditions": clause_payload(blk.requires),
@@ -1749,7 +1832,9 @@ def detail(mod, name: str) -> dict:
         "mod": mod.name,
         "units": referenced,
         "name": bl.name,
-        "label": _label(mod, bl.name + "_name", bl.name),
+        "culture": culture,
+        "cultures": list(mod.cultures),
+        "label": _label(mod, bl.name + "_name", bl.name, culture),
         "convert_to": bl.convert_to,
         "religion": bl.religion,
         "extras": dict(bl.extras),

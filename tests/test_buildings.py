@@ -98,6 +98,12 @@ for rel in (buildings.LOC_REL, "export_descr_unit.txt", "text/export_units.txt",
         (work / "data" / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, work / "data" / rel)
 
+# A mod's cultures are its data/ui/<culture>/buildings folders, and the copy
+# above brings no art across — recreate the folders (empty) so the per-culture
+# name keys have the same culture list to work against as the real mod.
+for c in buildings.cultures_of(Mod(src_root)):
+    (work / "data" / "ui" / c / "buildings").mkdir(parents=True, exist_ok=True)
+
 mod = Mod(work)
 original = mod.edb_path.read_text(encoding=buildings.ENCODING)
 edb = mod.edb
@@ -227,6 +233,58 @@ if mod.building_loc_path.exists():
 else:
     print("  [skip] this mod has no text/export_buildings.txt")
 
+# ---- 6b) per-culture names ---------------------------------------------------
+# A level is named once for everyone ({stables}) and again for each culture
+# ({stables_northern_european}). Mods that use the per-culture keys leave the
+# shared one as a placeholder equal to its own key, and reading only that key is
+# what made every building in DaC show its code name instead of its name.
+print("\n6b) per-culture names")
+mod = Mod(work)
+if mod.building_loc_path.exists() and mod.cultures:
+    culture = mod.cultures[0]
+    recs = buildings._loc_all(mod, target.name)
+    check("every culture has a slot, plus the shared key",
+          set(recs) == set([""] + list(mod.cultures)))
+    check("each slot names the key it writes",
+          recs[culture]["key"] == target.name + "_" + culture and recs[""]["key"] == target.name)
+    check("a key equal to its own name is not a name",
+          buildings._placeholder("stables", "stables")
+          and not buildings._placeholder("stables", "Stables"))
+
+    loc_before = mod.building_loc_path.read_text(encoding=localization.ENCODING)
+    other = mod.cultures[-1]
+    plan = buildings.plan_edit(mod, {"line": line.name, "levels": [
+        level_payload(target, loc_cultures={culture: {
+            "name": "Culture Barracks", "descr": "Only for one culture.",
+            "descr_short": "One culture."}})]})
+    check("a per-culture rename is a change",
+          any("Culture Barracks" in c for c in plan.changes))
+    parsed = localization.parse_text(plan.loc_text, descr_suffix="_desc")
+    entry = parsed.get(target.name + "_" + culture)
+    check("it lands on the culture's own key", entry and entry.name == "Culture Barracks")
+    check("the shared key is left alone",
+          (parsed.get(target.name) or localization.LocEntry()).name
+          == (mod.building_loc.get(target.name) or localization.LocEntry()).name)
+    if other != culture:
+        was = mod.building_loc.get(target.name + "_" + other)
+        now = parsed.get(target.name + "_" + other)
+        check("another culture's key is left alone",
+              (was is None and now is None)
+              or (was and now and was.name == now.name))
+
+    # the name a level SHOWS falls through the same way the game reads it
+    best = buildings._best_loc(mod, target.name, culture)
+    check("the label prefers the culture being looked at, when it has one",
+          best["culture"] == culture if recs[culture]["present"]
+          and not buildings._placeholder(recs[culture]["key"], recs[culture]["name"])
+          else True)
+    check("_label never returns an empty string",
+          bool(buildings._label(mod, target.name, "", culture)))
+    check("planning alone wrote nothing",
+          mod.building_loc_path.read_text(encoding=localization.ENCODING) == loc_before)
+else:
+    print("  [skip] this mod has no building localisation or no culture folders")
+
 # ---- 7) the payloads the UI reads ------------------------------------------
 print("\n7) UI payloads")
 mod = Mod(work)
@@ -237,6 +295,10 @@ check("every line has a settlement kind",
       all(l["settlement"] in ("city", "castle", "both") for l in ov["lines"]))
 d = buildings.detail(mod, line.name)
 check("detail has one entry per level", len(d["levels"]) == len(line.blocks))
+check("detail carries every culture's text, so the editor never re-asks",
+      all(set(lv["loc_all"]) == set([""] + list(mod.cultures)) for lv in d["levels"]))
+check("detail says which culture each label came from",
+      all(lv["loc_culture"] in lv["loc_all"] for lv in d["levels"]))
 check("detail resolves the units its pools name",
       all(u.get("type") for u in d["units"].values()))
 check("detail is JSON-serialisable", bool(json.dumps(d)))

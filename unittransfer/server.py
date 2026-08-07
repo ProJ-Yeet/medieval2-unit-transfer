@@ -55,9 +55,13 @@ Sounds mode (the unit voice bank, see :mod:`unittransfer.sounds`)
                                     undo, same as a transfer)
 
 Buildings mode (export_descr_buildings.txt, see :mod:`unittransfer.buildings`)
-  GET  /api/buildings?mod=       -> every building line, light (the browser grid)
-  GET  /api/building?mod=&line=  -> one line in full: levels, stats, capabilities,
-                                    recruit pools and which cultures have art
+  GET  /api/buildings?mod=&culture=
+                                 -> every building line, light (the browser grid);
+                                    `culture` picks which per-culture name shows
+  GET  /api/building?mod=&line=&culture=
+                                 -> one line in full: levels, stats, capabilities,
+                                    recruit pools, which cultures have art and
+                                    every culture's name / description
   GET  /building_icon?mod=&culture=&level=&kind=
                                  -> the small / constructed icon, falling back to
                                     unpacked vanilla art, then to a placeholder
@@ -708,9 +712,12 @@ class Handler(BaseHTTPRequestHandler):
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
                 mod = self.registry.get(name)
+                # which culture's building names to resolve — see buildings.loc_key
+                culture = (q.get("culture") or [""])[0]
                 if u.path == "/api/buildings":
-                    return self._json(buildings.overview(mod))
-                return self._json(buildings.detail(mod, (q.get("line") or [""])[0]))
+                    return self._json(buildings.overview(mod, culture))
+                return self._json(buildings.detail(mod, (q.get("line") or [""])[0],
+                                                   culture))
             if u.path == "/building_icon":
                 return self._building_icon(q)
             if u.path == "/preview_image":
