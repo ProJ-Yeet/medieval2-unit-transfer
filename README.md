@@ -163,6 +163,27 @@ instead of two. Click any unit to open its editor:
   animations/skeletons and the torch block — are kept from the cloned entry, so
   the new model is valid; optionally the unit's `soldier`/`officer`/armour slot
   is pointed at it in the same step
+- **⇄ Compare** — pick a second unit from the same mod and its EDU lines are
+  shown beside the first's, split into their named slots, with **the better side
+  green and the worse red** and the size of the gap between them.
+
+  Which side is *better* is only claimed where it genuinely is one: attack,
+  charge bonus, range, ammo, armour, shield, morale, hit points and ground
+  modifiers go up; recruit cost, upkeep, weapon delay and heat fatigue go down;
+  and `training` / `discipline` are read as ladders (`impetuous` is deliberately
+  not on the discipline ladder — it is a different behaviour, not a better one).
+  Everything else — a hit sound, a formation width, the skeleton factor — is
+  marked as *different* and nothing more, because inventing a winner for a
+  setting that has none reads as advice. A line one of the two units doesn't
+  have never loses on its zeroes either: a unit with no `stat_armour_ex` doesn't
+  have 0 armour, it has the ordinary line instead.
+
+  **Both columns are live boxes, and Save writes both units** — as two ordinary
+  unit saves, each planned before either is applied, and each backed up and
+  undoable on its own. It opens on the differences alone, which is the concise
+  answer to "how is this one worse"; the stats they share are one tick away.
+  `type` and `dictionary` are left out — they differ between any two units by
+  definition, and `type` is renamed on the Identity tab, not by writing the field
 - **＋ New unit** — build a new unit from an existing one, picked with the same
   faction / category / class / mercenary filters as the browser. This runs the
   same engine as a transfer, with source and destination being the same mod, so
@@ -501,6 +522,34 @@ The **✎ Edit** button on any recruited unit switches to the Unit Editor for th
 unit; the **← Back to <building>** button in the header brings you back to the
 same level with everything you had typed still in place.
 
+### Adding and editing pools in bulk
+
+Filling out a level is a bulk job. **＋ Add unit** ticks rather than adds: a row
+you tick stays ticked while you keep filtering, so a selection can be built out
+of four different searches, and one button adds the lot. Everything it adds lands
+ticked in bulk mode, because giving them all the same clause is what you do next.
+
+**☑ Bulk edit** puts a box on every pool — in either the row or the card view —
+and a bar above them. A ticked selection can be:
+
+- given **one `requires` clause**. The dialog opens on what they already say when
+  they all say the same thing (the common case straight after adding a batch,
+  where each one carries its own `ownership` and you are about to narrow that to
+  one faction), and opens empty when they disagree rather than picking a winner
+  arbitrarily. It can **replace** their clause or **add** its terms onto each
+  one; adding is idempotent, so a term a row already carries is not written twice
+- given **pool numbers**. Only the boxes you fill in are written — "max 4 for
+  these twelve" doesn't also zero their starting points
+- **removed**
+
+**⧉** on any pool copies its requirements, and the bar pastes them onto
+everything ticked, either replacing what each says or ANDing onto it. The
+clipboard survives leaving the building, so a clause copied out of the town watch
+can be pasted into the barracks — which is most of why anyone would copy one.
+
+The ownership check below covers the whole selection in one request, and answers
+as one line per problem naming the units, rather than a paragraph each.
+
 ### Requirements, without typing code names
 
 Every condition in a `requires` clause names something declared elsewhere in the
@@ -683,6 +732,18 @@ point of them.
   will do with it, or in the **raw** one-box-per-line view — the switch sits
   beside the filter box in both the composer and the unit editor, and is
   remembered (see [Guided vs raw fields](#guided-vs-raw-fields))
+- **Compare two units** — the ⇄ tab in the unit editor puts a second unit's stats
+  beside the first's, slot by slot, with the better side green and the worse red
+  and the gap between them. Both columns are editable and Save writes both units,
+  so a gap can be closed from whichever end is wrong. A winner is only ever
+  claimed where the number is a merit — a hit sound and a formation width are
+  just *different*
+- **Bulk-edit recruit pools** — tick several units in a building level and give
+  them all one `requires` clause (replacing theirs or ANDing onto it), set their
+  pool numbers, or remove them. One row's requirements can be copied and pasted
+  onto the rest, across buildings. The add-unit picker ticks rather than adds, so
+  a dozen units go in at once and land ready for the clause you are about to
+  give them
 - **Mercenary conversion** — flip a unit to a mercenary (attribute, texture
   skin, icon folders) as part of the transfer
 - **Conflict resolution** — for every asset that would collide with an existing
@@ -795,8 +856,13 @@ writes happen in temp directories or through the backup/undo path.
 `tests/test_guided_fields.py` also runs the page's own JavaScript under `node`
 to prove the guided field editor's split-and-rejoin is lossless across every
 unit of every installed mod — the one property that, if broken, would quietly
-damage a file on save. It skips that half (rather than failing) when `node`
-isn't on PATH; node is not a dependency of the tool itself.
+damage a file on save. `tests/test_compare_and_bulk.py` does the same for the two
+features that are decided entirely in the page: that every stat the comparison
+colours still names a real slot of the field it claims, that it calls a winner
+only where there is one, and that pasting a `requires` clause onto other recruit
+pools is a copy, is idempotent, and leaves no dangling `and`. Both skip that half
+(rather than failing) when `node` isn't on PATH; node is not a dependency of the
+tool itself.
 
 ## Logs & troubleshooting
 
