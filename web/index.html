@@ -778,6 +778,68 @@
   .upgrow:last-child{border-bottom:none}
   .upgrow .un{flex:0 0 auto}
   .upglist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2)}
+  /* ---- bulk edit over recruit pools ----
+     Filling out a level means giving twenty units the same requires clause, not
+     one — so the pools get a selection of their own: tick rows, then act on all
+     of them at once. The bar is amber like every other "this is staged" surface
+     in the dialog. */
+  .bulkbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px;padding:7px 9px;
+    border:1px solid var(--accent);border-radius:7px;background:#241f0d}
+  .bulkbar button{padding:3px 8px;font-size:11.5px}
+  .bulkbar button:disabled{opacity:.38;cursor:default;border-color:var(--edge)}
+  .bulkbar .n{flex:0 0 auto;font-size:11.5px;color:var(--accent);font-weight:600}
+  .bulkbar select{padding:3px 6px;font-size:11.5px}
+  .bulkbar .bnums{display:flex;gap:6px;align-items:flex-end;flex:1 1 100%;
+    border-top:1px solid var(--edge);margin-top:2px;padding-top:6px}
+  .bulkbar .bnums label{display:flex;flex-direction:column;font-size:8.5px;color:var(--dim);
+    text-transform:uppercase;letter-spacing:.4px}
+  .bulkbar .bnums input{width:66px;padding:3px 5px;font-size:12px}
+  .bulkbar .hint{flex:1;min-width:0;font-size:10.5px;color:var(--dim)}
+  .pick{flex:0 0 auto;display:flex;align-items:center;cursor:pointer}
+  .pick input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+  #bldBody .poolrow.picked{box-shadow:inset 3px 0 0 var(--accent2);background:#1b2430}
+  #bldBody .ucard.picked{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2) inset}
+  .ucard .top .pick{align-self:flex-start;margin-top:2px}
+  /* the add-unit picker ticks rather than adds, so its rows carry a box too */
+  .baserow.on{background:#2b3446}
+  /* ---- comparing two units ----
+     The same stat twice with the better side coloured. The point is to see the
+     gap and close it without leaving the page, so both columns are live boxes
+     rather than text — the unit you opened is on the left, the one you compared
+     against on the right, and Save writes both. */
+  .cmphead{display:flex;gap:10px;align-items:center;padding:8px 10px;margin-bottom:10px;
+    border:1px solid var(--edge);border-radius:8px;background:var(--panel2)}
+  .cmphead .cu{display:flex;gap:8px;align-items:center;flex:1;min-width:0}
+  .cmphead .cu.b{flex-direction:row-reverse;text-align:right}
+  .cmphead img{width:36px;height:47px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 36px}
+  .cmphead .nm{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmphead .ty{font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmphead .tally{flex:0 0 auto;text-align:center;font-size:10.5px;color:var(--dim);line-height:1.3}
+  .cmphead .tally .w{color:var(--good);font-weight:600}
+  .cmpbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .cmpbar .q{flex:1;min-width:130px;padding:4px 8px;font-size:12.5px}
+  .cmpsec{margin-bottom:10px}
+  .cmpsec>h5{margin:0 0 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--dim);font-weight:600}
+  .cmplist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2)}
+  .cmprow{display:grid;gap:7px;align-items:center;padding:3px 8px;border-bottom:1px solid var(--edge);
+    grid-template-columns:minmax(104px,1fr) minmax(86px,1.05fr) 62px minmax(86px,1.05fr)}
+  .cmprow:last-child{border-bottom:none}
+  .cmprow.same{opacity:.6}
+  .cmprow .cl{font-size:11.5px;color:var(--dim);min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .cmprow .cv{min-width:0}
+  .cmprow input,.cmprow select{width:100%;padding:2px 6px;font-size:12px;min-width:0}
+  .cmprow .cd{text-align:center;font-size:11px;color:var(--dim);white-space:nowrap}
+  .cmprow .cd.win{color:var(--good)}
+  .cmprow .cd.neu{color:var(--warn)}
+  .cv.win input,.cv.win select{border-color:var(--good);background:#12281c}
+  .cv.lose input,.cv.lose select{border-color:var(--bad);background:#2a1414}
+  .cv.diff input,.cv.diff select{border-color:var(--warn);background:#241f0d}
+  .cmprow .cv.edited input,.cmprow .cv.edited select{outline:1px solid var(--accent);outline-offset:1px}
+  .cmpfield{display:flex;gap:7px;align-items:baseline;padding:4px 8px;font-size:11px;
+    color:var(--accent);background:#1b2027;border-bottom:1px solid var(--edge)}
+  .cmpfield .count{font-family:ui-monospace,Consolas,monospace}
 </style>
 </head>
 <body>
@@ -1263,16 +1325,22 @@ const edBmdbName=()=>((state.ed.d.models[0]||{}).name||'');
 // state.ed carries the read-only unit alongside the edits; only the edits go in
 // a snapshot, and the two Sets have to survive the JSON round trip as arrays.
 function edSnap(){
-  const e=state.ed;
+  const e=state.ed,c=e.cmp;
+  // Only the compared unit's EDITS go in — not which unit it is, and not the
+  // server payload it was loaded from. Undo takes back a typed number, and
+  // "un-picking" a comparison would mean re-fetching a unit to put it back.
   return {ov:e.ov,rm:[...e.rm],added:[...(e.added||[])],loc:e.loc,newType:e.newType,
           newDict:e.newDict,mEdits:e.mEdits,newModels:e.newModels,
-          cardSrc:e.cardSrc||'',infoSrc:e.infoSrc||'',removeOldIcons:!!e.removeOldIcons};
+          cardSrc:e.cardSrc||'',infoSrc:e.infoSrc||'',removeOldIcons:!!e.removeOldIcons,
+          cmpOv:c?c.ov:{},cmpRm:c?[...c.rm]:[],cmpAdded:c?[...c.added]:[]};
 }
 function edRestore(v){
   const e=state.ed;
   e.ov=v.ov; e.rm=new Set(v.rm); e.added=new Set(v.added); e.loc=v.loc;
   e.newType=v.newType; e.newDict=v.newDict; e.mEdits=v.mEdits; e.newModels=v.newModels;
   e.cardSrc=v.cardSrc; e.infoSrc=v.infoSrc; e.removeOldIcons=v.removeOldIcons;
+  if(e.cmp){ e.cmp.ov=v.cmpOv||{}; e.cmp.rm=new Set(v.cmpRm||[]);
+             e.cmp.added=new Set(v.cmpAdded||[]); }
 }
 // The underscore keys of a per-unit config are server answers cached on it
 // (the field list, the conflict report) — big, and not something to undo.
@@ -1297,7 +1365,7 @@ function paintDirty(){
   const bld=document.getElementById('bldDirtyNote');
   if(bld)bld.innerHTML=dirtyChip(!!(state.bld&&state.bld.work&&bldDirty()));
   const ed=document.getElementById('edDirtyNote');
-  if(ed)ed.innerHTML=dirtyChip(!!(state.ed&&edDirty()));
+  if(ed)ed.innerHTML=dirtyChip(!!(state.ed&&(edDirty()||edCmpDirty())));
 }
 
 const undo={key:'',cur:null,ck:null,past:[],future:[]};
@@ -3081,6 +3149,9 @@ async function openEditor(type){
             // per-entry UI state: which faction has its "unique textures" panel
             // open, and the last /api/edit/model_folder answer for its folder box
             facOpen:{},folder:{},
+            // the Compare tab: a SECOND unit loaded beside this one, with edits
+            // of its own that Save writes as a second, independent unit save
+            cmp:null,cmpQ:'',cmpSame:false,
             ug:null};      // the armour-tier ＋ menu, closed
   undoReset();
   renderEditor();
@@ -3149,7 +3220,7 @@ function renderEditor(){
           : 'Defined in <code>data/export_descr_unit.txt</code>.'}</div></div>
     </div>
     <div class="tabs">${tab('identity','Identity & text')}${tab('fields','EDU fields')}
-      ${tab('models','Battle models (bmdb)')}</div>
+      ${tab('models','Battle models (bmdb)')}${tab('compare','⇄ Compare')}</div>
     <div class="mbody" id="edBody"></div>
     <div class="foot">
       <button class="danger" onclick="edDeleteDialog()">🗑 Delete unit…</button>
@@ -3178,7 +3249,8 @@ function edRenderTab(){
   const wasFields=fields?fields.scrollTop:0;
   const gbody=document.getElementById('gfBody');
   const wasG=gbody?gbody.scrollTop:0;
-  b.innerHTML=(e.tab==='identity'?edIdentity():e.tab==='fields'?edFields():edModels())
+  b.innerHTML=(e.tab==='identity'?edIdentity():e.tab==='fields'?edFields()
+              :e.tab==='compare'?edCompare():edModels())
     +'<div id="edPreview"></div>';
   // keep the last preview visible across cosmetic re-renders (tab switch, expanding
   // an entry) — flagged as stale once anything has been edited since it was made
@@ -3186,6 +3258,7 @@ function edRenderTab(){
   if(e.tab==='fields')edWireFields();
   if(e.tab==='identity')edWireIdentity();
   if(e.tab==='models')edWireModels();
+  if(e.tab==='compare')edWireCompare();
   const nowFields=document.getElementById('allFields');
   if(nowFields&&wasFields)nowFields.scrollTop=wasFields;
   const nowG=document.getElementById('gfBody');
@@ -3461,6 +3534,390 @@ function edAddField(){
   e.added.add(k); e.ov[k]=''; edRenderTab();
   const inp=document.querySelector(`#allFields input[data-k="${cssq(k)}"]`);
   if(inp){inp.focus();}
+}
+
+/* =========================================================================
+   COMPARE — the same unit table twice, side by side
+
+   "Is my new spearman better than the one it replaces, and by how much" is a
+   question the EDU answers only if you hold two blocks of eleven-value lines in
+   your head at once. So the second unit is loaded beside the first and the lines
+   are split into their named slots — attack against attack, morale against
+   morale — with the better side green and the worse red.
+
+   Which side is "better" is only claimed where it is genuinely a merit: attack
+   and armour go up, cost and heat fatigue go down, and everything else (a hit
+   sound, a formation width, the skeleton factor) is simply marked as different.
+   Guessing a winner for a setting that has none would be worse than saying
+   nothing, because it reads as advice.
+
+   Both columns are live boxes and both are written by Save — the whole point is
+   to close a gap you can see, in whichever of the two units is wrong. */
+
+// key|part label -> +1 when bigger is better, -1 when smaller is. A slot that
+// is not in here has no better side and is only ever marked "different".
+const CMP_MERIT=(()=>{
+  const m={},set=(key,pairs)=>Object.keys(pairs).forEach(p=>{m[key+'|'+p]=pairs[p];});
+  ['stat_pri','stat_sec','stat_ter'].forEach(k=>set(k,
+    {'Attack':1,'Charge bonus':1,'Range':1,'Ammo':1,'Delay':-1}));
+  ['stat_pri_ex','stat_sec_ex','stat_ter_ex'].forEach(k=>set(k,
+    {'Attack vs mounted':1,'Defence vs mounted':1,'Armour penetration':1}));
+  set('stat_pri_armour',{'Armour':1,'Defence skill':1,'Shield':1});
+  set('stat_armour_ex',{'Armour 0':1,'Armour 1':1,'Armour 2':1,'Armour 3':1,
+    'Defence skill':1,'Shield melee':1,'Shield missile':1});
+  set('stat_sec_armour',{'Armour':1,'Defence skill':1});
+  set('stat_mental',{'Morale':1});
+  set('stat_health',{'Man':1,'Mount / animal':1});
+  set('stat_ground',{'Scrub':1,'Sand':1,'Forest':1,'Snow':1});
+  set('soldier',{'Men':1});
+  set('unit_info',{'Melee attack':1,'Missile attack':1,'Defence':1});
+  set('move_speed_mod',{'×':1});
+  set('stat_heat',{'Heat':-1});
+  set('stat_fire_delay',{'Delay':-1});
+  set('stat_stl',{'Men':-1});               // men it may lose before it counts as dead
+  set('crusading_upkeep_modifier',{'×':-1});
+  set('stat_cost',{'Turns':-1,'Recruit':-1,'Upkeep':-1,'Weapon ug.':-1,'Armour ug.':-1,
+    'Custom battle':-1,'Price rise':-1});
+  return m;
+})();
+// The two dropdowns that are really a ladder. `impetuous` is deliberately absent
+// from the discipline list: it is a different behaviour, not a better one.
+const CMP_ORDER={
+  'stat_mental|Training':['untrained','trained','highly_trained'],
+  'stat_mental|Discipline':['low','normal','disciplined'],
+};
+const cmpNum=v=>{const n=parseFloat(String(v==null?'':v).trim());return isFinite(n)?n:null;};
+const cmpFmt=n=>String(Math.round(n*1000)/1000);
+/* One slot's verdict. `absent` names a side that has no such LINE at all, which
+   makes its zeroes meaningless — a unit with no `stat_armour_ex` does not have
+   0 armour, it has the ordinary line instead — so nothing wins those. */
+function cmpVerdict(key,part,va,vb,absent){
+  const a=(va==null?'':''+va).trim(),b=(vb==null?'':''+vb).trim();
+  if(a===b)return {same:true};
+  if(absent)return {diff:true,absent};
+  const id=key+'|'+((part&&part.pl)||'');
+  const merit=CMP_MERIT[id];
+  if(merit){
+    const na=cmpNum(a),nb=cmpNum(b);
+    if(na!=null&&nb!=null&&na!==nb)
+      return {win:((na>nb)===(merit>0))?'a':'b',gap:cmpFmt(Math.abs(na-nb))};
+  }
+  const order=CMP_ORDER[id];
+  if(order){
+    const ia=order.indexOf(a.toLowerCase()),ib=order.indexOf(b.toLowerCase());
+    if(ia>=0&&ib>=0&&ia!==ib)return {win:ia>ib?'a':'b',gap:''};
+  }
+  return {diff:true};
+}
+/* The whole table as data, from two field lookups. Pure — it never touches the
+   page — so the same call builds the view and answers "how many differences are
+   there" for the header, and the test suite can drive it under node. */
+// The two lines that are the unit's IDENTITY rather than a stat. They differ
+// between any two units by definition, so they would head the table with a
+// difference nobody came to look at — and `type` in particular is renamed
+// through its own machinery on the Identity tab, not by writing the field.
+const CMP_SKIP=new Set(['type','dictionary']);
+function cmpBuild(A,B,labels){
+  const secs={},tally={a:0,b:0,neu:0,same:0};
+  labels.forEach(label=>{
+    const key=gfKey(label),spec=GF_FIELDS[key];
+    if(CMP_SKIP.has(key))return;
+    const hasA=A.has(label),hasB=B.has(label);
+    if(!hasA&&!hasB)return;
+    const absent=!hasA?'a':(!hasB?'b':'');
+    const parted=spec&&spec.parts&&spec.parts.length;
+    const pa=parted?gfParse(spec,A.val(label)):null;
+    const pb=parted?gfParse(spec,B.val(label)):null;
+    let rows;
+    if(pa&&pb&&pa.ok&&pb.ok){
+      rows=spec.parts.map((part,i)=>{
+        const va=pa.parts[i]==null?'':pa.parts[i],vb=pb.parts[i]==null?'':pb.parts[i];
+        return {label,key,pi:i,part,name:part.pl,va,vb,v:cmpVerdict(key,part,va,vb,absent)};
+      });
+    }else{
+      // a list line (ownership, attributes) or one the parser refused: the whole
+      // value is the slot, and it is compared as text
+      const va=A.val(label),vb=B.val(label);
+      rows=[{label,key,pi:-1,part:null,name:(spec&&spec.t)||label,va,vb,
+             v:cmpVerdict(key,null,va,vb,absent)}];
+    }
+    rows.forEach(r=>{ if(r.v.same)tally.same++; else if(r.v.win)tally[r.v.win]++; else tally.neu++; });
+    const sid=GF_SECTION_OF[key]||'other';
+    const sec=secs[sid]||(secs[sid]={id:sid,
+      t:(GF_SECTIONS.find(s=>s.id===sid)||{}).t||'Other lines',fields:[]});
+    sec.fields.push({label,key,title:(spec&&spec.t)||label,rows,absent});
+  });
+  return {sections:GF_SECTIONS.map(s=>secs[s.id]).filter(Boolean),tally};
+}
+
+/* ---- the two sides ----
+   'a' is the unit the editor opened on and writes through the ordinary edit
+   path; 'b' is the compared unit, which carries its own override map and is
+   saved by a second request. Neither knows about the other. */
+const cmpSide=w=>w==='b'?state.ed.cmp:state.ed;
+function cmpVal(w,label){
+  const s=cmpSide(w); if(!s||!s.d)return '';
+  if(label in s.ov)return s.ov[label];
+  const f=s.d.fields.find(x=>x[0]===label); return f?f[1]:'';
+}
+function cmpHas(w,label){
+  const s=cmpSide(w); if(!s||!s.d)return false;
+  return !!s.d.fields.find(x=>x[0]===label)&&!(s.rm&&s.rm.has(label));
+}
+const cmpEdited=(w,label)=>!!(cmpSide(w)&&(label in (cmpSide(w).ov||{})));
+function cmpSet(w,label,val){
+  if(w==='a')return edSetField(label,val);
+  const c=state.ed.cmp,f=c.d.fields.find(x=>x[0]===label);
+  if(!f){ c.d.fields=c.d.fields.concat([[label,'']]); c.added.add(label); }
+  if(val===((f||['',''])[1])&&!c.added.has(label))delete c.ov[label]; else c.ov[label]=val;
+  c.rm.delete(label); edStale();
+}
+function cmpPart(w,label,pi){
+  const key=gfKey(label),spec=GF_FIELDS[key],raw=cmpVal(w,label);
+  if(pi<0||!spec||!spec.parts||!spec.parts.length)return raw;
+  const p=gfParse(spec,raw);
+  return p.ok?(p.parts[pi]==null?'':p.parts[pi]):raw;
+}
+// Typing into one box rewrites the whole line it belongs to, exactly as the
+// guided editor does — a slot has no existence of its own in the EDU.
+function cmpWrite(w,label,pi,val){
+  const key=gfKey(label),spec=GF_FIELDS[key];
+  if(pi<0||!spec||!spec.parts||!spec.parts.length)return cmpSet(w,label,val);
+  const p=gfParse(spec,cmpVal(w,label));
+  if(!p.ok)return cmpSet(w,label,val);
+  const parts=p.parts.slice(); parts[pi]=val;
+  cmpSet(w,label,gfBuild(spec,parts));
+}
+function cmpLabels(){
+  const e=state.ed,out=[],seen=new Set();
+  const push=l=>{ if(!seen.has(l)){seen.add(l);out.push(l);} };
+  (e.d.fields||[]).forEach(([l])=>push(l));
+  (e.cmp&&e.cmp.d?e.cmp.d.fields:[]).forEach(([l])=>push(l));
+  return out;
+}
+const edCmpModel=()=>cmpBuild({val:l=>cmpVal('a',l),has:l=>cmpHas('a',l)},
+                              {val:l=>cmpVal('b',l),has:l=>cmpHas('b',l)},cmpLabels());
+const edCmpDirty=()=>{
+  const c=state.ed&&state.ed.cmp;
+  return !!(c&&c.d&&(Object.keys(c.ov).length||c.rm.size));
+};
+
+/* ---- picking the other unit ---- */
+function edCmpUnits(){
+  const e=state.ed;
+  if(state.data&&state.data.mod===e.mod)return state.data.units||[];
+  if(e.cmpUnitsFor===e.mod)return e.cmpUnits||[];
+  if(!e._cmpLoading){
+    e._cmpLoading=true;
+    api.get('/api/units?mod='+enc(e.mod)).then(d=>{
+      e._cmpLoading=false; e.cmpUnits=d.units||[]; e.cmpUnitsFor=e.mod;
+      if(state.ed===e&&e.tab==='compare')edRenderTab();
+    }).catch(()=>{e._cmpLoading=false;});
+  }
+  return [];
+}
+async function edCmpPick(type){
+  const e=state.ed;
+  e.cmp={unit:type,d:null,ov:{},rm:new Set(),added:new Set(),loading:true};
+  edRenderTab();
+  let d;
+  try{ d=await api.get(`/api/edit/unit?mod=${enc(e.mod)}&type=${enc(type)}`); }
+  catch(err){ d={error:''+err}; }
+  if(state.ed!==e||!e.cmp||e.cmp.unit!==type)return;   // moved on while loading
+  if(d.error){ e.cmp={unit:type,d:null,ov:{},rm:new Set(),added:new Set(),error:d.error};
+    edRenderTab(); return; }
+  e.cmp={unit:type,d,ov:{},rm:new Set(),added:new Set()};
+  e.cmpQ=''; edRenderTab();
+}
+function edCmpClear(){
+  const e=state.ed;
+  if(edCmpDirty()&&!confirm(`Discard the unsaved changes to ${e.cmp.unit}?`))return;
+  e.cmp=null; edRenderTab();
+}
+function edCmpSetQ(v){ state.ed.cmpQ=v; }
+function edCmpToggleSame(on){ state.ed.cmpSame=on; edRenderTab(); }
+
+/* ---- the tab ---- */
+function edCompare(){
+  const e=state.ed;
+  if(!e.cmp)return edCmpPicker();
+  if(e.cmp.loading)return `<div class="frm"><div class="count">Loading
+    ${esc(e.cmp.unit)}…</div></div>`;
+  if(e.cmp.error)return `<div class="frm"><div class="w-bad">Couldn’t open
+    ${esc(e.cmp.unit)}: ${esc(e.cmp.error)}</div>
+    <button style="margin-top:8px" onclick="state.ed.cmp=null;edRenderTab()">Pick another unit</button></div>`;
+  const m=edCmpModel();
+  const q=(e.cmpQ||'').trim().toLowerCase();
+  const fields=[];
+  m.sections.forEach(sec=>{
+    const keep=sec.fields.map(f=>{
+      const hit=!q||f.key.toLowerCase().includes(q)||f.title.toLowerCase().includes(q)
+        ||f.rows.some(r=>(r.name||'').toLowerCase().includes(q));
+      if(!hit)return null;
+      const rows=e.cmpSame?f.rows:f.rows.filter(r=>!r.v.same);
+      return rows.length?Object.assign({},f,{rows}):null;
+    }).filter(Boolean);
+    if(keep.length)fields.push(Object.assign({},sec,{fields:keep}));
+  });
+  return `<div class="frm">
+    ${edCmpHead(m)}
+    <div class="cmpbar">
+      <input class="q" id="cmpQ" placeholder="Filter by stat — attack, morale, cost…"
+        value="${esc(e.cmpQ||'')}">
+      <label class="chk"><input type="checkbox" id="cmpSame" ${e.cmpSame?'checked':''}>
+        show the stats they share</label>
+      <span class="count">Both columns are editable — <b>Save changes</b> writes both units.</span>
+    </div>
+    ${fields.length?fields.map(edCmpSection).join('')
+      :`<div class="count">${q?'Nothing matches that filter.'
+        :'These two units are identical on every line. Tick “show the stats they share” to see them.'}</div>`}
+    ${cmpDatalists()}</div>`;
+}
+function edCmpHead(m){
+  const e=state.ed,t=m.tally;
+  const nameOf=(mod,type,fallback)=>{
+    const u=edCmpUnits().find(x=>x.type===type);
+    return (u&&u.name)||fallback||type;
+  };
+  const side=(w,type,name,extra)=>`<div class="cu ${w}">
+      <img onerror="iconRetry(this)" src="${iconUrl(e.mod,type)}" alt="">
+      <div style="min-width:0"><div class="nm">${esc(name)}</div>
+        <div class="ty">${esc(type)}</div>${extra||''}</div></div>`;
+  return `<div class="cmphead">
+    ${side('a',e.unit,e.loc.name||e.d.type,
+      `<div class="ty"><b class="w">${t.a}</b> better here</div>`)}
+    <div class="tally">
+      <div><b>${t.a+t.b+t.neu}</b> differ${t.neu?` · ${t.neu} no better side`:''}</div>
+      <div class="count">${t.same} identical</div>
+      <div style="margin-top:4px"><button onclick="edCmpClear()">⇄ Change</button>
+        <button onclick="openUnitTab('${q1(esc(e.cmp.unit))}')"
+          title="Open the compared unit in its own editor tab">↗ Open</button></div>
+    </div>
+    ${side('b',e.cmp.unit,nameOf(e.mod,e.cmp.unit,e.cmp.d.type),
+      `<div class="ty"><b class="w">${t.b}</b> better here</div>`)}
+  </div>`;
+}
+function edCmpSection(sec){
+  return `<div class="cmpsec"><h5>${esc(sec.t)}</h5>
+    <div class="cmplist">${sec.fields.map(edCmpField).join('')}</div></div>`;
+}
+function edCmpField(f){
+  const e=state.ed;
+  const missing=f.absent==='a'?`<span class="w-warn"> — ${esc(e.unit)} has no such line</span>`
+    :f.absent==='b'?`<span class="w-warn"> — ${esc(e.cmp.unit)} has no such line</span>`:'';
+  return `<div class="cmpfield">${esc(f.title)}
+      <span class="count">${esc(f.label)}</span>${missing}</div>
+    ${f.rows.map(edCmpRow).join('')}`;
+}
+function edCmpRow(r){
+  const v=r.v;
+  const cell=w=>`<span class="cv ${w} ${v.same?'':v.win?(v.win===w?'win':'lose'):'diff'} ${
+      cmpEdited(w,r.label)?'edited':''}">${cmpWidget(w,r)}</span>`;
+  return `<div class="cmprow ${v.same?'same':''}">
+    <span class="cl" title="${esc(r.name)}">${esc(r.name)}</span>
+    ${cell('a')}
+    <span class="cd ${v.same?'':v.win?'win':'neu'}">${cmpDelta(v)}</span>
+    ${cell('b')}</div>`;
+}
+// ◀ points at the unit that wins the slot, with the size of the gap. A slot with
+// no better side just says the two are not equal.
+function cmpDelta(v){
+  if(v.same)return '=';
+  if(v.win==='a')return `◀ ${esc(v.gap||'')}`;
+  if(v.win==='b')return `${esc(v.gap||'')} ▶`;
+  return v.absent?'·':'≠';
+}
+/* Which vocabularies the table needs a datalist for, emitted once at the bottom
+   rather than once per box — a `soldier` model list is two thousand entries and
+   the table has forty of them. */
+let _cmpLists=null;
+function cmpVocabList(name){
+  const v=gfVocabFor(state.ed.mod)[name];
+  return Array.isArray(v)?v:[];
+}
+function cmpDatalists(){
+  const out=[...(_cmpLists||[])].map(n=>`<datalist id="cmpdl-${esc(n)}">${
+    cmpVocabList(n).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('');
+  _cmpLists=null;
+  return out;
+}
+function cmpWidget(w,r){
+  const val=cmpPart(w,r.label,r.pi);
+  const p=r.part,at=`data-cmp="${w}" data-cl="${esc(r.label)}" data-ci="${r.pi}"`;
+  if(p&&p.type==='sel'){
+    const list=cmpVocabList(p.v);
+    if(list.length)return `<select ${at}>${p.optional?'<option value=""></option>':''}${
+      list.map(x=>`<option value="${esc(x)}" ${x===val?'selected':''}>${esc(x)}</option>`).join('')}${
+      val&&!list.includes(val)?`<option value="${esc(val)}" selected>${esc(val)}</option>`:''}</select>`;
+  }
+  if(p&&p.type==='combo'&&p.v&&cmpVocabList(p.v).length){
+    (_cmpLists=_cmpLists||new Set()).add(p.v);
+    return `<input ${at} list="cmpdl-${esc(p.v)}" value="${esc(val)}">`;
+  }
+  return `<input ${at} value="${esc(val)}"${
+    p&&p.type==='num'?' inputmode="decimal"':''}>`;
+}
+function edCmpPicker(){
+  const e=state.ed;
+  const q=(e.cmpQ||'').trim().toLowerCase();
+  const units=edCmpUnits().filter(u=>u.type!==e.unit
+    &&(!q||u.name.toLowerCase().includes(q)||u.type.toLowerCase().includes(q))).slice(0,300);
+  return `<div class="frm">
+    <fieldset><legend>Compare with another unit</legend>
+      <div class="count">Pick a unit from <b>${esc(e.mod)}</b>. Its stats are shown beside
+        ${esc(e.loc.name||e.d.type)}’s, slot by slot, with the better side in green and the
+        worse in red — and both columns stay editable, so a gap can be closed from either
+        end. <b>Save changes</b> then writes both units.</div>
+      <input class="q" id="cmpQ" style="margin-top:8px;width:100%"
+        placeholder="Filter ${esc(e.mod)}’s units…" value="${esc(e.cmpQ||'')}">
+      <div class="baselist" style="max-height:340px;margin-top:6px">${units.map(u=>`
+        <div class="baserow" onclick="edCmpPick('${q1(esc(u.type))}')">
+          <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(e.mod,u.type)}">
+          <div><div class="bn">${esc(u.name)}</div>
+            <div class="bs">${esc(u.type)} · ${esc(u.kind||u.category||'')}</div></div>
+        </div>`).join('')||`<div class="caprow"><span class="count">${
+          edCmpUnits().length?'No units match.':'Loading this mod’s units…'}</span></div>`}</div>
+    </fieldset></div>`;
+}
+function edWireCompare(){
+  const e=state.ed;
+  const q=document.getElementById('cmpQ');
+  if(q)q.oninput=()=>{ e.cmpQ=q.value;
+    // in the picker the list itself is the thing being filtered; in the table
+    // only the rows are, and both want the caret left where it is
+    edRenderTab();
+    const n=document.getElementById('cmpQ');
+    if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);}
+  };
+  const same=document.getElementById('cmpSame');
+  if(same)same.onchange=()=>edCmpToggleSame(same.checked);
+  document.querySelectorAll('#edBody [data-cmp]').forEach(el=>{
+    const w=el.dataset.cmp,label=el.dataset.cl,pi=+el.dataset.ci;
+    const write=()=>{ cmpWrite(w,label,pi,el.value); cmpRepaint(el); };
+    el.oninput=write; el.onchange=write;
+  });
+}
+/* Recolour one row in place. A full re-render on every keystroke would throw the
+   caret out of the box being typed into, which is exactly the box whose colour
+   has to keep up. */
+function cmpRepaint(el){
+  const row=el.closest('.cmprow'); if(!row)return;
+  const label=el.dataset.cl,pi=+el.dataset.ci;
+  const key=gfKey(label),spec=GF_FIELDS[key];
+  const part=(pi>=0&&spec&&spec.parts)?spec.parts[pi]:null;
+  const absent=!cmpHas('a',label)?'a':(!cmpHas('b',label)?'b':'');
+  const v=cmpVerdict(key,part,cmpPart('a',label,pi),cmpPart('b',label,pi),absent);
+  row.className='cmprow'+(v.same?' same':'');
+  ['a','b'].forEach(w=>{
+    const cell=row.querySelector('.cv.'+w); if(!cell)return;
+    cell.className='cv '+w+' '+(v.same?'':v.win?(v.win===w?'win':'lose'):'diff')
+      +(cmpEdited(w,label)?' edited':'');
+  });
+  const cd=row.querySelector('.cd');
+  if(cd){ cd.className='cd '+(v.same?'':v.win?'win':'neu'); cd.innerHTML=cmpDelta(v); }
+  const head=document.querySelector('#edBody .cmphead');
+  if(head)head.outerHTML=edCmpHead(edCmpModel());
+  paintDirty();
 }
 
 /* ---- drag-to-reorder chip lists ---------------------------------------
@@ -4313,7 +4770,17 @@ async function edPreview(){
   const r=await api.post(edApi('plan'),edPayload());
   if(r.error){box.innerHTML=`<div class="preview w-bad">${esc(r.error)}</div>`;return null;}
   state.ed.plan=r; state.ed.planStale=false;
-  box.innerHTML=edPlanHtml(r); return r;
+  box.innerHTML=edPlanHtml(r);
+  // the unit being compared against is a save of its own, so it gets its own
+  // plan under the first one rather than being silently left out of it
+  if(edCmpDirty()){
+    const cr=await api.post('/api/edit/plan',edCmpPayload());
+    box.insertAdjacentHTML('beforeend',cr.error
+      ? `<div class="preview w-bad">${esc(state.ed.cmp.unit)}: ${esc(cr.error)}</div>`
+      : `<div class="count" style="margin-top:8px">…and for
+          <b>${esc(state.ed.cmp.unit)}</b>:</div>`+edPlanHtml(cr));
+  }
+  return r;
 }
 function edStale(){const e=state.ed; if(e&&e.plan&&!e.planStale){e.planStale=true;
   const b=document.getElementById('edPreview'); if(b)b.innerHTML=edPlanHtml(e.plan,true);}}
@@ -4328,23 +4795,57 @@ function edPlanHtml(r,stale){
       r.files_written.map(f=>`<span class="path">${esc(f)}</span>`).join(', ')}</span></div>`:''}
     ${li('warn',r.warnings)}${li('bad',r.errors)}</div>`;
 }
+// The compared unit is a second, ordinary unit edit — same endpoint, its own
+// request. Nothing but the field overrides can be changed from the Compare tab,
+// so the rest of the payload is the neutral form.
+function edCmpPayload(extra){
+  const e=state.ed,c=e.cmp;
+  return Object.assign({mod:e.mod,unit:c.unit,new_type:'',new_dictionary:'',
+    field_overrides:c.ov,remove_fields:[...c.rm],loc:null,
+    model_edits:[],new_models:[],card_src:'',info_src:'',
+    remove_old_icons:false},extra||{});
+}
 async function edSave(){
   const e=state.ed,bm=!!e.bmdb;
-  if(!edDirty()){toast('Nothing to save');return;}
-  const r=await api.post(edApi('plan'),edPayload());
-  if(r.error){toast('Error: '+r.error);return;}
-  if(r.errors&&r.errors.length){
-    document.getElementById('edPreview').innerHTML=edPlanHtml(r);
-    toast(r.errors[0]);return;}
+  const one=edDirty(),two=edCmpDirty();
+  if(!one&&!two){toast('Nothing to save');return;}
+  // Both units are planned BEFORE either is written, so a problem with the
+  // second one is found while nothing has been touched — half a save is worse
+  // than none when the two were being balanced against each other.
+  let r=null,cr=null;
+  if(one){
+    r=await api.post(edApi('plan'),edPayload());
+    if(r.error){toast('Error: '+r.error);return;}
+    if(r.errors&&r.errors.length){
+      document.getElementById('edPreview').innerHTML=edPlanHtml(r);
+      toast(r.errors[0]);return;}
+  }
+  if(two){
+    cr=await api.post('/api/edit/plan',edCmpPayload());
+    if(cr.error){toast(`Error in ${e.cmp.unit}: ${cr.error}`);return;}
+    if(cr.errors&&cr.errors.length){toast(`${e.cmp.unit}: ${cr.errors[0]}`);return;}
+  }
   const what=bm?e.d.models[0].name:e.unit;
+  const writing=[one?what:null,two?e.cmp.unit:null].filter(Boolean).join(' and ');
   document.getElementById('modal').innerHTML=`<h2>Saving…</h2>
     <div class="mbody"><div class="progress-track"><div class="progress-fill" style="width:60%"></div></div>
-    <div class="count" style="margin-top:8px">Writing ${esc(what)} into ${esc(e.mod)}…</div></div>`;
-  const res=await api.post(edApi('apply'),edPayload({clear_strings_bin:clearBinOn()}));
-  if(res.error){toast('Save failed: '+res.error);bm?renderBmdbEditor():renderEditor();return;}
+    <div class="count" style="margin-top:8px">Writing ${esc(writing)} into ${esc(e.mod)}…</div></div>`;
+  let res=null;
+  if(one){
+    res=await api.post(edApi('apply'),edPayload({clear_strings_bin:clearBinOn()}));
+    if(res.error){toast('Save failed: '+res.error);bm?renderBmdbEditor():renderEditor();return;}
+  }
+  if(two){
+    const res2=await api.post('/api/edit/apply',edCmpPayload({clear_strings_bin:clearBinOn()}));
+    if(res2.error){
+      toast(`${one?'Saved '+what+', but ':''}saving ${e.cmp.unit} failed: ${res2.error}`,5000);
+      renderEditor(); return;}
+    if(!res)res=res2;
+    e.cmp.ov={}; e.cmp.rm=new Set(); e.cmp.added=new Set();
+  }
   closeModal();
-  toast(bm?`Saved “${esc(what)}” ✓${binMsg(res)}  (undo in 🕑 Log)`
-          :`Saved “${res.plan.resolved_type}” ✓${binMsg(res)}  (undo in 🕑 Log)`,4200);
+  const saved=[one?(bm?what:res.plan.resolved_type):null,two?e.cmp.unit:null].filter(Boolean);
+  toast(`Saved ${saved.map(s=>'“'+s+'”').join(' and ')} ✓${binMsg(res)}  (undo in 🕑 Log)`,4200);
   state.destData=null; state.bmdb=null; loadSource();
 }
 /* =====================================================================
@@ -6782,7 +7283,11 @@ function renderBuildingEditor(){
   bldRenderBody(lv,orig);
 }
 function bldPickLevel(i){
-  const b=state.bld; b.lvl=i; b.plan=null; renderBuildingEditor();
+  const b=state.bld; b.lvl=i; b.plan=null;
+  // the ticks belong to the level they were made on — every row here is a
+  // different object, and carrying a stale selection across only confuses
+  if(b.bulk)b.bulk.sel.clear();
+  renderBuildingEditor();
 }
 function bldClose(){
   if(bldDirty()&&!confirm('Close without saving your building changes?'))return;
@@ -6854,7 +7359,11 @@ function bldRenderBody(lv,orig){
           <button class="${b.view!=='grid'?'on':''}" onclick="bldSetView('rows')">▤ Rows</button>
           <button class="${b.view==='grid'?'on':''}" onclick="bldSetView('grid')">▦ Grid</button>
         </div>
+        <button style="margin-left:0" class="${bldBulkOn()?'on':''}" onclick="bldBulkToggle()"
+          title="Tick several units and give them all the same requirements, numbers or removal at once"
+          >☑ Bulk edit</button>
         <button class="primary" onclick="bldAddPoolDialog()">＋ Add unit</button></h4>
+      ${bldBulkBar(shown)}
       ${bldPressureHtml(lv)}
       ${b.view==='grid'
         ? `<div class="ugrid" id="bldPools">${shown.length?shown.map(bldPoolCard).join('')
@@ -7092,7 +7601,9 @@ function bldPoolRow(c){
   const b=state.bld,i=bldCapList().indexOf(c);
   const info=b.d.units[(c.pool.unit||'').toLowerCase()];
   const missing=!info||info.missing;
-  return `<div class="poolrow ${c.del?'gone':''} ${missing?'missing':''}" data-cap="${i}">
+  return `<div class="poolrow ${c.del?'gone':''} ${missing?'missing':''} ${
+      bldBulkHas(c)?'picked':''}" data-cap="${i}">
+    ${bldPickBox(c,i)}
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
     <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
       <div class="ut">${missing?'<span class="w-bad">not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
@@ -7107,6 +7618,7 @@ function bldPoolRow(c){
       <div class="sum">${bldClauseSummary(c.conds)}</div>
       ${bldPoolOwnFlag(c)}
       <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
+      ${bldCopyBtn(i)}
     </div>
     <div class="acts">
       ${missing?'':`<button title="Open this unit in the Unit Editor"
@@ -7120,8 +7632,9 @@ function bldPoolCard(c){
   const b=state.bld,i=bldCapList().indexOf(c);
   const info=b.d.units[(c.pool.unit||'').toLowerCase()];
   const missing=!info||info.missing;
-  return `<div class="ucard ${c.del?'gone':''}" data-cap="${i}">
+  return `<div class="ucard ${c.del?'gone':''} ${bldBulkHas(c)?'picked':''}" data-cap="${i}">
     <div class="top">
+      ${bldPickBox(c,i)}
       <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
       <div style="min-width:0">
         <div class="nm">${esc(info&&!missing?info.name:c.pool.unit)}</div>
@@ -7137,13 +7650,195 @@ function bldPoolCard(c){
       <label>${qm(POOL_HELP.experience,'Starting experience')}xp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
     <div class="turns" data-turns style="text-align:center">a unit ${esc(poolTurns(c.pool.per_turn))}</div>
-    <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div></div>
+    <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div>${bldCopyBtn(i)}</div>
     <div class="acts">
       <button onclick="bldEditClause('cap',${i})">✎ Requires</button>
       ${missing?'':`<button onclick="openUnitFromBuilding('${q1(esc(c.pool.unit))}')">✎ Unit</button>`}
       <button class="${c.del?'':'danger'}" onclick="bldToggleDel(${i})">${c.del?'↺':'🗑'}</button>
     </div></div>`;
 }
+
+/* =========================================================================
+   Bulk edit over recruit pools
+
+   Nothing here is a new kind of edit — every one of these actions is something
+   the single-row buttons already do. What it changes is the arithmetic: giving
+   twenty freshly added units the same `requires factions { … }` was twenty trips
+   through the clause dialog, and the twentieth was where the typo went in.
+
+   The selection holds the capability OBJECTS, not their indices. Indices into
+   bldCapList() shift the moment a row is added or a new row is dropped, and a
+   selection that silently slides onto its neighbours is worse than none.
+   ========================================================================= */
+const bldBulk=()=>(state.bld.bulk||(state.bld.bulk={on:false,sel:new Set()}));
+const bldBulkOn=()=>!!(state.bld&&state.bld.bulk&&state.bld.bulk.on);
+const bldBulkHas=c=>bldBulkOn()&&bldBulk().sel.has(c);
+// Only rows still in the level count — a new row that was dropped again is gone
+// from lv.caps but may still be sitting in the Set.
+function bldBulkSel(){
+  const sel=bldBulk().sel;
+  return bldCapList().filter(c=>c.pool&&sel.has(c));
+}
+function bldBulkToggle(){
+  const bu=bldBulk(); bu.on=!bu.on;
+  if(!bu.on)bu.sel.clear();
+  bldRenderBodyNow();
+}
+function bldPickBox(c,i){
+  if(!bldBulkOn())return '';
+  return `<label class="pick" title="Tick this pool for the bulk actions above"><input type="checkbox"
+    ${bldBulkHas(c)?'checked':''} onchange="bldBulkPick(${i},this.checked)"></label>`;
+}
+function bldBulkPick(i,on){
+  const c=bldCapList()[i]; if(!c)return;
+  on?bldBulk().sel.add(c):bldBulk().sel.delete(c);
+  bldRenderBodyNow();
+}
+function bldBulkAll(on){
+  const bu=bldBulk(),lv=state.bld.work.levels[state.bld.lvl];
+  // "all" means all the filter is showing, not all three hundred the level has
+  const shown=[...lv.caps,...lv.fcaps].filter(c=>c.pool&&bldPoolMatches(c));
+  shown.forEach(c=>on?bu.sel.add(c):bu.sel.delete(c));
+  if(!on)bu.sel.clear();
+  bldRenderBodyNow();
+}
+const bldRenderBodyNow=()=>bldRenderBody(state.bld.work.levels[state.bld.lvl],
+                                         state.bld.d.levels[state.bld.lvl]);
+/* ---- carrying one row's clause to the others ----
+   The clipboard lives on `state`, not on the building, so a clause copied out of
+   the town watch can be pasted into the barracks — which is most of why anyone
+   would copy one at all. It holds a deep copy: pasting must not hand every row a
+   reference to the same terms, or editing one afterwards edits all of them. */
+function bldCopyBtn(i){
+  return `<button class="reqbtn" onclick="bldCopyCond(${i})"
+    title="Copy these requirements — tick other units under ☑ Bulk edit and paste them on">⧉</button>`;
+}
+function bldCopyCond(i){
+  const c=bldCapList()[i]; if(!c)return;
+  const name=(c.pool&&c.pool.unit)||c.keyword||'that row';
+  state.condClip={unit:name,conds:JSON.parse(JSON.stringify(c.conds||[])),
+                  text:bldClauseText(c.conds)};
+  const bu=bldBulk();
+  if(!bu.on){bu.on=true;}                     // there is nowhere to paste it otherwise
+  bldRenderBodyNow();
+  toast(`Copied ${name}’s requirements${state.condClip.text?': '+state.condClip.text:' (none — always)'
+    } — tick the units to paste onto.`,4200);
+}
+/* Put a clause onto one row. `replace` swaps it outright; `add` joins the new
+   terms onto what is already there. M2TW evaluates a clause left to right with
+   no brackets, so "add" really is a concatenation — the incoming terms are
+   ANDed onto the end, and a term the row already carries is skipped rather than
+   written twice. */
+function bldCondsOnto(host,conds,mode){
+  const incoming=JSON.parse(JSON.stringify(conds||[]));
+  const base=mode==='add'?JSON.parse(JSON.stringify(host.conds||[])):[];
+  const seen=new Set(base.map(c=>bldCondText(c)));
+  const keep=incoming.filter(c=>{
+    const t=bldCondText(c);
+    if(mode==='add'&&seen.has(t))return false;
+    seen.add(t); return true;
+  });
+  keep.forEach(c=>{ if(!c.join)c.join='and'; });
+  const out=base.concat(keep);
+  if(out.length)out[0].join='';
+  host.conds=out; host.condEdited=true; host.requires=bldClauseText(out);
+  return out;
+}
+function bldBulkPaste(){
+  const sel=bldBulkSel(),clip=state.condClip;
+  if(!clip||!sel.length)return;
+  const mode=bldPasteMode();
+  sel.forEach(h=>bldCondsOnto(h,clip.conds,mode));
+  bldTouched();
+  toast(`${clip.unit}’s requirements ${mode==='add'?'added to':'copied onto'} ${
+    sel.length} unit${sel.length===1?'':'s'}.`);
+}
+const bldPasteMode=()=>(state.bld.pasteMode==='add'?'add':'replace');
+function bldSetPasteMode(v){ state.bld.pasteMode=v; }
+function bldBulkDelete(){
+  const b=state.bld,sel=bldBulkSel(); if(!sel.length)return;
+  const lv=b.work.levels[b.lvl];
+  sel.forEach(c=>{
+    c.del=true;
+    // a row that was only ever added by this dialog just goes away
+    if(c.line==null){ const from=c.faction?lv.fcaps:lv.caps;
+      const i=from.indexOf(c); if(i>=0)from.splice(i,1); }
+    bldBulk().sel.delete(c);
+  });
+  bldTouched();
+  toast(`${sel.length} recruit pool${sel.length===1?'':'s'} marked for removal.`);
+}
+// Only the boxes you actually filled in are written — a blank one leaves that
+// number alone, so "give these twelve units max 4" doesn't also zero their
+// starting points.
+function bldBulkNums(){
+  const b=state.bld,sel=bldBulkSel(),n=b.bulkNums||{};
+  const keys=['initial','per_turn','maximum','experience'].filter(k=>(n[k]||'').trim()!=='');
+  if(!sel.length)return;
+  if(!keys.length){toast('Fill in at least one of the four numbers first.');return;}
+  sel.forEach(c=>keys.forEach(k=>{c.pool[k]=n[k].trim();}));
+  bldTouched();
+  toast(`${keys.map(k=>POOL_LABEL[k]||k).join(', ')} set on ${sel.length} pool${
+    sel.length===1?'':'s'}.`);
+}
+const POOL_LABEL={initial:'start',per_turn:'per turn',maximum:'max',experience:'exp'};
+function bldBulkBar(shown){
+  if(!bldBulkOn())return '';
+  const b=state.bld,sel=bldBulkSel(),n=sel.length,clip=state.condClip;
+  const from=n?((sel[0].pool&&sel[0].pool.unit)||'the first'):'';
+  const bn=b.bulkNums||(b.bulkNums={initial:'',per_turn:'',maximum:'',experience:''});
+  const num=k=>`<label>${POOL_LABEL[k]}<input data-bulknum="${k}" value="${esc(bn[k])}"
+    placeholder="—" inputmode="decimal"></label>`;
+  return `<div class="bulkbar">
+    <span class="n">${n} selected</span>
+    <button onclick="bldBulkAll(true)">Tick all ${shown.length} shown</button>
+    <button onclick="bldBulkAll(false)" ${n?'':'disabled'}>Clear</button>
+    <button class="primary" ${n?'':'disabled'} onclick="bldBulkClause()"
+      title="Edit one requires clause and put it on every ticked unit">✎ Requirements for ${n}…</button>
+    <button ${n?'':'disabled'} onclick="bldBulkCopy()"
+      title="Take the requirements off the first ticked unit, to paste onto others">⧉ Copy${
+        n?` from ${esc(from)}`:''}</button>
+    <button ${clip&&n?'':'disabled'} onclick="bldBulkPaste()"
+      title="${clip?esc('Paste '+clip.unit+'’s requirements: '+(clip.text||'(none — always)'))
+                  :'Copy a unit’s requirements first'}">📌 Paste${
+        clip?` ${esc(clip.unit)}’s`:''}</button>
+    <select onchange="bldSetPasteMode(this.value)" title="What pasting does to what the row already says">
+      <option value="replace" ${bldPasteMode()==='replace'?'selected':''}>replace theirs</option>
+      <option value="add" ${bldPasteMode()==='add'?'selected':''}>add to theirs</option>
+    </select>
+    <button class="danger" ${n?'':'disabled'} onclick="bldBulkDelete()">🗑 Remove ${n}</button>
+    <div class="bnote" style="flex:1 1 100%;margin:0">${clip
+      ? `Clipboard: <b>${esc(clip.unit)}</b> — <code>${esc(clip.text||'always')}</code>`
+      : 'Copy a clause off one unit with ⧉ on its row, then paste it onto the ticked ones.'}</div>
+    <div class="bnums">${['initial','per_turn','maximum','experience'].map(num).join('')}
+      <button ${n?'':'disabled'} onclick="bldBulkNums()">Apply numbers to ${n}</button>
+      <span class="hint">Blank boxes are left alone.</span></div>
+  </div>`;
+}
+function bldBulkCopy(){
+  const sel=bldBulkSel(); if(!sel.length)return;
+  bldCopyCond(bldCapList().indexOf(sel[0]));
+}
+/* One clause dialog over many rows. It opens on what they already say when they
+   all say the same thing — the common case straight after adding a batch, where
+   every one of them carries its own ownership and you are about to narrow that
+   to one faction. When they disagree it opens empty rather than picking a winner
+   arbitrarily. */
+function bldBulkClause(){
+  const b=state.bld,hosts=bldBulkSel();
+  if(!hosts.length)return;
+  const first=bldClauseText(hosts[0].conds);
+  const same=hosts.every(h=>bldClauseText(h.conds)===first);
+  const seed=same?JSON.parse(JSON.stringify(hosts[0].conds||[])):[];
+  b.clause={hosts,kind:'bulk',index:-1,
+            conds:seed,was:JSON.parse(JSON.stringify(seed)),
+            units:hosts.map(h=>h.pool&&h.pool.unit).filter(Boolean),
+            unit:'',mode:same?'replace':'add',same,pick:null};
+  b.stash=document.getElementById('modal').innerHTML;
+  renderClauseDialog();
+  bldClauseOwnership();
+}
+function bldClauseMode(v){ state.bld.clause.mode=v; renderClauseDialog(); }
 
 /* ---- the upgrade graph ----
    A line is not always a straight chain. Some branch (A -> B -> D and A -> C -> E),
@@ -7295,6 +7990,11 @@ function bldWire(){
   st.onchange=()=>{lv.settlement=st.value;mark(st,st.value!==orig.settlement);bldDirtyNote();};
   const upAdd=document.getElementById('upgAdd');
   if(upAdd)upAdd.onchange=()=>{bldUpgAdd(upAdd.value);};
+  // The bulk bar's four numbers are staged on the building, not on any row, so
+  // ticking another unit (which redraws the bar) doesn't wipe what was typed.
+  body.querySelectorAll('[data-bulknum]').forEach(el=>{
+    el.oninput=()=>{(b.bulkNums||(b.bulkNums={}))[el.dataset.bulknum]=el.value;};
+  });
   const locC=bldLocSel(),locWas=((orig.loc_all||{})[locC])||{};
   body.querySelectorAll('[data-loc]').forEach(el=>{
     const key=el.dataset.loc;
@@ -7437,14 +8137,15 @@ function bldEditClause(kind,index){
   const b=state.bld,lv=b.work.levels[b.lvl];
   const host=kind==='level'?lv:bldCapList()[index];
   if(!host)return;
+  const unit=(host.pool&&host.pool.unit)||'';
   b.clause={host,kind,index,conds:JSON.parse(JSON.stringify(host.conds||[])),
             // what the clause said on the way in, so every widget in here can
             // show which of its values YOU changed
             was:JSON.parse(JSON.stringify(host.conds||[])),
-            unit:(host.pool&&host.pool.unit)||'',pick:null};
+            unit,units:unit?[unit]:[],pick:null};
   b.stash=document.getElementById('modal').innerHTML;
   renderClauseDialog();
-  if(b.clause.unit)bldClauseOwnership();
+  bldClauseOwnership();
 }
 function bldClauseCancel(){
   const b=state.bld;
@@ -7453,20 +8154,31 @@ function bldClauseCancel(){
 }
 function bldClauseApply(){
   const b=state.bld,c=b.clause;
-  c.host.conds=c.conds; c.host.condEdited=true;
-  c.host.requires=bldClauseText(c.conds);
+  if(c.kind==='bulk'){
+    const n=(c.hosts||[]).length;
+    (c.hosts||[]).forEach(h=>bldCondsOnto(h,c.conds,c.mode));
+    toast(`${c.mode==='add'?'Added to':'Set on'} ${n} unit${n===1?'':'s'}: ${
+      bldClauseText(c.conds)||'no requirements'}`,4200);
+  }else{
+    c.host.conds=c.conds; c.host.condEdited=true;
+    c.host.requires=bldClauseText(c.conds);
+  }
   document.getElementById('modal').innerHTML=b.stash; b.stash=null; b.clause=null;
   bldTouched();
 }
 function renderClauseDialog(){
   const b=state.bld,c=b.clause;
-  const what=c.kind==='level'
+  const bulk=c.kind==='bulk',n=bulk?c.hosts.length:0;
+  const what=bulk
+    ? `who can recruit these <b>${n} unit${n===1?'':'s'}</b> here`
+    : c.kind==='level'
     ? `who can build <b>${esc(b.d.levels[b.lvl].label)}</b>`
     : (c.unit?`who can recruit <b>${esc(c.unit)}</b> here`
              :`when <b>${esc(c.host.keyword)}</b> applies`);
   document.getElementById('modal').innerHTML=`
     <h2>Requirements — ${what}</h2>
     <div class="mbody">
+      ${bulk?bldBulkClauseHead(c):''}
       <div class="condlist" id="condList"></div>
       <div class="brow" style="margin-top:8px">
         <select id="condAdd" style="flex:0 0 260px">
@@ -7481,13 +8193,42 @@ function renderClauseDialog(){
     </div>
     <div class="foot">
       <button onclick="bldClauseCancel()">Cancel</button>
-      <button class="primary" onclick="bldClauseApply()">Use these requirements</button>
+      <button class="primary" onclick="bldClauseApply()">${bulk
+        ? `Use on ${n} unit${n===1?'':'s'}` : 'Use these requirements'}</button>
     </div>`;
   document.getElementById('condAdd').onchange=e=>{
     if(!e.target.value)return;
     bldCondAdd(e.target.value); e.target.value='';
   };
   renderCondList();
+}
+/* The head of the bulk clause dialog: who it will land on, and whether it
+   replaces what they say or is added to it. Replace is the default when they all
+   already agree — you are narrowing one shared clause. When they disagree the
+   dialog opens empty and defaults to ADD, because replacing a clause you were
+   never shown is how a level quietly stops training half its units. */
+function bldBulkClauseHead(c){
+  const names=c.units.slice(0,14).map(esc);
+  return `<div class="ownwarn" style="margin:0 0 10px">
+    <b>${c.hosts.length} recruit pool${c.hosts.length===1?'':'s'}</b>:
+    <code>${names.join('</code> <code>')}</code>${
+      c.units.length>names.length?` <span class="count">+${c.units.length-names.length} more</span>`:''}
+    <div class="brow" style="margin:7px 0 0">
+      <label class="chk"><input type="radio" name="bulkmode" value="replace"
+        ${c.mode!=='add'?'checked':''} onchange="bldClauseMode('replace')">
+        Replace what each of them requires</label>
+      <label class="chk"><input type="radio" name="bulkmode" value="add"
+        ${c.mode==='add'?'checked':''} onchange="bldClauseMode('add')">
+        Add these terms to what they already require</label>
+    </div>
+    <div class="count" style="margin-top:4px">${c.same
+      ? 'They all require the same thing today, shown below. '
+      : '<b class="w-warn">They do not all require the same thing</b>, so this opened empty. '}${
+      c.mode==='add'
+      ? 'Each term below is ANDed onto that unit’s own clause; a term it already carries is not '
+        +'written twice.'
+      : 'Replacing throws away whatever each of them requires now.'}</div>
+  </div>`;
 }
 function bldCondAdd(kind){
   const c=state.bld.clause;
@@ -7505,7 +8246,7 @@ function renderCondList(){
     :'<div class="condrow"><span class="count">No requirements — anyone, always.</span></div>';
   document.getElementById('condText').textContent=bldClauseText(c.conds)||'(no requires clause)';
   wireCondRows();
-  if(c.unit)bldClauseOwnership();
+  bldClauseOwnership();
 }
 function condRowHtml(cond,i){
   const v=cond.values||[];
@@ -7660,7 +8401,7 @@ function wireCondRows(){
 function condChanged(){
   const c=state.bld.clause;
   document.getElementById('condText').textContent=bldClauseText(c.conds)||'(no requires clause)';
-  if(c.unit)bldClauseOwnership();
+  bldClauseOwnership();
 }
 function bldCondRemove(i){
   const c=state.bld.clause;
@@ -7726,7 +8467,7 @@ function renderFacPicker(){
     renderFacPicker();});
   document.getElementById('facCount').textContent=
     `${(cond.values||[]).length} selected`;
-  if(c.unit)bldFacOwnership(cond.values||[]);
+  bldFacOwnership(cond.values||[]);
 }
 function bldFacAll(on){
   const c=state.bld.clause,cond=c.conds[c.pick.i];
@@ -7750,15 +8491,24 @@ function bldFacDone(){
    it, or the building trains nothing / trains something untextured. Both fail
    silently in game, so they are checked as soon as a faction is ticked. */
 async function bldOwnCheck(unit,factions){
-  const b=state.bld;
-  const key=unit+'|'+[...factions].sort().join(',');
-  if(b.own[key])return b.own[key];
-  try{
-    const r=await api.post('/api/buildings/ownership',
-      {mod:b.mod,checks:[{unit,factions}]});
-    b.own[key]=(r.rows||[])[0]||null;
-  }catch(e){ b.own[key]=null; }
-  return b.own[key];
+  return (await bldOwnChecks([unit],factions))[0]||null;
+}
+// The same question for a whole bulk selection, asked in ONE request: the
+// endpoint already takes a list of checks, and a hundred round trips for a
+// hundred ticked units is a hundred round trips.
+async function bldOwnChecks(units,factions){
+  const b=state.bld,facs=[...factions].sort();
+  const key=u=>u+'|'+facs.join(',');
+  const want=[...new Set(units)].filter(u=>u&&!(key(u) in b.own));
+  if(want.length){
+    try{
+      const r=await api.post('/api/buildings/ownership',
+        {mod:b.mod,checks:want.map(u=>({unit:u,factions:facs}))});
+      const rows=r.rows||[];
+      want.forEach((u,i)=>{ b.own[key(u)]=rows[i]||null; });
+    }catch(e){ want.forEach(u=>{ b.own[key(u)]=null; }); }
+  }
+  return [...new Set(units)].map(u=>b.own[key(u)]).filter(Boolean);
 }
 function bldOwnHtml(row){
   if(!row)return '';
@@ -7784,45 +8534,86 @@ function bldOwnHtml(row){
     ${bits.length===1?'that':'both'} — ${fixes.join(', and ')}. Untick
     <b>Fix unit ownership</b> at the bottom of the editor to leave it alone.</div>`;
 }
+// Over many units the individual warnings would be a wall of text, so they are
+// rolled into one line per problem naming the units — the answer you want is
+// "which of these twelve can't the Danes actually field", not twelve paragraphs.
+function bldOwnManyHtml(rows){
+  const bad=rows.filter(r=>r&&(!r.known||r.missing_ownership.length||r.missing_textures.length));
+  if(!rows.length)return '';
+  if(!bad.length)return `<div class="ownwarn ok">Every faction here can already field
+    all ${rows.length} of these units.</div>`;
+  if(bad.length===1&&rows.length===1)return bldOwnHtml(bad[0]);
+  const unknown=bad.filter(r=>!r.known).map(r=>r.unit);
+  const noOwn=bad.filter(r=>r.known&&r.missing_ownership.length);
+  const noTex=bad.filter(r=>r.known&&r.missing_textures.length);
+  const list=us=>`<code>${us.slice(0,12).map(esc).join('</code> <code>')}</code>${
+    us.length>12?` <span class="count">+${us.length-12} more</span>`:''}`;
+  const bits=[];
+  if(unknown.length)bits.push(`<div><b class="w-bad">${unknown.length}</b> not in this mod’s
+    EDU at all — nothing will ever be recruited from ${unknown.length===1?'that pool':'those pools'}:
+    ${list(unknown)}</div>`);
+  if(noOwn.length)bits.push(`<div><b>${noOwn.length}</b> ${noOwn.length===1?'does':'do'} not list
+    every one of those factions in <code>ownership</code>, so the building would train nothing for
+    them: ${list(noOwn.map(r=>r.unit))}</div>`);
+  if(noTex.length)bits.push(`<div><b>${noTex.length}</b> ${noTex.length===1?'has':'have'} no battle-model
+    texture for some of them, so their soldiers would turn up untextured:
+    ${list(noTex.map(r=>r.unit))}</div>`);
+  return `<div class="ownwarn ${unknown.length?'bad':''}">${bits.join('')}
+    <div class="count" style="margin-top:5px">Saving fixes the ownership and copies the missing
+      textures — untick <b>Fix unit ownership</b> at the bottom of the editor to leave them alone.
+      A unit the EDU doesn’t have cannot be fixed from here.</div></div>`;
+}
+async function bldOwnBox(id,facs){
+  const c=state.bld.clause;
+  const units=(c&&(c.units&&c.units.length?c.units:(c.unit?[c.unit]:[])))||[];
+  if(!units.length)return;
+  const box=document.getElementById(id);
+  if(!box)return;
+  if(!facs.length){box.innerHTML='';return;}
+  const rows=await bldOwnChecks(units,facs);
+  // the dialog may have moved on while the request was out
+  if(state.bld.clause!==c)return;
+  box.innerHTML=units.length===1?bldOwnHtml(rows[0]):bldOwnManyHtml(rows);
+}
 async function bldClauseOwnership(){
-  const c=state.bld.clause; if(!c||!c.unit)return;
+  const c=state.bld.clause; if(!c)return;
   const facs=[].concat(...c.conds.filter(x=>x.kind==='factions'&&!x.negate)
     .map(x=>x.values||[]));
-  const box=document.getElementById('condOwn');
-  if(!box)return;
-  if(!facs.length){box.innerHTML='';return;}
-  box.innerHTML=bldOwnHtml(await bldOwnCheck(c.unit,facs));
+  return bldOwnBox('condOwn',facs);
 }
-async function bldFacOwnership(facs){
-  const c=state.bld.clause; if(!c||!c.unit)return;
-  const box=document.getElementById('facOwn');
-  if(!box)return;
-  if(!facs.length){box.innerHTML='';return;}
-  box.innerHTML=bldOwnHtml(await bldOwnCheck(c.unit,facs));
-}
+async function bldFacOwnership(facs){ return bldOwnBox('facOwn',facs); }
 
-/* ---- add a unit to this level's recruitment ---- */
+/* ---- add units to this level's recruitment ----
+   A level is filled out a dozen units at a time, not one, so the picker TICKS
+   rather than adds: a row you tick stays ticked while you keep filtering, and
+   one button adds the lot. The count in the button is the whole selection, not
+   just what the current filter shows. */
 function bldAddPoolDialog(){
   const b=state.bld,lv=b.work.levels[b.lvl];
   const already=new Set([...lv.caps,...lv.fcaps].filter(c=>c.pool&&!c.del)
     .map(c=>c.pool.unit.toLowerCase()));
-  b.pick={q:'',faction:'',already};
+  b.pick={q:'',faction:'',already,picked:new Set()};
   const modal=document.getElementById('modal');
   b.stash=modal.innerHTML;                     // put the editor back on cancel
-  modal.innerHTML=`<h2>Add a unit to ${esc(b.d.levels[b.lvl].label)}</h2>
+  modal.innerHTML=`<h2>Add units to ${esc(b.d.levels[b.lvl].label)}</h2>
     <div class="mbody">
       <div class="basebar"><input id="bpQ" placeholder="Filter ${esc(state.src)}’s units…"
-          oninput="bldPickRender()"><select id="bpFac" onchange="bldPickRender()">
+          oninput="bldPickFilter()"><select id="bpFac" onchange="bldPickFilter()">
           <option value="">All factions</option>${
             (state.data.factions||[]).slice().sort((a,c)=>facLabel(a).localeCompare(facLabel(c)))
               .map(f=>`<option value="${esc(f)}">${esc(facLabel(f))}</option>`).join('')}
-        </select></div>
+        </select>
+        <button onclick="bldPickAll(true)">Tick all shown</button>
+        <button onclick="bldPickAll(false)">Untick all</button></div>
       <div class="baselist" style="max-height:300px" id="bpList"></div>
-      <div class="bnote">A new pool is gated to the unit’s own <code>ownership</code>, so only
-        the factions that can field it are offered it here — open <b>Requirements</b> on the row
-        to widen or narrow that. Its numbers start at 1, +0.5 a turn, max 2, 0 experience.</div>
+      <div class="bnote">Each new pool is gated to that unit’s own <code>ownership</code>, so only
+        the factions that can field it are offered it here — open <b>Requirements</b> on the row,
+        or tick the rows and use <b>Bulk edit</b>, to widen or narrow that. Numbers start at 1,
+        +0.5 a turn, max 2, 0 experience.</div>
     </div>
-    <div class="foot"><button onclick="bldPickCancel()">Cancel</button></div>`;
+    <div class="foot"><span class="count" id="bpCount"></span>
+      <button onclick="bldPickCancel()">Cancel</button>
+      <button class="primary" id="bpAdd" onclick="bldAddPicked()">Add</button></div>`;
   bldPickRender();
 }
 function bldPickCancel(){
@@ -7830,20 +8621,47 @@ function bldPickCancel(){
   modal.innerHTML=state.bld.stash; state.bld.stash=null;
   bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
 }
+// The rows the filter boxes are letting through right now.
+function bldPickShown(){
+  const p=state.bld.pick;
+  return (state.data.units||[]).filter(u=>
+    (!p.q||u.name.toLowerCase().includes(p.q)||u.type.toLowerCase().includes(p.q))
+    &&(!p.faction||u.ownership.includes(p.faction))).slice(0,300);
+}
+function bldPickFilter(){
+  const p=state.bld.pick;
+  p.q=(document.getElementById('bpQ').value||'').trim().toLowerCase();
+  p.faction=document.getElementById('bpFac').value;
+  bldPickRender();
+}
+function bldPickToggle(type){
+  const p=state.bld.pick;
+  p.picked.has(type)?p.picked.delete(type):p.picked.add(type);
+  bldPickRender();
+}
+function bldPickAll(on){
+  const p=state.bld.pick;
+  bldPickShown().forEach(u=>on?p.picked.add(u.type):p.picked.delete(u.type));
+  bldPickRender();
+}
 function bldPickRender(){
-  const q=(document.getElementById('bpQ').value||'').trim().toLowerCase();
-  const fac=document.getElementById('bpFac').value;
-  const already=state.bld.pick.already;
-  const units=(state.data.units||[]).filter(u=>
-    (!q||u.name.toLowerCase().includes(q)||u.type.toLowerCase().includes(q))
-    &&(!fac||u.ownership.includes(fac))).slice(0,300);
+  const p=state.bld.pick,already=p.already;
+  const units=bldPickShown();
   document.getElementById('bpList').innerHTML=units.map(u=>`
-    <div class="baserow" onclick="bldAddPool('${q1(esc(u.type))}')">
+    <div class="baserow ${p.picked.has(u.type)?'on':''}" onclick="bldPickToggle('${q1(esc(u.type))}')">
+      <label class="pick" onclick="event.preventDefault()"><input type="checkbox"
+        ${p.picked.has(u.type)?'checked':''}></label>
       <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}">
       <div><div class="bn">${esc(u.name)}${already.has(u.type.toLowerCase())
         ?' <span class="badge">already here</span>':''}</div>
         <div class="bs">${esc(u.type)} · ${esc(u.kind||u.category||'')}</div></div>
     </div>`).join('')||'<div class="caprow"><span class="count">No units match.</span></div>';
+  const n=p.picked.size;
+  const cnt=document.getElementById('bpCount');
+  if(cnt)cnt.textContent=n?`${n} ticked${units.length<n?' — some are outside the filter':''}`
+                          :'Tick the units to add.';
+  const add=document.getElementById('bpAdd');
+  if(add){add.textContent=n?`Add ${n} unit${n===1?'':'s'}`:'Add';add.disabled=!n;}
 }
 /* A pool with no clause is trained by EVERY faction that can build the level,
    which is almost never what adding one unit means — and for the factions that
@@ -7859,7 +8677,10 @@ function bldPoolOwnership(type){
   const own=[...new Set((u&&u.ownership)||[])];
   return own.length?[{join:'',negate:false,kind:'factions',values:own,raw:''}]:[];
 }
-function bldAddPool(type){
+// One new pool row, appended to the level. Returns it, so the caller can say
+// what it did — nothing here touches the DOM, because adding twenty units must
+// redraw once rather than twenty times.
+function bldAddPoolRow(type){
   const b=state.bld,lv=b.work.levels[b.lvl];
   const conds=bldPoolOwnership(type);
   // `d.units` only indexes the units this line ALREADY trains — the server sends
@@ -7876,16 +8697,36 @@ function bldAddPool(type){
     pool:{unit:type,initial:'1',per_turn:'0.5',maximum:'2',experience:'0'},
     comment:'',faction:false,del:false};
   lv.caps.push(row);
+  return row;
+}
+function bldAddPool(type){ bldAddPicked([type]); }
+/* Commit the picker's ticks. The rows land ticked in bulk edit as well, because
+   the thing you do straight after adding twelve units is give all twelve the
+   same requires clause — and hunting them back down in a list of three hundred
+   is exactly the work this is meant to save. */
+function bldAddPicked(types){
+  const b=state.bld;
+  const list=types||[...((b.pick&&b.pick.picked)||[])];
+  if(!list.length)return;
+  const rows=list.map(bldAddPoolRow);
   // A gated pool can fall outside the faction filter that is narrowing the list,
   // and a unit that vanishes the moment you add it looks like the add failed.
-  if(!bldPoolMatches(row)&&b.poolFac)b.poolFac.clear();
-  // the picker replaced the editor's markup — rebuild it, then show the new row
+  if(rows.some(r=>!bldPoolMatches(r))&&b.poolFac)b.poolFac.clear();
+  b.bulk=b.bulk||{sel:new Set()};
+  b.bulk.on=true; b.bulk.sel=new Set(rows);
+  // the picker replaced the editor's markup — rebuild it, then show the new rows
   const modal=document.getElementById('modal');
-  modal.innerHTML=b.stash; b.stash=null;
+  if(b.stash){ modal.innerHTML=b.stash; b.stash=null; }
   renderBuildingEditor();
-  toast(`${type} added to ${b.d.levels[b.lvl].label}${
-    conds.length?` — restricted to its ${conds[0].values.length} owning faction(s)`
-                :' — it has no ownership, so anyone here can train it'}`,4000);
+  const label=b.d.levels[b.lvl].label;
+  const gated=rows.filter(r=>r.conds.length).length;
+  toast(rows.length===1
+    ? `${list[0]} added to ${label}${rows[0].conds.length
+        ? ` — restricted to its ${rows[0].conds[0].values.length} owning faction(s)`
+        : ' — it has no ownership, so anyone here can train it'}`
+    : `${rows.length} units added to ${label} — ${gated} gated to their own ownership${
+        gated<rows.length?`, ${rows.length-gated} with no ownership to gate to`:''
+      }. They are ticked for bulk edit.`,4600);
 }
 
 /* ---- hop to the Unit Editor and back ----
@@ -7906,7 +8747,8 @@ function openUnitFromBuilding(type){
 }
 async function backToBuilding(){
   const r=state.bldReturn,b=state.bld; if(!r||!b)return;
-  if(state.ed&&edDirty()&&!confirm('Discard the unsaved unit changes and go back to the building?'))return;
+  if(state.ed&&(edDirty()||edCmpDirty())
+     &&!confirm('Discard the unsaved unit changes and go back to the building?'))return;
   state.ed=null; closeModal();
   state.bldReturn=null;
   state.mode='buildings'; modeSel.value='buildings';
