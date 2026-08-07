@@ -818,11 +818,18 @@ python app.py
 
 Or double-click `Launch-Unit-Transfer.bat` — it checks for Python and Pillow
 first and, if Pillow is missing, installs it automatically (`pip install
-pillow`) before starting. If that install fails (no internet, broken pip), run
-`Install-Dependencies.bat` for a clearer standalone diagnostic, or install
-Pillow yourself and try again. First run: click the gear icon and point it at
-your Medieval II install folder (the one containing a `mods` folder). The
-browser opens automatically.
+pillow`) before starting.
+
+If it can't find Python at all, run `Install-Dependencies.bat`. With nothing
+installed it offers to do the whole job for you: it downloads the official
+python.org installer, installs it for your user only (no administrator prompt),
+puts it on PATH, and then adds Pillow. It asks before downloading anything, and
+nothing else on the PC is touched. If Python is already installed but was set up
+without "Add python.exe to PATH", it finds that install in the registry and adds
+it to your user PATH instead of installing a second copy.
+
+First run: click the gear icon and point it at your Medieval II install folder
+(the one containing a `mods` folder). The browser opens automatically.
 
 If you don't want to deal with Python at all, grab the portable build from
 [Releases](../../releases/latest) instead — it bundles its own Python and

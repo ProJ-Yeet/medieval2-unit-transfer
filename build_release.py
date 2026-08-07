@@ -507,9 +507,10 @@ def write_docs(stage: Path, portable: bool) -> None:
     note = ("Nothing else to install — Python and the image library are already\n"
             "inside this folder (`runtime\\`)."
             if portable else
-            "This build does NOT include Python. The PC needs Python 3.9+ from\n"
-            "python.org (tick \"Add python.exe to PATH\"). Unit Transfer.bat will then\n"
-            "auto-install Pillow on first run; or run Install-Dependencies.bat yourself.")
+            "This build does NOT include Python. Run Install-Dependencies.bat first:\n"
+            "it installs Python for you (downloaded from python.org, your user only,\n"
+            "no administrator prompt, added to PATH) along with the image library.\n"
+            "After that, Unit Transfer.bat works on its own.")
     cmd = ("runtime\\python.exe app.py --check" if portable else "py app.py --check")
     (stage / "README.txt").write_text(
         README.format(runtime_note=note, check_cmd=cmd), encoding="utf-8")
