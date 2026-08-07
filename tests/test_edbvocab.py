@@ -77,6 +77,19 @@ for name in installed:
           not any(r["region"].lower().startswith("religions") for r in v["regions"]))
     check("hidden resources know which regions carry them",
           any(h["count"] for h in v["hidden_resources"]))
+    # the region alone is not what you recognise on the campaign map, so each
+    # carrier also names its SETTLEMENT and who starts holding it
+    placed = [h for h in v["hidden_resources"] if h["count"]]
+    check("…and which settlement each of those is",
+          all(len(h["places"]) == h["count"] for h in v["hidden_resources"]))
+    check("every place names a settlement, a region and an owner",
+          all(p["settlement"] and p["region"] and p["faction"]
+              for h in placed for p in h["places"]))
+    check("the places line up with the region list",
+          all(p["region"] in {r["name"] for r in v["regions"]}
+              for h in placed[:5] for p in h["places"]))
+    check("trade resources answer the same question",
+          all(len(r["places"]) == r["count"] for r in v["resources"]))
     check("events found", len(v["events"]) > 10)
     check("every event row has a name and a source",
           all(e["name"] and e["source"] in ("edb", "script", "text")

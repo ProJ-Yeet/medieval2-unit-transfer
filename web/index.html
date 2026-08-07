@@ -300,6 +300,11 @@
   .chipd{display:inline-flex;gap:4px;align-items:center;background:var(--panel);border:1px solid var(--edge);
     border-radius:12px;padding:1px 4px 1px 9px;font-size:11.5px;cursor:grab;user-select:none}
   .chipd.drag{opacity:.4} .chipd.over{border-color:var(--accent);background:#2c343f}
+  /* an entry YOU put in this list, and a ghost of one you took out */
+  .chipd.added{border-color:var(--accent);background:#241f0d}
+  .chipd.gone{border-style:dashed;opacity:.55;text-decoration:line-through;cursor:pointer;
+    padding:1px 9px}
+  .chipd.gone:hover{opacity:1;border-color:var(--accent);text-decoration:none}
   .chipd .g{color:var(--dim);cursor:grab}
   .chipd button{background:none;border:none;color:var(--dim);padding:0 3px;font-size:12px;line-height:1}
   .chipd button:hover{color:var(--accent)}
@@ -486,7 +491,10 @@
   .gfpart.w3 input,.gfpart.w3 select{width:210px}
   .gfpart.grow{flex:1;min-width:190px}
   .gfpart.grow input,.gfpart.grow select{width:100%}
+  /* only the PART you changed lights up, not all thirteen numbers of a stat line */
   .gfpart input.changed,.gfpart select.changed{border-color:var(--accent);background:#241f0d}
+  .gfpart.changed>.pl{color:var(--accent)}
+  .gfpart .chk input.changed{outline:1px solid var(--accent);outline-offset:2px}
   .gfpart .sub{font-size:10.5px;color:var(--dim)}
   .gfrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:7px}
   .gfraw{display:flex;gap:6px;align-items:center;margin-top:8px}
@@ -536,8 +544,19 @@
   .gftip .tb code,.gftip .tf code{background:var(--panel2);padding:0 3px;border-radius:3px;color:var(--ink)}
   .gftip .tf{font-size:11px;color:var(--dim);margin-top:6px;padding-top:5px;
     border-top:1px solid var(--edge)}
-  .gfhead[data-tip] .t{border-bottom:1px dotted var(--edge);cursor:help}
-  .gfpart[data-tip] .pl{cursor:help}
+  /* ---- the ? that carries a field's explanation ----
+     Small, quiet, and at the field's top-left so it reads before the field does.
+     It is a marker, not a button: it never takes an action, it only explains. */
+  .qm{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+    width:13px;height:13px;margin-right:5px;border-radius:50%;cursor:help;
+    border:1px solid var(--edge);background:var(--panel2);color:var(--dim);
+    font-size:9px;font-weight:700;line-height:1;vertical-align:1px;user-select:none;
+    font-family:system-ui,sans-serif;letter-spacing:0;text-transform:none}
+  .qm:hover,.qm:focus{border-color:var(--accent);color:var(--accent);
+    background:var(--panel);outline:none}
+  /* in a tight row the marker sits alone on the left of the field's label */
+  .brow>.qm,.gfrow>.qm{margin-right:2px}
+  .prow>.qm{justify-self:start}
   /* ---- Buildings mode: export_descr_buildings.txt ---- */
   /* Building art is landscape (78x62 small, 300x245 constructed), so these cards
      are wider and shorter than a unit card rather than reusing .card's portrait. */
@@ -649,22 +668,58 @@
   .condrow .ckind{flex:0 0 160px;font-size:11.5px;color:var(--dim);cursor:help}
   .condrow input,.condrow select{padding:3px 6px;font-size:12px;min-width:0}
   .condrow .x{flex:0 0 auto;padding:2px 7px}
+  /* "📍 8 settlements" — hover it for the list out of descr_regions.txt */
+  .where{position:relative;flex:0 0 auto;font-size:11px;color:var(--accent2);cursor:help;
+    border:1px solid var(--edge);border-radius:5px;padding:2px 7px;white-space:nowrap}
+  .where.none{color:var(--bad);border-color:var(--bad)}
+  .where .wpop{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:30;
+    min-width:250px;max-width:390px;max-height:280px;overflow:auto;
+    background:var(--panel);border:1px solid var(--accent2);border-radius:7px;
+    padding:7px 9px;box-shadow:0 8px 26px #000b;white-space:normal;cursor:auto}
+  .where:hover .wpop{display:block}
+  .where .whead{font-size:10.5px;color:var(--dim);margin-bottom:5px;
+    border-bottom:1px solid var(--edge);padding-bottom:4px}
+  .where .wrow{display:flex;gap:7px;align-items:baseline;padding:2px 0;font-size:11.5px}
+  .where .wrow b{color:var(--ink);flex:0 0 auto}
+  .where .wrow span{color:var(--dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .where .wrow i{color:var(--accent2);font-style:normal;font-size:10.5px;flex:0 0 auto}
   .facbtn{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;padding:3px 8px;font-size:12px}
   .fgh{margin:12px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
   .faclist{max-height:210px;overflow:auto;border:1px solid var(--edge);border-radius:7px;
     background:var(--panel2);padding:3px}
-  .facrow{display:flex;gap:8px;align-items:center;padding:3px 7px;border-radius:5px;cursor:pointer}
+  /* The NAME is what you are looking for, so it gets the whole row. The code and
+     culture behind it — the bit you need once, to check you ticked the right
+     "Mordor" — appear over the row on hover instead of squeezing the name into
+     an ellipsis. Positioned, so revealing one moves nothing. */
+  .facrow{display:flex;gap:8px;align-items:center;padding:3px 7px;border-radius:5px;
+    cursor:pointer;position:relative}
   .facrow:hover{background:#2a3340}
   .facrow.on{background:#2b3446}
   .facrow .fn{flex:1;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .facrow .fc{font-size:10.5px;color:var(--dim);font-family:ui-monospace,Consolas,monospace}
+  .facrow .fc{position:absolute;left:26px;top:calc(100% - 2px);z-index:6;display:none;
+    font-size:10.5px;color:var(--dim);font-family:ui-monospace,Consolas,monospace;
+    background:var(--panel);border:1px solid var(--edge);border-radius:5px;
+    padding:2px 7px;white-space:nowrap;box-shadow:0 4px 12px #0008}
+  .facrow:hover .fc,.facrow:focus-within .fc{display:block}
   .facrow.allrow{border:1px solid var(--accent);margin-bottom:4px}
+  .facrow.allrow .fc{position:static;display:block;background:none;border:none;
+    box-shadow:none;padding:0;white-space:normal}
+  /* a faction ticked or unticked since the dialog opened */
+  .facrow.edited{background:#241f0d;box-shadow:0 0 0 1px var(--accent) inset}
+  .facrow.edited:hover{background:#2e2712}
   .ownwarn{margin-top:10px;border:1px solid var(--warn);background:#2a2410;border-radius:7px;
     padding:8px 10px;font-size:12px;line-height:1.45}
   .ownwarn.ok{border-color:var(--good);background:#12281c;color:var(--dim)}
   .ownwarn.bad{border-color:var(--bad);background:#2a1414}
   .ownwarn code{color:var(--accent)}
+  /* the per-faction breakdown under the recruitment-limit warning */
+  .plist{margin-top:7px;max-height:150px;overflow:auto}
+  .prow2{display:flex;gap:9px;align-items:baseline;padding:2px 0;font-size:11.5px}
+  .prow2 .pf{flex:0 0 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow2 .pn{flex:0 0 38px;text-align:right;font-weight:600;color:var(--warn)}
+  .prow2.bad .pn{color:var(--bad)}
+  .prow2 .pd{flex:1;min-width:0;color:var(--dim)}
   .poolrow .ownflag{flex:0 0 auto;color:var(--warn);cursor:help;font-size:13px}
   /* ---- recruitment as a card grid ---- */
   .ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
@@ -830,6 +885,21 @@ const facBy=()=>(state.settings.faction_sort==='code'?'code':'name');
 const facTwoNames=(code,name)=>!name?code
   :facBy()==='code'?`${code} (${name})`:`${name} (${code})`;
 const facLabel=f=>facTwoNames(f,state.factionNames[f]);
+// In a CHECKLIST the two names are split rather than run together: the one you
+// are reading down the list for leads, and the other appears over the row on
+// hover (.facrow .fc), so a long name is never cut short to make room for a code
+// you only need to glance at once. Which one leads is the ⚙ faction_sort setting.
+const facLead=(code,name)=>!name?code:(facBy()==='code'?code:name);
+const facBehind=(code,name)=>!name?'':(facBy()==='code'?name:code);
+// One checklist row: tick box, the leading name, and the hover-only detail.
+function facCheckRow(code,name,onchange,checked,note,edited){
+  const behind=[facBehind(code,name),note].filter(Boolean).join(' · ');
+  return `<div class="facrow${edited?' edited':''}">
+    <label class="chk"><input type="checkbox" ${checked?'checked':''} onchange="${onchange}">
+      <span class="fn">${esc(facLead(code,name))}</span></label>
+    ${behind||edited?`<span class="fc">${esc(behind)}${
+      edited?(behind?' · ':'')+(checked?'added by you':'removed by you'):''}</span>`:''}</div>`;
+}
 const iconUrl=(mod,type,kind)=>`/icon?mod=${encodeURIComponent(mod)}&type=${encodeURIComponent(type)}&kind=${kind||'card'}`;
 // Icon requests can be dropped when a page fires dozens at once (connection
 // bursts). A missing icon returns a valid blank PNG (onload), so onerror only
@@ -1232,8 +1302,30 @@ function undoFocus(){
 function undoRefocus(sel){
   if(!sel)return;
   const t=document.querySelector(sel); if(!t)return;
-  t.focus();
+  t.focus({preventScroll:true});
   try{ if(t.setSelectionRange)t.setSelectionRange(t.value.length,t.value.length); }catch(e){}
+}
+/* Undo re-draws from the model, which replaces the dialog's innerHTML and so
+   throws away where you were scrolled to — landing you at the top of a 300-pool
+   building every time. The containers below are the ones that scroll; they are
+   matched back up by position because a re-draw of the SAME editor rebuilds the
+   same structure, and an id would only cover two of them. */
+const UNDO_SCROLLERS='#modal,#bldBody,#edBody,.mbody,.poollist,.caplist,.faclist,'
+  +'.lvstrip,.pathwrap,.upglist,.condlist,.ugrid,#main,#drawer';
+function scrollSnapshot(){
+  const out=[[-1,window.scrollY,window.scrollX]];
+  [...document.querySelectorAll(UNDO_SCROLLERS)].forEach((el,i)=>{
+    if(el.scrollTop||el.scrollLeft)out.push([i,el.scrollTop,el.scrollLeft]);
+  });
+  return out;
+}
+function scrollRestore(snap){
+  const els=[...document.querySelectorAll(UNDO_SCROLLERS)];
+  for(const [i,top,left] of snap){
+    if(i<0){ window.scrollTo(left,top); continue; }
+    const el=els[i];
+    if(el){ el.scrollTop=top; el.scrollLeft=left; }
+  }
 }
 function undoStep(redo){
   const s=undoScope();
@@ -1241,12 +1333,15 @@ function undoStep(redo){
   const from=redo?undo.future:undo.past, to=redo?undo.past:undo.future;
   if(!from.length){ toast(redo?'Nothing to redo.':'Nothing to undo.',1400); return true; }
   clearTimeout(_undoPend);                 // don't let a pending capture re-push
-  const where=undoFocus();
+  const where=undoFocus(),scrolled=scrollSnapshot();
   to.push(undo.cur);
   undo.cur=from.pop(); undo.ck=null;
   s.set(JSON.parse(undo.cur));
   s.draw();
+  scrollRestore(scrolled);
   undoRefocus(where);
+  // a re-draw that replaces images can settle a frame later and shift things
+  requestAnimationFrame(()=>scrollRestore(scrolled));
   toast((redo?'↷ Redone':'↶ Undone')+` · ${undo.past.length} more to undo`,1400);
   return true;
 }
@@ -1837,13 +1932,15 @@ function renderAllFields(type){
       :(label in c.field_overrides)?c.field_overrides[label]:val;
     const changed=!lk&&(label in c.field_overrides)&&c.field_overrides[label]!==c._orig[label];
     const isInh=inh.has(key);
+    const why=lk?lk.why
+      :isInh?`${isReplace(c)?'Kept from':'Inherited from the base unit'} ${c.base_type}.`
+      :dup?'This field appears more than once in the unit — edit this one in the EDU directly.'
+      :(GF_FIELDS[key]&&GF_FIELDS[key].t?GF_FIELDS[key].t+'. '+gfPlainDoc(key):'');
     return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}${lk?' — '+esc(lk.why)
-        :isInh?` — ${isReplace(c)?'kept from':'inherited from base'} `+esc(c.base_type):''}">${esc(label)}${
-        lk?'<span class="ibadge" title="'+esc(lk.why)+'">🔒</span>':isInh?baseBadge(c,label,cur):''}</label>
+      <label>${qm(why,label)}${esc(label)}${
+        lk?'<span class="ibadge">🔒</span>':isInh?baseBadge(c,label,cur):''}</label>
       <input data-k="${esc(label)}" value="${esc(cur)}" class="${changed?'changed':''}"
-        ${lk?`disabled title="${esc(lk.why)}"`
-         :dup?'disabled title="repeated field — edit this one in the EDU directly"':''}></div>`;
+        ${lk||dup?'disabled':''}></div>`;
   }).join('');
   box.querySelectorAll('input[data-k]').forEach(inp=>{
     inp.oninput=()=>{const k=inp.dataset.k, v=inp.value;
@@ -3257,14 +3354,18 @@ function edRawFields(){
   const rows=d.fields.map(([label,val])=>{
     const cur=(label in e.ov)?e.ov[label]:val;
     const gone=e.rm.has(label);
+    const key=label.replace(/#\d+$/,'');
+    // what this line is, moved onto the ? beside its name
+    const why=GF_FIELDS[key]&&GF_FIELDS[key].t
+      ? GF_FIELDS[key].t+'. '+gfPlainDoc(key) : '';
     const head=`<div class="afrow wide${gone?' gone':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}">${esc(label)}</label>`;
+      <label>${qm(why,label)}${esc(label)}</label>`;
     if(LIST_FIELDS.has(label)&&!gone)
       return head+edFactionField(label,cur)+rmBtn(label,gone)+'</div>';
     if(label==='armour_ug_models'&&!gone)
       return head+edArmourField(label,cur)+rmBtn(label,gone)+'</div>';
     return `<div class="afrow${gone?' gone':''}" data-label="${esc(label)}">
-      <label title="${esc(label)}">${esc(label)}</label>
+      <label>${qm(why,label)}${esc(label)}</label>
       <input data-k="${esc(label)}" value="${esc(cur)}" ${gone?'disabled':''}
         class="${(label in e.ov)&&e.ov[label]!==val?'changed':''}">
       ${rmBtn(label,gone)}</div>`;
@@ -3273,7 +3374,7 @@ function edRawFields(){
     <div class="count" style="margin-top:6px">✕ removes the whole line — clearing a value
       leaves an empty field, which the game still reads.</div>
     <div class="prow" style="margin-top:8px;grid-template-columns:170px 1fr auto">
-      <span class="pl">Add a missing field</span>
+      <span class="pl">${qm('Fields the EDU understands that this unit has no line for. Adding one writes a fresh line with an empty value.','Add a missing field')}Add a missing field</span>
       <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">— none missing —</option>'}</select>
       <button onclick="edAddField()">Add</button>
     </div>`;
@@ -3335,16 +3436,30 @@ function edDrop(ev,label,i){
 // armour_ug_levels entry with it, which the plain list remove knows nothing about.
 function edChips(label,items,extra,opt){
   const o=opt||{},cls=o.cls?' '+o.cls:'';
-  return `<div class="chips${cls}">${items.map((v,i)=>`<span class="chipd${cls}" draggable="true"
+  // entries you added stand out from the ones the file already had, and the
+  // ones you took out stay as ghosts you can click to put back
+  // …except for armour tiers, where a slot is positional: putting one back is
+  // not just re-adding a name, so no ghost is offered there
+  const was=new Set(csv((state.ed.d.fields.find(x=>x[0]===label)||['',''])[1]));
+  const gone=o.cls==='ug'?[]:[...was].filter(v=>items.indexOf(v)<0);
+  return `<div class="chips${cls}">${items.map((v,i)=>`<span class="chipd${cls}${
+      was.has(v)?'':' added'}" draggable="true"
       ondragstart="edDragStart(event,'${q1(esc(label))}',${i})"
       ondragover="edDragOver(event,'${q1(esc(label))}')" ondragleave="edDragLeave(event)"
       ondragend="edDragEnd(event)" ondrop="edDrop(event,'${q1(esc(label))}',${i})"
-      title="drag to reorder">
+      title="${was.has(v)?'drag to reorder':'Added by you · drag to reorder'}">
       <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
       ${(extra||(()=>''))(v,i)}
       <button class="${o.cls==='ug'?'xup':'x'}" title="Remove ${esc(v)}"
         onclick="${o.rm?o.rm(i,v):`edListRemove('${q1(esc(label))}',${i})`}">✕</button>
-    </span>`).join('')||'<span class="count">— empty —</span>'}</div>`;
+    </span>`).join('')||'<span class="count">— empty —</span>'}
+    ${gone.map(v=>`<span class="chipd gone" title="Removed by you — click to put it back"
+      onclick="edListRestore('${q1(esc(label))}','${q1(esc(v))}')">${esc(v)}</span>`).join('')}</div>`;
+}
+function edListRestore(label,v){
+  const list=csv(edFieldVal(label));
+  if(list.indexOf(v)<0)list.push(v);
+  edSetField(label,list.join(', ')); edRenderTab();
 }
 function edListRemove(label,i){
   const list=csv(edFieldVal(label)); list.splice(i,1);
@@ -3370,10 +3485,13 @@ function edFactionField(label,cur){
   const list=csv(cur),chosen=new Set(list);
   const isEra=label!=='ownership';
   const own=csv(edFieldVal('ownership'));
-  const boxes=edFactionList().map(f=>`<div class="facrow">
-      <label class="chk"><input type="checkbox" ${chosen.has(f)?'checked':''}
-        onchange="edListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)">
-        ${esc(edFacLabel(f))}</label></div>`).join('');
+  // which factions this line named before you touched it, so the ones you
+  // added or removed stand out from the ones that were already there
+  const was=new Set(csv((state.ed.d.fields.find(x=>x[0]===label)||['',''])[1]));
+  const boxes=edFactionList().map(f=>facCheckRow(
+      f,(state.ed.d.faction_names||{})[f],
+      `edListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)`,
+      chosen.has(f),'',chosen.has(f)!==was.has(f))).join('');
   return `<div style="flex:1;min-width:0">
     ${edChips(label,list)}
     <div class="barrow">
@@ -5652,7 +5770,8 @@ function gfCard(host,label,warns){
   const parsed=spec&&spec.parts?gfParse(spec,cur):null;
   const title=spec?spec.t:label;
   const canRm=host.canRemove&&!host.protectedKeys.has(key);
-  const head=`<div class="gfhead"${spec?` data-tip="${esc(key)}"`:''}>
+  const head=`<div class="gfhead">
+    ${spec?qmSpec(key,null):''}
     <span class="t">${esc(title)}</span>
     <span class="k">${esc(label)}</span>
     ${spec&&spec.opt?'<span class="count" title="The engine works without this line">optional</span>':''}
@@ -5708,34 +5827,49 @@ function gfNoWeapon(label){
 }
 const gfNotes=list=>(list||[]).map(m=>`<div class="gfnote ${m.k||'warn'}">${m.h}</div>`).join('');
 
+// Which PART of a multi-value line differs from what the file said. A whole-line
+// "changed" flag is no help on `stat_pri 7, 3, no, 0, 0, melee, …`: you want the
+// one number you touched lit up, not all thirteen.
+function gfPartChanged(host,label,spec,parsed){
+  const was=gfParse(spec,(host.orig?host.orig(label):'')||'');
+  const whole=host.changed(label);
+  const norm=v=>(v==null?'':''+v).trim();
+  return i=>{
+    if(!was||!was.ok||!parsed.ok)return whole;   // can't line them up — mark the lot
+    return norm(parsed.parts[i])!==norm(was.parts[i]);
+  };
+}
 function gfParts(host,label,spec,parsed){
   const key=gfKey(label);
+  const partChanged=gfPartChanged(host,label,spec,parsed);
   const cells=spec.parts.map((p,i)=>{
     const v=parsed.parts[i]==null?'':parsed.parts[i];
-    const cls='gfpart'+(p.grow?' grow':p.w===3?' w3':p.w===2?' w2':'');
+    const ch=partChanged(i);
+    const cls='gfpart'+(p.grow?' grow':p.w===3?' w3':p.w===2?' w2':'')+(ch?' changed':'');
     const attr=`data-gfp="${esc(label)}" data-i="${i}"`;
-    // the hover card replaces the native tooltip; keep an accessible name on the
-    // control itself, since the label beside it is not a <label for=…>
-    const tip=` data-tip="${esc(key)}" data-tipi="${i}"`;
+    const chc=ch?' changed':'';                  // the amber "you changed this"
+    // the explanation hangs off the ? beside the part's name; the control keeps
+    // an accessible name of its own, since the label is not a <label for=…>
     const aria=` aria-label="${esc(p.pl)}"`;
     let ctl;
     if(p.type==='flag'){
       ctl=`<label class="chk" style="height:26px"><input type="checkbox" ${attr}${aria}
-        ${v?'checked':''}> ${esc(p.on||'on')}</label>`;
+        class="${chc.trim()}" ${v?'checked':''}> ${esc(p.on||'on')}</label>`;
     }else if(p.type==='sel'){
       const opts=gfV(host,p.v);
       const list=opts.indexOf(v)<0?[v].concat(opts):opts;
-      ctl=`<select ${attr}${aria}>${list.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${
-        o===''?(p.optional?'— none —':'—'):esc(o)}</option>`).join('')}</select>`;
+      ctl=`<select ${attr}${aria} class="${chc.trim()}">${list.map(o=>`<option value="${esc(o)}"${
+        o===v?' selected':''}>${o===''?(p.optional?'— none —':'—'):esc(o)}</option>`).join('')}</select>`;
     }else if(p.type==='combo'){
-      ctl=`<input ${attr}${aria} list="gfdl-${esc(p.v)}" value="${esc(v)}" spellcheck="false">`;
+      ctl=`<input ${attr}${aria} class="${chc.trim()}" list="gfdl-${esc(p.v)}"
+        value="${esc(v)}" spellcheck="false">`;
     }else if(p.type==='num'){
-      ctl=gfSpin(attr+aria,v);
+      ctl=gfSpin(attr+aria,v,chc);
     }else{
-      ctl=`<input ${attr}${aria} value="${esc(v)}" spellcheck="false"
+      ctl=`<input ${attr}${aria} class="${chc.trim()}" value="${esc(v)}" spellcheck="false"
         ${p.mono?' style="font-family:ui-monospace,Consolas,monospace"':''}>`;
     }
-    return `<div class="${cls}"${tip}><span class="pl">${esc(p.pl)}${
+    return `<div class="${cls}"><span class="pl">${qmSpec(key,i)}${esc(p.pl)}${
       p.optional?' <span style="opacity:.6">(opt)</span>':''}</span>${ctl}</div>`;
   }).join('');
   return `<div class="gfgrid">${cells}</div>`;
@@ -5745,17 +5879,43 @@ function gfParts(host,label,spec,parsed){
    and a number input quietly refuses or reformats those. This keeps a plain text
    box — so any value in the file survives being looked at — and puts the
    stepping in buttons and the ↑/↓ keys, which are the only things that clamp. */
-const gfSpin=(attr,v)=>`<span class="gfspin"><input ${attr} class="gfnum" value="${esc(v)}"
+const gfSpin=(attr,v,cls)=>`<span class="gfspin"><input ${attr} class="gfnum${cls||''}" value="${esc(v)}"
     spellcheck="false" inputmode="decimal"><span class="gfsp">
     <button type="button" tabindex="-1" data-spin="1" aria-label="increase">▴</button>
     <button type="button" tabindex="-1" data-spin="-1" aria-label="decrease">▾</button>
   </span></span>`;
 
+/* ---- the ? marker -------------------------------------------------------
+   Explanations are ASKED FOR, not sprung: a field's help hangs off a small ?
+   at its top-left rather than off the field itself, so moving the pointer
+   across a form does not set off a trail of cards, and a box you are trying to
+   read is never covered by a tip about the box next to it.
+
+   `qm(text)` is the plain form. `qmSpec(key, i)` is the one the guided editor
+   uses, which pulls a full card out of GF_FIELDS instead of a line of text.
+   Both are read by the same delegated handler below. */
+// The markers are deliberately NOT tab stops: there is one per field, and a
+// guided unit has four hundred of them — putting each in the tab order would
+// double the keystrokes to cross a form. Keyboard users get the same card when
+// they focus the field itself (see the focusin handler), and the marker keeps a
+// plain `title` so it still has an accessible name of its own.
+const qm=(text,title)=>!text?'':`<span class="qm" tabindex="-1"
+  title="${esc(text)}"${title?` data-tiptitle="${esc(title)}"`:''}
+  data-tiptext="${esc(text)}">?</span>`;
+const qmSpec=(key,i)=>`<span class="qm" tabindex="-1" title="What is this?"
+  data-tip="${esc(key)}"${i==null?'':` data-tipi="${i}"`}>?</span>`;
+// A field's documentation as plain text, for the raw view — GF_FIELDS writes its
+// `doc` as HTML, and a ? marker carries text.
+function gfPlainDoc(key){
+  const spec=GF_FIELDS[key];
+  if(!spec||!spec.doc)return '';
+  return spec.doc.replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+}
+
 /* ---- the hover card -----------------------------------------------------
-   Every field name and every value box explains itself on hover: what the slot
-   is, what the engine accepts, and where the limits come from. It is one floating
-   element driven by delegation, so it survives the guided body being redrawn
-   (which happens on nearly every edit) without rebinding anything. */
+   One floating element driven by delegation, so it survives the guided body
+   being redrawn (which happens on nearly every edit) without rebinding
+   anything. */
 function gfTipHtml(key,i){
   const spec=GF_FIELDS[key]; if(!spec)return '';
   if(i==null||i===''){
@@ -5780,8 +5940,16 @@ function gfTipHtml(key,i){
 }
 let gfTipEl=null;
 function gfTipShow(el){
-  const key=el.dataset.tip,i=el.dataset.tipi;
-  const html=gfTipHtml(key,i===undefined?null:i); if(!html)return;
+  let html;
+  if(el.dataset.tiptext!==undefined){
+    // a plain explanation moved off a field's own title attribute
+    html=(el.dataset.tiptitle?`<div class="tt">${esc(el.dataset.tiptitle)}</div>`:'')
+        +`<div class="tb">${esc(el.dataset.tiptext)}</div>`;
+  }else{
+    const key=el.dataset.tip,i=el.dataset.tipi;
+    html=gfTipHtml(key,i===undefined?null:i);
+  }
+  if(!html)return;
   if(!gfTipEl){gfTipEl=document.createElement('div');gfTipEl.className='gftip';document.body.appendChild(gfTipEl);}
   gfTipEl.innerHTML=html; gfTipEl.style.display='block';
   gfTipEl.style.left='0px'; gfTipEl.style.top='0px';         // measure unconstrained
@@ -5793,14 +5961,28 @@ function gfTipShow(el){
 }
 function gfTipHide(){if(gfTipEl)gfTipEl.style.display='none';}
 // bound once, on the document — the guided body is replaced wholesale on edits
+const TIP_SEL='[data-tip],[data-tiptext]';
 document.addEventListener('mouseover',ev=>{
-  const el=ev.target&&ev.target.closest&&ev.target.closest('[data-tip]');
+  const el=ev.target&&ev.target.closest&&ev.target.closest(TIP_SEL);
   if(!el){gfTipHide();return;}
   if(el===gfTipEl)return;
   gfTipShow(el);
 });
 document.addEventListener('mouseleave',gfTipHide,true);
 window.addEventListener('scroll',gfTipHide,true);
+// Focusing a field shows its ? card, so the help is reachable without a mouse
+// even though the markers themselves are out of the tab order.
+document.addEventListener('focusin',ev=>{
+  const t=ev.target;
+  if(!t||!t.closest){gfTipHide();return;}
+  let el=t.closest(TIP_SEL);
+  if(!el&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')){
+    const cell=t.closest('.gfpart,.afrow,.brow,.condrow,.gfcard');
+    el=cell?cell.querySelector('.qm'):null;
+  }
+  if(el)gfTipShow(el); else gfTipHide();
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')gfTipHide();});
 
 /* ---- the widgets a plain box cannot do ---- */
 function gfWidget(host,label,spec,cur){
@@ -5833,18 +6015,35 @@ function gfListAdd(label){
   const list=csv(host.get(label)); list.push(v);
   host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
 }
+/* What a list field said before you touched it. A plain "the field changed"
+   flag is no use on a list of forty factions — you want to see WHICH ones are
+   yours — so every list widget marks its own entries against this. Membership
+   only: reordering `ownership` is a change to the field, not to any one entry. */
+function gfListWas(host,label){
+  return new Set(csv((host.orig?host.orig(label):'')||''));
+}
 // Drag-to-reorder chips, host-agnostic (the editor's own edChips is bound to
 // state.ed, and the composer has no such state).
 function gfChips(host,label,items){
-  return `<div class="chips">${items.map((v,i)=>`<span class="chipd" draggable="true"
+  const was=gfListWas(host,label);
+  const gone=[...was].filter(v=>items.indexOf(v)<0);
+  return `<div class="chips">${items.map((v,i)=>`<span class="chipd${
+      was.has(v)?'':' added'}" draggable="true"
       ondragstart="gfDragStart(event,'${q1(esc(label))}',${i})"
       ondragover="gfDragOver(event,'${q1(esc(label))}')" ondragleave="edDragLeave(event)"
       ondragend="edDragEnd(event)" ondrop="gfDrop(event,'${q1(esc(label))}',${i})"
-      title="drag to reorder">
+      title="${was.has(v)?'drag to reorder':'Added by you · drag to reorder'}">
       <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
       <button class="x" title="Remove ${esc(v)}"
         onclick="gfListRemove('${q1(esc(label))}',${i})">✕</button></span>`).join('')
-    ||'<span class="count">— empty —</span>'}</div>`;
+    ||'<span class="count">— empty —</span>'}
+    ${gone.map(v=>`<span class="chipd gone" title="Removed by you — click to put it back"
+      onclick="gfListRestore('${q1(esc(label))}','${q1(esc(v))}')">${esc(v)}</span>`).join('')}</div>`;
+}
+function gfListRestore(label,v){
+  const host=gfHost(),list=csv(host.get(label));
+  if(list.indexOf(v)<0)list.push(v);
+  host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
 }
 let gfDrag=null;
 function gfDragStart(ev,label,i){gfDrag={label,i};ev.dataTransfer.effectAllowed='move';
@@ -5874,8 +6073,10 @@ function gfAttrWidget(host,label,cur){
     'foot_slingers','foot_pila','foot_darts','foot_francisca','wagon_fort'];
   const isAI=a=>AI.indexOf(a)>=0;
   const known=new Set(all);
-  const box=(a)=>`<div class="facrow"><label class="chk"><input type="checkbox" ${haveSet.has(a)?'checked':''}
-      onchange="gfListToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)"> ${esc(a)}</label></div>`;
+  const wasSet=gfListWas(host,label);
+  const box=(a)=>facCheckRow(a,'',
+    `gfListToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)`,
+    haveSet.has(a),'',haveSet.has(a)!==wasSet.has(a));
   const abilities=all.filter(a=>!isAI(a)),hints=all.filter(isAI);
   const unknown=have.filter(a=>!known.has(a));
   return `<div class="gfrow"><div style="flex:1;min-width:0">
@@ -5903,13 +6104,15 @@ function gfWeaponAttrWidget(host,label,cur){
   const have=csv(cur).filter(a=>a.toLowerCase()!=='no');
   const all=gfV(host,'weapon_attr');
   const haveSet=new Set(have);
+  const wasSet=gfListWas(host,label);
   return `<div class="gfrow"><div style="flex:1;min-width:0">
     ${gfChips(host,label,have.length?have:[])}
     <div class="barrow">
       <details class="drop"><summary>▾ Choose attributes — ${have.length} on</summary>
         <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
-          ${all.map(a=>`<div class="facrow"><label class="chk"><input type="checkbox" ${haveSet.has(a)?'checked':''}
-            onchange="gfWAttrToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)"> ${esc(a)}</label></div>`).join('')}
+          ${all.map(a=>facCheckRow(a,'',
+            `gfWAttrToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)`,
+            haveSet.has(a),'',haveSet.has(a)!==wasSet.has(a))).join('')}
         </div></div></details>
       <input id="${gfAddId(label)}" list="gfdl-weapon_attr" placeholder="add your own…"
         style="width:170px;font-size:12px;padding:3px 7px">
@@ -5933,6 +6136,15 @@ function gfListToggle(label,v,on){
   if(on&&i<0)list.push(v); else if(!on&&i>=0)list.splice(i,1);
   host.set(label,list.join(', ')); host.stale(); gfRerenderBody();
 }
+// A host's facLabel runs both names together ("Mordor (england)"); a checklist
+// wants them apart, so pull the display name back out of it.
+function gfFacName(host,code){
+  const both=host.facLabel(code);
+  if(both===code)return '';
+  const m=/^(.*)\s\((.*)\)$/.exec(both);
+  if(!m)return both;
+  return m[1]===code?m[2]:m[1];
+}
 /* ownership / era N: the editor already has a faction checklist bound to its own
    state; the composer gets the same shape driven by the host. */
 function gfFactionWidget(host,label,cur){
@@ -5940,14 +6152,15 @@ function gfFactionWidget(host,label,cur){
   const list=csv(cur),chosen=new Set(list),all=host.factions();
   const isEra=label!=='ownership';
   const own=csv(host.get('ownership')||'');
+  const wasSet=gfListWas(host,label);
   return `<div class="gfrow"><div style="flex:1;min-width:0">
     ${gfChips(host,label,list)}
     <div class="barrow">
       <details class="drop"><summary>▾ Choose factions — ${list.length} selected</summary>
         <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
-          ${all.map(f=>`<div class="facrow"><label class="chk"><input type="checkbox" ${chosen.has(f)?'checked':''}
-            onchange="gfListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)">
-            ${esc(host.facLabel(f))}</label></div>`).join('')}
+          ${all.map(f=>facCheckRow(f,gfFacName(host,f),
+              `gfListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)`,
+              chosen.has(f),'',chosen.has(f)!==wasSet.has(f))).join('')}
         </div></div></details>
       ${isEra&&own.length?`<button onclick="gfSetList('${q1(esc(label))}',${
         JSON.stringify(own).replace(/"/g,'&quot;')})" title="Replace this era with the ownership line"
@@ -6126,12 +6339,20 @@ function gfAfterEdit(host,label,fromRaw){
     card.querySelectorAll('[data-gfraw]').forEach(r=>{
       if(r!==document.activeElement)r.value=cur;
       r.classList.toggle('changed',changed);});
-    if(fromRaw){    // keep the guided boxes in step while the raw line is typed
-      const spec=GF_FIELDS[gfKey(label)];
-      const p=spec&&spec.parts?gfParse(spec,cur):null;
-      if(p&&p.ok)card.querySelectorAll('[data-gfp]').forEach(el=>{
+    const spec=GF_FIELDS[gfKey(label)];
+    const p=spec&&spec.parts?gfParse(spec,cur):null;
+    if(fromRaw&&p&&p.ok){    // keep the guided boxes in step while the raw line is typed
+      card.querySelectorAll('[data-gfp]').forEach(el=>{
         const v=p.parts[+el.dataset.i]==null?'':p.parts[+el.dataset.i];
         if(el.type==='checkbox')el.checked=!!v; else if(el.value!==v)el.value=v;});
+    }
+    // …and light up only the part that now differs from the file
+    if(p){
+      const pc=gfPartChanged(host,label,spec,p);
+      card.querySelectorAll('[data-gfp]').forEach(el=>{
+        const on=pc(+el.dataset.i);
+        el.classList.toggle('changed',on);
+        const cell=el.closest('.gfpart'); if(cell)cell.classList.toggle('changed',on);});
     }
     const b=card.querySelector('button[data-b]');
     if(b)b.outerHTML=host.badge(label,cur);
@@ -6160,6 +6381,19 @@ function gfAfterEdit(host,label,fromRaw){
    ========================================================================= */
 
 const BLD_SETTLE_LABEL={city:'City',castle:'Castle',both:'City + castle'};
+
+//: The four numbers of a `recruit_pool` line, explained on their ? markers.
+const POOL_HELP={
+  initial:'Points the pool holds the moment the building finishes. One point is '
+    +'one unit ready to hire, so 1 means the first one can be recruited straight away.',
+  per_turn:'Points the pool gains each turn — one point is one unit. The ▲▼ move '
+    +'it by a whole turn at a time, and the grey reading beside it says how long '
+    +'one unit actually takes.',
+  maximum:'The most points the pool can hold. It stops filling here, so this is '
+    +'how many of the unit can be waiting to hire at once.',
+  experience:'Experience the unit is recruited with, 0 to 9. Each point is a '
+    +'chevron; 9 is three gold ones.',
+};
 
 /* ---- number boxes ----
    A number box is an ordinary input with ▲▼ beside it; the arrows only set
@@ -6530,23 +6764,22 @@ function bldRenderBody(lv,orig){
     ${bldLocSection(lv,orig)}
 
     <div class="bsec"><h4>Stats</h4>
-      <div class="brow"><span class="k">Cost</span>
+      <div class="brow"><span class="k">${qm('What the settlement pays to put this level up, in florins. Written as the level\'s `cost` line.','Cost')}Cost</span>
         ${numBox('data-scalar="cost"',lv.scalars.cost||'','100')}
-        <span class="k" style="flex:0 0 88px">Turns to build</span>
+        <span class="k" style="flex:0 0 88px">${qm('How many turns construction takes once it is queued. The level\'s `construction` line.','Turns to build')}Turns to build</span>
         ${numBox('data-scalar="construction"',lv.scalars.construction||'','1')}</div>
-      <div class="brow"><span class="k">Material</span>${sel('material',ov.materials,lv.scalars.material||'','(unset)')}
-        <span class="k" style="flex:0 0 88px">Convert to</span>
-        ${numBox('data-scalar="convert_to" title="Index (0-based) of the level in the opposite city/castle line this becomes on conversion"',
-                 lv.scalars.convert_to||'','1')}</div>
-      <div class="brow"><span class="k">Settlement min</span>${sel('settlement_min',ov.settlement_levels,lv.scalars.settlement_min||'','(unset)')}
-        <span class="k" style="flex:0 0 88px">max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
-      <div class="brow"><span class="k">Buildable in</span>
+      <div class="brow"><span class="k">${qm('Which building model the settlement shows on the battle map — wooden or stone. Purely visual, but a stone building in a wooden settlement looks wrong.','Material')}Material</span>${sel('material',ov.materials,lv.scalars.material||'','(unset)')}
+        <span class="k" style="flex:0 0 88px">${qm('Index (0-based) of the level in the opposite city/castle line that this one becomes when the settlement is converted.','Convert to')}Convert to</span>
+        ${numBox('data-scalar="convert_to"',lv.scalars.convert_to||'','1')}</div>
+      <div class="brow"><span class="k">${qm('The smallest settlement size that may build this level. Below it the building is not offered at all.','Settlement min')}Settlement min</span>${sel('settlement_min',ov.settlement_levels,lv.scalars.settlement_min||'','(unset)')}
+        <span class="k" style="flex:0 0 88px">${qm('The largest settlement size that may build this level — leave unset for no ceiling.','Settlement max')}max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
+      <div class="brow"><span class="k">${qm('Whether this level belongs to cities, to castles, or to both. It pins the level to one settlement type; leaving it open means either can build it.','Buildable in')}Buildable in</span>
         <select data-settlement>
           <option value="" ${lv.settlement===''?'selected':''}>City and castle</option>
           <option value="city" ${lv.settlement==='city'?'selected':''}>City only</option>
           <option value="castle" ${lv.settlement==='castle'?'selected':''}>Castle only</option>
         </select></div>
-      <div class="brow"><span class="k">Requires</span>
+      <div class="brow"><span class="k">${qm('Everything that has to be true before this level can be built: which factions, which events, which resources. Every term names something declared elsewhere in the mod, and a typo is silent — the building simply never becomes available.','Requires')}Requires</span>
         <div class="clausebar">
           <div class="sum">${bldClauseSummary(lv.conds)}</div>
           <button class="reqbtn" onclick="bldEditClause('level')">✎ Edit requirements</button>
@@ -6563,6 +6796,7 @@ function bldRenderBody(lv,orig){
           <button class="${b.view==='grid'?'on':''}" onclick="bldSetView('grid')">▦ Grid</button>
         </div>
         <button class="primary" onclick="bldAddPoolDialog()">＋ Add unit</button></h4>
+      ${bldPressureHtml(lv)}
       ${b.view==='grid'
         ? `<div class="ugrid" id="bldPools">${shown.length?shown.map(bldPoolCard).join('')
             :'<span class="count">Nothing matches.</span>'}</div>`
@@ -6614,17 +6848,18 @@ function bldLocSection(lv,orig){
   const owner=bldLocCulture(lv,b.culture);
   return `<div class="bsec"><h4>Name &amp; description
       <span class="count">text/export_buildings.txt</span>
-      <select class="mini" style="margin-left:auto;flex:0 0 auto;max-width:250px"
-        onchange="bldLocPick(this.value)"
-        title="Which key in export_buildings.txt this edits. The game shows a faction the key for ITS culture, and falls back to the shared one.">
+      <span style="margin-left:auto;display:flex;align-items:center;flex:0 0 auto">
+      ${qm('Which key in export_buildings.txt these three boxes edit. A level can be named once for everyone and again for each culture; the game shows a faction the key for ITS culture and falls back to the shared one. Editing one culture leaves the others exactly as they were.','Culture')}
+      <select class="mini" style="flex:0 0 auto;max-width:250px"
+        onchange="bldLocPick(this.value)">
         ${Object.keys(all).map(c=>`<option value="${esc(c)}" ${c===cur?'selected':''}
           >${esc(named(c))}</option>`).join('')}
-      </select></h4>
-      <div class="brow"><span class="k">Name</span>
+      </select></span></h4>
+      <div class="brow"><span class="k">${qm('The name shown on the building browser and the construction panel. Written as {'+rec.key+'}.','Name')}Name</span>
         <input data-loc="name" value="${esc(rec.name)}" placeholder="${esc(orig.name)}"></div>
-      <div class="brow"><span class="k">Short description</span>
+      <div class="brow"><span class="k">${qm('The one-line summary under the building in the construction panel. Written as {'+rec.key+'_desc_short}.','Short description')}Short description</span>
         <input data-loc="descr_short" value="${esc(rec.descr_short)}"></div>
-      <div class="brow"><span class="k">Description</span>
+      <div class="brow"><span class="k">${qm('The full text on the building\'s info scroll. Written as {'+rec.key+'_desc}. A building needs all three keys or the game crashes on load, so saving a name writes all three.','Description')}Description</span>
         <textarea data-loc="descr" style="flex:1;min-height:56px;padding:4px 7px;font-size:12.5px"
           >${esc(rec.descr)}</textarea></div>
       <div class="bnote">Editing <code>{${esc(rec.key)}}</code>${rec.present?''
@@ -6634,6 +6869,73 @@ function bldLocSection(lv,orig){
         :`The browser is showing <b>${esc(b.culture||'the shared key')}</b>, which reads its name from
           <code>{${esc((all[owner]||{}).key||lv.name)}}</code>.`}</div></div>
 `;
+}
+/* ---- can this building offer one faction too many units? ----
+   M2TW's recruitment panel holds a limited number of units per building; past it
+   the panel overflows and the game can crash on opening the settlement. That is
+   a failure you only meet on the one save where enough conditions have lined up
+   at once, so it is worth being told about while editing.
+
+   The JS twin of buildings.recruitment_pressure, recomputed from the working
+   copy so the count tracks pools as they are added, removed and re-gated.
+
+   Two numbers, because they answer different questions. `always` is pools the
+   faction gets with NO further condition — if that is over the limit the
+   building is already broken. `most` assumes every event counter, hidden
+   resource and settlement size holds at the same time; it is an upper bound on
+   purpose, since which of a mod's conditions can truly coincide is not
+   answerable from the EDB alone. */
+function bldRecruitPressure(lv){
+  const ov=state.bld.ov,fc=ov.faction_cultures||{},limit=ov.recruit_limit||32;
+  const every=Object.keys(fc);
+  const cultures=new Set(Object.values(fc));
+  const ALL=(bldVocab().all_keyword||'all').toLowerCase();
+  const most={},always={};
+  [...lv.caps,...lv.fcaps].forEach(c=>{
+    if(c.del||!c.pool)return;
+    const conds=c.conds||[];
+    const facs=conds.filter(x=>x.kind==='factions'&&!x.negate).flatMap(x=>x.values||[]);
+    const gated=conds.some(x=>x.kind!=='factions');
+    let who;
+    if(!facs.length||facs.some(f=>(f||'').toLowerCase()===ALL))who=every;
+    else{
+      const s=new Set();
+      facs.forEach(f=>{
+        if(cultures.has(f))every.forEach(k=>{if(fc[k]===f)s.add(k);});
+        else s.add(f);
+      });
+      who=[...s];
+    }
+    who.forEach(f=>{most[f]=(most[f]||0)+1; if(!gated)always[f]=(always[f]||0)+1;});
+  });
+  const rows=Object.keys(most)
+    .filter(f=>most[f]>limit||(always[f]||0)>limit)
+    .map(f=>({faction:f,most:most[f],always:always[f]||0}));
+  rows.sort((a,b)=>b.always-a.always||b.most-a.most||a.faction.localeCompare(b.faction));
+  return {limit,rows};
+}
+function bldPressureHtml(lv){
+  const p=bldRecruitPressure(lv);
+  if(!p.rows.length)return '';
+  const hard=p.rows.filter(r=>r.always>p.limit);
+  const rows=p.rows.slice(0,10).map(r=>`<div class="prow2 ${r.always>p.limit?'bad':''}">
+      <span class="pf">${esc(bldFacLabel(r.faction))}</span>
+      <span class="pn">${r.most}</span>
+      <span class="pd">${r.always>p.limit
+        ? `<b>${r.always}</b> of them with no condition at all`
+        : `${r.always} unconditional · the rest need every gate to line up`}</span>
+    </div>`).join('');
+  return `<div class="ownwarn ${hard.length?'bad':''}" style="margin:0 0 8px">
+    <b>${hard.length?'Over the recruitment limit.':'Could go over the recruitment limit.'}</b>
+    M2TW shows at most <b>${p.limit}</b> units per building in a settlement's
+    recruitment panel; past that the panel overflows and the game can crash on
+    opening it.
+    ${hard.length?'':`These counts assume every event counter, hidden resource and
+      settlement condition holds <i>at the same time</i> — an upper bound, so it may
+      never actually happen. The unconditional count is the one that always does.`}
+    <div class="plist">${rows}</div>
+    ${p.rows.length>10?`<div class="count">…and ${p.rows.length-10} more faction(s).</div>`:''}
+  </div>`;
 }
 function bldRequiresHelp(){
   const lv=state.bld.work.levels[state.bld.lvl];
@@ -6690,8 +6992,11 @@ function bldPoolFilterHtml(pools){
   });
   const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
   if(!rows.length&&!open)return '';
-  return `<select class="mini" onchange="bldPoolFacPick(this.value);this.value=''"
-      style="flex:0 0 auto;max-width:230px" title="Show only what these factions can train">
+  return qm('Narrow the list below to the units one faction can actually train here. '
+      +'A big level trains hundreds, almost all of them gated to one faction, so '
+      +'"who can train what" is usually the question you arrive with.','Faction filter')
+    +`<select class="mini" onchange="bldPoolFacPick(this.value);this.value=''"
+      style="flex:0 0 auto;max-width:230px">
       <option value="">Faction: ${sel.size?[...sel].map(f=>f==='(any)'?'anyone':bldFacName(f)).join(', ')
         .slice(0,40):'any'}…</option>
       ${sel.size?'<option value="(clear)">— show everything —</option>':''}
@@ -6734,12 +7039,11 @@ function bldPoolRow(c){
     <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
       <div class="ut">${missing?'<span class="w-bad">not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
     <div class="nums">
-      <label>start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
-      <label title="Points gained each turn — one point is one unit. The arrows move it by a whole turn at a time."
-        >per turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns',
+      <label>${qm(POOL_HELP.initial,'Starting points')}start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
+      <label>${qm(POOL_HELP.per_turn,'Points per turn')}per turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns',
           `<span class="turns">= ${esc(poolTurns(c.pool.per_turn))}</span>`)}</label>
-      <label>max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
-      <label>exp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
+      <label>${qm(POOL_HELP.maximum,'Maximum points')}max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
+      <label>${qm(POOL_HELP.experience,'Starting experience')}exp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
     <div class="clausebar" style="flex:1;min-width:120px">
       <div class="sum">${bldClauseSummary(c.conds)}</div>
@@ -6769,11 +7073,10 @@ function bldPoolCard(c){
       ${bldPoolOwnFlag(c)}
     </div>
     <div class="stats">
-      <label title="Points the pool starts with">start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
-      <label title="Points gained each turn — one point is one unit. The arrows move it by a whole turn at a time."
-        >/turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns')}</label>
-      <label title="Most points the pool can hold">max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
-      <label title="Starting experience, 0-9">xp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
+      <label>${qm(POOL_HELP.initial,'Starting points')}start${numBox('data-pool="initial"',c.pool.initial,'1')}</label>
+      <label>${qm(POOL_HELP.per_turn,'Points per turn')}/turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns')}</label>
+      <label>${qm(POOL_HELP.maximum,'Maximum points')}max${numBox('data-pool="maximum"',c.pool.maximum,'1')}</label>
+      <label>${qm(POOL_HELP.experience,'Starting experience')}xp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
     <div class="turns" data-turns style="text-align:center">a unit ${esc(poolTurns(c.pool.per_turn))}</div>
     <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div></div>
@@ -6876,12 +7179,13 @@ function bldCapRow(c){
   const known=b.ov.capabilities.map(x=>x.keyword);
   const help=(b.ov.capabilities.find(x=>x.keyword===c.keyword)||{}).help||'';
   return `<div class="caprow ${c.del?'gone':''}" data-cap="${i}">
-    <select class="kw" data-kw title="${esc(help)}">
+    ${qm(help||'A capability this level gives the settlement. Pick the keyword to see what it does.',c.keyword)}
+    <select class="kw" data-kw>
       ${known.map(k=>`<option value="${esc(k)}" ${k===c.keyword?'selected':''}>${esc(k)}</option>`).join('')}
       ${known.includes(c.keyword)?'':`<option value="${esc(c.keyword)}" selected>${esc(c.keyword)}</option>`}
     </select>
-    <label class="chk"><input type="checkbox" data-bonus ${c.bonus?'checked':''}
-      title="Write the value as &quot;bonus N&quot;, which is how most modifiers are declared"> bonus</label>
+    ${qm('Write the value as "bonus N" rather than a bare number. Most modifiers are declared that way, and the engine ignores the ones that are not.','bonus')}
+    <label class="chk"><input type="checkbox" data-bonus ${c.bonus?'checked':''}> bonus</label>
     ${numBox('class="val" data-val',c.value,'1')}
     <div class="clausebar" style="flex:1;min-width:110px">
       <div class="sum">${bldClauseSummary(c.conds)}</div>
@@ -7050,6 +7354,9 @@ function bldEditClause(kind,index){
   const host=kind==='level'?lv:bldCapList()[index];
   if(!host)return;
   b.clause={host,kind,index,conds:JSON.parse(JSON.stringify(host.conds||[])),
+            // what the clause said on the way in, so every widget in here can
+            // show which of its values YOU changed
+            was:JSON.parse(JSON.stringify(host.conds||[])),
             unit:(host.pool&&host.pool.unit)||'',pick:null};
   b.stash=document.getElementById('modal').innerHTML;
   renderClauseDialog();
@@ -7128,12 +7435,15 @@ function condRowHtml(cond,i){
         <option value="0" ${v[1]==='0'?'selected':''}>has not happened (0)</option></select>`;
       break;
     case 'region_religion': body=
-      condPick(i,0,'religion',v[0])+
-      `<input data-cv="${i}:1" value="${esc(v[1]||'')}" inputmode="numeric"
-        style="flex:0 0 90px" placeholder="%" title="Minimum percentage of the region following it">`;
+      condPick(i,0,'religion',v[0])
+      +qm('Minimum percentage of the region that has to follow that religion for this term to hold.','Minimum %')
+      +`<input data-cv="${i}:1" value="${esc(v[1]||'')}" inputmode="numeric"
+        style="flex:0 0 90px" placeholder="%">`;
       break;
-    case 'hidden_resource': body=condPick(i,0,'hidden_resource',v[0]); break;
-    case 'resource': body=condPick(i,0,'resource',v[0]); break;
+    case 'hidden_resource':
+      body=condPick(i,0,'hidden_resource',v[0])+condWhereHtml('hidden_resource',v[0]); break;
+    case 'resource':
+      body=condPick(i,0,'resource',v[0])+condWhereHtml('resource',v[0]); break;
     case 'building_present': body=condPick(i,0,'building',v[0]); break;
     case 'building_present_min_level':
       body=condPick(i,0,'building',v[0])+condPick(i,1,'level',v[1],v[0]); break;
@@ -7147,9 +7457,10 @@ function condRowHtml(cond,i){
         <option value="and" ${cond.join!=='or'?'selected':''}>and</option>
         <option value="or" ${cond.join==='or'?'selected':''}>or</option></select>`
       :'<span class="cjoin lead">if</span>'}
-    <label class="chk" title="Invert this term"><input type="checkbox"
-      data-cneg="${i}" ${cond.negate?'checked':''}> not</label>
-    <span class="ckind" title="${esc((bldCondKindHelp(cond.kind)))}">${esc(COND_LABEL[cond.kind]||cond.kind)}</span>
+    <label class="chk">${qm('Invert this term — it holds when the condition is NOT met.','not')}<input
+      type="checkbox" data-cneg="${i}" ${cond.negate?'checked':''}> not</label>
+    <span class="ckind">${qm(bldCondKindHelp(cond.kind)||'A term of the requires clause.',
+      COND_LABEL[cond.kind]||cond.kind)}${esc(COND_LABEL[cond.kind]||cond.kind)}</span>
     ${body}
     <button class="x danger" onclick="bldCondRemove(${i})" title="Remove this requirement">🗑</button>
   </div>`;
@@ -7196,6 +7507,37 @@ function condOptions(list,dep){
   }
   return [];
 }
+/* ---- where a resource actually is ----
+   `requires hidden_resource Arthedain` says nothing about where it bites: the
+   name is invented by the mod and only means the handful of regions that carry
+   it, out of descr_regions.txt. So the picker gets a marker that names the
+   SETTLEMENTS on hover — the thing you recognise on the campaign map — with the
+   region and its starting owner beside each. */
+function condPlaces(kind,code){
+  const v=bldVocab();
+  const rows=(kind==='hidden_resource'?v.hidden_resources:v.resources)||[];
+  const r=rows.find(x=>(x.code||x)===code);
+  return (r&&r.places)||[];
+}
+// The owner's in-game name if the mod gave it one, else its code.
+function condOwnerName(code){
+  const f=(bldVocab().factions||[]).find(x=>x.code===code);
+  return (f&&f.name)||code;
+}
+function condWhereHtml(kind,code){
+  if(!code)return '';
+  const places=condPlaces(kind,code);
+  if(!places.length)return `<span class="where none" data-where="${esc(kind)}"
+    title="No region in descr_regions.txt carries this, so nothing that requires it can ever be built"
+    >∅ nowhere</span>`;
+  const rows=places.map(p=>`<div class="wrow"><b>${esc(p.settlement)}</b>
+      <span>${esc(p.region)}</span>
+      ${p.faction?`<i>${esc(condOwnerName(p.faction))}</i>`:''}</div>`).join('');
+  return `<span class="where" data-where="${esc(kind)}">📍 ${places.length} settlement${
+      places.length===1?'':'s'}
+    <span class="wpop"><div class="whead">${esc(code)} — from
+      <code>world/maps/base/descr_regions.txt</code></div>${rows}</span></span>`;
+}
 function condFactionsHtml(cond,i){
   const chosen=cond.values||[];
   const label=chosen.length?chosen.map(bldFacName).join(', '):'nobody — this can never be built';
@@ -7221,7 +7563,14 @@ function wireCondRows(){
       else condChanged();};
     el.onchange=set; el.oninput=()=>{const cond=c.conds[i];
       while(cond.values.length<=slot)cond.values.push('');
-      cond.values[slot]=el.value.trim(); condChanged();};
+      cond.values[slot]=el.value.trim();
+      // keep "📍 8 settlements" in step with the resource being typed
+      if(slot===0&&(cond.kind==='hidden_resource'||cond.kind==='resource')){
+        const row=el.closest('.condrow'),old=row&&row.querySelector('[data-where]');
+        const html=condWhereHtml(cond.kind,cond.values[0]);
+        if(old)old.outerHTML=html; else if(row&&html)el.insertAdjacentHTML('afterend',html);
+      }
+      condChanged();};
   });
 }
 function condChanged(){
@@ -7246,13 +7595,19 @@ function bldFacPicker(i){
 function renderFacPicker(){
   const c=state.bld.clause,v=bldVocab();
   const cond=c.conds[c.pick.i],chosen=new Set(cond.values||[]);
+  // what this condition named when the dialog opened, so a row you have since
+  // ticked or unticked is marked as yours
+  const was=new Set((((c.was||[])[c.pick.i])||{}).values||[]);
+  const edited=code=>chosen.has(code)!==was.has(code);
   const ALL=v.all_keyword||'all';
   const q=(c.pick.q||'').toLowerCase();
   const match=r=>!q||r.code.toLowerCase().includes(q)||(r.name||'').toLowerCase().includes(q);
-  const row=(r,isCulture)=>`<label class="facrow${chosen.has(r.code)?' on':''}">
+  const row=(r,isCulture)=>`<label class="facrow${chosen.has(r.code)?' on':''}${
+        edited(r.code)?' edited':''}">
       <input type="checkbox" data-fac="${esc(r.code)}" ${chosen.has(r.code)?'checked':''}>
       <span class="fn">${esc(r.name||r.code)}</span>
-      <span class="fc">${esc(r.code)}${isCulture?' · culture':r.culture?' · '+esc(r.culture):''}</span>
+      <span class="fc">${esc(r.code)}${isCulture?' · culture':r.culture?' · '+esc(r.culture):''}${
+        edited(r.code)?(chosen.has(r.code)?' · added by you':' · removed by you'):''}</span>
     </label>`;
   document.getElementById('modal').innerHTML=`
     <h2>Which factions?</h2>
@@ -7261,7 +7616,7 @@ function renderFacPicker(){
         value="${esc(c.pick.q||'')}">
         <button onclick="bldFacAll(true)">Tick all shown</button>
         <button onclick="bldFacAll(false)">Untick all shown</button></div>
-      <label class="facrow allrow${chosen.has(ALL)?' on':''}">
+      <label class="facrow allrow${chosen.has(ALL)?' on':''}${edited(ALL)?' edited':''}">
         <input type="checkbox" data-fac="${esc(ALL)}" ${chosen.has(ALL)?'checked':''}>
         <span class="fn">All factions</span>
         <span class="fc">${esc(ALL)} — the wildcard; ticking it makes the rest moot</span></label>

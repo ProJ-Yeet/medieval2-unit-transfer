@@ -308,6 +308,54 @@ try:
 except KeyError:
     check("an unknown line raises", True)
 
+# ---- 7b) the recruitment limit ----------------------------------------------
+# M2TW's recruitment panel holds RECRUIT_LIMIT units per building; past it the
+# panel overflows and the game can crash on opening the settlement. The check
+# reports two numbers, and the difference between them is the whole point:
+# `always` is what a faction gets with no condition at all, `most` assumes every
+# other condition holds at once.
+print("\n7b) the recruitment limit")
+fc = mod.faction_cultures
+check("the limit is carried to the UI", ov["recruit_limit"] == buildings.RECRUIT_LIMIT)
+check("every level reports its pressure",
+      all("recruit_pressure" in lv for lv in d["levels"]))
+check("a reported faction is over the limit on one number or the other",
+      all(r["most"] > r["limit"] or r["always"] > r["limit"]
+          for lv in d["levels"] for r in lv["recruit_pressure"]))
+check("`always` is never more than `most`",
+      all(r["always"] <= r["most"]
+          for lv in d["levels"] for r in lv["recruit_pressure"]))
+
+# an unconditional pool counts towards both numbers; a gated one only towards `most`
+check("a clause naming only factions is not 'gated'",
+      not buildings._is_gated("factions { england, }")
+      and buildings._is_gated("factions { england, } and hidden_resource X"))
+check("no factions clause means every faction",
+      buildings._pool_factions("", fc) == set(fc))
+check("`all` means every faction too",
+      buildings._pool_factions("factions { all, }", fc) == set(fc))
+if fc:
+    one = sorted(fc)[0]
+    culture = fc[one]
+    check("a culture expands to the factions in it",
+          buildings._pool_factions("factions { %s, }" % culture, fc)
+          == {f for f, c in fc.items() if c == culture})
+    check("a named faction expands to itself",
+          buildings._pool_factions("factions { %s, }" % one, fc) == {one})
+
+# the same check runs at save time, against the payload rather than the file
+over = next(((bl, blk) for bl in edb.buildings for blk in bl.blocks
+             if buildings.recruitment_pressure(blk, fc)), (None, None))
+if over[0] is not None:
+    p = buildings.plan_edit(mod, {"line": over[0].name,
+                                  "levels": [level_payload(over[1])]})
+    check("saving a level that is over the limit warns about it",
+          any("recruitment panel" in w or "limit" in w for w in p.warnings))
+    check("…and the warning does not stop the save",
+          not p.errors)
+else:
+    print("  [skip] no level in this mod is over the limit")
+
 # ---- 8) requires clauses, as structure -------------------------------------
 print("\n8) requires clauses")
 CLAUSES = [

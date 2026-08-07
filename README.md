@@ -484,6 +484,19 @@ The grid lists the lines as pictures. Open one and you get a tab per level with:
 - **Other capabilities** — `law_bonus`, `armour`, `wall_level`, `agent` and the
   rest, each with a note on what it does and what its number means
 
+Above the recruitment list, a warning appears when a faction could see more than
+**32** units from this one building. M2TW's recruitment panel holds only so many;
+past that it overflows and the game can crash on opening the settlement — a
+failure you otherwise meet on the one save where enough conditions have lined up
+at once. Two numbers are given per faction, because they answer different
+questions: how many that faction gets *unconditionally* (if that alone is over
+the limit, the building is already broken), and how many it could reach if every
+event counter, hidden resource and settlement condition held at the same time.
+The second is an upper bound on purpose — which of a mod's conditions can truly
+coincide is not answerable from the EDB alone, and a check that under-counts is
+worse than one that occasionally over-counts. The same warning appears in the
+save preview.
+
 The **✎ Edit** button on any recruited unit switches to the Unit Editor for that
 unit; the **← Back to <building>** button in the header brings you back to the
 same level with everything you had typed still in place.
@@ -498,11 +511,11 @@ each picked from the mod's own lists and shown by its real name:
 
 | Condition | Picked from | Shown as |
 | --- | --- | --- |
-| `factions { … }` | `descr_sm_factions.txt` + `text/expanded.txt` | a checklist of in-game names with the code in brackets — *Mordor (england)* — with cultures listed separately and `all` called out |
+| `factions { … }` | `descr_sm_factions.txt` + `text/expanded.txt` | a checklist of full in-game names — the code and culture behind each appear over the row on hover, so a long name is never cut short to make room for them |
 | `event_counter` | `text/historic_events.txt`, `set_event_counter` in the campaign scripts, and whatever the EDB already uses | the event's written title, plus where the name came from |
 | `region_religion` | `descr_religions.txt` + `descr_regions.txt` | how many regions follow it and the highest percentage any of them reaches |
-| `hidden_resource` | the EDB's own `hidden_resources` line + `descr_regions.txt` | the regions that carry it, by display name |
-| `resource` | `descr_sm_resources.txt` + `descr_regions.txt` | same |
+| `hidden_resource` | the EDB's own `hidden_resources` line + `world/maps/base/descr_regions.txt` | a **📍 N settlements** marker; hover it for every settlement that carries the resource, with its region and its starting owner |
+| `resource` | `descr_sm_resources.txt` + `world/maps/base/descr_regions.txt` | same |
 | `building_present_min_level` | the EDB itself | the line, then only its own levels |
 
 Terms are joined with `and` / `or` in order, each can be negated, and the clause
@@ -698,10 +711,20 @@ point of them.
 - **Ctrl+Z / Ctrl+Y while editing** — takes back **one value** rather than
   closing the dialog and losing everything. It works the same way in the unit
   editor, the bmdb editor, the buildings editor, the transfer composer and
-  Unit Sounds; typing into one box is one step, and undo puts the caret back
-  where it was. `Ctrl+Shift+Z` also redoes. This is the in-page working copy —
-  nothing has been written to disk yet, and 🕑 Log → Undo is still what reverses
-  a *save*
+  Unit Sounds; typing into one box is one step, and undo puts the caret *and the
+  scroll position* back where they were. `Ctrl+Shift+Z` also redoes. This is the
+  in-page working copy — nothing has been written to disk yet, and 🕑 Log → Undo
+  is still what reverses a *save*
+- **You can see what you changed** — every edited value is marked amber, down to
+  the individual part of a line: change one number of `stat_pri` and that one box
+  lights up, not all thirteen. List fields go further — a faction you added is an
+  amber chip, one you removed stays as a struck-through ghost you can click to put
+  back, and the checklist behind them marks each row *added by you* / *removed by
+  you*
+- **Help on a ? rather than under the pointer** — each field's explanation hangs
+  off a small **?** at its top-left, so crossing a form does not set off a trail
+  of tooltips and a box you are reading is never covered by a card about the box
+  beside it. Focusing a field with the keyboard raises the same card
 - **Undo** — every applied transfer is logged with a full backup; revert it
   from the log with one click
 - **Live reload** — edits to the source mod's files are picked up on the next

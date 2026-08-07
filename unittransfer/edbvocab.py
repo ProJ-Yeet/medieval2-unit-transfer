@@ -283,16 +283,26 @@ def build(mod) -> dict:
     region_rows = regions(mod, edb.hidden_resources)
     carriers: Dict[str, List[str]] = {}
     trade: Dict[str, List[str]] = {}
+    # "which regions" is the answer you can act on, but the SETTLEMENT is what you
+    # recognise on the campaign map, so both are carried per resource.
+    where: Dict[str, List[dict]] = {}
+    where_trade: Dict[str, List[dict]] = {}
     for r in region_rows:
+        spot = {"region": r["name"], "settlement": r["settlement_name"],
+                "faction": r["faction"]}
         for hr in r["hidden_resources"]:
             carriers.setdefault(hr, []).append(r["name"])
+            where.setdefault(hr, []).append(spot)
         for res in r["resources"]:
             trade.setdefault(res, []).append(r["name"])
+            where_trade.setdefault(res, []).append(spot)
     hidden = [{"code": hr, "regions": carriers.get(hr, []),
-               "count": len(carriers.get(hr, []))}
+               "count": len(carriers.get(hr, [])),
+               "places": where.get(hr, [])}
               for hr in edb.hidden_resources]
     # a `resource` condition is the same shape of question, so answer it too
-    res_rows = [{"code": r, "regions": trade.get(r, []), "count": len(trade.get(r, []))}
+    res_rows = [{"code": r, "regions": trade.get(r, []), "count": len(trade.get(r, [])),
+                 "places": where_trade.get(r, [])}
                 for r in sorted(set(resources(mod)) | set(trade))]
     # how many regions already meet a `region_religion X n` clause, per religion
     rel_names = religions(mod)

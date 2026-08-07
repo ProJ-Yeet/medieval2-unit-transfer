@@ -827,6 +827,79 @@ def clause_factions(clause: str) -> List[str]:
 
 
 # ---------------------------------------------------------------------------
+# how many units one building can offer one faction
+
+#: Most units M2TW will show in a settlement's recruitment panel for one
+#: building. Past this the panel overflows and the game can crash on opening it,
+#: which is the sort of failure that only shows up on the one save where enough
+#: conditions have lined up at once — hence the check.
+RECRUIT_LIMIT = 32
+
+
+def _pool_factions(requires: str, faction_cultures: Dict[str, str]) -> set:
+    """Which factions a pool's clause admits, cultures and ``all`` expanded.
+
+    A pool with no ``factions { }`` at all is open to everyone, which is the
+    case that quietly makes a building the same size for every faction.
+    """
+    every = set(faction_cultures)
+    named = clause_factions(requires)
+    if not named:
+        return set(every)
+    cultures = set(faction_cultures.values())
+    out: set = set()
+    for tok in named:
+        low = tok.lower()
+        if low == "all":
+            return set(every)
+        if low in cultures:
+            out |= {f for f, c in faction_cultures.items() if c == low}
+        else:
+            out.add(tok)
+    return out
+
+
+def _is_gated(requires: str) -> bool:
+    """True when a clause says anything beyond which factions it applies to."""
+    return any(c.kind != "factions" for c in parse_clause(requires or ""))
+
+
+def recruitment_pressure(blk: "LevelBlock", faction_cultures: Dict[str, str],
+                         limit: int = RECRUIT_LIMIT) -> List[dict]:
+    """How many units one level could offer each faction, worst case first.
+
+    Two numbers per faction, because they answer different questions:
+
+    ``always``
+        pools this faction gets with no further condition at all. If this is
+        over the limit the building is already broken, on every save.
+    ``most``
+        every pool whose ``factions { }`` admits it, taking every other
+        condition — event counters, hidden resources, settlement size — as
+        satisfied at the same time. This is an upper bound, and deliberately so:
+        working out which of a mod's conditions can truly hold at once is not
+        decidable from the EDB alone, and a warning that under-counts is worse
+        than one that occasionally over-counts.
+
+    Only factions at or over ``limit`` are returned.
+    """
+    pools = [c for c in blk.capabilities + blk.faction_capabilities
+             if c.keyword == "recruit_pool"]
+    most: Dict[str, int] = {}
+    always: Dict[str, int] = {}
+    for cap in pools:
+        gated = _is_gated(cap.requires)
+        for f in _pool_factions(cap.requires, faction_cultures):
+            most[f] = most.get(f, 0) + 1
+            if not gated:
+                always[f] = always.get(f, 0) + 1
+    rows = [{"faction": f, "most": n, "always": always.get(f, 0), "limit": limit}
+            for f, n in most.items() if n > limit or always.get(f, 0) > limit]
+    rows.sort(key=lambda r: (-r["always"], -r["most"], r["faction"]))
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # `requires` clauses, as structure
 
 
@@ -1411,6 +1484,8 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
                     "refusing to write it")
                 return plan
 
+    _check_recruit_limit(mod, bl, body, plan)
+
     loc = _plan_localisation(mod, body, plan)
     if loc:
         plan.loc_text = loc
@@ -1435,6 +1510,58 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
         if wanted:
             _plan_ownership(mod, plan, wanted)
     return plan
+
+
+def _check_recruit_limit(mod, bl: BuildingLine, body: dict,
+                         plan: BuildingPlan) -> None:
+    """Warn when a level being saved could offer one faction too many units.
+
+    Counted from the payload rather than the file, so the warning is about what
+    you are about to write. A level the edit does not mention is skipped: it is
+    not changing, and nagging about a mod's pre-existing shape on every unrelated
+    save is how a warning gets ignored.
+    """
+    cultures = mod.faction_cultures
+    if not cultures:
+        return
+    for lv in (body.get("levels") or []):
+        ops = (lv.get("capabilities") or []) + (lv.get("faction_capabilities") or [])
+        if not ops:
+            continue
+        name = str(lv.get("name") or "")
+        most: Dict[str, int] = {}
+        always: Dict[str, int] = {}
+        for op in ops:
+            if op.get("delete") or op.get("keyword") != "recruit_pool":
+                continue
+            requires = (clause_text(conditions_from_dicts(op["conditions"]))
+                        if "conditions" in op else str(op.get("requires") or ""))
+            gated = _is_gated(requires)
+            for f in _pool_factions(requires, cultures):
+                most[f] = most.get(f, 0) + 1
+                if not gated:
+                    always[f] = always.get(f, 0) + 1
+        over = [(f, n) for f, n in most.items()
+                if n > RECRUIT_LIMIT or always.get(f, 0) > RECRUIT_LIMIT]
+        if not over:
+            continue
+        over.sort(key=lambda r: (-always.get(r[0], 0), -r[1], r[0]))
+        for f, n in over[:6]:
+            a = always.get(f, 0)
+            label = mod.faction_label(f) if hasattr(mod, "faction_label") else f
+            if a > RECRUIT_LIMIT:
+                plan.warnings.append(
+                    f"{name}: {label} can already train {a} units here with no "
+                    f"conditions attached — over the {RECRUIT_LIMIT} the "
+                    f"recruitment panel holds")
+            else:
+                plan.warnings.append(
+                    f"{name}: {label} could reach {n} units here if every event, "
+                    f"resource and settlement condition lined up at once "
+                    f"(limit {RECRUIT_LIMIT}; {a} apply unconditionally)")
+        if len(over) > 6:
+            plan.warnings.append(f"{name}: …and {len(over) - 6} more faction(s) over "
+                                 f"the {RECRUIT_LIMIT}-unit limit")
 
 
 def _plan_line_fields(edb: EdbFile, bl: BuildingLine, body: dict,
@@ -1760,6 +1887,7 @@ def overview(mod, culture: str = "") -> dict:
         "religions": list(RELIGIONS),
         "materials": list(MATERIALS),
         "settlement_levels": list(SETTLEMENT_LEVELS),
+        "recruit_limit": RECRUIT_LIMIT,
         "capabilities": [{"keyword": k, "help": v, "bonus": k in BONUS_CAPS}
                          for k, v in sorted(CAP_HELP.items())],
         # what a `requires` clause may name, so the editor can offer checklists
@@ -1827,6 +1955,10 @@ def detail(mod, name: str, culture: str = "") -> dict:
             "faction_capabilities": fcaps,
             "has_faction_capability": blk.fcap_span != (0, 0),
             "art": art,
+            # factions this level could offer too many units at once — see
+            # recruitment_pressure. The page recomputes it as pools are edited;
+            # this is what it starts from.
+            "recruit_pressure": recruitment_pressure(blk, mod.faction_cultures),
         })
     return {
         "mod": mod.name,
