@@ -217,7 +217,11 @@
   .assetconf .frow .fs{color:var(--dim);font-size:10px}
   /* ---- unit editor (edit mode) ---- */
   header select.mode{color:var(--accent);font-weight:600;letter-spacing:.4px}
-  .modal.wide{width:1020px}
+  /* The editors are tables, not forms: an EDU line is a dozen labelled boxes, a
+     recruit pool is four numbers plus a clause, and a comparison is two of
+     everything. 1020px squeezed all three on a screen with room to spare, so the
+     wide modal now takes what the viewport will give it. */
+  .modal.wide{width:1500px;max-width:96vw}
   .tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid var(--edge);background:var(--panel2)}
   .tabs button{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;
     padding:9px 12px;color:var(--dim);font-size:13px}
@@ -795,6 +799,7 @@
     text-transform:uppercase;letter-spacing:.4px}
   .bulkbar .bnums input{width:66px;padding:3px 5px;font-size:12px}
   .bulkbar .hint{flex:1;min-width:0;font-size:10.5px;color:var(--dim)}
+  .bulkbar .lbl2{flex:0 0 auto;font-size:11.5px;color:var(--dim)}
   .pick{flex:0 0 auto;display:flex;align-items:center;cursor:pointer}
   .pick input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
   #bldBody .poolrow.picked{box-shadow:inset 3px 0 0 var(--accent2);background:#1b2430}
@@ -822,8 +827,10 @@
   .cmpsec>h5{margin:0 0 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
     color:var(--dim);font-weight:600}
   .cmplist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2)}
+  /* The stat's name is a fixed-ish label; the extra width of a wide screen
+     belongs to the two value columns, which are what you compare. */
   .cmprow{display:grid;gap:7px;align-items:center;padding:3px 8px;border-bottom:1px solid var(--edge);
-    grid-template-columns:minmax(104px,1fr) minmax(86px,1.05fr) 62px minmax(86px,1.05fr)}
+    grid-template-columns:minmax(104px,230px) minmax(86px,1fr) 62px minmax(86px,1fr)}
   .cmprow:last-child{border-bottom:none}
   .cmprow.same{opacity:.6}
   .cmprow .cl{font-size:11.5px;color:var(--dim);min-width:0;overflow:hidden;
@@ -7298,6 +7305,11 @@ function bldRenderBody(lv,orig){
   const b=state.bld,ov=b.ov;
   const body=document.getElementById('bldBody');
   const scroll=body?body.scrollTop:0;
+  // The pool and capability lists are scrollers of their OWN inside the body, so
+  // putting the body back where it was is not enough: ticking a unit two hundred
+  // rows down redrew the list and threw you back to the top of it.
+  const scrollOf=id=>{const el=document.getElementById(id);return el?el.scrollTop:0;};
+  const inner=[['bldPools',scrollOf('bldPools')],['bldCaps',scrollOf('bldCaps')]];
   const art=orig.art[b.culture]||{};
   const sel=(key,list,cur,blank)=>`<select data-scalar="${key}">
       ${blank?`<option value="">${esc(blank)}</option>`:''}
@@ -7384,6 +7396,8 @@ function bldRenderBody(lv,orig){
   if(b.plan)document.getElementById('bldPlan').innerHTML=bldPlanHtml(b.plan,b.planStale);
   bldWire();
   if(body&&scroll)body.scrollTop=scroll;
+  inner.forEach(([id,top])=>{
+    const el=document.getElementById(id); if(el&&top)el.scrollTop=top;});
   paintDirty();
 }
 /* ---- name & description, per culture ----
@@ -7714,10 +7728,13 @@ function bldCopyBtn(i){
     title="Copy these requirements — tick other units under ☑ Bulk edit and paste them on">⧉</button>`;
 }
 function bldCopyCond(i){
-  const c=bldCapList()[i]; if(!c)return;
+  const c=bldCapList()[+i]; if(!c)return;
   const name=(c.pool&&c.pool.unit)||c.keyword||'that row';
   state.condClip={unit:name,conds:JSON.parse(JSON.stringify(c.conds||[])),
                   text:bldClauseText(c.conds)};
+  // so the bar's "copy from" box keeps showing whoever it was last taken from,
+  // whether that was picked in the box or by ⧉ on a row
+  state.bld.copyFrom=(c.pool&&c.pool.unit)||'';
   const bu=bldBulk();
   if(!bu.on){bu.on=true;}                     // there is nowhere to paste it otherwise
   bldRenderBodyNow();
@@ -7782,10 +7799,30 @@ function bldBulkNums(){
     sel.length===1?'':'s'}.`);
 }
 const POOL_LABEL={initial:'start',per_turn:'per turn',maximum:'max',experience:'exp'};
+/* Which unit a clause is taken FROM is its own choice, not "whichever you ticked
+   first": the unit you want to copy is usually one you have NOT ticked, because
+   the ticks are the units you are about to paste onto. So it is a box over every
+   pool on the level — ticked ones marked — rather than a button. */
+function bldCopySelect(sel){
+  const b=state.bld,list=bldCapList();
+  const pools=list.map((c,i)=>({c,i})).filter(x=>x.c.pool&&!x.c.del);
+  if(!pools.length)return '';
+  const name=c=>{
+    const info=b.d.units[(c.pool.unit||'').toLowerCase()];
+    return (info&&!info.missing?info.name:c.pool.unit)||c.pool.unit;
+  };
+  const byUnit=pools.find(x=>x.c.pool.unit===b.copyFrom);
+  const cur=byUnit?byUnit.i:(sel.length?list.indexOf(sel[0]):-1);
+  return `<span class="lbl2">⧉ Copy from</span>
+    <select onchange="bldCopyCond(this.value)" style="max-width:220px"
+      title="Take this unit's requirements onto the clipboard, ready to paste onto the ticked ones">
+      ${pools.map(x=>`<option value="${x.i}" ${x.i===cur?'selected':''}
+        >${bldBulkHas(x.c)?'✓ ':''}${esc(name(x.c))}</option>`).join('')}
+    </select>`;
+}
 function bldBulkBar(shown){
   if(!bldBulkOn())return '';
   const b=state.bld,sel=bldBulkSel(),n=sel.length,clip=state.condClip;
-  const from=n?((sel[0].pool&&sel[0].pool.unit)||'the first'):'';
   const bn=b.bulkNums||(b.bulkNums={initial:'',per_turn:'',maximum:'',experience:''});
   const num=k=>`<label>${POOL_LABEL[k]}<input data-bulknum="${k}" value="${esc(bn[k])}"
     placeholder="—" inputmode="decimal"></label>`;
@@ -7795,9 +7832,7 @@ function bldBulkBar(shown){
     <button onclick="bldBulkAll(false)" ${n?'':'disabled'}>Clear</button>
     <button class="primary" ${n?'':'disabled'} onclick="bldBulkClause()"
       title="Edit one requires clause and put it on every ticked unit">✎ Requirements for ${n}…</button>
-    <button ${n?'':'disabled'} onclick="bldBulkCopy()"
-      title="Take the requirements off the first ticked unit, to paste onto others">⧉ Copy${
-        n?` from ${esc(from)}`:''}</button>
+    ${bldCopySelect(sel)}
     <button ${clip&&n?'':'disabled'} onclick="bldBulkPaste()"
       title="${clip?esc('Paste '+clip.unit+'’s requirements: '+(clip.text||'(none — always)'))
                   :'Copy a unit’s requirements first'}">📌 Paste${
@@ -7814,10 +7849,6 @@ function bldBulkBar(shown){
       <button ${n?'':'disabled'} onclick="bldBulkNums()">Apply numbers to ${n}</button>
       <span class="hint">Blank boxes are left alone.</span></div>
   </div>`;
-}
-function bldBulkCopy(){
-  const sel=bldBulkSel(); if(!sel.length)return;
-  bldCopyCond(bldCapList().indexOf(sel[0]));
 }
 /* One clause dialog over many rows. It opens on what they already say when they
    all say the same thing — the common case straight after adding a batch, where
