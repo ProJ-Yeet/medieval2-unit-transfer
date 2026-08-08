@@ -42,6 +42,7 @@ What counts as "referenced":
 """
 from __future__ import annotations
 
+import logging
 import re
 import shutil
 import time
@@ -52,6 +53,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 from . import config, edit, eop, luascan, modeldb
 from . import edu as edu_mod
 from . import mounts as mounts_mod
+from .logutil import block, counted, file_op, fingerprint, log
 from .mod import Mod
 
 # Slot kinds an entry can be referenced from. "soldier" is called out separately
@@ -215,18 +217,31 @@ def _character_models(mod: Mod) -> List[str]:
 
 
 def campaign_files(mod: Mod) -> List[Path]:
-    """Every campaign's descr_strat.txt / campaign_script.txt.
+    """Every campaign's descr_strat.txt / campaign_script.txt, wherever it lives.
 
     All campaign folders are walked, not just ``imperial_campaign`` — overhauls
     rename it, and a model kept alive only by an alternate campaign is exactly the
     kind of thing that must not be reported as dead.
+
+    M2TWEOP keeps its own copy of ``campaign_script.txt`` in ``eopData/`` beside
+    ``data/``, and that copy is the one such a mod actually edits. It is usually a
+    near-duplicate of the one under ``data/``, but "usually" is not a safety net:
+    a character the modder added only to the EOP copy names a battle model that
+    exists nowhere else, and without this the cleanup would call that model dead
+    and delete it. Same reason :mod:`unittransfer.luascan` walks the whole mod
+    root rather than ``data/`` — with the extender installed, the mod's real
+    content is no longer confined to ``data/``.
     """
-    base = mod.data / "world" / "maps" / "campaign"
-    if not base.is_dir():
-        return []
     out: List[Path] = []
-    for folder in sorted(p for p in base.iterdir() if p.is_dir()):
-        out += [folder / name for name in CAMPAIGN_FILES if (folder / name).is_file()]
+    base = mod.data / "world" / "maps" / "campaign"
+    if base.is_dir():
+        for folder in sorted(p for p in base.iterdir() if p.is_dir()):
+            out += [folder / name for name in CAMPAIGN_FILES if (folder / name).is_file()]
+    for eop_dir in mod.eop_dirs:
+        for name in CAMPAIGN_FILES:
+            path = eop_dir / name
+            if path.is_file() and path not in out:
+                out.append(path)
     return out
 
 
@@ -663,6 +678,7 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
         lambda frac, where: say(85 + 14 * frac,
                                 f"checking mounts no unit rides{' — ' + where if where else ''}"))
     say(100, "done")
+    _log_audit(mod, entries, unused, mentioned, orphans, dead_mounts, lua_count)
     return {
         "mod": mod.name,
         "root": str(mod.root),
@@ -682,6 +698,59 @@ def audit(mod: Mod, scan_orphans: bool = True, progress: Progress = None) -> dic
         "eop_units": len(mod.edu.eop_units),
         "eop_dirs": [str(p) for p in mod.eop_dirs],
     }
+
+
+def _log_audit(mod: Mod, entries: dict, unused: List[dict], mentioned: List[dict],
+               orphans: List[dict], dead_mounts: List[dict], lua_count: int) -> None:
+    """What the scan looked at and what it concluded, in full.
+
+    The cleanup is the one job that *deletes*, so "what got detected" has to be
+    recoverable from the log without re-running anything: which nets were cast
+    (and over how many files), what each net caught, and — the part that matters
+    when a mod breaks — the name of every entry the scan called dead. If a report
+    says the cleanup removed something it needed, this block is where the entry
+    either appears as protected (so the bug is elsewhere) or does not.
+    """
+    campaign = [f"{p.parent.name}/{p.name}" for p in campaign_files(mod)]
+    descr = [p.name for p in sorted(mod.data.glob("descr_*.txt"))
+             if p.name.lower() not in DESCR_SKIP]
+    # A row carries lua=True when a script names the entry, but `name_mentions`
+    # relabels it with a definition file when one names it too (the .txt is the
+    # better explanation). So "a script names it" and "the script is the ONLY
+    # thing keeping it" are different sets, and only the second is a case where
+    # dropping the Lua net would have deleted something.
+    lua_named = [m for m in mentioned if m.get("lua")]
+    lua_only = [m for m in lua_named if str(m.get("file", "")).lower().endswith(
+        (".lua", ".lua (in a comment)")) or ".lua:" in str(m.get("file", ""))]
+    log.info("BMDB   audit of %s — %d entries, %d unused, %d protected, "
+             "%d orphan files, %d dead mounts",
+             mod.name, len(entries), len(unused), len(mentioned),
+             len(orphans), len(dead_mounts))
+    block("  scanned for references:", [
+        f"export_descr_unit.txt + {len(mod.edu.eop_units)} M2TWEOP unit(s)",
+        f"descr_mount.txt, descr_character.txt",
+        f"{len(campaign)} campaign file(s): " + (", ".join(campaign) or "(none)"),
+        f"{len(descr)} data/descr_*.txt token-scanned"
+        + (f" (skipped: {', '.join(sorted(DESCR_SKIP))})" if DESCR_SKIP else ""),
+        f"{lua_count} .lua script(s) under {mod.root} — token + phrase scan, "
+        "comments included",
+    ])
+    if lua_only:
+        block(f"  a .lua script is the ONLY thing keeping these ({len(lua_only)}) — "
+              "without the Lua scan the cleanup would have offered to delete them:",
+              [f"{m['entry']}  <- {m['file']}" for m in lua_only])
+    both = [m for m in lua_named if m not in lua_only]
+    if both:
+        block(f"  named by a .lua script AND by a definition file ({len(both)}):",
+              [f"{m['entry']}  <- {m['file']} (a script names it too)" for m in both],
+              level=logging.DEBUG)
+    block(f"  protected, all reasons ({len(mentioned)}):",
+          [f"{m['entry']}  <- {m['file']}" for m in mentioned] or ["(none)"],
+          level=logging.DEBUG)
+    block(f"  nothing references these ({len(unused)}):",
+          [f"{u['entry']}  — {len(u['files'])} file(s), {u['on_disk']} on disk"
+           + (f", {u['copies']} duplicate blocks" if u["copies"] > 1 else "")
+           for u in unused] or ["(none)"], level=logging.DEBUG)
 
 
 # ---------------------------------------------------------------------------
@@ -1171,6 +1240,11 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
     backup_root = config.backup_root_for(tid)
     manifest: Dict[str, List[str]] = {"backed_up": [], "created": []}
 
+    fingerprint(mod)
+    log.info("BMDB   cleanup id=%s  %s -> %s", tid, mod.name, target)
+    log.info("  backups -> %s", backup_root)
+    _log_cleanup_plan(plan)
+
     # 1) copy everything out BEFORE touching the mod, so a failure half-way
     #    leaves the mod intact rather than the assets gone and nowhere to be.
     target.mkdir(parents=True, exist_ok=True)
@@ -1183,6 +1257,7 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
         dest = target / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
+        file_op("EXPORT", dest, f"copied out of the mod from {src}")
     say(70, "writing the export folder's modeldb")
     if plan.entry_deletes:
         (target / EXPORT_DB_NAME).write_text(
@@ -1206,6 +1281,7 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
             if not bpath.exists():
                 shutil.copy2(t, bpath)
             manifest["backed_up"].append(rel)
+            file_op("BACKUP", t, f"-> {bpath}")
         else:
             manifest["created"].append(rel)
         return t
@@ -1214,6 +1290,7 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
         t = backup_and(rel)
         t.parent.mkdir(parents=True, exist_ok=True)
         t.write_text(text, encoding=encoding)
+        file_op("WRITE", t, f"{encoding}, {len(text)} chars")
 
     if plan.edu_text:
         say(72, "rewriting export_descr_unit.txt")
@@ -1237,8 +1314,11 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
             backup_and(rel)                     # backed up, then removed: Undo restores it
             try:
                 t.unlink()
+                manifest.setdefault("deleted", []).append(rel)
+                file_op("DELETE", t, "taken out of the mod (Undo puts it back)")
             except OSError as exc:
                 plan.warnings.append(f"could not remove data/{rel}: {exc}")
+                log.warning("  could not remove %s: %s", t, exc)
     say(99, "writing the log entry")
 
     rec = {
@@ -1270,8 +1350,41 @@ def apply_cleanup(plan: CleanupPlan, progress: Progress = None) -> Dict:
         "export_root": str(target),
     }
     config.append_log(rec)
+    counted(manifest, [f"{len(plan.exports)} file(s) copied out to {target}"])
+    log.info("BMDB   cleanup done id=%s", tid)
     edit._invalidate(mod)
     return rec
+
+
+def _log_cleanup_plan(plan: CleanupPlan) -> None:
+    """Exactly what the cleanup is about to remove, merge and move — by name.
+
+    Written before the first file is touched, so a run that dies half-way still
+    leaves a record of what it was going to do; the ``EXPORT``/``DELETE`` lines
+    that follow then say how far it actually got.
+    """
+    log.info("  removing %d entr(y/ies), %d mount(s), %d merge(s); "
+             "moving %d file(s) out, deleting %d from the mod",
+             len(plan.entry_deletes), len(plan.mount_deletes), len(plan.merges),
+             len(plan.exports), len(plan.deletes))
+    block(f"  modeldb entries being removed ({len(plan.entry_deletes)}):",
+          plan.entry_deletes or ["(none)"])
+    if plan.merges:
+        block(f"  entries being merged away ({len(plan.merges)}):",
+              [f"{name} -> {into}  (every reference is repointed first)"
+               for name, into in plan.merges])
+    if plan.mount_deletes:
+        block(f"  mounts being removed from descr_mount.txt ({len(plan.mount_deletes)}):",
+              plan.mount_deletes)
+    block(f"  files leaving the mod ({len(plan.exports)}):",
+          [rel for _src, rel in plan.exports] or ["(none)"], level=logging.DEBUG)
+    block(f"  files being deleted from data/ ({len(plan.deletes)}):",
+          plan.deletes or ["(none)"], level=logging.DEBUG)
+    if plan.kept_files:
+        block(f"  files kept — still shared with an entry that stays ({len(plan.kept_files)}):",
+              plan.kept_files, level=logging.DEBUG)
+    if plan.warnings:
+        block(f"  warnings ({len(plan.warnings)}):", plan.warnings)
 
 
 def _modeldb_without(plan: CleanupPlan) -> str:

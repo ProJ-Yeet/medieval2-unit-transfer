@@ -891,6 +891,31 @@ to `%LOCALAPPDATA%\UnitTransfer\server.log`). The portable build also tees the
 launcher window to `launcher-output.txt` and ships a **Troubleshoot.bat** that
 collects a diagnostic without closing on its own.
 
+**If something went wrong, send this log.** Settings → *Something went wrong?* →
+**Save diagnostic log** downloads it, so nobody has to find `config/` first. It
+is written to be readable after the fact by someone who wasn't there:
+
+- **Which build, on what** — version, Python, OS, whether it's the packaged
+  build, and where `config/`, the backups and the log itself ended up.
+- **Which files these were** — every mod the job touched is fingerprinted before
+  it is written to: paths, sizes and timestamps of the EDU, modeldb,
+  `export_units.txt` and `descr_mount.txt`, plus the unit and entry counts. Two
+  people running "the same mod" routinely have different files.
+- **What was detected** — for a modeldb cleanup: every net that was cast and over
+  how many files (campaign scripts, `descr_*.txt`, `.lua`), every entry that was
+  protected and by what, every entry the scan called dead, and specifically the
+  ones a Lua script is the *only* thing keeping alive.
+- **What it decided** — the resolved options, every model added / reused /
+  renamed and why, every asset path rewrite, and every warning shown to the user.
+- **Every file that moved** — one line each for `WRITE`, `BACKUP`, `COPY`,
+  `EXPORT`, `DELETE`, `SAME` (byte-identical, not copied) and `KEEP` (the
+  destination's copy left alone), with sizes and both paths. Files written
+  outside `data/` — M2TWEOP unit files — are in there too.
+
+The console stays readable: long lists are truncated on screen and written in
+full to the file. The file is rotated at 4 MB with two backups kept, so it never
+grows too big to attach.
+
 `server.log.sample` in this repo shows what a normal session looks like — startup
 checks, icon conversion progress, and a unit transfer with undo.
 

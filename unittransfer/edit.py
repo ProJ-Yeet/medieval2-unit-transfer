@@ -39,6 +39,7 @@ from typing import Dict, List, Optional, Tuple
 from . import config
 from . import edu as edu_mod
 from . import eop, localization, modeldb
+from .logutil import counted, file_op, fingerprint, log
 from .mod import Mod
 # where a unit falls back to when card_pic_dir / info_pic_dir isn't pinned; shared
 # with the transfer engine so both put mercenary icons in the same place
@@ -1135,6 +1136,11 @@ def apply_edit(plan: EditPlan) -> Dict:
     backup_root = config.backup_root_for(tid)
     manifest: Dict[str, List[str]] = {"backed_up": [], "created": []}
 
+    fingerprint(mod)
+    log.info("%s id=%s in %s — %s", "BMDB  " if not plan.unit_type else "EDIT  ",
+             tid, mod.name, plan.resolved_type or plan.unit_type or "(modeldb only)")
+    log.info("  backups -> %s", backup_root)
+
     def backup_and(rel: str) -> Path:
         target = mod.data / rel
         if target.exists():
@@ -1143,6 +1149,7 @@ def apply_edit(plan: EditPlan) -> Dict:
             if not bpath.exists():
                 shutil.copy2(target, bpath)
             manifest["backed_up"].append(rel)
+            file_op("BACKUP", target, f"-> {bpath}")
         else:
             manifest["created"].append(rel)
         return target
@@ -1151,11 +1158,13 @@ def apply_edit(plan: EditPlan) -> Dict:
         target = backup_and(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding=encoding)
+        file_op("WRITE", target, f"{encoding}, {len(text)} chars")
 
     def copy_file(src: Path, rel: str) -> None:
         target = backup_and(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, target)
+        file_op("COPY", target, f"from {src}")
 
     if plan.edu_text:
         write_text("export_descr_unit.txt", plan.edu_text, edu_mod.ENCODING)
@@ -1177,14 +1186,18 @@ def apply_edit(plan: EditPlan) -> Dict:
         target = backup_and(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+        file_op("CONVERT", target, f"TGA -> {target.suffix} from {src}")
     for rel in plan.deletes:
         target = mod.data / rel
         if target.exists():
             backup_and(rel)                    # back up, then remove: Undo restores it
             try:
                 target.unlink()
+                manifest.setdefault("deleted", []).append(rel)
+                file_op("DELETE", target, "Undo puts it back")
             except OSError as exc:
                 plan.warnings.append(f"could not delete data/{rel}: {exc}")
+                log.warning("  could not delete %s: %s", target, exc)
 
     rec = {
         "id": tid,
@@ -1208,6 +1221,8 @@ def apply_edit(plan: EditPlan) -> Dict:
         "backup_root": str(backup_root),
     }
     config.append_log(rec)
+    counted(manifest)
+    log.info("  done id=%s", tid)
     _invalidate(mod)
     return rec
 

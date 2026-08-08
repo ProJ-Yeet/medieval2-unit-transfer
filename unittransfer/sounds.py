@@ -52,6 +52,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from . import config, edu as edu_mod, eop
+from .logutil import counted, file_op, fingerprint, log
 
 # Same reasoning as the EDU: 8-bit text, and latin-1 round-trips every byte.
 ENCODING = "latin-1"
@@ -591,6 +592,10 @@ def apply_sounds(plan: SoundPlan) -> Dict:
     backup_root = config.backup_root_for(tid)
     manifest: Dict[str, List[str]] = {"backed_up": [], "created": []}
 
+    fingerprint(mod)
+    log.info("VOICE  id=%s in %s — %d edit(s)", tid, mod.name, len(plan.ops))
+    log.info("  backups -> %s", backup_root)
+
     def write_text(rel: str, text: str, encoding: str) -> None:
         target = mod.data / rel
         if target.exists():
@@ -599,10 +604,12 @@ def apply_sounds(plan: SoundPlan) -> Dict:
             if not bpath.exists():
                 shutil.copy2(target, bpath)
             manifest["backed_up"].append(rel)
+            file_op("BACKUP", target, f"-> {bpath}")
         else:
             manifest["created"].append(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding=encoding)
+        file_op("WRITE", target, f"{encoding}, {len(text)} chars")
 
     if plan.eds_text:
         write_text(EDS_REL, plan.eds_text, ENCODING)
@@ -633,6 +640,8 @@ def apply_sounds(plan: SoundPlan) -> Dict:
         "backup_root": str(backup_root),
     }
     config.append_log(rec)
+    counted(manifest)
+    log.info("VOICE  done id=%s", tid)
     mod.__dict__.pop("sounds", None)
     mod.__dict__.pop("edu", None)
     mod.__dict__.pop("edu_vocab", None)

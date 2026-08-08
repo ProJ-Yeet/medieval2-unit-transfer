@@ -68,6 +68,7 @@ from typing import Dict, List, Optional, Tuple
 
 from . import (config, edbvocab, edu as edu_mod, eop, localization,
                modeldb as modeldb_mod)
+from .logutil import counted, file_op, fingerprint, log
 
 #: EDB is plain 8-bit text, like the EDU — latin-1 round-trips every byte.
 ENCODING = "latin-1"
@@ -1652,6 +1653,11 @@ def apply_edit(plan: BuildingPlan) -> Dict:
     backup_root = config.backup_root_for(tid)
     manifest: Dict[str, List[str]] = {"backed_up": [], "created": []}
 
+    fingerprint(mod)
+    log.info("BUILD  id=%s in %s — %r (%d change(s))", tid, mod.name, plan.line,
+             len(plan.changes))
+    log.info("  backups -> %s", backup_root)
+
     def write_text(rel: str, text: str, encoding: str) -> None:
         target = mod.data / rel
         if target.exists():
@@ -1660,10 +1666,12 @@ def apply_edit(plan: BuildingPlan) -> Dict:
             if not bpath.exists():
                 shutil.copy2(target, bpath)
             manifest["backed_up"].append(rel)
+            file_op("BACKUP", target, f"-> {bpath}")
         else:
             manifest["created"].append(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding=encoding)
+        file_op("WRITE", target, f"{encoding}, {len(text)} chars")
 
     if plan.edb_text:
         write_text(EDB_REL, plan.edb_text, ENCODING)
@@ -1698,6 +1706,8 @@ def apply_edit(plan: BuildingPlan) -> Dict:
         "backup_root": str(backup_root),
     }
     config.append_log(rec)
+    counted(manifest)
+    log.info("BUILD  done id=%s", tid)
     for cached in ("edb", "building_loc", "edb_vocab", "edu", "edu_vocab", "modeldb"):
         mod.__dict__.pop(cached, None)
     return rec

@@ -2318,6 +2318,14 @@ async function quitServer(){
   try{await api.post('/api/quit',{});}catch(e){}
   document.body.innerHTML='<div class="empty" style="padding:60px">Unit Transfer server stopped.<br>'
     +'<span class="count">Run Launch-Unit-Transfer.bat to start it again.</span></div>';}
+/* Hand the user the diagnostic log as a file. A link rather than fetch+Blob so
+   the browser's own download UI names it and drops it in Downloads — the point
+   is that they can attach it to a message without ever finding config/. */
+function downloadDiag(){
+  const a=document.createElement('a');
+  a.href='/api/diag'; a.download='';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('Diagnostic log saved to your Downloads folder.');}
 async function saveClearBin(){
   await setClearBin(document.getElementById('clearBinChk').checked);}
 async function saveSoldierBase(){
@@ -5419,6 +5427,16 @@ async function openSettings(){
           Checks only: <code>py app.py --check</code></div>
         <div style="margin-top:8px"><button class="danger" onclick="quitServer()">⏻ Quit server</button>
           <span class="count">stops the tool (needed when running silently)</span></div>
+      </fieldset>
+      <fieldset><legend>Something went wrong?</legend>
+        <div class="count" style="margin-bottom:8px">Every transfer, edit and cleanup is recorded in detail: which mod
+          files were read, what the scan found, and <b>every single file</b> written, backed up, copied or deleted.
+          If the tool did something you didn't expect, save this and send it along — it says exactly what happened,
+          so nobody has to guess or reproduce it.</div>
+        <div><button onclick="downloadDiag()">💾 Save diagnostic log</button>
+          <span class="count">downloads <code>unit-transfer-log-….txt</code></span></div>
+        <div class="count" style="margin-top:6px">Nothing personal is in it — mod names, file paths inside your
+          Medieval II folder, and what the tool did. Undo (🕑 Log) reverses anything it lists.</div>
       </fieldset>
       <fieldset><legend>Transfer defaults</legend>
         <label class="chk"><input type="checkbox" id="soldierBaseChk" ${s.soldier_from_base?'checked':''} onchange="saveSoldierBase()">

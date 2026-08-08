@@ -83,6 +83,7 @@ from typing import Dict, List, Optional
 
 from . import bmdb, buildings, cleaner, config, edit, sounds, sprites
 from . import eop as _eop
+from . import logutil
 from .logutil import log, setup as setup_logging
 from .icons import IconCache
 from .mod import Mod
@@ -609,6 +610,33 @@ class Handler(BaseHTTPRequestHandler):
     def _err(self, code, msg):
         self._json({"error": msg}, code)
 
+    def _diag(self):
+        """The diagnostic log as a download.
+
+        Served rather than merely pointed at, because "send me your log file"
+        fails at the first step for most people: ``config/`` is next to the app,
+        the app was unzipped somewhere they don't remember, and the log may not
+        even be there (see :func:`unittransfer.logutil.setup`). A button that
+        hands them the file removes every one of those steps.
+        """
+        # Flush first — a diagnostic download that stops one line short of the
+        # thing that went wrong is worse than useless.
+        for h in log.handlers:
+            try:
+                h.flush()
+            except Exception:
+                pass
+        text = logutil.tail()
+        path = logutil.log_path()
+        if not text:
+            text = (f"(no log file — logutil found nowhere writable)\n"
+                    f"Expected location: {path or config.CONFIG_DIR / 'server.log'}\n")
+        name = f"unit-transfer-log-{time.strftime('%Y%m%d-%H%M%S')}.txt"
+        log.info("DIAG   log downloaded from the UI (%d bytes from %s)", len(text), path)
+        return self._send(200, text.encode("utf-8", errors="replace"),
+                          "text/plain; charset=utf-8",
+                          {"Content-Disposition": f'attachment; filename="{name}"'})
+
     def _read_body(self) -> dict:
         n = int(self.headers.get("Content-Length", 0))
         if not n:
@@ -734,6 +762,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(sprites.overview(self.registry.get(name)))
             if u.path == "/api/log":
                 return self._json(config.load_log())
+            if u.path == "/api/diag":
+                return self._diag()
             if u.path == "/icon":
                 return self._icon(q)
             return self._err(404, "not found")
@@ -1233,6 +1263,7 @@ class _Server(ThreadingHTTPServer):
 
 def serve(cache_dir: Path, host="127.0.0.1", port=8756, on_ready=None, verbose=False):
     setup_logging(verbose)
+    logutil.banner(port)
     Handler.registry = Registry(cache_dir)
     httpd = _Server((host, port), Handler)     # socket is bound + listening here
     log.info("Unit Transfer UI  ->  http://%s:%d/", host, port)

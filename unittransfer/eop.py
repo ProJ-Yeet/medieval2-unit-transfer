@@ -35,6 +35,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from . import config
 from . import edu as edu_mod
+from .logutil import file_op, log
 
 # Folder names M2TWEOP installs use, checked case-insensitively against every
 # directory near the top of the mod. Detection is a convenience only — a mod that
@@ -324,6 +325,7 @@ def write_split(mod, texts: Dict[str, str], removes: Sequence[str],
         bpath.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, bpath)
         backed.append({"path": str(path), "backup": str(bpath)})
+        file_op("BACKUP", path, f"M2TWEOP file -> {bpath}")
 
     for key, text in texts.items():
         path = Path(key)
@@ -333,6 +335,7 @@ def write_split(mod, texts: Dict[str, str], removes: Sequence[str],
             created.append(str(path))
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding=edu_mod.ENCODING)
+        file_op("WRITE", path, f"M2TWEOP unit file, {len(text)} chars")
         written.append(rel_to_root(mod, path))
     for key in removes:
         path = Path(key)
@@ -341,7 +344,9 @@ def write_split(mod, texts: Dict[str, str], removes: Sequence[str],
         back_up(path)
         try:
             path.unlink()
-        except OSError:
+            file_op("DELETE", path, "M2TWEOP unit file (Undo puts it back)")
+        except OSError as exc:
+            log.warning("  could not remove the M2TWEOP file %s: %s", path, exc)
             continue
         written.append(rel_to_root(mod, path) + " (removed)")
     return written

@@ -19,6 +19,7 @@ model reference is updated to match.
 from __future__ import annotations
 
 import filecmp
+import logging
 import shutil
 from dataclasses import dataclass, field, asdict, replace as dc_replace
 from pathlib import Path
@@ -26,6 +27,7 @@ from typing import Dict, List, Optional, Tuple
 
 from . import (config, edu as edu_mod, engines as engines_mod, eop, localization,
                modeldb, mounts, projectiles as projectiles_mod, sounds)
+from .logutil import block, counted, file_op, fingerprint, log
 from .mod import Mod
 
 
@@ -1593,6 +1595,8 @@ def apply_transfer(plan: TransferPlan) -> Dict:
     if plan.option_error:
         raise ValueError("cannot apply: " + plan.option_error)
     if plan.skipped:
+        log.info("APPLY  %r skipped — it already exists in %s and the conflict "
+                 "option is 'skip'; nothing was written", plan.unit_type, plan.dest.name)
         rec = _base_record(plan, applied=False, note="skipped (unit exists, conflict=skip)")
         config.append_log(rec)
         return rec
@@ -1602,6 +1606,14 @@ def apply_transfer(plan: TransferPlan) -> Dict:
     unit = source.edu.by_type()[plan.unit_type]
     tid = config.new_transfer_id()
     backup_root = config.backup_root_for(tid)
+
+    # Both mods, as they are on disk *before* anything is written. When a transfer
+    # produces a broken destination the first question is which files these were.
+    fingerprint(source)
+    fingerprint(dest)
+    log.info("APPLY  id=%s  %r  %s -> %s", tid, plan.unit_type, source.name, dest.name)
+    log.info("  backups -> %s", backup_root)
+    _log_plan(plan)
 
     manifest = {"backed_up": [], "created": []}
 
@@ -1614,6 +1626,7 @@ def apply_transfer(plan: TransferPlan) -> Dict:
             if not bpath.exists():
                 shutil.copy2(target, bpath)
             manifest["backed_up"].append(rel)
+            file_op("BACKUP", target, f"-> {bpath}")
         else:
             manifest["created"].append(rel)
         return target
@@ -1622,6 +1635,7 @@ def apply_transfer(plan: TransferPlan) -> Dict:
         target = backup_and(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding=encoding)
+        file_op("WRITE", target, f"{encoding}, {len(text)} chars")
 
     conflicts = {c.rel: c for c in plan.asset_conflicts}
     # Relocating modes write into a folder of our own, so replacing anything that
@@ -1644,16 +1658,19 @@ def apply_transfer(plan: TransferPlan) -> Dict:
                 target.stat().st_size == src_abs.stat().st_size
                 and filecmp.cmp(src_abs, target, shallow=False))
             if identical:
+                file_op("SAME", target, "byte-identical in both mods — not copied")
                 return                       # byte-identical -> reuse existing
             if mode != "overwrite":
                 # differing file, user chose to keep the destination's version
                 manifest.setdefault("kept_existing", []).append(rel)
+                file_op("KEEP", target, f"differs from the source's copy, mode={mode}")
                 return
             backup_and(rel)                  # overwriting a differing file: back up first
         else:
             manifest["created"].append(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src_abs, target)
+        file_op("COPY", target, f"from {src_abs}")
 
     # ---- 1) EDU (and/or the M2TWEOP unit files) ----
     edu_text, eop_texts, eop_removes = _compose_edu(plan, unit)
@@ -1761,9 +1778,82 @@ def apply_transfer(plan: TransferPlan) -> Dict:
     rec["backup_root"] = str(backup_root)
     config.append_log(rec)
 
+    counted(manifest, [f"written as {plan.resolved_type!r}"
+                       + (f" into the M2TWEOP file {plan.eop_file}" if plan.eop_file
+                          else " in export_descr_unit.txt")])
+    log.info("APPLY  done id=%s", tid)
+
     # invalidate dest caches so a subsequent plan sees the new state
     _invalidate(dest)
     return rec
+
+
+def _log_plan(plan: TransferPlan) -> None:
+    """Everything the planner decided, before any of it is written.
+
+    The human summary in :meth:`TransferPlan.summary` is what the UI shows and it
+    is already logged; this is the part that summary deliberately leaves out —
+    every model, every renamed name, every file, every path rewrite. It only
+    exists to be read after the fact, so it goes to the file at DEBUG and the
+    console never sees it.
+    """
+    opts = plan.options
+    block("  options:", [
+        f"mode             {opts.mode}"
+        + (f"   [replacing {plan.replace_type!r}]" if plan.replace_type else ""),
+        f"base unit        {opts.base_type or '(none)'}",
+        f"on_conflict      {opts.on_conflict}"
+        + ("   (the destination already has this type)" if plan.unit_conflict else ""),
+        f"asset_conflict   {opts.asset_conflict}",
+        f"icon_conflict    {opts.icon_conflict}",
+        f"engine_conflict  {opts.engine_conflict}",
+        f"eop_target       {opts.eop_target}"
+        + (f"   -> {plan.eop_file}" if plan.eop_file else "   -> export_descr_unit.txt"),
+        f"reroute dir      {plan.reroute_dir or '(assets stay where they are)'}",
+        "field groups     " + ", ".join(
+            f"{g}={getattr(opts, g)}" for g in
+            ("soldier_from", "officer_from", "mount_from", "crew_from", "upgrade_from")),
+        "include          " + ", ".join(
+            g for g in ("include_officers", "include_mount", "include_crew",
+                        "include_projectile", "include_engine")
+            if getattr(opts, g)),
+        f"taken from base  {', '.join(plan.base_field_groups) or '(none)'}",
+        f"mercenary        attribute={plan.mercenary}, icons={plan.merc_icons}",
+        f"sound            mode={opts.sound_mode}, donor={opts.sound_donor or '(none)'}"
+        f" -> action={plan.sound_action or '(none)'}",
+        f"field overrides  {', '.join(sorted(opts.field_overrides)) or '(none)'}",
+        f"excluded models  {', '.join(opts.exclude_models) or '(none)'}",
+    ], level=logging.DEBUG)
+
+    block("  battle model entries:",
+          [f"{a.source_name} -> {a.final_name}  [{a.action}]"
+           + (f"  — {a.reason}" if a.reason else "")
+           for a in plan.model_actions] or ["(none)"], level=logging.DEBUG)
+    if plan.path_map:
+        block("  asset paths rewritten in the copied bmdb entries:",
+              [f"{old} -> {new}" for old, new in sorted(plan.path_map.items())],
+              level=logging.DEBUG)
+    block(f"  asset files to copy ({len(plan.asset_files)}):",
+          [rel for _src, rel in plan.asset_files] or ["(none)"], level=logging.DEBUG)
+    block(f"  icon files to copy ({len(plan.icon_files)}):",
+          [rel for _src, rel in plan.icon_files] or ["(none)"], level=logging.DEBUG)
+    if plan.asset_conflicts:
+        block(f"  files that already exist in the destination ({len(plan.asset_conflicts)}):",
+              [f"{c.rel}  [{c.kind}]  "
+               + ("identical" if c.identical
+                  else f"DIFFERENT — source {c.src_size} B, destination {c.dst_size} B")
+               for c in plan.asset_conflicts], level=logging.DEBUG)
+    for label, names in (("missing models", plan.missing_models),
+                         ("missing skeletons", plan.missing_skeletons),
+                         ("missing assets", plan.missing_assets),
+                         ("excluded secondaries", plan.excluded_secondaries)):
+        if names:
+            block(f"  {label} ({len(names)}):", names, level=logging.DEBUG)
+    # Warnings are the one part of the plan that is genuinely worth a console
+    # line: they are what the user was told, and a report that disagrees with
+    # them is a report about something else.
+    if plan.warnings:
+        block(f"  warnings ({len(plan.warnings)}):", plan.warnings)
 
 
 def _compose_edu(plan: TransferPlan, unit) -> Tuple[str, Dict[str, str], List[str]]:
