@@ -433,6 +433,109 @@ def rewrite_paths_indexed(raw: str, index_map: Dict[int, str],
     return "".join(out)
 
 
+def animation_spans(raw: str, pad: bool = False) -> List[Dict[str, Tuple[int, int, str]]]:
+    """Per animation record, the spans of its three name strings.
+
+    ``[{"mount_type": (s, e, value), "primary": …, "secondary": …}, …]`` in file
+    order. The weapon lists are deliberately not reported: they are the model's
+    own weapons, and nothing here has any business rewriting them.
+    ``pad`` — see :func:`entry_path_spans`.
+    """
+    r = _SpanReader(raw)
+
+    def firstpad() -> None:
+        if pad:
+            r.get_int()
+            r.get_int()
+
+    r.get_string()                      # name
+    r.get_float()                       # scale
+    firstpad()
+    lod_n = r.get_int()
+    firstpad()
+    for _ in range(lod_n):
+        r.get_string()
+        r.get_int()
+    firstpad()
+
+    def textures(pad_after_count: bool):
+        cnt = r.get_int()
+        if pad_after_count:
+            firstpad()
+        for _ in range(cnt):
+            for _ in range(4):          # faction, texture, normal, sprite
+                r.get_string()
+
+    textures(pad_after_count=True)
+    textures(pad_after_count=False)
+    firstpad()
+
+    out: List[Dict[str, Tuple[int, int, str]]] = []
+    anim_n = r.get_int()
+    firstpad()
+    for _ in range(anim_n):
+        out.append({"mount_type": r.get_string_span(),
+                    "primary": r.get_string_span(),
+                    "secondary": r.get_string_span()})
+        for _ in range(r.get_int()):
+            r.get_string()              # primary weapons
+        for _ in range(r.get_int()):
+            r.get_string()              # secondary weapons
+    return out
+
+
+def rewrite_animations(raw: str, anims: List["Animation"],
+                       pad: bool = False) -> str:
+    """Return ``raw`` with each animation record's mount type and two skeleton
+    names replaced by ``anims``', matched up by position.
+
+    Only those three strings move; the record count, the weapon lists and every
+    other byte stay exactly as they were, so an entry keeps its own weapons while
+    borrowing another entry's animation set. When ``raw`` has more records than
+    ``anims``, the last of ``anims`` is reused for the rest — a mount with two
+    records and a donor with one still ends up driven entirely by the donor.
+    A name that only differs in case is left alone: the game does not care, and
+    rewriting it would churn bytes for nothing (a parsed ``mount_type`` is
+    lower-cased, so writing one back would otherwise never be a no-op).
+    ``pad`` — see :func:`entry_path_spans`.
+    """
+    if not anims:
+        return raw
+    spans = animation_spans(raw, pad=pad)
+    edits: List[Tuple[int, int, str]] = []
+    for i, rec in enumerate(spans):
+        a = anims[i] if i < len(anims) else anims[-1]
+        for key, value in (("mount_type", a.mount_type),
+                           ("primary", a.primary_skeleton),
+                           ("secondary", a.secondary_skeleton)):
+            start, end, old = rec[key]
+            if (old or "").lower() == (value or "").lower():
+                continue
+            # an empty string is the bare "0" token — no trailing space, or the
+            # next read would start one byte later than the writer meant
+            edits.append((start, end, f"{len(value)} {value}" if value else "0"))
+    if not edits:
+        return raw
+    out = raw
+    for start, end, text in sorted(edits, key=lambda e: e[0], reverse=True):
+        out = out[:start] + text + out[end:]
+    return out
+
+
+def merged_animations(entry_anims: List["Animation"],
+                      donor_anims: List["Animation"]) -> List["Animation"]:
+    """The parsed counterpart of :func:`rewrite_animations`: the entry's records
+    with the donor's mount type and skeletons, keeping each record's weapons."""
+    if not donor_anims:
+        return list(entry_anims)
+    out: List[Animation] = []
+    for i, a in enumerate(entry_anims):
+        d = donor_anims[i] if i < len(donor_anims) else donor_anims[-1]
+        out.append(Animation(d.mount_type, d.primary_skeleton, d.secondary_skeleton,
+                             list(a.pri_weapons), list(a.sec_weapons)))
+    return out
+
+
 def path_slots_raw(raw: str, pad: bool = False) -> List[dict]:
     """:func:`path_slots` straight off an entry's raw text.
 

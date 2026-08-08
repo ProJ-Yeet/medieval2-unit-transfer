@@ -38,7 +38,7 @@ from typing import Dict, List, Optional, Tuple
 
 from . import config
 from . import edu as edu_mod
-from . import eop, localization, modeldb
+from . import eop, localization, modeldb, unitrefs
 from .logutil import counted, file_op, fingerprint, log
 from .mod import Mod
 # where a unit falls back to when card_pic_dir / info_pic_dir isn't pinned; shared
@@ -220,6 +220,12 @@ class EditPlan:
     eop_texts: Dict[str, str] = field(default_factory=dict)
     eop_removes: List[str] = field(default_factory=list)   # files whose last unit went
     loc_text: str = ""                           # whole file after editing ("" = unchanged)
+    # Files outside the EDU that name this unit's `type` and follow a rename:
+    # export_descr_buildings.txt, the campaigns' descr_strat.txt /
+    # campaign_script.txt, descr_mercenaries.txt, the voice bank, the mod's .lua
+    # scripts. {absolute path: new text}. See :mod:`unittransfer.unitrefs`.
+    ref_texts: Dict[Path, str] = field(default_factory=dict)
+    ref_counts: List[Tuple[str, int]] = field(default_factory=list)  # (file, hits)
     entry_updates: Dict[str, str] = field(default_factory=dict)   # name -> new raw
     entry_renames: Dict[str, str] = field(default_factory=dict)   # old -> new
     new_entries: List[Tuple[str, str, bool]] = field(default_factory=list)  # (name, raw, pad)
@@ -445,10 +451,7 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
     if req.new_type and req.new_type != unit.type:
         block = edu_mod.rewrite_block(block, type_new=req.new_type)
         plan.changes.append(f"type '{unit.type}' -> '{req.new_type}'")
-        plan.warnings.append(
-            "renaming `type` does not touch other files — recruitment "
-            "(export_descr_buildings.txt), descr_strat.txt and any scripts that "
-            "name this unit must be updated by hand.")
+        _plan_type_refs(plan, mod, unit.type, req.new_type)
     if req.new_dictionary and req.new_dictionary != unit.dictionary:
         block = edu_mod.rewrite_block(block, dict_new=req.new_dictionary)
         plan.changes.append(f"dictionary '{unit.dictionary}' -> '{req.new_dictionary}'")
@@ -519,9 +522,41 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
 
     if not (plan.edu_text or plan.loc_text or plan.modeldb_touched
             or plan.copies or plan.icon_copies or plan.icon_converts
-            or plan.deletes):
+            or plan.deletes or plan.ref_texts):
         plan.changes.append("no changes")
     return plan
+
+
+def _plan_type_refs(plan: EditPlan, mod: Mod, old: str, new: str) -> None:
+    """Chase a renamed unit ``type`` through every other file that names it.
+
+    A unit type is a plain string, and recruitment, the campaigns, the voice bank
+    and the mod's Lua all refer to the unit by it — none of which the EDU knows
+    about. Renaming the block alone used to leave all of those pointing at a unit
+    that no longer exists, which the editor could only warn about. Now they are
+    rewritten with it (and backed up with it, so one Undo puts everything back).
+    """
+    res = unitrefs.rename_refs(mod, old, new)
+    plan.ref_texts = dict(res.texts)
+    plan.ref_counts = res.counts()
+    if res.refs:
+        total = len(res.refs)
+        where = ", ".join(f"{f} ({n})" for f, n in plan.ref_counts[:4])
+        plan.changes.append(
+            f"{total} reference(s) to '{old}' rewritten in "
+            f"{len(plan.ref_counts)} other file(s): {where}"
+            f"{'…' if len(plan.ref_counts) > 4 else ''}")
+    else:
+        plan.changes.append(f"no other file names '{old}'")
+    if res.case_refs:
+        # Deliberately not rewritten: these files hold other namespaces too (an
+        # engine, a mount, a building can share a unit's name), and a
+        # case-blind rewrite would rename those as well.
+        spots = ", ".join(r.label() for r in res.case_refs[:5])
+        plan.warnings.append(
+            f"{len(res.case_refs)} place(s) spell '{old}' with different "
+            f"capitalisation and were NOT rewritten — check them by hand: {spots}"
+            f"{'…' if len(res.case_refs) > 5 else ''}")
 
 
 def bmdb_request_from_dict(d: dict) -> EditRequest:
@@ -637,35 +672,87 @@ def _real(paths) -> List[str]:
     return [p for p in dict.fromkeys(paths) if p and p != "0"]
 
 
+def _same_dir(a: str, b: str) -> bool:
+    """Do two data-relative folders name the same folder?
+
+    Case-insensitively: M2TW runs on Windows, so ``unit_models/_units/Foo`` and
+    ``unit_models/_Units/Foo`` ARE one folder on disk, and a mod that spells the
+    mesh path one way and its textures the other (very common — the modeldb is
+    hand-edited) was being told its files were "spread across 2 folders".
+    """
+    return (a or "").lower() == (b or "").lower()
+
+
+def _under(d: str, base: str) -> bool:
+    """Is ``d`` the model's own folder — ``base`` itself or its ``textures/``?
+
+    The layout this editor standardises on puts meshes in ``base`` and textures in
+    ``base/textures``, so those two are one folder as far as the user is concerned
+    and must never be counted (or listed) as two.
+    """
+    return bool(base) and (_same_dir(d, base)
+                           or _same_dir(d, f"{base}/{TEXTURE_SUBDIR}"))
+
+
 def folder_info_of(slots: List[dict], name: str = "") -> dict:
     """Where a set of path slots' mesh/texture files live, and whether that is
     one folder.
 
     ``base`` is non-empty only when they already follow the standard layout —
     every mesh in one folder, every texture in that folder or its ``textures/``
-    sub-folder. Otherwise the files are scattered and the editor offers to
-    standardise them.
+    sub-folder (the two count as ONE folder; see :func:`_under`). Otherwise the
+    files are scattered and the editor offers to standardise them.
+
+    **Attachment textures are judged separately.** A unit's attachment set is
+    usually a shared pack (``unit_models/AttachmentSets/…``) that dozens of
+    entries read, exactly like a sprite: it is not this model's file to rehome,
+    and its folder must not be what makes a tidy entry look untidy. So attachment
+    textures count as the model's own only while they already sit under its
+    folder; anywhere else they are reported in ``external_dirs`` and left alone.
     """
+    def kind_of(s, group):
+        return (s["kind"] in ("texture", "normal")
+                and (s.get("group") == "attach") == (group == "attach"))
+
     meshes = _real(s["value"] for s in slots if s["kind"] == "mesh")
-    textures = _real(s["value"] for s in slots if s["kind"] in ("texture", "normal"))
+    main_tex = _real(s["value"] for s in slots if kind_of(s, "main"))
+    attach_tex = _real(s["value"] for s in slots if kind_of(s, "attach"))
     mesh_dirs = sorted({_dirname(p) for p in meshes})
-    tex_dirs = sorted({_dirname(p) for p in textures})
+    tex_dirs = sorted({_dirname(p) for p in main_tex})
 
     base = ""
-    if len(mesh_dirs) == 1 and mesh_dirs[0]:
+    if mesh_dirs and mesh_dirs[0] and all(_same_dir(d, mesh_dirs[0]) for d in mesh_dirs):
         m = mesh_dirs[0]
-        if all(d == m or d == f"{m}/{TEXTURE_SUBDIR}" for d in tex_dirs):
+        if all(_under(d, m) for d in tex_dirs):
             base = m
-    elif not meshes and len(tex_dirs) == 1 and tex_dirs[0].endswith("/" + TEXTURE_SUBDIR):
+    elif not meshes and len(tex_dirs) == 1 and tex_dirs[0].lower().endswith(
+            "/" + TEXTURE_SUBDIR):
         base = tex_dirs[0][: -len("/" + TEXTURE_SUBDIR)]
 
     suggestion = base or next((d for d in mesh_dirs if d),
                               next((d for d in tex_dirs if d), "unit_models/" + name))
-    if not base and suggestion.endswith("/" + TEXTURE_SUBDIR):
+    if not base and suggestion.lower().endswith("/" + TEXTURE_SUBDIR):
         suggestion = suggestion[: -len("/" + TEXTURE_SUBDIR)]
+
+    # attachments that already live in the model's folder move with it; the rest
+    # are somebody else's shared files and only get reported
+    home = base or suggestion
+    owned_attach = [p for p in attach_tex if _under(_dirname(p), home)]
+    external = [p for p in attach_tex if p not in owned_attach]
+    textures = list(dict.fromkeys(main_tex + owned_attach))
+
+    # what the UI lists: one line per real folder, with base and base/textures
+    # collapsed into the single folder they are
+    folders: List[str] = []
+    for d in mesh_dirs + tex_dirs:
+        if not any(_same_dir(d, f) or _under(d, f) for f in folders):
+            folders.append(d)
     return {"base": base, "standardized": bool(base), "suggestion": suggestion,
             "mesh_dirs": mesh_dirs, "texture_dirs": tex_dirs,
-            "mesh_files": meshes, "texture_files": textures}
+            "mesh_files": meshes, "texture_files": textures,
+            "folders": folders,
+            "external_dirs": sorted({_dirname(p) for p in external}),
+            "external_files": external}
 
 
 def folder_info(entry: "modeldb.ModelEntry") -> dict:
@@ -677,16 +764,16 @@ def folder_moves_of(info: dict, target: str) -> Dict[str, str]:
     target = (target or "").replace("\\", "/").strip().strip("/")
     if not target:
         return {}
-    if info["standardized"] and info["base"] == target:
+    if info["standardized"] and _same_dir(info["base"], target):
         return {}                      # already the layout asked for — touch nothing
     moves: Dict[str, str] = {}
     for p in info["mesh_files"]:
         new = f"{target}/{_basename(p)}"
-        if new != p:
+        if not _same_dir(new, p):      # a case-only difference is the same file
             moves[p] = new
     for p in info["texture_files"]:
         new = f"{target}/{TEXTURE_SUBDIR}/{_basename(p)}"
-        if new != p:
+        if not _same_dir(new, p):
             moves[p] = new
     return moves
 
@@ -1172,6 +1259,10 @@ def apply_edit(plan: EditPlan) -> Dict:
         eop.write_split(mod, plan.eop_texts, plan.eop_removes, backup_root, manifest)
     if plan.loc_text:
         write_text("text/export_units.txt", plan.loc_text, localization.ENCODING)
+    if plan.ref_texts:
+        # buildings / campaigns / voice bank / Lua — some live outside data/, so
+        # they go in the manifest by absolute path (same shape as the EOP files)
+        unitrefs.write_refs(plan.ref_texts, backup_root, manifest)
     if plan.modeldb_touched:
         write_text("unit_models/battle_models.modeldb", _modeldb_text(plan),
                    modeldb.ENCODING)
@@ -1231,7 +1322,9 @@ def _invalidate(mod: Mod) -> None:
     for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
                  "projectile_file", "effect_sets", "engine_file",
                  "mounted_engine_file", "engine_skeleton_file", "sounds",
-                 "eop_dirs", "lua_tokens", "edu_vocab"):
+                 "eop_dirs", "lua_tokens", "edu_vocab",
+                 # a type rename rewrites recruitment and the campaigns too
+                 "edb", "edb_vocab", "building_loc"):
         mod.__dict__.pop(attr, None)
 
 

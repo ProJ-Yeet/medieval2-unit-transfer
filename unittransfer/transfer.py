@@ -113,6 +113,16 @@ class TransferOptions:
     mount_from: str = "source"
     crew_from: str = "source"
     upgrade_from: str = "source"
+    # `mount_from == "base"` used to mean "ride the base unit's mount" — the
+    # source's horse was left behind entirely. That is almost never what someone
+    # picking a base wants: they pick one because the destination has the ANIMATIONS
+    # for it, not because they wanted a different horse. So with this on (the
+    # default) the source's mount comes across as its own descr_mount.txt block and
+    # its own modeldb entry, and only its *animation set* is taken from the base's
+    # mount — and only where the source's skeletons are missing from the
+    # destination's modeldb, which is the case that would otherwise leave the mount
+    # unanimated. Off = the old behaviour, the base's mount as-is.
+    import_mount_with_base: bool = True
     # manual per-field EDU overrides: {field_key: full value string}
     field_overrides: Dict[str, str] = field(default_factory=dict)
     # what to do about copied mesh/texture files:
@@ -212,6 +222,14 @@ class TransferPlan:
     mount_name: str = ""             # name written into the EDU
     mount_raw: str = ""              # block to append to the destination file
     mount_rename: Optional[Tuple[str, str]] = None   # (old, new)
+    # "mount from base" + `import_mount_with_base`: the source's mount was brought
+    # across anyway. `mount_anim_donor` is the base unit's mount modeldb entry
+    # whose animation set the copied mount entry was given, and
+    # `mount_skeletons_swapped` the source skeletons that were missing here and so
+    # were replaced. Both empty when the source's own animations were kept.
+    mount_from_base_import: bool = False
+    mount_anim_donor: str = ""
+    mount_skeletons_swapped: List[str] = field(default_factory=list)
     # projectiles (descr_projectile.txt). rename map: old proj name -> resolved name
     # (only entries that were renamed on collision); raws to append; effect stats.
     projectile_renames: Dict[str, str] = field(default_factory=dict)
@@ -352,6 +370,14 @@ class TransferPlan:
             L.append(f"  mount '{self.mount_name}' already in destination descr_mount.txt (reused)")
         elif self.mount_action == "missing":
             L.append("  ! mount NOT found in source descr_mount.txt")
+        if self.mount_from_base_import:
+            L.append("  mount taken from the transferred unit even though the base "
+                     "supplies the mount group (its model and definition come across)")
+        if self.mount_anim_donor:
+            L.append(f"      its animations come from '{self.mount_anim_donor}' (the base "
+                     f"unit's mount) — {', '.join(self.mount_skeletons_swapped)} "
+                     f"{'is' if len(self.mount_skeletons_swapped) == 1 else 'are'} "
+                     "not in the destination's modeldb")
         for name, action, detail in self.projectile_actions:
             verb = {"add": "ADDED to", "rename": "RENAMED in", "reuse": "reused in",
                     "missing": "MISSING from"}.get(action, action)
@@ -469,6 +495,83 @@ def _secondary_model_names(source: Mod, unit, opts: TransferOptions,
                 seen.add(x); out.append(x)
         return out
     return dedup(included), dedup(excluded)
+
+
+def mount_base_import(base_unit, dest: Mod, unit, opts: "TransferOptions"):
+    """``(bring the source's mount across?, the base's mount entry to copy its
+    animations from)`` for a transfer whose mount group comes from the base.
+
+    Both are ``False``/``None`` unless every part of the case is present: the
+    option is on, the mount really is set to come from the base, and BOTH units
+    actually have a mount. A base with no mount still means "this unit loses its
+    mount" — there would be nothing to inherit an animation set from, and quietly
+    porting the mount instead would change what the toggle does.
+
+    The entry can come back ``None`` while the import still goes ahead: that only
+    means the base's mount names no modeldb entry we can read, so there is no
+    animation set to borrow and the mount keeps its own (reported by the caller).
+    """
+    if not (opts.import_mount_with_base and opts.mount_from == "base"):
+        return False, None
+    base_mount = getattr(base_unit, "mount", "") if base_unit else ""
+    if not base_mount or not getattr(unit, "mount", ""):
+        return False, None
+    model = dest.mount_model(base_mount)
+    return True, (dest.modeldb.get(model) if model else None)
+
+
+def _apply_mount_anim_donor(plan: "TransferPlan", source: Mod, dest: Mod,
+                            unit, donor) -> None:
+    """Give the copied mount's modeldb entry the base mount's animation set, if
+    its own skeletons are not in the destination.
+
+    A skeleton is an ``animations/*.cas`` pack the destination either has or
+    hasn't — copying the entry does not bring one along — so a mount whose
+    skeletons are missing here is a mount that does not animate. The base's mount
+    is by definition already working in this mod, so its records are the one
+    animation set we know is safe. Weapons and everything else stay the copied
+    entry's; only the mount type and the two skeleton names change.
+    """
+    mount_model = (source.mount_model(unit.mount) or "").lower()
+    if not mount_model:
+        return
+    for i, (final_name, entry) in enumerate(plan.add_entries):
+        if entry.name.lower() != mount_model:
+            continue
+        missing = [s for s in dict.fromkeys(entry.skeletons())
+                   if s and s not in dest.modeldb.all_skeletons()]
+        if not missing:
+            return                       # its own animations work here — keep them
+        if donor is None or not donor.animations:
+            plan.warnings.append(
+                f"mount model '{entry.name}' needs animation(s) "
+                f"{', '.join(missing)}, which {dest.name} does not have — and the "
+                "base unit's mount has no readable modeldb entry to borrow an "
+                "animation set from. Copy the .cas files over by hand.")
+            return
+        raw = modeldb.rewrite_animations(entry.raw, donor.animations,
+                                         pad=entry.first_entry_pad)
+        plan.add_entries[i] = (final_name, modeldb.ModelEntry(
+            name=entry.name, scale=entry.scale, lods=entry.lods,
+            main_textures=entry.main_textures, attach_textures=entry.attach_textures,
+            animations=modeldb.merged_animations(entry.animations, donor.animations),
+            torch_index=entry.torch_index, torch=entry.torch, raw=raw,
+            first_entry_pad=entry.first_entry_pad))
+        plan.mount_anim_donor = donor.name
+        plan.mount_skeletons_swapped = missing
+        # The mount no longer asks for them — but another copied model might, and
+        # dropping a skeleton this transfer still needs would hide a real problem.
+        still_wanted = {s for n, e in plan.add_entries if n != final_name
+                        for s in e.skeletons()}
+        plan.missing_skeletons = [s for s in plan.missing_skeletons
+                                  if s not in missing or s in still_wanted]
+        plan.warnings.append(
+            f"the mount's model '{entry.name}' uses animation(s) "
+            f"{', '.join(missing)}, which {dest.name} does not have — it was given "
+            f"'{donor.name}'s instead (the base unit's mount), so the new mount "
+            "animates like the base's. Untick “take the base mount's animations” "
+            "to keep the original skeletons and copy them over yourself.")
+        return
 
 
 def _resolve_projectiles(plan: "TransferPlan", source: Mod, dest: Mod,
@@ -1199,6 +1302,15 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     if plan.base_unit is not None:
         plan.base_field_groups = base_field_groups_for(opts)
 
+    # "mount from base", but bring the source's mount anyway: the mount stops
+    # being a base group altogether (its model, its EDU line and its
+    # descr_mount.txt block all come from the source, exactly as if the box said
+    # "source"), and the base's mount is kept only as the animation donor below.
+    import_mount, anim_donor = mount_base_import(plan.base_unit, dest, unit, opts)
+    if import_mount:
+        plan.base_field_groups = [g for g in plan.base_field_groups if g != "mount"]
+        plan.mount_from_base_import = True
+
     included, excluded = _secondary_model_names(source, unit, opts,
                                                 plan.base_field_groups)
     plan.excluded_secondaries = excluded
@@ -1297,6 +1409,11 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
                             f"'{rel}' — far-away sprites may not render.")
             else:
                 plan.missing_assets.append(rel)
+
+    # the mount was brought across on a base unit's ticket — its animations are
+    # the one thing the destination may not have, so they come from the base's
+    if plan.mount_from_base_import:
+        _apply_mount_anim_donor(plan, source, dest, unit, anim_donor)
 
     # ---- mount definition (descr_mount.txt) ----
     # The EDU's `mount` field names a block here, and that block's `model` field

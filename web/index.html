@@ -6,7 +6,10 @@
 <title>Unit Transfer</title>
 <style>
   :root{--bg:#14171c;--panel:#1c2128;--panel2:#232a33;--edge:#333c47;--ink:#e6e9ee;--dim:#98a3b3;
-    --accent:#c8a45c;--accent2:#5b8def;--good:#5cc98a;--warn:#e0b341;--bad:#e06c6c;}
+    --accent:#c8a45c;--accent2:#5b8def;--good:#5cc98a;--warn:#e0b341;--bad:#e06c6c;
+    /* the label column every path row in a model card shares — one value so
+       meshes, textures, sprites and attachments all start at the same column */
+    --plw:190px;}
   *{box-sizing:border-box}
   body{margin:0;font:14px/1.45 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
   header{display:flex;gap:10px;align-items:center;padding:8px 14px;background:var(--panel);
@@ -185,7 +188,10 @@
   .basefrom .bftitle{font-size:11px;color:var(--dim);margin-bottom:5px}
   .basefrom .bftitle b{color:var(--accent)}
   .sbrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:2px 0}
-  .sbrow .k{flex:0 0 66px;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+  /* 84px, not 66: the widest label here is "Armour upgrades" and one of the rows
+     carries a ? marker in front of its label — both have to fit without wrapping
+     or the radios below them stop lining up. */
+  .sbrow .k{flex:0 0 84px;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px}
   .sbrow label{font-size:12px;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
   .sbrow .count{font-size:11px}
   /* base picker faction filter */
@@ -247,9 +253,15 @@
   .mentry>.mhead .mn{font-family:ui-monospace,Consolas,monospace;font-weight:600}
   .mentry>.mhead .grow{flex:1}
   .mentry .mbody2{padding:0 11px 11px;border-top:1px solid var(--edge)}
-  .prow{display:grid;grid-template-columns:170px 1fr auto auto;gap:6px;align-items:center;margin-top:5px}
+  /* Every path row in a model card is the SAME grid, so the label column ends —
+     and therefore every box starts — at one column whatever the label says. The
+     box then takes all the width that is left (an input does not shrink to its
+     value, so `width:100%` + `min-width:0` is what actually lets a 60-character
+     path show in full instead of scrolling inside a 148px default box). */
+  .prow{display:grid;grid-template-columns:var(--plw) 1fr auto auto;gap:6px;align-items:center;margin-top:5px}
   .prow .pl{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .prow input{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;padding:4px 6px}
+  .prow input{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;padding:4px 6px;
+    width:100%;min-width:0}
   .prow button{padding:3px 7px;font-size:11px}
   .prow input.changed{border-color:var(--accent);color:var(--accent)}
   .psec{margin-top:9px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
@@ -768,7 +780,10 @@
   .viewtoggle button.on{background:var(--accent2);color:#fff}
   /* ---- the upgrade graph ---- */
   .pathwrap{overflow-x:auto;border:1px solid var(--edge);border-radius:7px;background:var(--panel2);padding:10px}
-  .prow{display:flex;gap:8px;align-items:center;margin:3px 0;white-space:nowrap}
+  /* SCOPED to the graph. Unscoped, this rule (later in the sheet) also hit the
+     model card's `.prow`, turning its grid into a flex row — which is what made
+     every path box shrink to 148px and every label start at a different x. */
+  .pathwrap .prow{display:flex;gap:8px;align-items:center;margin:3px 0;white-space:nowrap}
   .pnode{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--edge);border-radius:7px;
     background:var(--panel);padding:4px 8px 4px 4px;cursor:pointer;flex:0 0 auto}
   .pnode:hover{border-color:var(--accent2)}
@@ -1053,16 +1068,25 @@ async function refreshMods(pSrc,pDst){
   state.destData=null;
   await loadSource();
 }
+// The unit list is what Transfer and Edit show; the other modes have their own
+// workspace, so this must not paint over one of those just because the units
+// finished loading underneath it.
+const unitListMode=()=>state.mode==='transfer'||state.mode==='edit';
 async function loadSource(){
-  main.innerHTML='<div class="empty">Loading '+esc(state.src)+'…</div>';
+  const mod=state.src;
+  if(unitListMode())main.innerHTML='<div class="empty">Loading '+esc(mod)+'…</div>';
+  let r;
   try{
-    state.data=await api.get('/api/units?mod='+encodeURIComponent(state.src));
+    r=await api.get('/api/units?mod='+encodeURIComponent(mod));
   }catch(e){
-    main.innerHTML=`<div class="empty">Couldn't load “${esc(state.src)}”.<br>
+    if(mod!==state.src)return;          // the mod picker moved on — that load paints
+    if(unitListMode())main.innerHTML=`<div class="empty">Couldn't load “${esc(mod)}”.<br>
       <span class="count">${esc(''+e)}</span><br><br>
       <button class="primary" onclick="loadSource()">Retry</button></div>`;
     return;
   }
+  if(mod!==state.src)return;            // a later load owns the screen now
+  state.data=r;
   state.factionNames=state.data.faction_names||{};
   // Keep whatever is ticked. Saving a unit or finishing a transfer reloads this
   // list, and re-ticking the same filters every time was maddening. Only values
@@ -1241,12 +1265,22 @@ function unitMatches(u){
   if(S.era.size&&![...S.era].some(e=>(u.eras[e]||[]).length>0))return false;
   return true;
 }
+/* Every workspace is loaded asynchronously and the mode picker does not wait for
+   it, so a read that takes a while — a 6000-entry modeldb, a whole voice bank,
+   the first units load of a big mod — can come back after you have already moved
+   on. Whoever started a load has to check it is still the one on screen before
+   painting, or the new mode ends up wearing the old workspace's content (the
+   toolbar and title switch, the body does not). `renderBuildings` has always
+   done this; `stale()` is that same check for the rest. */
+function stale(mode,mod){return state.mode!==mode||(mod!==undefined&&mod!==state.src);}
 function render(){
   if(state.mode==='bmdb')return renderBmdb();
   if(state.mode==='sounds')return renderSounds();
   if(state.mode==='sprites')return renderSprites();
   if(state.mode==='buildings')return renderBuildings();
-  if(!state.data)return;
+  // the unit list is still loading (or its load failed) — say so rather than
+  // leaving whatever the mode before this one had drawn
+  if(!state.data){main.innerHTML='<div class="empty">Loading '+esc(state.src)+'…</div>';return;}
   const units=state.data.units.filter(unitMatches);
   count.textContent=`${units.length}/${state.data.units.length}`;
   const gb=groupBy.value;
@@ -1518,6 +1552,9 @@ function cfgFor(type){
     mode:'new',import_card:false,import_info_card:false,
     base_type:'',soldier_from:(state.settings&&state.settings.soldier_from_base)?'base':'source',
     officer_from:'source',mount_from:'source',crew_from:'source',upgrade_from:'source',
+    // with "mount from base", still bring the source's own mount across and take
+    // only its animations from the base's mount (see fromBasePanel)
+    import_mount_with_base:true,
     field_overrides:{},on_conflict:'rename',new_type:'',new_dictionary:'',make_mercenary:false,merc_icons:false,exclude_models:[],
     asset_conflict:'mod_folder',asset_reroute_dir:'',icon_conflict:'use_existing',
     // voice: 'base' (copy the base unit's barks — the default), 'unit' (copy some
@@ -1594,8 +1631,16 @@ async function renderComposer(){
   const kw=rep?'(kept)':'(from base)';           // why a group's box is greyed out
   const insteadMsg=n=>rep?`→ keeping ${esc(n)}’s own`:`→ using ${esc(n)}’s instead`;
   const offBase=c.officer_from==='base'&&!!c.base_type;
-  const mntBase=c.mount_from==='base'&&!!c.base_type;
   const crwBase=c.crew_from==='base'&&!!c.base_type;
+  // "Mount: base" no longer means the source's horse is left behind. Where both
+  // units have a mount, the source's comes across as its own descr_mount.txt
+  // block and its own model, and only its ANIMATIONS are the base mount's —
+  // which is the only part of a mount the destination can be missing. Untick the
+  // box below for the old behaviour (ride the base's mount as-is).
+  const bU=baseUnitOf(c);
+  const mntChoice=c.mount_from==='base'&&!!c.base_type&&hasMount&&!!(bU&&bU.mount);
+  const mntImport=mntChoice&&c.import_mount_with_base!==false;
+  const mntBase=c.mount_from==='base'&&!!c.base_type&&!mntImport;
   // projectile physics live in stat_pri/stat_sec, which the base supplies wholesale,
   // so with a base the projectile is the base's (already in dest) and porting is moot
   const projBase=!!c.base_type;
@@ -1632,7 +1677,19 @@ async function renderComposer(){
        <label class="chk${projOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optProj" ${projOn&&c.include_projectile?'checked':''} ${projOn?'':'disabled'}> Projectile${!hasProj?' (none)':projBase?' '+kw:` (${proj.map(esc).join(', ')})`}</label>
        <label class="chk${engOn?'':' off'}" style="margin-left:12px"><input type="checkbox" id="optEngine" ${engOn&&c.include_engine!==false?'checked':''} ${engOn?'':'disabled'}> Siege engine${!hasEng?' (none)':engBase?' '+kw:` (${esc(eng)})`}</label>
        ${hasOff?`<div class="optnames"><span class="k">Officers</span>${offBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.officers,offOn,c)}</div>`:''}
-       ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${mntBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:''}</div>`:''}
+       ${hasMount?`<div class="optnames"><span class="k">Mount</span><span class="chip">${esc(u.mount)}</span>${
+         mntBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`
+         :mntImport?`<span class="frombase">→ brought across; animated like
+           <b>${esc(bU.mount)}</b> where ${esc(state.dst)} lacks its animations</span>`:''}</div>`:''}
+       ${mntChoice?`<label class="chk" style="margin-top:4px">
+         <input type="checkbox" id="optMountBase" ${mntImport?'checked':''}>
+         Keep this unit's own mount, animated like <b>${esc(bU.mount)}</b></label>
+         <div class="count" style="margin-left:22px">${mntImport
+           ?`<code>${esc(u.mount)}</code> is added to ${esc(state.dst)}'s descr_mount.txt with its
+             own model. Only its animation set is taken from <code>${esc(bU.mount)}</code>, and only
+             where the skeletons it asks for are missing here — otherwise it keeps its own.`
+           :`Off: the unit rides <code>${esc(bU.mount)}</code> itself, and
+             <code>${esc(u.mount)}</code> is not copied at all.`}</div>`:''}
        ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
        ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">${insteadMsg(c.base_type)} stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
        ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
@@ -1748,6 +1805,9 @@ async function renderComposer(){
   // inside one mod (nothing to bring across, and the base IS the source unit)
   if(window.optOff)optOff.onchange=()=>{c.include_officers=optOff.checked; renderComposer();};
   if(window.optMount)optMount.onchange=()=>{c.include_mount=optMount.checked; doPreview();};
+  // this one changes which models are copied at all, so the whole composer is redrawn
+  if(window.optMountBase)optMountBase.onchange=()=>{
+    c.import_mount_with_base=optMountBase.checked; renderComposer();};
   if(window.optCrew)optCrew.onchange=()=>{c.include_crew=optCrew.checked; renderComposer();};
   if(window.optProj)optProj.onchange=()=>{c.include_projectile=optProj.checked; doPreview();};
   // re-render: the engine fieldset appears/disappears with the checkbox
@@ -1810,14 +1870,33 @@ function baseUnitOf(c){
 function fromBasePanel(c,u){
   const b=baseUnitOf(c), on=!!c.base_type, rep=isReplace(c);
   const keepLbl=rep?'Keep':'Base';
-  const row=(key,label,detail)=>`<div class="sbrow"><span class="k">${label}</span>
+  const row=(key,label,detail,tip)=>`<div class="sbrow"><span class="k">${
+      tip?qm(tip,label):''}${label}</span>
     <label><input type="radio" name="${key}" value="source" ${c[key]!=='base'?'checked':''} ${on?'':'disabled'}> Source</label>
     <label><input type="radio" name="${key}" value="base" ${c[key]==='base'?'checked':''} ${on?'':'disabled'}> ${keepLbl}</label>
     <span class="count">${detail}</span></div>`;
   const has=n=>rep?`${esc(c.base_type)} has ${n}`:`base has ${n}`;
-  let rows=row('soldier_from','Soldier', on?'the soldier line only':'');
+  // The soldier line is not just "the body model": its modeldb entry carries the
+  // skeletons, so whichever unit supplies it decides how the unit animates. That
+  // is the one thing about this row nobody guesses, hence the ?.
+  let rows=row('soldier_from','Soldier', on?'the soldier line only':'',
+    'The soldier line names the battle model the unit fights with — and that '
+    +'modeldb entry is what carries the animations (its skeletons), so this row '
+    +'also decides which animation set the unit uses. Take it from '
+    +(rep?'the replaced unit':'the base')+' and the unit animates like '
+    +(rep?'that unit':'the base unit')+'; take it from the source and its own '
+    +'skeletons come across, which the destination must have (they are reported '
+    +'as missing animations if it does not).');
   if(b&&b.officers.length) rows+=row('officer_from','Officers',has(`${b.officers.length}: ${esc(b.officers.join(', '))}`));
-  if(b&&b.mount)           rows+=row('mount_from','Mount',has(esc(b.mount)));
+  if(b&&b.mount)           rows+=row('mount_from','Mount',
+    has(esc(b.mount))+((c.mount_from==='base'&&c.import_mount_with_base!==false&&u&&u.mount)
+      ? ` · <b>${esc(u.mount)}</b> still comes across, animated like it`:''),
+    'A mount is three things: the descr_mount.txt block, its battle model, and '
+    +'that model\'s animations. Only the animations can be missing from the '
+    +'destination — the other two come across with the unit. So "'
+    +(rep?'Keep':'Base')+'" here means the unit keeps its own mount and borrows '
+    +'this one\'s animation set where its own is not in this mod; untick the box '
+    +'under Mount below to ride the '+(rep?'replaced':'base')+' unit\'s mount instead.');
   if(b&&b.crew&&b.crew.length) rows+=row('crew_from','Crew',has(`${b.crew.length}: ${esc(b.crew.join(', '))}`));
   // The armour-upgrade models are only a choice when replacing: a base template
   // leaves them with the transferred unit, since the new unit IS that unit.
@@ -1972,13 +2051,18 @@ async function loadFields(type){
   // show the fields the unit will ACTUALLY have after inheriting its stats.
   // the composed result depends on the base AND on which groups come from it
   const froms=['soldier_from','officer_from','mount_from','crew_from','upgrade_from'];
-  const key=c.base_type?[modeOf(c),c.base_type,...froms.map(k=>c[k]||'source')].join('|'):'';
+  // whether the source's mount is imported changes whose `mount` line the composed
+  // block ends up with, so it is part of both the URL and the cache key
+  const impMount=c.import_mount_with_base!==false;
+  const key=c.base_type
+    ?[modeOf(c),c.base_type,...froms.map(k=>c[k]||'source'),impMount].join('|'):'';
   if(!c._fields || c._fieldsKey!==key){
     const url=c.base_type
       ? `/api/base_fields?source=${encodeURIComponent(state.src)}&unit=${encodeURIComponent(type)}`
         +`&dest=${encodeURIComponent(state.dst)}&base=${encodeURIComponent(c.base_type)}`
         +`&mode=${encodeURIComponent(modeOf(c))}`
         +froms.map(k=>`&${k}=${encodeURIComponent(c[k]||'source')}`).join('')
+        +`&import_mount_with_base=${impMount?1:0}`
       : `/api/unit_fields?mod=${encodeURIComponent(state.src)}&type=${encodeURIComponent(type)}`;
     let r;
     try{ r=await api.get(url); }catch(e){ r={error:''+e}; }
@@ -2214,6 +2298,7 @@ function optsPayload(type){const c=cfgFor(type);
     soldier_from:c.soldier_from||'source',officer_from:c.officer_from||'source',
     mount_from:c.mount_from||'source',crew_from:c.crew_from||'source',
     upgrade_from:c.upgrade_from||'source',
+    import_mount_with_base:c.import_mount_with_base!==false,
     on_conflict:c.on_conflict,new_type:c.new_type||null,new_dictionary:c.new_dictionary||null,
     eop_target:c.eop_target||'auto',
     asset_conflict:c.asset_conflict||'mod_folder',
@@ -2662,12 +2747,15 @@ function openBatch(){ if(!state.selected.size)return; openComposer([...state.sel
    out of needed a .bat to generate reference files, a hand-run editor, exported
    patch CSVs, and a second .bat to fold them back in — none of that exists here.) */
 async function loadSounds(){
-  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s voice bank…</div>';
+  const mod=state.src;
+  main.innerHTML='<div class="empty">Reading '+esc(mod)+'’s voice bank…</div>';
   let r;
-  try{ r=await api.get('/api/sounds?mod='+enc(state.src)); }
-  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the voice bank.<br>
+  try{ r=await api.get('/api/sounds?mod='+enc(mod)); }
+  catch(e){ if(stale('sounds',mod))return;
+    main.innerHTML=`<div class="empty">Couldn't read the voice bank.<br>
     <span class="count">${esc(''+e)}</span><br><br>
     <button class="primary" onclick="loadSounds()">Retry</button></div>`; return; }
+  if(stale('sounds',mod))return;        // moved on while this was in flight
   // `ops` is the staging area: unit type -> {accent, class, donor, remove}
   state.snd=Object.assign({tab:'missing',ops:{},fAccent:'',fClass:'',onlyBad:false,
                            bulkDonor:'',view:[]},r);
@@ -2765,12 +2853,15 @@ const SND_CAP=150;   // selects are expensive; the filters above are how you rea
    The two published methods differ only in step 1, so that is the only step that
    branches. */
 async function loadSprites(){
-  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s models…</div>';
+  const mod=state.src;
+  main.innerHTML='<div class="empty">Reading '+esc(mod)+'’s models…</div>';
   let r;
-  try{ r=await api.get('/api/sprites?mod='+enc(state.src)); }
-  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
+  try{ r=await api.get('/api/sprites?mod='+enc(mod)); }
+  catch(e){ if(stale('sprites',mod))return;
+    main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
     <span class="count">${esc(''+e)}</span><br><br>
     <button class="primary" onclick="loadSprites()">Retry</button></div>`; return; }
+  if(stale('sprites',mod))return;       // moved on while this was in flight
   state.spr=Object.assign({
     picked:new Set(),
     // EOP is strictly nicer where it exists (no CFG edit, no restart per batch),
@@ -3398,9 +3489,13 @@ function edIdentity(){
     <div class="two">
       <div><label>Unit type (EDU <code>type</code>, the internal name)
         <input id="edType" value="${esc(e.newType||d.type)}"></label>
-        <div class="count" style="margin-top:4px">Renaming this does <b>not</b> update
-          <code>export_descr_buildings.txt</code>, <code>descr_strat.txt</code> or scripts that
-          recruit the unit — fix those by hand.</div></div>
+        <div class="count" style="margin-top:4px">Renaming it follows the unit through the
+          whole mod: <code>export_descr_buildings.txt</code>, every campaign's
+          <code>descr_strat.txt</code> and <code>campaign_script.txt</code>, the voice bank,
+          <code>descr_mercenaries.txt</code> and the mod's <code>.lua</code> scripts. Preview
+          lists every file and how many lines in each; Undo puts them all back.
+          Spellings that differ only in capitalisation are reported, not rewritten —
+          other things share these files.</div></div>
       <div><label>Dictionary (localisation + unit-card key)
         <input id="edDict" value="${esc(e.newDict||d.dictionary)}"></label>
         <div class="count" style="margin-top:4px">Renaming it moves the text entry and copies the
@@ -3548,7 +3643,7 @@ function edRawFields(){
   return `<div class="allfields" id="allFields">${rows}</div>
     <div class="count" style="margin-top:6px">✕ removes the whole line — clearing a value
       leaves an empty field, which the game still reads.</div>
-    <div class="prow" style="margin-top:8px;grid-template-columns:170px 1fr auto">
+    <div class="prow" style="margin-top:8px;grid-template-columns:var(--plw) 1fr auto">
       <span class="pl">${qm('Fields the EDU understands that this unit has no line for. Adding one writes a fresh line with an empty value.','Add a missing field')}Add a missing field</span>
       <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">— none missing —</option>'}</select>
       <button onclick="edAddField()">Add</button>
@@ -4327,7 +4422,7 @@ function edUgTakeUnit(){
 /* -- mode 3: search the whole modeldb -- */
 function edUgBrowseBody(){
   const u=state.ed.ug;
-  return `<div class="prow" style="grid-template-columns:170px 1fr">
+  return `<div class="prow" style="grid-template-columns:var(--plw) 1fr">
       <span class="pl">Find an entry</span>
       <input id="ugFind" value="${esc(u.filter||'')}" placeholder="type part of an entry name…"
         oninput="edUgFilter(this.value)"></div>
@@ -4374,7 +4469,7 @@ function edUgNewBody(){
   const own=(e.d.models||[]).filter(m=>!m.missing).map(m=>m.name);
   if(!own.length)return `<div class="count w-warn">This unit has no readable modeldb entry
     to base a new one on.</div>`;
-  return `<div class="prow" style="grid-template-columns:170px 1fr auto">
+  return `<div class="prow" style="grid-template-columns:var(--plw) 1fr auto">
       <span class="pl">Base it on</span>
       <select onchange="state.ed.ug.from=this.value">${own.map(n=>
         `<option value="${esc(n)}" ${u.from===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
@@ -4419,6 +4514,9 @@ function edAddArmourTier(src){
    override panel where a faction needs its own skin), and the folder its files
    live in. */
 const TEX_KINDS=['texture','normal','sprite','attach_texture','attach_normal'];
+// the sub-folder the standard layout keeps a model's textures in — mirrors
+// edit.TEXTURE_SUBDIR, and the two have to agree or the preview lies
+const TEX_SUBDIR='textures';
 const KIND_LABEL={texture:'Texture',normal:'Normal map',sprite:'Sprite (.spr)',
   attach_texture:'Attachment texture',attach_normal:'Attachment normal map'};
 // An attachment has no sprite — the format stores an empty string there — so
@@ -4437,7 +4535,7 @@ function edRebase(name,val,kind){
   const me=state.ed.mEdits[name]||{};
   if(!me.move_dir||!val||kind==='sprite')return val;
   const base=me.move_dir.replace(/\/+$/,''),file=val.split('/').pop();
-  return (kind==='mesh'?base:base+'/textures')+'/'+file;
+  return (kind==='mesh'?base:base+'/'+TEX_SUBDIR)+'/'+file;
 }
 function edTexView(m){
   const me=state.ed.mEdits[m.name]||{};
@@ -4481,7 +4579,7 @@ function edModelCard(m,idx){
     return `<div class="prow">
       <span class="pl" title="${esc(p.label)}">${esc(p.label)}</span>
       <input data-entry="${esc(m.name)}" data-i="${p.i}" value="${esc(cur)}"
-        class="${cur!==p.value?'changed':''}">
+        title="${esc(cur)}" class="${cur!==p.value?'changed':''}">
       <button onclick="edImportPath('${q1(esc(m.name))}',${p.i},'mesh')">Import…</button>
       <button onclick="edResetPath('${q1(esc(m.name))}',${p.i})" title="Undo this change">↺</button></div>`;
   }).join('');
@@ -4494,14 +4592,14 @@ function edModelCard(m,idx){
       ${edSharedDrop(m)}
     </div>
     ${open?`<div class="mbody2">
-      <div class="prow" style="grid-template-columns:170px 1fr auto">
+      <div class="prow" style="grid-template-columns:var(--plw) 1fr auto">
         <span class="pl">Entry name</span>
         <input id="edmn${idx}" value="${esc(me.new_name||m.name)}"
           oninput="edRename('${q1(esc(m.name))}',${idx},this.value)"
           class="${me.new_name?'changed':''}">
         <button onclick="edNewFrom('${q1(esc(m.name))}')">＋ New entry from this</button>
       </div>
-      <div class="prow" style="grid-template-columns:170px 1fr"><span class="pl"></span>
+      <div class="prow" style="grid-template-columns:var(--plw) 1fr"><span class="pl"></span>
         <span id="edmns${idx}" class="count">${edNameHint(m,me.new_name||m.name)}</span></div>
       <div class="count" style="margin-top:5px">Skeletons: ${m.skeletons.map(esc).join(', ')||'—'}</div>
       ${edFolderBox(m)}
@@ -4539,9 +4637,10 @@ function edNameHint(m,val){
 /* ---- the default texture set every faction inherits ---- */
 function edDefaultTextures(m){
   const v=edTexView(m);
-  const rows=edKinds(m).map(k=>`<div class="prow" style="grid-template-columns:170px 1fr auto">
+  const rows=edKinds(m).map(k=>`<div class="prow" style="grid-template-columns:var(--plw) 1fr auto">
       <span class="pl">${KIND_LABEL[k]}</span>
       <input data-def="${esc(m.name)}" data-kind="${k}" value="${esc(v.defs[k]||'')}"
+        title="${esc(v.defs[k]||'')}"
         class="${(state.ed.mEdits[m.name]||{}).defaults&&k in state.ed.mEdits[m.name].defaults?'changed':''}">
       <button onclick="edImportDefault('${q1(esc(m.name))}','${k}')">Import…</button></div>`).join('');
   return `<div class="psec">Default textures and sprites</div>
@@ -4581,11 +4680,11 @@ function edFacUniquePanel(m,f,v,kinds){
     <div class="count" style="margin-bottom:4px"><b>${esc(edFacLabel(f))}</b> — leave a box empty
       to fall back to the default above.</div>
     ${kinds.map(k=>{const own=cur[k]&&cur[k]!==v.defs[k];
-      return `<div class="prow" style="grid-template-columns:150px 1fr auto">
+      return `<div class="prow" style="grid-template-columns:calc(var(--plw) - 10px) 1fr auto">
         <span class="pl">${KIND_LABEL[k]}</span>
         <input data-fac="${esc(m.name)}" data-f="${esc(f)}" data-kind="${k}"
           value="${esc(own?cur[k]:'')}" placeholder="${esc(v.defs[k]||'(default)')}"
-          class="${own?'changed':''}">
+          title="${esc(own?cur[k]:v.defs[k]||'')}" class="${own?'changed':''}">
         <button onclick="edImportFac('${q1(esc(m.name))}','${q1(esc(f))}','${k}')">Import…</button>
       </div>`;}).join('')}</div>`;
 }
@@ -4624,14 +4723,24 @@ function edFolderBox(m){
                       :'Other entries keep their paths.'}</div>
     <div class="barrow"><button onclick="edFolderCancel('${q1(esc(m.name))}')">Undo this move</button></div>
   </div>`;
+  // `folders` is already collapsed server-side: a model folder and its
+  // textures/ sub-folder are ONE folder (that is the layout), and two spellings
+  // of the same folder are one folder too. Attachment sets live in `external`
+  // and are never counted — they are shared packs, like sprites.
+  const folders=f.folders||[...new Set((f.mesh_dirs||[]).concat(f.texture_dirs||[]))];
+  const ext=f.external_dirs||[];
+  const extNote=ext.length?`<div class="count" style="margin-top:4px">Attachment textures live
+    in ${ext.map(d=>`<span class="fpath">data/${esc(d)}</span>`).join(', ')} — a shared set,
+    so it is left where it is.</div>`:'';
   const head=f.standardized
     ? `<b>Model folder</b> <span class="fpath">data/${esc(f.base)}</span>
-       <div class="count" style="margin-top:3px">Meshes and textures all live under this one folder.</div>`
+       <div class="count" style="margin-top:3px">Meshes here, textures in its
+         <code>${TEX_SUBDIR}/</code> — one folder.</div>${extNote}`
     : `<b class="w-warn">⚠ No single model folder</b>
        <div class="count" style="margin-top:3px">This entry's files are spread across
-         ${f.mesh_dirs.length+f.texture_dirs.length} folder(s):
-         ${[...new Set(f.mesh_dirs.concat(f.texture_dirs))].map(d=>`<div class="fpath">data/${esc(d||'(data root)')}</div>`).join('')}
-         Standardise them into one folder?</div>`;
+         ${folders.length} folder(s):
+         ${folders.map(d=>`<div class="fpath">data/${esc(d||'(data root)')}</div>`).join('')}
+         Standardise them into one folder?</div>${extNote}`;
   return `<div class="folderbox${f.standardized?'':' bad'}">
     ${head}
     <div class="frow2">
@@ -4839,6 +4948,10 @@ function edPlanHtml(r,stale){
     ${li('',r.changes.length?r.changes:['no changes'])}
     ${r.files_written.length?`<div class="srow"><span class="sicon">💾</span><span class="stext">writes ${
       r.files_written.map(f=>`<span class="path">${esc(f)}</span>`).join(', ')}</span></div>`:''}
+    ${(r.ref_counts||[]).length?`<div class="srow"><span class="sicon">🔗</span><span class="stext">the
+      renamed unit is followed into ${r.ref_counts.length} more file(s): ${
+      r.ref_counts.map(x=>`<span class="path">${esc(x.file)}</span> <b>×${x.hits}</b>`).join(', ')
+      }</span></div>`:''}
     ${li('warn',r.warnings)}${li('bad',r.errors)}</div>`;
 }
 // The compared unit is a second, ordinary unit edit — same endpoint, its own
@@ -4904,11 +5017,14 @@ async function edSave(){
    "Clean up" moves them — and the files under unit_models nothing mentions —
    out of the mod entirely. */
 async function loadBmdb(){
-  main.innerHTML='<div class="empty">Reading '+esc(state.src)+'’s battle_models.modeldb…</div>';
-  try{ state.bmdb=await api.get('/api/bmdb/entries?mod='+enc(state.src)); }
-  catch(e){ main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
+  const mod=state.src;
+  main.innerHTML='<div class="empty">Reading '+esc(mod)+'’s battle_models.modeldb…</div>';
+  try{ state.bmdb=await api.get('/api/bmdb/entries?mod='+enc(mod)); }
+  catch(e){ if(stale('bmdb',mod))return;
+    main.innerHTML=`<div class="empty">Couldn't read the modeldb.<br>
     <span class="count">${esc(''+e)}</span><br><br>
     <button class="primary" onclick="loadBmdb()">Retry</button></div>`; return; }
+  if(stale('bmdb',mod))return;          // moved on while this was in flight
   renderBmdb();
 }
 function renderBmdb(){

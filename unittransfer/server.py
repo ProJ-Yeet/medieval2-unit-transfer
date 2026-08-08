@@ -88,7 +88,7 @@ from .logutil import log, setup as setup_logging
 from .icons import IconCache
 from .mod import Mod
 from .transfer import (TransferOptions, plan_transfer, apply_transfer, undo, revert_to,
-                       base_field_groups_for, compose_with_base)
+                       base_field_groups_for, compose_with_base, mount_base_import)
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
@@ -376,6 +376,8 @@ def _edit_payload(plan) -> dict:
                                            ("text/export_units.txt", plan.loc_text),
                                            ("unit_models/battle_models.modeldb",
                                             plan.modeldb_touched)) if on]),
+        # every other file a `type` rename reaches, with how many lines in each
+        "ref_counts": [{"file": f, "hits": n} for f, n in plan.ref_counts],
         "copies": [rel for _src, rel in plan.copies],
         "icon_copies": [rel for _src, rel in plan.icon_copies]
                        + [rel for _src, rel in plan.icon_converts],
@@ -496,6 +498,7 @@ def _options_from(d: dict) -> TransferOptions:
         mount_from=d.get("mount_from", "source"),
         crew_from=d.get("crew_from", "source"),
         upgrade_from=d.get("upgrade_from", "source"),
+        import_mount_with_base=bool(d.get("import_mount_with_base", True)),
         field_overrides=dict(d.get("field_overrides") or {}),
         asset_conflict=d.get("asset_conflict", "mod_folder"),
         asset_reroute_dir=d.get("asset_reroute_dir") or None,
@@ -544,6 +547,9 @@ def _plan_payload(plan) -> dict:
         "sound_detail": plan.sound_detail,
         "mount_action": plan.mount_action,
         "mount_name": plan.mount_name,
+        "mount_from_base_import": plan.mount_from_base_import,
+        "mount_anim_donor": plan.mount_anim_donor,
+        "mount_skeletons_swapped": plan.mount_skeletons_swapped,
         "projectile_actions": [{"name": n, "action": a, "detail": d}
                                for n, a, d in plan.projectile_actions],
         "projectile_effects_blanked": plan.projectile_effects_blanked,
@@ -1101,11 +1107,19 @@ class Handler(BaseHTTPRequestHandler):
         if base.kind() != unit.kind():
             return {"error": f"{what} is {base.kind() or '?'}, unit is {unit.kind() or '?'}"}
         # mirror the real transfer exactly, including whole groups taken from the base
-        opts = _options_from({k: (q.get(k) or ["source"])[0]
-                              for k in ("soldier_from", "officer_from", "mount_from",
-                                        "crew_from", "upgrade_from")})
+        body = {k: (q.get(k) or ["source"])[0]
+                for k in ("soldier_from", "officer_from", "mount_from",
+                          "crew_from", "upgrade_from")}
+        body["import_mount_with_base"] = (
+            (q.get("import_mount_with_base") or ["1"])[0] not in ("0", "false", ""))
+        opts = _options_from(body)
         keys = _edu.REPLACE_COPY_KEYS if replacing else _edu.BASE_COPY_KEYS
         groups = base_field_groups_for(opts)
+        # the mount group goes back to the source when its mount is being imported
+        # over the base's — the composed preview has to show the same block the
+        # transfer will actually write
+        if mount_base_import(base, self.registry.get(dname), unit, opts)[0]:
+            groups = [g for g in groups if g != "mount"]
         composed = compose_with_base(unit.raw, base.raw, groups, copy_keys=keys)
         return {"unit": utype, "base": btype,
                 "fields": _edu.block_fields(composed),

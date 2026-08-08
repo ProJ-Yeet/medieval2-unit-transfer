@@ -62,7 +62,23 @@ because stats and animations only make sense for the type they were written for.
 - **A new unit** *(default)* — its own EDU entry, name, description and icons.
 - **A new unit based on an existing one** — still a new entry, but combat stats,
   attributes, cost, formation, ownership and era are inherited from a
-  destination unit you pick.
+  destination unit you pick. Each model group (soldier, officers, mount, crew)
+  has its own **Source / Base** row. Note what the soldier row really decides:
+  the soldier line names the battle model, and that modeldb entry is what
+  carries the **animations**, so it also chooses which animation set the unit
+  gets. The mount row is the one exception to "base means the base's" — see
+  below.
+
+  **A mount is brought across even when it comes "from the base".** A mount is
+  three things: the `descr_mount.txt` block, its battle model, and that model's
+  animations — and only the animations can be missing from the destination. So
+  setting Mount to *Base* keeps the transferred unit's own horse (block and
+  model copied as usual) and takes only its **animation set** from the base
+  unit's mount, and only where the skeletons it asks for are not in the
+  destination's modeldb. The plan says when it did that and which skeletons were
+  missing. Untick *"Keep this unit's own mount, animated like …"* for the older
+  behaviour, where the unit simply rides the base's mount and its own is not
+  copied at all.
 - **Replace an existing unit** — no new entry at all. The destination unit you
   pick is **rewritten in place**, in the file it already lives in and at the
   position it already sits: it keeps its type, dictionary, name, description,
@@ -97,7 +113,18 @@ instead of two. Click any unit to open its editor:
   localisation record moves with it and the unit cards are copied to the new
   name), edit the displayed name, short description and info-card text, and flip
   the unit to a mercenary. Descriptions are stored on a single line, so a newline
-  or tab you type becomes `\n` / `\t` when you click away
+  or tab you type becomes `\n` / `\t` when you click away.
+
+  **A `type` rename follows the unit through the whole mod**:
+  `export_descr_buildings.txt` (every recruitment pool), each campaign's
+  `descr_strat.txt` and `campaign_script.txt`, `descr_mercenaries.txt`, the
+  voice bank, any other `data/*.txt` that names it, and every `.lua` script the
+  mod has. Preview lists each file and how many lines in it; Undo puts them all
+  back with everything else. Only whole names are matched, and the longest one
+  wins — renaming `Catapult` never touches `Ent Catapult`. Spellings that differ
+  only in capitalisation are **reported, not rewritten**: other things live in
+  those files (`ballista` is a unit *and* a siege engine), so those spots are
+  listed with their file and line for you to look at
 - **Unit card / info card** — **Browse…** picks a replacement image from
   anywhere on disk. On save it is renamed to the unit's dictionary name
   (`#<dict>.tga` / `<dict>_info.tga`) and copied into **every faction that owns
@@ -155,7 +182,13 @@ instead of two. Click any unit to open its editor:
   - **Model folder** — if the meshes and textures all live under one folder it is
     shown and can be changed; if they are scattered you are told so and offered to
     standardise them (meshes in `<folder>/`, textures in `<folder>/textures/`,
-    sprites left alone). Either way, any *other* entry using the same files is
+    sprites left alone). A folder and its `textures/` sub-folder count as **one**
+    folder — that is the layout — and so do two spellings of the same folder,
+    since Windows does not care about capitalisation and hand-edited modeldbs
+    rarely agree with themselves. A **shared attachment set** (a folder like
+    `unit_models/AttachmentSets` that dozens of entries read) is reported and
+    left alone rather than counted against the entry, exactly like its sprite.
+    Either way, any *other* entry using the same files is
     listed first, with **Edit and move anyway** to repoint those entries too
 - **New model entry** — clone the entry the unit already uses, point it at a new
   mesh and texture, and say which folder under `data/` they should be copied to.
