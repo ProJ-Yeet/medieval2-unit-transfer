@@ -771,13 +771,27 @@ def name_counts(mod: Mod) -> Dict[str, int]:
     return out
 
 
-def overview(mod: Mod) -> dict:
-    """Every entry in the mod, light enough to render a few thousand rows."""
+def overview(mod: Mod, progress: Progress = None) -> dict:
+    """Every entry in the mod, light enough to render a few thousand rows.
+
+    Several seconds on a big mod — the modeldb parse alone is most of it — so it
+    takes the same ``(percent, label)`` sink the audit does and the page shows a
+    real bar instead of a frozen "Reading…".
+    """
+    report = _reporter(progress)
+    report(4, "parsing battle_models.modeldb")
+    entries = mod.modeldb.entries
+    report(30, "finding what uses each entry")
     users = entry_users(mod)
+    report(60, "scanning the files that name entries by string")
     mentions = name_mentions(mod)
     counts = name_counts(mod)
+    report(80, f"building {len(entries)} row(s)")
     rows, seen = [], set()
-    for e in mod.modeldb.entries:
+    total = len(entries) or 1
+    for i, e in enumerate(entries):
+        if i and not i % 400:
+            report(80 + 18 * i / total, f"{len(rows)} entries")
         if e.name in seen:
             continue                       # one row per name, not per copy
         seen.add(e.name)
@@ -800,8 +814,44 @@ def overview(mod: Mod) -> dict:
             "unused": not refs and not mention and not e.first_entry_pad,
             "folder": edit.folder_info(e)["base"],
         })
-    return {"mod": mod.name, "count": len(mod.modeldb.entries), "names": len(rows),
+    report(100, "done")
+    return {"mod": mod.name, "count": len(entries), "names": len(rows),
             "entries": rows, "all_factions": edit.all_mod_factions(mod)}
+
+
+def skeleton_index(mod: Mod) -> dict:
+    """Every modeldb entry keyed by the animation skeleton(s) it uses.
+
+    Swapping a unit's ``soldier`` model swaps its animation set with it, so the
+    question when picking one is nearly always "which entries move like this one
+    already does?" — and nothing in the game files answers it. The modeldb does,
+    one ``skeleton`` line at a time, across a few thousand entries.
+    """
+    users = entry_users(mod)
+    rows, seen = [], set()
+    tally: Dict[str, int] = {}
+    for e in mod.modeldb.entries:
+        if not e.name or e.name in seen or e.first_entry_pad:
+            continue
+        seen.add(e.name)
+        skels = sorted({s for s in e.skeletons() if s})
+        for s in skels:
+            tally[s] = tally.get(s, 0) + 1
+        slots = users.get(e.name) or {}
+        rows.append({
+            "name": e.name,
+            "skeletons": skels,
+            "lods": len(e.lods),
+            "skins": len(e.main_textures),
+            "used_by": sum(len(v) for v in slots.values()),
+            "kinds": [k for k in SLOT_KINDS if slots.get(k)],
+        })
+    return {
+        "mod": mod.name,
+        "skeletons": [{"name": s, "entries": n}
+                      for s, n in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))],
+        "entries": rows,
+    }
 
 
 def entry_detail(mod: Mod, name: str) -> dict:

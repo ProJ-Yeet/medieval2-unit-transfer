@@ -104,6 +104,42 @@ because stats and animations only make sense for the type they were written for.
     may still use them) — the BMDB Editor's cleanup finds the ones that end up
     unused.
 
+### Unit packs — sending units to someone else
+
+Everything above works because both mods are on the same machine. A **unit pack**
+is how you get past that: tick some units, **📦 Export pack**, and you get a zip
+to hand to whoever wants them.
+
+A pack is not a new format anybody has to understand. **A pack is a mod.** The
+zip holds a real `data/` tree — an EDU with just those units, a modeldb with just
+their entries, the meshes, textures and icons those name, and whatever
+`descr_mount` / `descr_projectile` / `descr_engines` blocks they reach for.
+Importing one (**📦 Import pack…**) unpacks it and registers it as an ordinary
+source mod, and then gets out of the way: the source dropdown switches to it
+(badged 📦) and the normal composer takes over.
+
+That is the point. A pack import **is** a transfer, so it gets every check a
+transfer gets — name collisions resolved, models renamed where they clash,
+the mount brought across and renamed if the destination already has a different
+one, assets relocated into their own folder, ownership fixed, a preview before
+anything is written, and one entry in **🕑 Log → Undo** afterwards. There is no
+second import path that could drift out of step with the first.
+
+A few deliberate limits:
+
+- **Voices do not travel.** A unit's line in the voice bank is a name inside
+  another faction's accent block, not a block of its own, so there is no honest
+  way to lift one out — and the transfer already gives an imported unit a voice
+  from the *receiving* mod, which is the only kind that will actually play there.
+- **A pack is a source only.** It never appears in the destination dropdown, and
+  it is deleted when you unmount it or close the tool.
+- **Unzipping it over a mod by hand would be a mistake**, and the README inside
+  says so: the text files hold only the packed units, so overwriting a real
+  `export_descr_unit.txt` with one would wipe everything else in it.
+- Members that try to escape the folder (`../`, absolute paths) are **dropped**
+  rather than sanitised. A pack arrives from another person, so the extractor is
+  treated as a security boundary.
+
 ## Unit Editor mode
 
 Switch the top-left dropdown to **✎ Unit Editor** and the tool works on one mod
@@ -268,7 +304,17 @@ each line a card:
   mod actually defines *and* everything its EDU already uses, but still lets you
   type anything: a mod's own attribute is never a value you can only lose
 - **`?` pins the explanation open** under the field name, for when a hover
-  tooltip is the wrong shape for what you're doing
+  tooltip is the wrong shape for what you're doing. Tabbing into a field shows
+  its card too; clicking into one to type does not, which is what it used to do
+- **`⌕` beside any battle-model box** opens a picker, because the datalist can't
+  answer the question you actually have. Swapping the model on a `soldier` line
+  swaps the unit's **animations** with it — the skeleton lives on the modeldb
+  entry — so the picker opens **by skeleton**, on the one the current entry
+  already uses, listing every other entry that moves the same way (Divide and
+  Conquer has 146 skeletons across 2211 entries). **By name** is the plain
+  search, with LOD and skin counts and how many units share each entry. **From
+  another unit** takes that unit's whole `soldier` line — model, men, extras and
+  mass — rather than just the name
 - **Checkboxes and pickers for the awkward bits** — `lock_morale` is a tick, not
   a fourth CSV value; `attributes` is a chip list with the abilities and the AI
   hints separated; `mount_effect` is up to three mount + number pairs;
@@ -306,11 +352,22 @@ entry in the file — what references it, how many LODs and faction skins it has
 and a warning colour when nothing references it at all. Search filters by entry
 name, folder or referring unit; **unused only** narrows it to the dead ones.
 
+Reading it is several seconds of work on a real mod — a 30 MB modeldb to parse,
+then every unit, mount, character and campaign file cross-referenced against it —
+so the list loads behind a **progress bar that reports the server's actual
+stage**, not a spinner guessing at one.
+
 Clicking an entry opens the *same* model card the Unit Editor uses — entry name,
 meshes, default and per-faction textures, the faction checklist, the model-folder
 standardiser and "＋ New entry from this" — except it reaches entries no unit
 points at (mounts, generals from `descr_character.txt`, leftovers). Renaming
 still rewrites every unit in the EDU that named the old entry.
+
+At the bottom sits **Used by** — every unit, mount and file that names this
+entry, as a grid of unit cards. It is collapsed by default (an entry twenty units
+share would otherwise push the thing you came to edit off the screen), and
+clicking a unit opens it in a **new browser tab**, so following "this model is
+also used by X" never costs you the edits in the tab you are in.
 
 ### 🧹 Clean up BMDB
 
@@ -451,9 +508,26 @@ game merges the two at render time.
 A real mod lists thousands of models of which only a couple of hundred have any
 work left, so the list opens filtered to **needs sprites only** — anything whose
 every faction record already resolves is hidden. Divide and Conquer goes from
-2211 rows to 422 that way. Rows carry a `has sprites` / `partly done` tag so a
-part-finished model is obvious, and a search box entry overrides the filter, so
-looking a model up by name always finds it.
+2211 rows to 422 that way. There is a search box on the picker itself as well as
+in the header, and either overrides the filter, so looking a model up by name
+always finds it.
+
+Every row says what it *is* and where it stands: which slots any unit fills with
+it (`soldier`, `armour ug`, `officer`, `mount`), then `has sprites` /
+`partly done` / **`not in unit_sprites/`**. That last flag is new — a model with
+no sprite at all used to be the one row with no tag on it.
+
+**Pick armour upgrades** ticks only the models a unit visibly *switches* to: the
+armour-upgrade tiers past level 0. Entries that are only ever somebody's soldier,
+officer or general model are skipped, since they are covered by their own unit's
+row. On Divide and Conquer that is 805 models rather than all 2211.
+
+Where the game writes its output is derived from the mod, and a mods folder set
+as the Medieval II root no longer leaks into the path — `mods/export/unit_sprites`
+is a folder the engine never writes to, so nothing was ever found there. When the
+mod lives outside the install that launches it the tool looks in both export
+folders and names both if it finds nothing, so "the generator ran but there is
+nothing here" is diagnosable rather than mysterious.
 
 Models sprited outside this tool — inherited from the base game, copied from
 another mod, built in IWTE years ago — can't be told apart from real work when
@@ -567,6 +641,54 @@ save preview.
 The **✎ Edit** button on any recruited unit switches to the Unit Editor for that
 unit; the **← Back to <building>** button in the header brings you back to the
 same level with everything you had typed still in place.
+
+### What the level view cannot show you
+
+Three mistakes are invisible one level at a time and obvious across a whole line,
+and all three ship in real mods. The **Checks** panel under Recruitment finds
+them for the line you have open:
+
+- **A unit that stops being recruitable as the building grows.** It is in tier 2
+  and not in tier 3, so upgrading the settlement silently takes it away — the
+  opposite of what upgrading is for. **Add to the missing tier(s)** fills the gap
+  from the highest tier that *does* train it, with the numbers climbing per tier
+  rather than repeating.
+- **A unit one settlement type has and the other does not.** Nothing in the EDB
+  says which two lines are the city and castle halves of the same building — the
+  file just has two independent blocks whose names differ by whatever marker the
+  mod picked. All four spellings in use are recognised (`castle_barracks`,
+  `c_barracks`, `anduin_barracks_castle`, `temple_c_academic`, and
+  `city_hall`/`castle_hall`), and levels inside a pair are matched by their
+  marker-free names, falling back to position when a mod renamed its castle
+  tiers. Only unambiguous pairs are used: two candidates on a side and the tool
+  says nothing rather than mirroring an edit into the wrong building.
+- **The same unit listed twice in one level.** Copies with *different* clauses
+  are normal (one per faction) and are marked as such; copies with the *same*
+  clause are flagged, because one of them does nothing.
+
+### Mirroring, tiers, and one unit across every tree
+
+Three buttons on every recruit pool:
+
+- **⇄** copies that pool into the city/castle twin at the tier facing this one.
+  Already there? It says so instead of adding a second copy.
+- **⇅** adds the unit to every tier above this one that hasn't got it.
+- **≡** opens **the same unit everywhere it is recruited** — one row per pool
+  across every building line in the mod, with its start / per-turn / max /
+  experience side by side and editable in place. A value that disagrees with what
+  most of the other pools use is marked **odd**, which is usually the one you
+  came to find. Rows in other buildings are staged and written with everything
+  else.
+
+**＋ Add unit** carries the same reach: the starting numbers are fields in the
+dialog now (rather than a fixed 1 / 0.5 / 2 / 0 you had to correct afterwards),
+with an optional per-tier step, a box for *"add to the N tiers above as well"*
+and a box for *"mirror into the castle half"*. One trip through the picker can
+fill a five-level chain in both settlement types.
+
+Everything staged against another building line is listed in an **Also changing**
+panel before you save — Save writes the lot in one pass, Preview shows it, and
+one Undo takes it all back.
 
 ### Adding and editing pools in bulk
 
@@ -790,6 +912,19 @@ point of them.
   onto the rest, across buildings. The add-unit picker ticks rather than adds, so
   a dozen units go in at once and land ready for the clause you are about to
   give them
+- **Unit packs** — export units to a zip and send them to someone whose mod is
+  on another machine. The zip *is* a miniature mod, so importing it is an
+  ordinary transfer with every check, conflict and undo step that implies (see
+  [Unit packs](#unit-packs--sending-units-to-someone-else))
+- **Recruitment checks across a whole building line** — a unit that stops being
+  recruitable as the settlement upgrades, a unit the city half trains and the
+  castle half doesn't, and a unit listed twice in one level. Each with the fix
+  beside it, and ⇄ / ⇅ / ≡ on every pool to mirror it into the twin, push it up
+  the tiers, or compare its numbers against every other tree that trains it
+- **Your place is kept** — every re-draw puts the scroll position *and* the caret
+  back, so ticking a faction two hundred rows into a level, or coming back out of
+  the requirements dialog, leaves you looking at the row you were working on
+  rather than at the top of the building
 - **Mercenary conversion** — flip a unit to a mercenary (attribute, texture
   skin, icon folders) as part of the transfer
 - **Conflict resolution** — for every asset that would collide with an existing
@@ -906,6 +1041,13 @@ python -m tests.test_transfer_v2
 Each suite is self-contained and safe to run against real mod installs — all
 writes happen in temp directories or through the backup/undo path.
 
+`tests/test_building_checks.py` builds its own EDB rather than borrowing a mod's,
+so the city/castle pairing, the three recruitment checks and the multi-line save
+are pinned against a file whose every case is deliberate.
+`tests/test_pack.py` round-trips a unit pack out of a real mod and back in
+through the transfer planner, and checks the extractor drops a zip member that
+tries to escape the folder.
+
 `tests/test_guided_fields.py` also runs the page's own JavaScript under `node`
 to prove the guided field editor's split-and-rejoin is lossless across every
 unit of every installed mod — the one property that, if broken, would quietly
@@ -968,8 +1110,10 @@ open, and print the address.
   the building database (`buildings.py`),
   the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
   (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
-  generation/conversion pipeline (`sprites.py`), the guided field editor's
-  per-mod value lists (`vocab.py`), and the local HTTP server
+  generation/conversion pipeline (`sprites.py`), the unit-pack format
+  (`pack.py` — export to a zip, and mount someone else's as a source mod), the
+  guided field editor's per-mod value lists (`vocab.py`), and the local HTTP
+  server
 - `web/` — the browser UI
 - `tools/nvtt/` — NVIDIA Texture Tools 2.0 (`nvcompress.exe` + its DLLs, ~1 MB),
   driven headless by Sprites mode for TGA → DXT5

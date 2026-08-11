@@ -288,8 +288,28 @@ class TransferPlan:
     excluded_secondaries: List[str] = field(default_factory=list)
     missing_models: List[str] = field(default_factory=list)
     missing_skeletons: List[str] = field(default_factory=list)
+    # A missing skeleton is only actionable if you know WHICH copied model asks for
+    # it: the soldier line's is fixed by taking the soldier from the base/replaced
+    # unit, an officer's or a mount's is not. `skeleton_models` maps each missing
+    # skeleton to the source model names that reference it; `soldier_model_name` is
+    # the soldier-line model this transfer actually copies ("" when the soldier
+    # comes from the base, so no soldier skeleton can be missing).
+    skeleton_models: Dict[str, List[str]] = field(default_factory=dict)
+    soldier_model_name: str = ""
     missing_assets: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+
+    def soldier_skeletons_missing(self) -> List[str]:
+        """The missing skeletons the soldier-line model is the one asking for.
+
+        These are the ones the Soldier row can fix: hand that group to the base /
+        replaced unit and the entry is not copied at all, so nothing asks the
+        destination for an animation set it does not have.
+        """
+        if not self.soldier_model_name:
+            return []
+        return [s for s in self.missing_skeletons
+                if self.soldier_model_name in self.skeleton_models.get(s, [])]
 
     def summary(self) -> str:
         L = [f"Transfer '{self.unit_type}'  {self.source.name} -> {self.dest.name}"]
@@ -433,10 +453,25 @@ class TransferPlan:
                 L.append(f"      - {s}")
         if self.missing_models:
             L.append("  ! model entries NOT found in source modeldb: " + ", ".join(self.missing_models))
-        if self.missing_skeletons:
+        # The soldier line's missing animations get their own ONE-LINE entry, tagged
+        # "(soldier line)": the composer shows that case beside the Soldier row (the
+        # row that fixes it) and drops this line to avoid saying it twice. Keeping it
+        # here regardless is deliberate — the diagnostic log must still record it.
+        soldier = self.soldier_skeletons_missing()
+        if soldier:
+            L.append("  ! ANIMATION WARNING (soldier line) - "
+                     + ", ".join(soldier)
+                     + f" absent from {self.dest.name}'s modeldb, asked for by the "
+                     f"soldier model '{self.soldier_model_name}' — set Soldier to the "
+                     "base / replaced unit to keep its own model and animations, or add "
+                     "the animation to this mod first (anim pack / descr_skeleton).")
+        others = [s for s in self.missing_skeletons if s not in set(soldier)]
+        if others:
             L.append("  ! ANIMATION WARNING - skeletons absent from destination modeldb:")
-            for s in self.missing_skeletons:
-                L.append(f"      - {s}   (ensure this animation exists in your mod: anim pack / descr_skeleton)")
+            for s in others:
+                who = ", ".join(self.skeleton_models.get(s, [])) or "a copied model"
+                L.append(f"      - {s}   (asked for by '{who}'; ensure this animation "
+                         "exists in your mod: anim pack / descr_skeleton)")
         if self.missing_assets:
             L.append(f"  ! {len(self.missing_assets)} referenced files not found on disk (skipped)")
         for w in self.warnings:
@@ -1005,6 +1040,41 @@ def _override_projectiles(opts: TransferOptions) -> List[str]:
     return out
 
 
+def _follow_soldier_upgrades(plan: "TransferPlan", unit) -> None:
+    """Keep ``armour_ug_models`` honest when the soldier line comes from the base.
+
+    An armour-upgrade entry is the model the unit actually wears at that armour
+    level, so one naming the source's soldier model renders the source's model no
+    matter what the ``soldier`` line says — and drags its skeletons in with it.
+    When the list is *only* that model it carries no separate choice and follows
+    the soldier line to the base; when it lists other models too, the clash is
+    reported and left alone, because dropping those is a real change of intent.
+    """
+    if "soldier" not in plan.base_field_groups:
+        return
+    if "armour_ug_models" in plan.base_field_groups:
+        return
+    soldier = (unit.soldier_model or "").lower()
+    ug = [m.lower() for m in unit.armour_ug_models]
+    if not soldier or soldier not in ug:
+        return
+    who = plan.replace_type or plan.options.base_type
+    if set(ug) == {soldier}:
+        plan.base_field_groups.append("armour_ug_models")
+        plan.warnings.append(
+            f"the armour upgrade models were '{soldier}' — the same model as the "
+            f"soldier line — so they come from '{who}' too. Left on the source they "
+            "would have put that model (and its animations) straight back into the "
+            "unit, and the Soldier row would have done nothing.")
+    else:
+        plan.warnings.append(
+            f"the soldier line comes from '{who}', but the armour upgrade models "
+            f"still list '{soldier}' — the source's soldier model. The game renders "
+            "the upgrade entry for the unit's armour level, so at that level the unit "
+            f"still uses '{soldier}' and needs its animations. Set Armour upgrades to "
+            f"'{who}' as well, or edit armour_ug_models by hand.")
+
+
 def base_field_groups_for(opts: TransferOptions) -> List[str]:
     """EDU field groups a base unit supplies, given the include/soldier options.
 
@@ -1311,9 +1381,22 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
         plan.base_field_groups = [g for g in plan.base_field_groups if g != "mount"]
         plan.mount_from_base_import = True
 
+    # `armour_ug_models` shadows the soldier line: the game renders the entry for
+    # the unit's armour level, so an upgrade list still naming the SOURCE's soldier
+    # model puts that model (and its animations) back into the unit — the Soldier
+    # row would have changed nothing at all. Two thirds of the time the list is
+    # nothing but the soldier model repeated, and then "from the source" names no
+    # model of its own to keep: hand it over with the soldier line. A genuinely
+    # different list is the user's to decide, so that one is only reported.
+    _follow_soldier_upgrades(plan, unit)
+
     included, excluded = _secondary_model_names(source, unit, opts,
                                                 plan.base_field_groups)
     plan.excluded_secondaries = excluded
+    # Which of the copied models IS the soldier line — the one group whose missing
+    # animations the Soldier row can make go away (see soldier_skeletons_missing).
+    if unit.soldier_model and "soldier" not in plan.base_field_groups:
+        plan.soldier_model_name = unit.soldier_model.lower()
     if excluded:
         plan.warnings.append(
             f"{len(excluded)} secondary model(s) excluded; their EDU names are kept and "
@@ -1384,8 +1467,12 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
 
         # animation check (for entries we actually add)
         for skel in entry.skeletons():
-            if skel and skel not in dest_skeletons and skel not in plan.missing_skeletons:
-                plan.missing_skeletons.append(skel)
+            if skel and skel not in dest_skeletons:
+                if skel not in plan.missing_skeletons:
+                    plan.missing_skeletons.append(skel)
+                owners = plan.skeleton_models.setdefault(skel, [])
+                if name not in owners:
+                    owners.append(name)
 
         # assets for this model
         for rel in entry.mesh_files() + entry.texture_files():
@@ -1960,8 +2047,15 @@ def _log_plan(plan: TransferPlan) -> None:
                + ("identical" if c.identical
                   else f"DIFFERENT — source {c.src_size} B, destination {c.dst_size} B")
                for c in plan.asset_conflicts], level=logging.DEBUG)
+    # name the model behind each missing skeleton: "EUR_Troll_Mace_XL" alone doesn't
+    # say whether the soldier line, an officer or the mount dragged it in.
+    soldier_skels = set(plan.soldier_skeletons_missing())
     for label, names in (("missing models", plan.missing_models),
-                         ("missing skeletons", plan.missing_skeletons),
+                         ("missing skeletons",
+                          [s + "   <- " + (", ".join(plan.skeleton_models.get(s, []))
+                                           or "?")
+                           + ("  [SOLDIER line]" if s in soldier_skels else "")
+                           for s in plan.missing_skeletons]),
                          ("missing assets", plan.missing_assets),
                          ("excluded secondaries", plan.excluded_secondaries)):
         if names:

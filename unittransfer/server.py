@@ -11,7 +11,17 @@ API
   POST /api/settings             -> set {med2_root,...} (persisted)
   GET  /api/detect_med2_root     -> {path}  (registry lookup, not persisted)
   POST /api/browse_folder        -> {title} -> {path}  (native OS folder dialog)
-  GET  /api/mods                 -> [{name, root}]  (scanned under med2_root/mods)
+  GET  /api/mods                 -> [{name, root, pack}]  (scanned under
+                                    med2_root/mods, plus any mounted unit pack)
+
+Unit packs (see :mod:`unittransfer.pack`)
+  POST /api/pack/plan            -> what a pack of these units would hold
+  POST /api/pack/write           -> write it to {path}
+  POST /api/pack/open            -> read someone else's pack: manifest + units
+  POST /api/pack/mount           -> register it as a source mod for this session;
+                                    importing is then an ordinary transfer out of
+                                    it, with every check that implies
+  POST /api/pack/unmount         -> drop it again and delete what was unpacked
   GET  /api/units?mod=NAME       -> {mod, factions, categories, classes, units}
   GET  /icon?mod=&type=&kind=    -> image/png
   POST /api/plan                 -> {source,dest,unit,options} -> plan preview
@@ -26,9 +36,13 @@ Unit-editor mode (edits inside ONE mod, see :mod:`unittransfer.edit`)
   POST /api/edit/plan            -> preview an edit / delete
   POST /api/edit/apply           -> apply it (same backups + undo as a transfer)
   POST /api/browse_file          -> native file dialog (mesh/texture import)
+  POST /api/browse_save          -> native Save-As dialog (unit pack export)
 
 BMDB mode (the whole battle_models.modeldb, see :mod:`unittransfer.bmdb`)
   GET  /api/bmdb/entries?mod=    -> every entry, light (the browser list)
+  GET  /api/bmdb/skeletons?mod=  -> every entry keyed by the animation skeleton(s)
+                                    it uses, plus a tally per skeleton — what the
+                                    soldier-model picker searches
   GET  /api/bmdb/entry?mod=&name= -> one entry, in the editor's model-card shape
   POST /api/bmdb/plan | /apply   -> edit entries that belong to no single unit
   GET  /api/bmdb/audit?mod=      -> unused entries, soldier-merge twins, orphan files
@@ -63,16 +77,31 @@ Buildings mode (export_descr_buildings.txt, see :mod:`unittransfer.buildings`)
                                  -> one line in full: levels, stats, capabilities,
                                     recruit pools, which cultures have art and
                                     every culture's name / description
+  GET  /api/buildings/checks?mod=&line=
+                                 -> recruitment checks: units that stop being
+                                    recruitable further up a chain, units one
+                                    settlement type has and its city/castle twin
+                                    does not, and units listed twice in a level.
+                                    No `line` = every line with a finding
+  GET  /api/buildings/unit?mod=&type=&culture=
+                                 -> every recruit pool in the mod that trains one
+                                    unit, so its numbers can be compared (and
+                                    edited) across all the trees at once
   GET  /building_icon?mod=&culture=&level=&kind=
                                  -> the small / constructed icon, falling back to
                                     unpacked vanilla art, then to a placeholder
   POST /api/buildings/plan|/apply-> preview then write EDB + building-name edits
-                                    (backups + undo, same as a transfer)
+                                    (backups + undo, same as a transfer). `also`
+                                    carries edits to further building lines, saved
+                                    in the same pass — mirroring into the castle
+                                    variant and cross-tree pool edits both use it
 """
 from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import threading
 import time
 import urllib.parse
@@ -190,11 +219,18 @@ def _clear_cache(mod_root, out: dict, rec: dict, mod_name: str,
     config.update_log(rec.get("id", ""), strings_bin=res)
 
 
+def _safe_stem(name: str) -> str:
+    """A mod name reduced to something safe to use as a folder name."""
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", (name or "pack").strip()).strip("._") or "pack"
+
+
 class Registry:
     def __init__(self, cache_dir: Path):
         self.icons = IconCache(cache_dir)
         self._mods: Dict[str, Mod] = {}
         self._sigs: Dict[str, tuple] = {}      # name -> on-disk signature when cached
+        # name -> extracted root, for unit packs mounted this session
+        self._packs: Dict[str, Path] = {}
         # ThreadingHTTPServer serves the ~dozens of icon requests of one page
         # concurrently; Mod's cached_property parsers and this dict are not
         # thread-safe, so serialise mod resolution + first-parse behind a lock.
@@ -238,7 +274,53 @@ class Registry:
             for child in sorted(mr.iterdir()):
                 if child.is_dir() and (child / "data").is_dir():
                     out[child.name] = child
+        # A mounted unit pack is a mod like any other from here on — that is the
+        # whole point of the format (see :mod:`unittransfer.pack`). Registering it
+        # here means the composer, the base picker, the conflict handling, the
+        # preview and the undo log all work on it with no import-specific code.
+        for name, root in self._packs.items():
+            if (root / "data").is_dir():
+                out[name] = root
         return out
+
+    # ---- unit packs mounted as read-only source mods ----
+    def mount_pack(self, zip_path) -> dict:
+        """Unpack a zip and register it as a source mod for this session."""
+        from . import pack as pack_mod
+        manifest = pack_mod.read_manifest(Path(zip_path))
+        # named after the mod it CAME from, not the zip: the transfer engine puts
+        # relocated assets in a folder named after the source, and
+        # "unit_models/p-20260811-155044/" tells nobody anything
+        # …and the source's name comes FIRST, because transfer._tag builds rename
+        # suffixes from a mod's leading letters: "pack_Divide…" would tag every
+        # renamed entry "_pack", which says nothing about where it came from.
+        stem = _safe_stem(manifest.get("source_mod") or Path(zip_path).stem)
+        with self._lock:
+            name = f"{stem}_pack"
+            n = 2
+            while name in self._packs:
+                name = f"{stem}_pack{n}"
+                n += 1
+            root = config.CONFIG_DIR / "packs" / name
+            shutil.rmtree(root, ignore_errors=True)
+            pack_mod.unpack(Path(zip_path), root)
+            self._packs[name] = root
+        log.info("PACK   mounted %s as %s", zip_path, name)
+        return {"name": name, "root": str(root), "manifest": manifest}
+
+    def unmount_pack(self, name: str) -> bool:
+        with self._lock:
+            root = self._packs.pop(name, None)
+            self._mods.pop(name, None)
+            self._sigs.pop(name, None)
+        if root is None:
+            return False
+        shutil.rmtree(root, ignore_errors=True)
+        log.info("PACK   unmounted %s", name)
+        return True
+
+    def is_pack(self, name: str) -> bool:
+        return name in self._packs
 
     def names(self) -> List[str]:
         return list(self.discover())
@@ -315,6 +397,11 @@ def _unit_payload(m: Mod, u) -> dict:
         "eras": {"0": u.era0, "1": u.era1, "2": u.era2},
         "attributes": u.attributes, "mercenary": u.mercenary_unit,
         "models": u.model_names(),
+        # the soldier line's model and the armour-upgrade list separately: when the
+        # upgrade list is nothing but the soldier model, "armour upgrades from the
+        # source" names no model of its own and the composer ties the two rows
+        # together (see transfer._follow_soldier_upgrades)
+        "soldier_model": u.soldier_model, "armour_ug_models": u.armour_ug_models,
         "officers": u.officers, "mount": u.mount,
         # crew = ship / engine / mounted_engine / animal (drives the "Crew"
         # transfer option, greyed out when the unit has none). These name entries
@@ -577,6 +664,11 @@ def _plan_payload(plan) -> dict:
         "excluded_secondaries": plan.excluded_secondaries,
         "missing_models": plan.missing_models,
         "missing_skeletons": plan.missing_skeletons,
+        # which copied model asks for each missing skeleton, and the subset the
+        # Soldier row owns — the composer warns beside that row, not in general
+        "skeleton_models": plan.skeleton_models,
+        "soldier_model_name": plan.soldier_model_name,
+        "soldier_skeletons_missing": plan.soldier_skeletons_missing(),
         "missing_assets": plan.missing_assets[:20],
         "warnings": plan.warnings,
         "summary": plan.summary(),
@@ -679,7 +771,8 @@ class Handler(BaseHTTPRequestHandler):
                 # demand rather than only as an initial prefill.
                 return self._json({"path": config.detect_med2_root()})
             if u.path == "/api/mods":
-                return self._json([{"name": n, "root": str(p)}
+                return self._json([{"name": n, "root": str(p),
+                                    "pack": self.registry.is_pack(n)}
                                    for n, p in self.registry.discover().items()])
             if u.path == "/api/units":
                 name = (q.get("mod") or [None])[0]
@@ -720,21 +813,25 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(edit.unit_detail(self.registry.get(name), utype))
             if u.path == "/api/progress":
                 return self._json(_progress_read((q.get("job") or [""])[0]))
-            if u.path in ("/api/bmdb/entries", "/api/bmdb/entry", "/api/bmdb/audit"):
+            if u.path in ("/api/bmdb/entries", "/api/bmdb/entry", "/api/bmdb/audit",
+                          "/api/bmdb/skeletons"):
                 name = (q.get("mod") or [None])[0]
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
                 audit = u.path == "/api/bmdb/audit"
                 # reported before the mod is resolved: parsing its EDU is already
                 # a second or two, and the page is showing a bar by then
-                sink = _progress_sink((q.get("job") or [""])[0]) if audit else None
+                job = (q.get("job") or [""])[0]
+                sink = _progress_sink(job) if job else None
                 if sink:
                     sink(1, f"reading {name}'s files")
                 mod = self.registry.get(name)
                 if u.path == "/api/bmdb/entries":
-                    return self._json(bmdb.overview(mod))
+                    return self._json(bmdb.overview(mod, progress=sink))
                 if u.path == "/api/bmdb/entry":
                     return self._json(bmdb.entry_detail(mod, (q.get("name") or [""])[0]))
+                if u.path == "/api/bmdb/skeletons":
+                    return self._json(bmdb.skeleton_index(mod))
                 log.info("BMDB   audit of %s", name)
                 return self._json(bmdb.audit(mod, progress=sink))
             if u.path == "/api/sounds":
@@ -742,7 +839,8 @@ class Handler(BaseHTTPRequestHandler):
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
                 return self._json(sounds.overview(self.registry.get(name)))
-            if u.path in ("/api/buildings", "/api/building"):
+            if u.path in ("/api/buildings", "/api/building",
+                          "/api/buildings/checks", "/api/buildings/unit"):
                 name = (q.get("mod") or [None])[0]
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
@@ -751,6 +849,14 @@ class Handler(BaseHTTPRequestHandler):
                 culture = (q.get("culture") or [""])[0]
                 if u.path == "/api/buildings":
                     return self._json(buildings.overview(mod, culture))
+                if u.path == "/api/buildings/checks":
+                    try:
+                        return self._json(buildings.checks(mod, (q.get("line") or [""])[0]))
+                    except KeyError as e:
+                        return self._err(404, f"no building line {e}")
+                if u.path == "/api/buildings/unit":
+                    return self._json(buildings.unit_instances(
+                        mod, (q.get("type") or [""])[0], culture))
                 return self._json(buildings.detail(mod, (q.get("line") or [""])[0],
                                                    culture))
             if u.path == "/building_icon":
@@ -821,6 +927,15 @@ class Handler(BaseHTTPRequestHandler):
                                        body.get("filter") or "",
                                        body.get("dir") or "")
                 return self._json({"path": path})
+            if u.path == "/api/browse_save":
+                # …and the other direction, for writing a unit pack out
+                from .folder_dialog import browse_for_save
+                path = browse_for_save(body.get("title") or "Save as",
+                                       body.get("filter") or "",
+                                       body.get("dir") or "",
+                                       body.get("name") or "",
+                                       body.get("ext") or "")
+                return self._json({"path": path})
             if u.path == "/api/edit/model_folder":
                 # "do all this entry's files live in one folder, and who else
                 # would a move affect" — answered before the user commits to it.
@@ -849,6 +964,8 @@ class Handler(BaseHTTPRequestHandler):
                     sounds.plan_sounds(mod, sounds.ops_from_dicts(body.get("ops")))))
             if u.path == "/api/sounds/apply":
                 return self._json(self._sounds_apply(body))
+            if u.path.startswith("/api/pack/"):
+                return self._json(self._pack(u.path.rsplit("/", 1)[-1], body))
             if u.path == "/api/buildings/plan":
                 mod = self.registry.get(body["mod"])
                 return self._json(_building_payload(buildings.plan_edit(mod, body)))
@@ -987,6 +1104,45 @@ class Handler(BaseHTTPRequestHandler):
             _clear_cache(mod.root, out, rec, mod.name,
                          cleaner.BUILDINGS_STRINGS_BIN_REL)
         return out
+
+    # ---- unit packs ----
+    def _pack(self, action, body):
+        """Export units to a zip, or mount someone else's zip as a source mod.
+
+        There is no "import" action: mounting is the import. Once a pack is a
+        registered mod, the ordinary transfer endpoints move units out of it with
+        every check, option and undo step they always had.
+        """
+        from . import pack as pack_mod
+        try:
+            if action in ("plan", "write"):
+                mod = self.registry.get(body["mod"])
+                units = [str(t) for t in (body.get("units") or []) if str(t).strip()]
+                plan = pack_mod.plan_pack(mod, units)
+                out = {"units": [u.type for u in plan.units],
+                       "missing": plan.missing, "models": plan.models,
+                       "assets": len(plan.assets), "icons": len(plan.icons),
+                       "mounts": plan.mounts, "projectiles": plan.projectiles,
+                       "engines": plan.engines, "bytes": plan.bytes,
+                       "warnings": plan.warnings, "summary": plan.summary()}
+                if action == "plan":
+                    return out
+                dest = (body.get("path") or "").strip()
+                if not dest:
+                    return {"error": "no destination file chosen"}
+                out["record"] = pack_mod.write_pack(plan, Path(dest))
+                return out
+            if action == "open":                 # what the import dialog previews
+                return pack_mod.pack_overview(Path(body.get("path") or ""))
+            if action == "mount":                # …and what makes it importable
+                return self.registry.mount_pack(Path(body.get("path") or ""))
+            if action == "unmount":
+                return {"unmounted": self.registry.unmount_pack(body.get("name") or "")}
+        except pack_mod.PackError as e:
+            return {"error": str(e)}
+        except (OSError, ValueError) as e:
+            return {"error": f"{type(e).__name__}: {e}"}
+        return {"error": f"unknown pack action {action!r}"}
 
     # ---- sprites mode ----
     def _sprites(self, action, body):

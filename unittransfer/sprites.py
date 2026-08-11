@@ -261,6 +261,40 @@ class PrepPlan:
         return "\n".join(out)
 
 
+#: Files that only ever sit in a Medieval II *install* root, never in a mods
+#: folder. Used to tell the two apart, because "has a mods/ subfolder" alone is
+#: satisfied by a bare scratch folder someone dropped models into.
+_INSTALL_MARKERS = ("medieval2.exe", "kingdoms.exe")
+
+
+def _looks_like_install(p: Path) -> bool:
+    """Whether ``p`` is a Medieval II install root rather than a mods folder."""
+    try:
+        if (p / "data").is_dir():
+            return True
+        return any((p / m).is_file() for m in _INSTALL_MARKERS)
+    except OSError:
+        return False
+
+
+def _strip_mods(p: Path) -> Path:
+    """``<install>/mods`` -> ``<install>``.
+
+    :func:`unittransfer.server.Registry.mods_root` deliberately accepts a mods
+    folder as the configured root, so ``med2_root`` legitimately points one level
+    too deep for us. Left unstripped that yields ``mods/export/unit_sprites`` —
+    a path the engine never writes to and where nothing is ever found.
+
+    The test is on the folder itself rather than on its parent: the engine's
+    output folder is a sibling of ``data/``, so a root that has no ``data/`` of
+    its own is a mods folder whatever its parent looks like. That matters for a
+    mods folder kept outside a game install, which is the case this fixes.
+    """
+    if p.name.lower() == "mods" and not _looks_like_install(p):
+        return p.parent
+    return p
+
+
 def _med2_root(mod: Mod) -> Path:
     """The Medieval II Total War root, i.e. the folder holding ``mods/``.
 
@@ -268,13 +302,44 @@ def _med2_root(mod: Mod) -> Path:
     opened from somewhere unusual; falls back to the configured root.
     """
     for parent in mod.root.parents:
-        if (parent / "mods").is_dir() and (parent / "data").is_dir():
+        if (parent / "mods").is_dir() and _looks_like_install(parent):
             return parent
     root = config.get_med2_root()
     if not root:
         raise SpriteError(
             "can't locate the Medieval II Total War root — set it in Settings")
-    return Path(root)
+    return _strip_mods(Path(root))
+
+
+def export_dirs(mod: Mod) -> List[Path]:
+    """Where the generator might have written this mod's sprites, best first.
+
+    Normally one: ``<install>/export/unit_sprites``. But a mod folder does not
+    have to live inside the install that launches it — a working copy kept
+    outside the game is common — and then the mod-derived root and the configured
+    root disagree. The second entry is a fallback only: :func:`scan_export` stops
+    at the first folder that yields anything, so a mod that sits inside its own
+    install never looks at another one's output.
+    """
+    out: List[Path] = []
+    seen: set = set()
+
+    def add(root: Optional[Path]) -> None:
+        if root is None:
+            return
+        p = root / EXPORT_REL
+        key = str(p).replace("\\", "/").casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(p)
+
+    try:
+        add(_med2_root(mod))
+    except SpriteError:
+        pass
+    saved = config.get_med2_root()
+    add(_strip_mods(Path(saved)) if saved else None)
+    return out
 
 
 def find_cfgs(mod: Mod) -> List[str]:
@@ -462,13 +527,12 @@ def scan_export(mod: Mod) -> Dict[str, SpriteSet]:
 
     A sprite is a ``.spr`` descriptor plus one or more sheets; the engine numbers
     the sheets (``..._sprite_000.tga``), so they group by the ``_sprite`` stem.
+
+    Candidate folders are tried in order and the first that yields anything wins
+    — see :func:`export_dirs`.
     """
-    root = _med2_root(mod)
-    src = root / EXPORT_REL
     models = list(mod.modeldb.by_name().keys())
     out: Dict[str, SpriteSet] = {}
-    if not src.is_dir():
-        return out
 
     def bucket(stem: str) -> Optional[SpriteSet]:
         # sheets carry a _000 suffix the .spr does not
@@ -479,21 +543,26 @@ def scan_export(mod: Mod) -> Dict[str, SpriteSet]:
         faction, model = got
         return out.setdefault(base, SpriteSet(stem=base, faction=faction, model=model))
 
-    for p in sorted(src.iterdir()):
-        if not p.is_file():
+    for src in export_dirs(mod):
+        if not src.is_dir():
             continue
-        ext = p.suffix.lower()
-        if ext not in (".spr", ".tga", ".texture"):
-            continue
-        s = bucket(p.stem)
-        if s is None:
-            continue
-        if ext == ".spr":
-            s.spr = p
-        elif ext == ".tga":
-            s.sheets.append(p)
-        else:
-            s.done.append(p)
+        for p in sorted(src.iterdir()):
+            if not p.is_file():
+                continue
+            ext = p.suffix.lower()
+            if ext not in (".spr", ".tga", ".texture"):
+                continue
+            s = bucket(p.stem)
+            if s is None:
+                continue
+            if ext == ".spr":
+                s.spr = p
+            elif ext == ".tga":
+                s.sheets.append(p)
+            else:
+                s.done.append(p)
+        if out:
+            break       # found the install that actually ran; don't mix in another
     return out
 
 
@@ -541,9 +610,9 @@ def plan_convert(mod: Mod, req: ConvertRequest) -> ConvertPlan:
     if req.install:
         plan.install_dir = mod.data / INSTALL_REL
     if not plan.sets:
+        where = " or ".join(str(d) for d in export_dirs(mod)) or "the export folder"
         plan.warnings.append(
-            f"nothing to convert in {_med2_root(mod) / EXPORT_REL} — "
-            "has the generator run yet?")
+            f"nothing to convert in {where} — has the generator run yet?")
     return plan
 
 
@@ -794,11 +863,48 @@ def audit(mod: Mod) -> SpriteAudit:
     return res
 
 
+#: The slots a modeldb entry can be filled into, in the order the UI badges them.
+#: ``armour`` is the interesting one — an armour-upgrade level is a model a unit
+#: visibly switches to, so it needs its own sprite, whereas an entry that is only
+#: ever somebody's soldier model is already covered by that unit's own row.
+ROLE_KINDS = ("soldier", "armour", "officer", "mount")
+
+
+def model_roles(mod: Mod) -> Dict[str, set]:
+    """``model name -> {slot kinds that reference it}``, lowercased.
+
+    A cheaper cousin of :func:`unittransfer.bmdb.entry_users`: the sprite page
+    only needs to know *which* slots a model fills, not who fills them, so this
+    skips the campaign-file and descr_character scans that dominate that call.
+    """
+    roles: Dict[str, set] = {}
+
+    def add(name: str, kind: str) -> None:
+        if name:
+            roles.setdefault(name.strip().lower(), set()).add(kind)
+
+    for u in mod.edu.units:
+        soldier = (u.soldier_model or "").strip().lower()
+        add(soldier, "soldier")
+        for o in u.officers:
+            add(o, "officer")
+        for a in u.armour_ug_models:
+            # level 0 of the upgrade list is the soldier model again; counting it
+            # as an upgrade would make "armour upgrades only" select most of the
+            # modeldb, which is the opposite of what the filter is for
+            if (a or "").strip().lower() != soldier:
+                add(a, "armour")
+    for model in (mod.mounts or {}).values():
+        add(model, "mount")
+    return roles
+
+
 def overview(mod: Mod) -> dict:
     """Everything the Sprites workspace needs to render its first screen."""
     a = audit(mod)
     entries = mod.modeldb.by_name()
     mount_models = {m.lower() for m in mod.mounts.values() if m}
+    roles = model_roles(mod)
     pending = scan_export(mod)
 
     # Per-model rollup of the audit the page already pays for. Step 1 lists every
@@ -829,10 +935,14 @@ def overview(mod: Mod) -> dict:
         root = str(_med2_root(mod))
     except SpriteError:
         root = ""
+    dirs = [str(d) for d in export_dirs(mod)]
     return {
         "mod": mod.name,
         "med2_root": root,
-        "export_dir": str(Path(root) / EXPORT_REL) if root else "",
+        "export_dir": dirs[0] if dirs else "",
+        # more than one when the mod folder lives outside the install that
+        # launches it; the page names them all so "nothing found" is diagnosable
+        "export_dirs": dirs,
         "install_dir": str(mod.data / INSTALL_REL),
         "have_nvcompress": NVCOMPRESS.is_file(),
         # EOP generation needs no CFG edit and no restart per batch, so the UI
@@ -846,6 +956,9 @@ def overview(mod: Mod) -> dict:
                     "factions": sorted({t.faction for t in e.main_textures}),
                     "is_mount": n in mount_models,
                     "state": state(n),
+                    # which slots any unit fills with this entry, so the page can
+                    # badge them and offer "pick the armour-upgrade models only"
+                    "roles": [k for k in ROLE_KINDS if k in roles.get(n, ())],
                     "done": n in done}
                    for n, e in sorted(entries.items()) if n],
         "done_total": len(done),

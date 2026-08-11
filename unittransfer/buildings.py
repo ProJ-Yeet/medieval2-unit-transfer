@@ -1440,33 +1440,57 @@ class BuildingPlan:
         return "\n".join(out)
 
 
+def _all_line_bodies(body: dict) -> List[dict]:
+    """The building lines this request touches: the main one, then any extras.
+
+    ``also`` carries ``[{"line": …, "levels": [...]}]`` — mirroring a pool into
+    the castle variant, or pushing one unit's numbers across every tree that
+    trains it, both land here. They are planned against the same parse and
+    spliced in the same pass as the main line, so one Save is one edit and one
+    undo step rather than one per building.
+    """
+    out = [body]
+    for extra in (body.get("also") or []):
+        if isinstance(extra, dict) and extra.get("line"):
+            out.append(extra)
+    return out
+
+
 def plan_edit(mod, body: dict) -> BuildingPlan:
-    """Plan every level edit in one request against one building line.
+    """Plan every level edit in one request.
 
     All edits are planned against the *original* line indices and spliced
-    back-to-front in one pass, so several levels of the same line can be saved
-    together without any of them moving the others.
+    back-to-front in one pass, so several levels — and, via ``also``, several
+    building lines — can be saved together without any of them moving the others.
     """
     plan = BuildingPlan(mod=mod, line=str(body.get("line") or ""))
     edb = mod.edb
     if not mod.edb_path.exists():
         plan.errors.append(f"{mod.name} has no data/{EDB_REL}")
         return plan
-    bl = edb.get(plan.line)
-    if bl is None:
-        plan.errors.append(f"{mod.name} has no building line named {plan.line!r}")
-        return plan
 
     edits: List[LineEdit] = []
-    for lv in (body.get("levels") or []):
-        blk = bl.level(str(lv.get("name") or ""))
-        if blk is None:
-            plan.warnings.append(f"{plan.line} has no level {lv.get('name')!r}")
-            continue
-        e, notes, warn = plan_level_edit(edb, bl, blk, lv)
-        edits += e
-        plan.changes += notes
-        plan.warnings += warn
+    bl = None
+    for part in _all_line_bodies(body):
+        name = str(part.get("line") or "")
+        cur = edb.get(name)
+        if cur is None:
+            plan.errors.append(f"{mod.name} has no building line named {name!r}")
+            return plan
+        if bl is None:
+            bl = cur
+        for lv in (part.get("levels") or []):
+            blk = cur.level(str(lv.get("name") or ""))
+            if blk is None:
+                plan.warnings.append(f"{name} has no level {lv.get('name')!r}")
+                continue
+            e, notes, warn = plan_level_edit(edb, cur, blk, lv)
+            edits += e
+            # a note from another line has to say which line, or the preview reads
+            # as if the building on screen grew rows it never had
+            tag = "" if cur is bl else f"{name} · "
+            plan.changes += [tag + n for n in notes]
+            plan.warnings += [tag + w for w in warn]
 
     # the line's own header fields
     if "convert_to" in body or "religion" in body:
@@ -1485,7 +1509,9 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
                     "refusing to write it")
                 return plan
 
-    _check_recruit_limit(mod, bl, body, plan)
+    for part in _all_line_bodies(body):
+        _check_recruit_limit(mod, edb.get(str(part.get("line") or "")), part, plan,
+                             merge_existing=part is not body)
 
     loc = _plan_localisation(mod, body, plan)
     if loc:
@@ -1495,32 +1521,38 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
     # leaves behind as well as what it adds.
     if body.get("fix_ownership"):
         checks: Dict[str, List[str]] = {}
-        for lv in (body.get("levels") or []):
-            for op in (lv.get("capabilities") or []) + (lv.get("faction_capabilities") or []):
-                if op.get("delete") or op.get("keyword") != "recruit_pool":
-                    continue
-                pool = RecruitPool.parse(Capability(keyword="recruit_pool",
-                                                    args=str(op.get("args") or "")))
-                if pool is None:
-                    continue
-                requires = (clause_text(conditions_from_dicts(op["conditions"]))
-                            if "conditions" in op else str(op.get("requires") or ""))
-                checks.setdefault(pool.unit, [])
-                checks[pool.unit] += clause_factions(requires)
+        for part in _all_line_bodies(body):
+            for lv in (part.get("levels") or []):
+                for op in ((lv.get("capabilities") or [])
+                           + (lv.get("faction_capabilities") or [])):
+                    if op.get("delete") or op.get("keyword") != "recruit_pool":
+                        continue
+                    pool = RecruitPool.parse(Capability(keyword="recruit_pool",
+                                                        args=str(op.get("args") or "")))
+                    if pool is None:
+                        continue
+                    requires = (clause_text(conditions_from_dicts(op["conditions"]))
+                                if "conditions" in op else str(op.get("requires") or ""))
+                    checks.setdefault(pool.unit, [])
+                    checks[pool.unit] += clause_factions(requires)
         wanted = [{"unit": u, "factions": f} for u, f in checks.items() if f]
         if wanted:
             _plan_ownership(mod, plan, wanted)
     return plan
 
 
-def _check_recruit_limit(mod, bl: BuildingLine, body: dict,
-                         plan: BuildingPlan) -> None:
+def _check_recruit_limit(mod, bl: Optional[BuildingLine], body: dict,
+                         plan: BuildingPlan, merge_existing: bool = False) -> None:
     """Warn when a level being saved could offer one faction too many units.
 
     Counted from the payload rather than the file, so the warning is about what
     you are about to write. A level the edit does not mention is skipped: it is
     not changing, and nagging about a mod's pre-existing shape on every unrelated
     save is how a warning gets ignored.
+
+    ``merge_existing`` is for the lines reached through ``also``: those payloads
+    carry only the rows being added, so the level's untouched pools have to come
+    from the file or every mirrored add would look free.
     """
     cultures = mod.faction_cultures
     if not cultures:
@@ -1530,6 +1562,14 @@ def _check_recruit_limit(mod, bl: BuildingLine, body: dict,
         if not ops:
             continue
         name = str(lv.get("name") or "")
+        if merge_existing and bl is not None:
+            blk = bl.level(name)
+            if blk is not None:
+                touched = {op.get("line") for op in ops if op.get("line") is not None}
+                ops = ops + [{"keyword": c.keyword, "args": c.args,
+                              "requires": c.requires, "line": c.line}
+                             for c in blk.capabilities + blk.faction_capabilities
+                             if c.line not in touched]
         most: Dict[str, int] = {}
         always: Dict[str, int] = {}
         for op in ops:
@@ -1828,6 +1868,269 @@ def _units_index(mod) -> Dict[str, dict]:
             "eop": u.is_eop,
         }
     return out
+
+
+# ---------------------------------------------------------------------------
+# city / castle variants
+#
+# Nearly every recruitment building in a real mod exists twice — once for cities
+# and once for castles — and the two are expected to stay in step. Nothing in the
+# EDB says which two lines are a pair, though: the file just has two independent
+# `building` blocks whose names differ by a marker the mod picked. Divide and
+# Conquer alone ships all four spellings below, sometimes in the same file.
+
+#: Name fragments that mean "this is the castle (or city) half", not part of the
+#: building's identity. `c` is the short form both DaC and vanilla use.
+_VARIANT_BITS = frozenset(("castle", "city", "c"))
+
+
+def variant_key(name: str) -> str:
+    """A building or level name with its city/castle marker taken out.
+
+    ``castle_barracks``, ``c_barracks``, ``barracks_castle`` and
+    ``temple_c_academic`` all key as their marker-free form, so the two halves of
+    a pair meet in the middle. Nothing else is normalised — two names that differ
+    by anything but a marker are different buildings.
+
+    A name that is *only* a marker (the ``castle`` level of a core castle line)
+    keeps itself rather than collapsing to nothing.
+    """
+    parts = [p for p in name.strip().lower().split("_") if p]
+    kept = [p for p in parts if p not in _VARIANT_BITS]
+    return "_".join(kept or parts)
+
+
+def variant_pairs(edb: EdbFile) -> Dict[str, str]:
+    """``line name -> the opposite settlement's line``, both ways round.
+
+    Only unambiguous pairs are reported: exactly one city line and exactly one
+    castle line sharing a key. Two candidates on a side means the mod is using
+    the marker for something else, and guessing there would mirror an edit into
+    the wrong building.
+    """
+    sides: Dict[str, Dict[str, List[str]]] = {}
+    for bl in edb.buildings:
+        kind = bl.settlement
+        if kind not in ("city", "castle"):
+            continue
+        sides.setdefault(variant_key(bl.name), {}).setdefault(kind, []).append(bl.name)
+    out: Dict[str, str] = {}
+    for by_kind in sides.values():
+        city, castle = by_kind.get("city") or [], by_kind.get("castle") or []
+        if len(city) == 1 and len(castle) == 1:
+            out[city[0]] = castle[0]
+            out[castle[0]] = city[0]
+    return out
+
+
+def pair_levels(a: BuildingLine, b: BuildingLine) -> Dict[str, str]:
+    """``level of a -> the level of b that mirrors it``.
+
+    Marker-free names first (``stables`` -> ``c_stables``), then position in the
+    chain for whatever is left: a mod that renamed its castle tiers outright
+    still has tier 1 facing tier 1, and that is the pairing a human would make.
+    """
+    by_key: Dict[str, List[str]] = {}
+    for blk in b.blocks:
+        by_key.setdefault(variant_key(blk.name), []).append(blk.name)
+    out: Dict[str, str] = {}
+    used: set = set()
+    for blk in a.blocks:
+        for cand in by_key.get(variant_key(blk.name), []):
+            if cand not in used:
+                out[blk.name] = cand
+                used.add(cand)
+                break
+    for i, blk in enumerate(a.blocks):
+        if blk.name in out:
+            continue
+        if i < len(b.blocks) and b.blocks[i].name not in used:
+            out[blk.name] = b.blocks[i].name
+            used.add(b.blocks[i].name)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# recruitment checks
+#
+# Three mistakes that are invisible one level at a time and obvious across a
+# whole line: a unit that stops being recruitable when the building is upgraded,
+# a unit one settlement type has and the other does not, and the same unit listed
+# twice in one level.
+
+
+def _pool_rows(bl: BuildingLine) -> List[dict]:
+    """Every recruit pool in a line, tagged with where it lives."""
+    rows: List[dict] = []
+    for i, blk in enumerate(bl.blocks):
+        for faction, caps in ((False, blk.capabilities), (True, blk.faction_capabilities)):
+            for cap in caps:
+                pool = cap.pool()
+                if pool is None:
+                    continue
+                rows.append({"line": bl.name, "level": blk.name, "level_index": i,
+                             "faction": faction, "cap_line": cap.line,
+                             "unit": pool.unit, "unit_key": pool.unit.lower(),
+                             "initial": pool.initial, "per_turn": pool.per_turn,
+                             "maximum": pool.maximum, "experience": pool.experience,
+                             "requires": cap.requires})
+    return rows
+
+
+def _pool_brief(r: dict) -> dict:
+    """Just enough of a pool row to recreate it somewhere else."""
+    return {k: r[k] for k in
+            ("unit", "initial", "per_turn", "maximum", "experience", "requires")}
+
+
+def line_checks(edb: EdbFile, bl: BuildingLine,
+                pairs: Optional[Dict[str, str]] = None) -> dict:
+    """Continuity, mirror and duplicate findings for one building line."""
+    rows = _pool_rows(bl)
+    levels = [b.name for b in bl.blocks]
+
+    # ---- a unit that stops being recruitable further up the chain ----
+    at: Dict[str, set] = {}
+    names: Dict[str, str] = {}
+    best: Dict[str, dict] = {}
+    for r in rows:
+        at.setdefault(r["unit_key"], set()).add(r["level_index"])
+        names.setdefault(r["unit_key"], r["unit"])
+        # the highest tier that does train it — what a filled-in gap should copy,
+        # since the numbers a mod gives a unit tend to climb with the building
+        cur = best.get(r["unit_key"])
+        if cur is None or r["level_index"] > cur["level_index"]:
+            best[r["unit_key"]] = dict(_pool_brief(r), level_index=r["level_index"])
+    gaps = []
+    for key, seen in sorted(at.items()):
+        first = min(seen)
+        missing = [i for i in range(first, len(levels)) if i not in seen]
+        if missing:
+            gaps.append({"unit": names[key], "first": first,
+                         "present": sorted(seen), "missing": missing,
+                         "missing_levels": [levels[i] for i in missing],
+                         "pool": best[key]})
+
+    # ---- the same unit twice in one level ----
+    dupes = []
+    per_level: Dict[Tuple[int, str], List[dict]] = {}
+    for r in rows:
+        per_level.setdefault((r["level_index"], r["unit_key"]), []).append(r)
+    for (idx, key), group in sorted(per_level.items()):
+        if len(group) > 1:
+            dupes.append({"unit": group[0]["unit"], "level": levels[idx],
+                          "level_index": idx, "count": len(group),
+                          "cap_lines": [g["cap_line"] for g in group],
+                          # two rows with different clauses are usually deliberate
+                          # (one per faction); identical ones never are
+                          "same_requires": len({_norm(g["requires"]) for g in group}) == 1})
+
+    # ---- what the other settlement type has and this one does not ----
+    pairs = variant_pairs(edb) if pairs is None else pairs
+    other_name = pairs.get(bl.name, "")
+    other = edb.get(other_name) if other_name else None
+    mirror: List[dict] = []
+    forward: Dict[str, str] = {}
+    twin_units: Dict[str, List[str]] = {}
+    if other is not None:
+        forward = pair_levels(bl, other)
+        mine: Dict[str, Dict[str, dict]] = {}
+        for r in rows:
+            mine.setdefault(r["level"], {}).setdefault(r["unit_key"], r)
+        theirs: Dict[str, Dict[str, dict]] = {}
+        for r in _pool_rows(other):
+            theirs.setdefault(r["level"], {}).setdefault(r["unit_key"], r)
+        # everything the twin trains, not only what differs: mirroring a row
+        # across has to know whether it is already there
+        twin_units = {lvl: sorted(by_unit) for lvl, by_unit in theirs.items()}
+        for i, blk in enumerate(bl.blocks):
+            twin = forward.get(blk.name)
+            if not twin:
+                continue
+            here, there = mine.get(blk.name, {}), theirs.get(twin, {})
+            only_here = [_pool_brief(here[k]) for k in sorted(here) if k not in there]
+            only_there = [_pool_brief(there[k]) for k in sorted(there) if k not in here]
+            if not only_here and not only_there:
+                continue
+            # the numbers travel with the names: copying a unit across is the
+            # point of the finding, and it should land on the twin's own figures
+            # rather than on a default nobody chose
+            mirror.append({
+                "level": blk.name, "level_index": i, "twin": twin,
+                "only_here": only_here, "only_there": only_there,
+            })
+    return {
+        "line": bl.name,
+        "settlement": bl.settlement,
+        "levels": levels,
+        "twin": other_name,
+        # this line's level -> the twin's level, for every tier and not only the
+        # ones that differ: mirroring a pool needs the target level name even
+        # where the two halves currently agree
+        "level_pairs": forward,
+        # lower-cased unit types the twin already trains, per twin level
+        "twin_units": twin_units,
+        "gaps": gaps,
+        "dupes": dupes,
+        "mirror": mirror,
+    }
+
+
+def checks(mod, line: str = "") -> dict:
+    """Recruitment checks for one line, or a per-line rollup for the whole mod."""
+    edb = mod.edb
+    pairs = variant_pairs(edb)
+    if line:
+        bl = edb.get(line)
+        if bl is None:
+            raise KeyError(line)
+        return {"mod": mod.name, "pairs": pairs, "lines": [line_checks(edb, bl, pairs)]}
+    rollup = []
+    for bl in edb.buildings:
+        res = line_checks(edb, bl, pairs)
+        if res["gaps"] or res["dupes"] or res["mirror"]:
+            rollup.append({k: res[k] for k in
+                           ("line", "settlement", "twin", "gaps", "dupes", "mirror")})
+    return {"mod": mod.name, "pairs": pairs, "lines": rollup}
+
+
+def unit_instances(mod, unit: str, culture: str = "") -> dict:
+    """Every recruit pool in the mod that trains ``unit``, across all lines.
+
+    What the building browser's "compare this unit everywhere" panel is built
+    from: the same unit is usually recruited from four or five buildings with
+    numbers that drifted apart, and seeing them in one table is the only way to
+    tell which one is the odd one out.
+    """
+    edb = mod.edb
+    key = unit.strip().lower()
+    pairs = variant_pairs(edb)
+    rows = []
+    for bl in edb.buildings:
+        for r in _pool_rows(bl):
+            if r["unit_key"] != key:
+                continue
+            blk = bl.blocks[r["level_index"]]
+            rows.append({
+                "line": bl.name,
+                "line_label": _label(mod, bl.name + "_name", bl.name, culture),
+                "settlement": blk.settlement or bl.settlement,
+                "twin": pairs.get(bl.name, ""),
+                "level": blk.name,
+                "level_label": _label(mod, blk.name, blk.name, culture),
+                "level_index": r["level_index"],
+                "level_count": len(bl.blocks),
+                "faction": r["faction"],
+                "cap_line": r["cap_line"],
+                "initial": r["initial"], "per_turn": r["per_turn"],
+                "maximum": r["maximum"], "experience": r["experience"],
+                "requires": r["requires"],
+                "conditions": clause_payload(r["requires"]),
+            })
+    info = _units_index(mod).get(key)
+    return {"mod": mod.name, "unit": unit,
+            "info": info or {"type": unit, "name": unit, "missing": True},
+            "instances": rows}
 
 
 def _art_sources(mod, level: str, vanilla) -> Dict[str, Dict[str, str]]:

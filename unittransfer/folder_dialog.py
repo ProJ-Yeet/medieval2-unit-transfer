@@ -109,6 +109,43 @@ def browse_for_file(title: str = "Select a file", filter_spec: str = "",
     return buf.value or None
 
 
+OFN_OVERWRITEPROMPT = 0x00000002
+
+
+def browse_for_save(title: str = "Save as", filter_spec: str = "",
+                    initial_dir: str = "", default_name: str = "",
+                    default_ext: str = "") -> Optional[str]:
+    """Blocking native Save-As dialog. Returns the chosen path or None.
+
+    The counterpart to :func:`browse_for_file`: exporting a unit pack has to end
+    up somewhere the user picked, and a browser download would hand back a name
+    with no path — which is no use to a server that has to write the file itself.
+    Windows does the overwrite prompt for us (``OFN_OVERWRITEPROMPT``).
+    """
+    if sys.platform != "win32":
+        return None
+    spec = filter_spec or "All files (*.*)|*.*"
+    filt = "\0".join(spec.split("|")) + "\0\0"
+    buf = ctypes.create_unicode_buffer(2048)
+    if default_name:
+        buf.value = default_name
+    ofn = _OPENFILENAMEW()
+    ofn.lStructSize = ctypes.sizeof(_OPENFILENAMEW)
+    ofn.lpstrFilter = filt
+    ofn.lpstrFile = ctypes.cast(buf, wintypes.LPWSTR)
+    ofn.nMaxFile = len(buf)
+    ofn.lpstrTitle = title
+    ofn.lpstrInitialDir = initial_dir or None
+    ofn.lpstrDefExt = default_ext or None
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_EXPLORER
+    comdlg32 = ctypes.windll.comdlg32
+    comdlg32.GetSaveFileNameW.restype = wintypes.BOOL
+    comdlg32.GetSaveFileNameW.argtypes = [ctypes.POINTER(_OPENFILENAMEW)]
+    if not comdlg32.GetSaveFileNameW(ctypes.byref(ofn)):
+        return None
+    return buf.value or None
+
+
 def browse_for_folder(title: str = "Select a folder") -> Optional[str]:
     """Blocking native folder-picker. Returns the chosen path, or None if the
     user cancelled (or this isn't Windows)."""

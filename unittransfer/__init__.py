@@ -15,6 +15,8 @@ Package layout:
   edit.py          unit EDITOR mode: change/create/delete units inside one mod
   bmdb.py          BMDB mode: the whole modeldb — browse/edit any entry, audit what
                    nothing references, and export the dead weight out of the mod
+  pack.py          unit packs: units in a zip for someone else's machine. A pack
+                   IS a mod, so importing one is an ordinary transfer out of it
   server.py        local web UI (Stage 2)
 
 Design rule: transfers APPEND verbatim source entries to the destination rather than
@@ -25,4 +27,4 @@ units together — so every feature is EOP-aware by default. Only the *write* si
 distinguishes them, via :func:`unittransfer.eop.compose`.
 """
 
-__version__ = "1.9.8"
+__version__ = "1.9.9"
