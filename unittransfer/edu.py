@@ -11,10 +11,35 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from . import keyblock as kb
 from typing import Dict, List, Optional
 
 # EDU is plain 8-bit text; latin-1 round-trips every byte.
 ENCODING = "latin-1"
+
+# --- the tool's own metadata line ----------------------------------------
+# A unit's TIER is not a field, not a value and appears in no game file — it is
+# ours, and it exists so the Phase 14e sorter has something to sort by. It is
+# written as a comment the engine never reads, under one owned prefix, on the
+# line directly above the unit's `type`:
+#
+#     ;@m2gt tier=3 variant=aor
+#     type   Gondor Heavy Infantry
+#
+# That placement is why :func:`parse_text` starts a block at the marker rather
+# than at `type`: a comment above a `type` line otherwise belongs to the
+# PREVIOUS unit, so the marker would describe one unit while living inside
+# another, and every operation that moves a block — transfer, replace, the
+# sorter — would leave it behind. Starting the block at the marker makes it
+# travel with ``Unit.raw`` without any of them knowing it exists.
+MARKER = ";@m2gt"
+
+
+def is_marker(line: str) -> bool:
+    """Is this line the tool's own metadata comment?"""
+    s = line.strip()
+    return s.startswith(MARKER) and (len(s) == len(MARKER) or s[len(MARKER)].isspace())
 
 
 def _split_fields(line: str) -> tuple[str, List[str]]:
@@ -79,6 +104,9 @@ class Unit:
     mercenary_unit: bool = False
     stat_pri: List[str] = field(default_factory=list)   # CSV values of stat_pri
     stat_sec: List[str] = field(default_factory=list)   # CSV values of stat_sec
+    tier: str = ""                       # tool metadata, not a game field (see MARKER)
+    variant: str = ""                    # tool metadata, not a game field (see MARKER)
+    order: str = ""                      # hand-placed position within its section
     raw: str = ""                        # verbatim block text (incl. leading blank/comment lines)
     # M2TWEOP unit: this block lives in one of the extender's own files rather than
     # in data/export_descr_unit.txt. Everything else about it is a normal unit —
@@ -233,8 +261,65 @@ class EduFile:
         Path(path).write_text(self.to_text(), encoding=ENCODING)
 
 
+def marker_fields(raw: str) -> Dict[str, str]:
+    """The ``key=value`` pairs on a block's :data:`MARKER` line (``{}`` if none).
+
+    Only the marker line above ``type`` is read. A token without an ``=`` is
+    ignored rather than guessed at, so a marker written by a later version of
+    the tool degrades to the part this one understands instead of being lost —
+    :func:`set_marker` rewrites only the keys it was given for the same reason.
+    """
+    out: Dict[str, str] = {}
+    for line in raw.splitlines():
+        if not is_marker(line):
+            if line.strip() and not line.strip().startswith(";"):
+                break                     # a real field line: the marker is behind us
+            continue
+        for tok in line.strip()[len(MARKER):].split():
+            key, sep, val = tok.partition("=")
+            if sep and key:
+                out[key] = val
+    return out
+
+
+def set_marker(raw: str, **fields: str) -> str:
+    """Write ``key=value`` metadata onto the block's marker line.
+
+    A key set to ``""`` is removed; a marker left with no keys at all is deleted
+    outright rather than written as a bare prefix. Keys the caller does not
+    mention keep whatever they had. The line is created directly above ``type``
+    when the block has no marker yet.
+    """
+    merged = marker_fields(raw)
+    merged.update(fields)
+    merged = {k: v for k, v in merged.items() if v != ""}
+    text = (MARKER + " " + " ".join(f"{k}={v}" for k, v in sorted(merged.items()))
+            if merged else "")
+
+    lines = raw.splitlines(keepends=True)
+    at = next((i for i, l in enumerate(lines) if is_marker(l)), None)
+    if at is not None:
+        eol = lines[at][len(lines[at].rstrip("\r\n")):] or "\n"
+        if text:
+            lines[at] = text + eol
+        else:
+            del lines[at]
+        return "".join(lines)
+    if not text:
+        return raw
+    at = next((i for i, l in enumerate(lines) if line_key(l) == "type"), None)
+    if at is None:
+        return raw
+    eol = lines[at][len(lines[at].rstrip("\r\n")):] or "\n"
+    lines.insert(at, text + eol)
+    return "".join(lines)
+
+
 def _parse_block(raw: str) -> Unit:
     u = Unit(raw=raw)
+    meta = marker_fields(raw)
+    u.tier, u.variant = meta.get("tier", ""), meta.get("variant", "")
+    u.order = meta.get("order", "")
     for line in raw.splitlines():
         s = line.strip()
         if not s or s.startswith(";"):
@@ -299,11 +384,15 @@ def parse_text(text: str) -> EduFile:
     # Find block boundaries: a line whose first non-space token is `type`.
     starts: List[int] = []
     for idx, line in enumerate(lines):
-        s = line.lstrip()
+        # `without_bom`: an EDU that opens on a `type` line rather than a comment
+        # loses its FIRST unit, silently, if the file carries a byte-order mark.
+        s = kb.without_bom(line.lstrip())
         if s.startswith("type") and (len(s) == 4 or s[4].isspace()):
             # not a comment line
             if not line.lstrip().startswith(";"):
-                starts.append(idx)
+                # A marker directly above `type` belongs to THIS unit, not the
+                # one before it — see :data:`MARKER`.
+                starts.append(idx - 1 if idx and is_marker(lines[idx - 1]) else idx)
     if not starts:
         return EduFile(preamble=text, units=[])
 
@@ -407,6 +496,31 @@ def block_fields(raw: str):
         label = k if counts[k] == 1 else f"{k}#{counts[k]}"
         pairs.append((label, after))
     return pairs
+
+
+def block_spans(raw: str) -> Dict[str, List[List[int]]]:
+    """Map each :func:`block_fields` label to the block line(s) it occupies.
+
+    Lines are 1-based and inclusive, counted from the start of the block, and a
+    span is ``[first, last]`` — one line per EDU field today, but the shape is a
+    range because Code View is shared with formats whose fields wrap.
+
+    This is the other half of :func:`block_fields`: same labels, same skipping of
+    comments and blanks, so the two can be zipped by label without a second parse.
+    """
+    spans: Dict[str, List[List[int]]] = {}
+    counts: dict[str, int] = {}
+    for i, line in enumerate(raw.splitlines(), 1):
+        s = line.strip()
+        if not s or s.startswith(";"):
+            continue
+        k, _ = _split_fields(line)
+        if not k:
+            continue
+        counts[k] = counts.get(k, 0) + 1
+        label = k if counts[k] == 1 else f"{k}#{counts[k]}"
+        spans.setdefault(label, []).append([i, i])
+    return spans
 
 
 def line_key(line: str) -> str:

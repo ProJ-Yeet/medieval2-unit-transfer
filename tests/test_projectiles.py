@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from unittransfer import config, edu, projectiles
+from unittransfer import keyblock as kb
 from unittransfer.mod import Mod
 from unittransfer.transfer import (TransferOptions, apply_transfer,
                                    plan_transfer, undo)
@@ -70,7 +71,7 @@ print("== parser ==")
 pf = src.projectile_file
 check("parsed many projectiles", len(pf.projectiles) > 50)
 check("descr_projectile round-trips byte-exact",
-      pf.to_text() == (TATR / "data/descr_projectile.txt").read_text(encoding=projectiles.ENCODING))
+      pf.to_text() == kb.read_text(TATR / "data/descr_projectile.txt", projectiles.ENCODING))
 
 # find an add-case: missile unit whose projectile is absent from DaC with >=1 effect
 # the dest lacks (so the placeholder kicks in)
@@ -130,7 +131,7 @@ if np:
             check(f"physics line '{key}' preserved",
                   field_of(np.raw, key) == field_of(sp.raw, key))
 check("descr_projectile round-trips after write",
-      after.to_text() == (data / "descr_projectile.txt").read_text(encoding=projectiles.ENCODING))
+      after.to_text() == kb.read_text(data / "descr_projectile.txt", projectiles.ENCODING))
 # .cas models copied
 for rel in sp.models:
     check(f"projectile model copied: {rel}", (data / rel).exists())

@@ -5,7 +5,7 @@ Third_Age_Reforged) and drives /api/edit/unit -> /api/edit/plan ->
 /api/edit/apply -> /api/undo with the same JSON payloads the page sends, so a
 mismatch between the UI's request shape and the engine is caught here.
 """
-import json, shutil, sys, tempfile, threading, urllib.request
+import json, shutil, sys, tempfile, threading, urllib.error, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,8 +163,33 @@ try:
     check("mesh copied in", (data / "unit_models/_http_test/http_test.mesh").read_bytes() == b"MESH-HTTP")
     check("texture copied in", (data / "unit_models/_http_test/http_test.texture").read_bytes() == b"TEX-HTTP")
 
-    log = get("/api/log")
-    check("log entry is an edit", log and log[-1]["mode"] == "edit" and log[-1]["id"] == tid)
+    # /api/log answers with a PAGE, newest first (Phase 14b): the whole log used
+    # to be sent for a panel that shows about six entries.
+    page = get("/api/log")
+    newest = (page["entries"] or [None])[0]
+    check("log entry is an edit", newest and newest["mode"] == "edit" and newest["id"] == tid)
+    check("the page says how much log there is", page["total"] >= 1
+          and page["counts"].get("edit", 0) >= 1)
+
+    # ---- "Open file location" only ever points inside the mod ----
+    # Only the refusals are exercised: a reveal that succeeds opens a real
+    # Explorer window, which a test suite has no business doing. The refusals
+    # are the half that matters anyway — the page hands over a path, and this is
+    # what stops that path being anywhere at all.
+    r = post("/api/reveal", {"mod": "TestMod", "rel": "../../../../Windows"})
+    check("a rel that climbs out of the mod is refused",
+          r.get("ok") is False and "not inside the mod" in r.get("error", ""))
+    r = post("/api/reveal", {"mod": "TestMod", "rel": "C:/Windows/System32"})
+    check("…and so is an absolute path smuggled in as one",
+          r.get("ok") is False and "not inside the mod" in r.get("error", ""))
+    r = post("/api/reveal", {"mod": "TestMod", "rel": "ui/units/england/#nobody.tga"})
+    check("a file that is not there says so rather than opening something else",
+          r.get("ok") is False and "not there" in r.get("error", ""))
+    try:
+        post("/api/reveal", {"mod": "NoSuchMod", "rel": "export_descr_unit.txt"})
+        check("an unknown mod is a 404", False)
+    except urllib.error.HTTPError as e:
+        check("an unknown mod is a 404", e.code == 404)
 
     undone = post("/api/undo", {"id": tid})
     check("undo reported", undone.get("undone"))

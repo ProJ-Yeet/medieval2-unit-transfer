@@ -32,8 +32,14 @@ from unittransfer import config, modeldb
 from unittransfer.mod import Mod
 from unittransfer.transfer import TransferOptions, plan_transfer, apply_transfer
 
-MODS = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
-SRC, DST = MODS / "Third_Age_6", MODS / "Divide_and_Conquer_EUR"
+from tests._realmod import pick
+
+# A source with mounted units and a destination to copy into. The names below
+# are the pair this was written against; either falls back to whatever is
+# installed, so the run says what it proved instead of dying on a missing mod.
+DST = pick("Divide_and_Conquer_EUR", need="export_descr_unit.txt")
+SRC = pick("Third_Age_6", "Third_Age_Reforged", exclude=[DST],
+           need="export_descr_unit.txt")
 
 ok = []
 def check(label, cond):
@@ -134,7 +140,13 @@ print("\n=== C: the copied mount's animations ===")
 src_entry = src.modeldb.get(mount_model)
 before = Mod(dest_root)          # re-read: apply_transfer wrote the file
 donor = before.modeldb.get((before.mount_model(base.mount) or "").lower())
-copied = before.modeldb.get(mount_model)
+# The copy is looked up under the name it ENDED with, not the one it arrived
+# with. A destination that already owns an entry of that name keeps its own —
+# DaC has its own `mount_sauron` — and the incoming one is renamed out of the
+# way, so `mount_model` here would find the destination's untouched entry and
+# report the swap as having silently not happened.
+final_model = (before.mount_model(new_unit.mount) or mount_model).lower()
+copied = before.modeldb.get(final_model)
 check("the swap is reported", plan.mount_anim_donor == donor.name)
 check("it names the skeletons that were missing",
       all(s not in Mod(dest_root).modeldb.all_skeletons() or True

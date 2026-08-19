@@ -186,7 +186,7 @@ try:
           and not junk.exists())
     check("a README explains how to put it back", (target / "README.txt").is_file())
 
-    log = get("/api/log")
+    log = get("/api/log")["entries"]        # a page of it, newest first (Phase 14b)
     rec = next(e for e in log if e["id"] == ca["record"]["id"])
     check("the log names it a cleanup", rec["mode"] == "bmdb" and rec["action"] == "cleanup")
     check("and remembers where the assets went", rec.get("export_root") == str(target))

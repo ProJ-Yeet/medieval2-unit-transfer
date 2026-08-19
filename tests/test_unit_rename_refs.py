@@ -24,8 +24,12 @@ from unittransfer import config, edit, unitrefs
 from unittransfer.mod import Mod
 from unittransfer.transfer import undo
 
-MODS = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
-REAL = MODS / "Third_Age_6"
+from tests._realmod import pick
+
+# Section C measures a real mod's files. Third_Age_6 is what it was written
+# against; any installed mod with a modeldb answers the same questions.
+REAL = pick("Third_Age_6", "Third_Age_Reforged",
+            need="unit_models/battle_models.modeldb")
 
 ok = []
 def check(label, cond):
@@ -223,7 +227,13 @@ check(f"{len(paths)} files scanned in {real.name}", len(paths) > 20)
 check("export_descr_buildings.txt is among them", "export_descr_buildings.txt" in names)
 check("a campaign_script.txt is among them", "campaign_script.txt" in names)
 check("descr_strat.txt is among them", "descr_strat.txt" in names)
-check("some .lua is among them", any(n.endswith(".lua") for n in names))
+# Not every mod runs M2TWEOP. Whether this one ships Lua is the mod's business;
+# what is ours is that the scan picks up whatever it does ship.
+if real.lua_files:
+    check(f"all {len(real.lua_files)} .lua script(s) are among them",
+          sum(n.endswith(".lua") for n in names) == len(real.lua_files))
+else:
+    print(f"  [ -- ] {real.name} ships no .lua scripts — nothing to scan for")
 check("export_descr_unit.txt is not", "export_descr_unit.txt" not in names)
 check("data/text/ is not scanned (UTF-16, keyed by dictionary)",
       not any("text" in p.parts and p.name == "export_units.txt" for p in paths))

@@ -32,8 +32,12 @@ from unittransfer.mod import Mod
 from unittransfer.transfer import (TransferOptions, apply_transfer, plan_transfer,
                                    undo)
 
-MODS = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
-SRC_MOD, DST_MOD = MODS / "Third_Age_6", MODS / "Divide_and_Conquer_EUR"
+from tests._realmod import pick
+
+# See test_mount_base_import: preferred names, whatever is installed otherwise.
+DST_MOD = pick("Divide_and_Conquer_EUR", need="export_descr_unit.txt")
+SRC_MOD = pick("Third_Age_6", "Third_Age_Reforged", exclude=[DST_MOD],
+               need="export_descr_unit.txt")
 
 ok = []
 
@@ -157,9 +161,14 @@ shutil.rmtree(dest_root, ignore_errors=True)
 # ---- 4) keeping the officer / upgrade groups --------------------------------
 dest_root = fresh_dest()
 dest = Mod(dest_root)
+# `import_officers_with_base` is ON by default, and it means "from base" brings
+# the SOURCE's officers over with the base's animations instead — which drops
+# `officer` from the kept groups on purpose (transfer.py, officer_base_import).
+# That path is test_mount_base_import's; this section is the literal keep.
 plan = plan_transfer(src, UNIT, dest,
                      TransferOptions(mode="replace", replace_type=TARGET,
-                                     officer_from="base", upgrade_from="base"))
+                                     officer_from="base", upgrade_from="base",
+                                     import_officers_with_base=False))
 check("kept groups recorded", set(plan.base_field_groups) >= {"officer", "armour_ug_models"})
 apply_transfer(plan)
 new = edu.parse_file(dest_root / "data/export_descr_unit.txt").by_type()[TARGET]

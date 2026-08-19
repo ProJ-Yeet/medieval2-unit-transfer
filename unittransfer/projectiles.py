@@ -31,6 +31,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from . import keyblock as kb
+
 ENCODING = "latin-1"
 
 # The projectile fields that reference an effect-set (and thus get the placeholder
@@ -147,7 +149,12 @@ def parse_file(path: str | Path) -> ProjectileFile:
     p = Path(path)
     if not p.exists():
         return ProjectileFile()
-    return parse_text(p.read_text(encoding=ENCODING))
+    # Read WITHOUT letting the platform decide what a line ending is: `to_text`
+    # is a pure splice of these raws, so whatever comes in goes back out. With
+    # universal newlines a file mixing CRLF and lone LF (Third Age Reforged
+    # ships one) came back longer than it went in, which is the one thing these
+    # modules promise not to do.
+    return parse_text(kb.read_text(p, ENCODING))
 
 
 def unique_projectile_name(base: str, taken, tag: str = "") -> str:

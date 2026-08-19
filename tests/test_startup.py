@@ -23,6 +23,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import tempfile
 import time
 import urllib.request
@@ -244,6 +245,108 @@ except Exception:
     pass
 time.sleep(2)
 check("Quit stopped the detached server", ping(lport) is None)
+
+# ---- restart in place (Phase 14c) ---------------------------------------
+print("\n== handing the port over to a replacement server ==")
+# "Keep the console window open" is read once, at launch, so a running session
+# could never grow a console — which read as the setting being broken. A restart
+# in place applies it, and it turns on this handover: the replacement starts
+# first and waits, because the server it replaces cannot stop before it has
+# answered the request that asked it to.
+spare = free_port()
+check("a port nothing holds is free at once", startup.port_free(spare))
+check("…and wait_for_port says so immediately",
+      startup.wait_for_port(spare, timeout=1.0))
+
+held = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+held.bind(("127.0.0.1", 0))
+held.listen(8)
+held_port = held.getsockname()[1]
+check("a port with a listener on it is NOT free", not startup.port_free(held_port))
+
+# The question is "could a server bind this?", and only binding answers it: with a
+# timeout set, connect_ex returns WSAEWOULDBLOCK for a closed port AND for a
+# listener whose accept queue is full, and this machine times out on a closed
+# loopback port rather than refusing. Both of those used to read as "free".
+stuck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+stuck.bind(("127.0.0.1", 0))
+stuck.listen(1)
+stuck_port = stuck.getsockname()[1]
+for _ in range(4):
+    try:
+        socket.create_connection(("127.0.0.1", stuck_port), timeout=0.2)
+    except OSError:
+        pass
+check("a listener that has stopped answering is still NOT free",
+      not startup.port_free(stuck_port))
+stuck.close()
+
+t0 = time.time()
+check("waiting on a held port gives up rather than handing it over",
+      not startup.wait_for_port(held_port, timeout=1.0) and time.time() - t0 >= 0.9)
+
+threading.Thread(target=lambda: (time.sleep(1.0), held.close()), daemon=True).start()
+t0 = time.time()
+check("and it returns as soon as the port is let go",
+      startup.wait_for_port(held_port, timeout=10.0) and time.time() - t0 < 5)
+
+# a console child must run on the console interpreter, or its output has nowhere
+# to go — pythonw.exe would swallow the very thing the setting asks to see
+if sys.platform == "win32":
+    import subprocess as _sp
+    seen = {}
+
+    def _fake_popen(cmd, **kw):
+        seen.update(cmd=cmd, flags=kw.get("creationflags"), out=kw.get("stdout"))
+        raise OSError("not really starting anything")
+
+    real_popen = _sp.Popen
+    _sp.Popen = _fake_popen
+    try:
+        for want_console in (True, False):
+            try:
+                startup.spawn_server(ROOT / "app.py", ["--port", "1", "--wait-port"],
+                                     console=want_console)
+            except OSError:
+                pass
+            if want_console:
+                check("a console restart runs python.exe, not pythonw.exe",
+                      "pythonw" not in seen["cmd"][0].lower())
+                check("…with a console of its own, inheriting its handles",
+                      bool(seen["flags"] & _sp.CREATE_NEW_CONSOLE) and seen["out"] is None)
+            else:
+                check("a windowless restart is detached and silenced",
+                      bool(seen["flags"] & _sp.DETACHED_PROCESS)
+                      and seen["out"] == _sp.DEVNULL)
+            check(f"either way it passes --wait-port (console={want_console})",
+                  "--wait-port" in seen["cmd"])
+    finally:
+        _sp.Popen = real_popen
+
+
+# ---- the exit code the launcher reads (Phase 14c) -----------------------
+print("\n== a failed check exits with its own code, so the .bat can say so ==")
+import app as app_mod                                                # noqa: E402
+
+_real_preflight = startup.preflight
+startup.preflight = lambda port, web: [
+    startup.Check("pretend check", False, "failed on purpose", fatal=True)]
+try:
+    rc_fail = app_mod.main(["--check"])
+finally:
+    startup.preflight = _real_preflight
+check("a failed startup check exits EXIT_PREFLIGHT (2), not 1",
+      rc_fail == app_mod.EXIT_PREFLIGHT == 2)
+check("a passing run still exits 0", app_mod.main(["--check"]) == 0)
+# The launcher branches on that number: it used to print "Pillow is missing" for
+# every non-zero code, right underneath the real reason.
+bat = (ROOT / "Launch-Medieval2-GUI-Toolkit.bat").read_text(encoding="utf-8",
+                                                            errors="replace")
+check("the launcher has a branch for code 2", '"%RC%"=="2"' in bat)
+check("…and no longer guesses at the cause",
+      "Common causes" not in bat and "Pillow is missing      -" not in bat)
+check("it points at the printed checks instead",
+      "marked FAIL" in bat and "config\\server.log" in bat)
 
 if saved is not None:
     config.save_settings(show_console=saved)

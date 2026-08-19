@@ -228,16 +228,70 @@ def _pythonw() -> str:
     return str(exe)
 
 
-def spawn_server(app_path: Path, args: List[str]) -> subprocess.Popen:
-    """Start the server as a DETACHED child that outlives this console."""
+def port_free(port: int, host: str = "127.0.0.1") -> bool:
+    """True when this process could BIND ``port`` right now.
+
+    Asked by binding rather than connecting, because connecting cannot answer it.
+    With a timeout set, ``connect_ex`` returns ``WSAEWOULDBLOCK`` both for a
+    closed port and for a listener whose accept queue is full; and on a machine
+    that filters loopback, a *closed* port times out instead of refusing — so
+    "the connection failed" means neither free nor held. Binding is the actual
+    question a starting server asks, and the OS answers it exactly.
+
+    Deliberately without ``SO_REUSEADDR``: on Windows that would let this bind a
+    port another server is still serving, which is the one thing this must never
+    report as free.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((host, port))
+            return True
+        except OSError:
+            return False
+
+
+def wait_for_port(port: int, host: str = "127.0.0.1",
+                  timeout: float = 20.0) -> bool:
+    """Block until nothing is listening on ``port``. True if it came free.
+
+    Used by a restart in place: the server handing the port over cannot stop
+    before it has answered the request asking it to, so its replacement starts
+    first and waits here for the handover.
+    """
+    deadline = time.time() + timeout
+    while True:
+        if port_free(port, host):
+            return True
+        if time.time() >= deadline:
+            return False
+        time.sleep(0.25)
+
+
+def spawn_server(app_path: Path, args: List[str],
+                 console: bool = False) -> subprocess.Popen:
+    """Start the server as a DETACHED child that outlives this console.
+
+    ``console=True`` gives the child a console window of its own, and runs it on
+    the console interpreter so its output actually lands there. That is what
+    "Keep the console window open" does to a session that is *already* running:
+    the setting is read once, at launch, so switching it used to do nothing until
+    the next one — which reads as the setting being broken.
+    """
     flags = 0
+    exe = _pythonw()
+    io = subprocess.DEVNULL
     if os.name == "nt":
-        flags = (getattr(subprocess, "DETACHED_PROCESS", 0)
-                 | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+        group = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        if console:
+            flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0) | group
+            exe = sys.executable        # pythonw.exe would have nothing to write to
+            io = None                   # inherit the new console's own handles
+        else:
+            flags = getattr(subprocess, "DETACHED_PROCESS", 0) | group
     return subprocess.Popen(
-        [_pythonw(), str(app_path), "--serve", *args],
+        [exe, str(app_path), "--serve", *args],
         cwd=str(app_path.parent), creationflags=flags, close_fds=True,
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdin=subprocess.DEVNULL, stdout=io, stderr=io)
 
 
 def follow_until_ready(proc: subprocess.Popen, offset: int,

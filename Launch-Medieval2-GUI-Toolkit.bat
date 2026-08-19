@@ -1,8 +1,8 @@
 @echo off
 setlocal
-title Unit Transfer
+title Medieval 2 GUI Toolkit
 
-rem Launch the Unit Transfer tool. Runs from this file's own folder, so it works
+rem Launch the Medieval 2 GUI Toolkit. Runs from this file's own folder, so it works
 rem no matter where the shortcut is invoked from. Any arguments (e.g. a MED2 root
 rem path, or "--port 9000") are passed straight through to app.py.
 cd /d "%~dp0"
@@ -19,7 +19,7 @@ call :find_python
 if not defined PY (
     echo.
     echo ============================================================
-    echo  Unit Transfer could not start: Python was not found.
+    echo  Medieval 2 GUI Toolkit could not start: Python was not found.
     echo ============================================================
     echo.
     echo Python is not installed, or was installed without being added to PATH.
@@ -82,22 +82,36 @@ if "%RC%"=="0" (
 echo.
 if "%RC%"=="3" (
     echo ============================================================
-    echo  Unit Transfer IS RUNNING - but no browser opened by itself.
+    echo  Medieval 2 GUI Toolkit IS RUNNING - but no browser opened by itself.
     echo ============================================================
     echo.
     echo  Open this address in your browser:   http://127.0.0.1:8756/
     echo.
     echo  Keep this window open while you use the tool, or use the Quit
     echo  button in the tool's settings to stop it.
-) else (
+) else if "%RC%"=="2" (
+    rem Code 2 = a startup check failed. The checks have just printed above, each
+    rem with its own reason, so this window must point AT them. It used to print
+    rem "Pillow is missing -^> pip install pillow" for every failure whatever the
+    rem real cause was, which put a wrong reason directly under the right one.
     echo ============================================================
-    echo  Unit Transfer exited with an error ^(code %RC%^).
+    echo  Medieval 2 GUI Toolkit could not start - a startup check failed.
     echo ============================================================
     echo.
-    echo  Common causes:
-    echo    * Pillow is missing      -^>  pip install pillow
-    echo    * Port 8756 is taken     -^>  run: Launch-Unit-Transfer.bat --port 8757
-    echo    * The MED2 root moved    -^>  reset it in the UI's settings
+    echo  The reason is in the list above: look for the lines marked FAIL.
+    echo  Nothing was changed on your PC.
+    echo.
+    echo  Full log: config\server.log
+    echo  Re-run just the checks:  %PY% app.py --check
+) else (
+    echo ============================================================
+    echo  Medieval 2 GUI Toolkit stopped unexpectedly ^(code %RC%^).
+    echo ============================================================
+    echo.
+    echo  The startup checks passed, so this is not a missing library or a
+    echo  taken port - something failed while it was running. The log has the
+    echo  full traceback, and the Save diagnostic log button in the tool's
+    echo  log section packages it up.
     echo.
     echo  Full log: config\server.log
     echo  Re-run just the checks:  %PY% app.py --check

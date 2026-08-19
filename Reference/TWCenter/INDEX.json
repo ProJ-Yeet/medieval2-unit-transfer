@@ -1,0 +1,8480 @@
+{
+ "archive": "TWCenter",
+ "documents": [
+  {
+   "path": "(FIX) EDCT_ WhenToTest BecomesFactionLeader causes crashes.pdf",
+   "title": "(FIX) EDCT WhenToTest BecomesFactionLeader causes crashes",
+   "ext": "pdf",
+   "kb": 2739,
+   "tags": [
+    "troubleshooting",
+    "traits",
+    "factions"
+   ],
+   "game_files": [],
+   "summary": "I have been investigating a crash together with Kull, where the game crashes when the faction leader gets killed in the",
+   "chars": 22162,
+   "attachments": [],
+   "phases": [
+    "8",
+    "11"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/29 Factions on Display/text/menu_english.txt",
+   "title": "menu english",
+   "ext": "txt",
+   "kb": 126,
+   "tags": [],
+   "game_files": [],
+   "summary": "{UI_ADVICE_CUSTOM_ARMY}Drag unit cards from the top list to the bottom list to add units to your army. The first slot is reserved for the generals unit. Select the faction symbols to view the other armies.",
+   "chars": 59994,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/4gb_patch/instructions to use.txt",
+   "title": "instructions to use",
+   "ext": "txt",
+   "kb": 0,
+   "tags": [
+    "tools",
+    "installation"
+   ],
+   "game_files": [],
+   "summary": "Instructions by Werety for https://ntcore.com/4gb-patch",
+   "chars": 228,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/[Resource] Creating a World - Bare Geomod/[Resource] Creating a World - Bare Geomod.pdf",
+   "title": "Creating a World - Bare Geomod",
+   "ext": "pdf",
+   "kb": 6031,
+   "tags": [
+    "campaign-map",
+    "resources",
+    "factions",
+    "projectiles",
+    "installation",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_shortcut.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_cursor_actions_battle_classic.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Kingdoms Geomod Base Folder - a mod folder based on Medieval 2 'Vanilla' for use with the Geomod tool.",
+   "chars": 21617,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/[Tool] Creating a World - Fixing the 'Block Graphic' Bug/[Tool] Creating a World - Fixing the 'Block Graphic' Bug.pdf",
+   "title": "[Tool] Creating a World - Fixing the 'Block Graphic' Bug",
+   "ext": "pdf",
+   "kb": 3162,
+   "tags": [
+    "tools"
+   ],
+   "game_files": [
+    {
+     "file": "strategy.sd",
+     "hits": 2
+    },
+    {
+     "file": "shared.txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "strat.txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "tooltips.txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "shared.sd",
+     "hits": 1
+    },
+    {
+     "file": "txt.strings.bin",
+     "hits": 1
+    }
+   ],
+   "summary": "A couple of times I have come across a member's post with this problem:",
+   "chars": 6620,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/[Tool] TWTECV_ TW Text Editor, Cleaner & Validator v1.20/[Tool] TWTECV_ TW Text Editor, Cleaner & Validator v1.20.pdf",
+   "title": "[Tool] TWTECV TW Text Editor, Cleaner & Validator v1.20",
+   "ext": "pdf",
+   "kb": 4109,
+   "tags": [
+    "tools",
+    "buildings",
+    "traits",
+    "mercenaries",
+    "installation",
+    "factions"
+   ],
+   "game_files": [
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings_enums.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_faction_standing.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_advice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_guilds.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "effectconfigs.cfg",
+     "hits": 1
+    },
+    {
+     "file": "effects_xxx.cfg",
+     "hits": 1
+    },
+    {
+     "file": "combatvconfigs.cfg",
+     "hits": 1
+    },
+    {
+     "file": "effectscombatv_xxx.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "WARNING: versions prior to v1.9 have a serious flaw: semicolon \";\" characters are treated as comment",
+   "chars": 23429,
+   "attachments": [],
+   "phases": [
+    "8",
+    "11",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Adding a new Faction/creating a world - adding a new faction.pdf",
+   "title": "creating a world - adding a new faction",
+   "ext": "pdf",
+   "kb": 437,
+   "tags": [
+    "factions",
+    "models-3d",
+    "characters",
+    "units",
+    "installation",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_lbc_db.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "descr_faction_movies.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "symbol_turks.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_carthage_rebel.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_standards.txt",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod3.mesh",
+     "hits": 1
+    },
+    {
+     "file": "shared.sd",
+     "hits": 1
+    },
+    {
+     "file": "strategy.sd",
+     "hits": 1
+    },
+    {
+     "file": "configuration.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "Tools used in this endeavour ............................................................................................................................................ 2",
+   "chars": 27757,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Alletun's Tome of Knowledge v1.3/Alletun's Tome of Knowledge v1.3.pdf",
+   "title": "Alletun's Tome of Knowledge v1.3",
+   "ext": "pdf",
+   "kb": 4644,
+   "tags": [
+    "units",
+    "textures",
+    "models-3d",
+    "sprites",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "wrathnorsemen.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "armored_swordsmen_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "armored_swordsmen_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "armored_swordsmen_lod2.mesh",
+     "hits": 1
+    }
+   ],
+   "summary": "You may not copy this book in whole or in parts",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "12",
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/BinEditor/The BinEditor Manual.pdf",
+   "title": "The BinEditor Manual",
+   "ext": "pdf",
+   "kb": 606,
+   "tags": [
+    "tools",
+    "strings"
+   ],
+   "game_files": [],
+   "summary": "Getting started .............................................................................................................................................. 3",
+   "chars": 7273,
+   "attachments": [],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Bovine Check TOOL/[Tool] Bovine M2TW Checker.pdf",
+   "title": "[Tool] Bovine M2TW Checker",
+   "ext": "pdf",
+   "kb": 2410,
+   "tags": [
+    "sounds",
+    "traits",
+    "tools",
+    "ancillaries",
+    "units",
+    "models-3d",
+    "installation",
+    "buildings",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mount.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_advice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_narration.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_soldier_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_stratmap_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_units_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "hr_sword_fs_horse_die_refusing_modified.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "Note that the date stated on the download page says it is from August 2018, but this is not true. I have been updating it",
+   "chars": 26599,
+   "attachments": [],
+   "phases": [
+    "8",
+    "9",
+    "12",
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Creating a World - converted battle, tooltips, shared and strat TXT files/strat.txt",
+   "title": "strat",
+   "ext": "txt",
+   "kb": 185,
+   "tags": [
+    "tools",
+    "characters"
+   ],
+   "game_files": [],
+   "summary": "{SMT_NIGHT_ATTACK}Attempt a night attack",
+   "chars": 71968,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Creating a World - converted battle, tooltips, shared and strat TXT files/battle.txt",
+    "--- TOOLS n RESOURCES ---/Creating a World - converted battle, tooltips, shared and strat TXT files/shared.txt",
+    "--- TOOLS n RESOURCES ---/Creating a World - converted battle, tooltips, shared and strat TXT files/tooltips.txt"
+   ],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/m2_sd_editor/shared_sd_desc.txt",
+   "title": "shared sd desc",
+   "ext": "txt",
+   "kb": 43,
+   "tags": [
+    "tools",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "shared.sd",
+     "hits": 2
+    },
+    {
+     "file": "strategy.sd",
+     "hits": 2
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    }
+   ],
+   "summary": "In order to use this tool, you need to download and install Python 2.5 from http://www.python.org/downloads first",
+   "chars": 52861,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/m2_sd_editor/battle_sd_desc.txt",
+    "--- TOOLS n RESOURCES ---/m2_sd_editor/modpage_shared.txt",
+    "--- TOOLS n RESOURCES ---/m2_sd_editor/modpage_strat.txt",
+    "--- TOOLS n RESOURCES ---/m2_sd_editor/ReadMe sd_converter 1.0.txt",
+    "--- TOOLS n RESOURCES ---/m2_sd_editor/strategy_sd_desc.txt"
+   ],
+   "phases": []
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Mapmod_1.7 by Charge/DATA/descr_climates.txt",
+   "title": "descr climates",
+   "ext": "txt",
+   "kb": 10,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "cypress_a_impassable.cas",
+     "hits": 13
+    },
+    {
+     "file": "birch_a.cas",
+     "hits": 12
+    },
+    {
+     "file": "cypress_a_impassable_winter.cas",
+     "hits": 10
+    },
+    {
+     "file": "deciduous_a.cas",
+     "hits": 9
+    },
+    {
+     "file": "cypress_a.cas",
+     "hits": 8
+    },
+    {
+     "file": "birch_a_winter.cas",
+     "hits": 8
+    },
+    {
+     "file": "conifer_a.cas",
+     "hits": 7
+    },
+    {
+     "file": "conifer_a_winter.cas",
+     "hits": 7
+    },
+    {
+     "file": "palm_b.cas",
+     "hits": 6
+    },
+    {
+     "file": "conifer_a_impassable.cas",
+     "hits": 6
+    },
+    {
+     "file": "conifer_a_impassable_winter.cas",
+     "hits": 6
+    },
+    {
+     "file": "descr_climates.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_aerial_map_ground_types.txt",
+     "hits": 5
+    },
+    {
+     "file": "deciduous_a_winter.cas",
+     "hits": 5
+    },
+    {
+     "file": "cypress_a_winter.cas",
+     "hits": 5
+    },
+    {
+     "file": "olive_a.cas",
+     "hits": 4
+    },
+    {
+     "file": "tropical_group_b.cas",
+     "hits": 4
+    },
+    {
+     "file": "olive_a_impassable.cas",
+     "hits": 3
+    },
+    {
+     "file": "palm_a.cas",
+     "hits": 3
+    },
+    {
+     "file": "palm_small_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "palm_small_b.cas",
+     "hits": 2
+    },
+    {
+     "file": "tropical_group_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "olive_winter.cas",
+     "hits": 1
+    },
+    {
+     "file": "olive_impassable_winter.cas",
+     "hits": 1
+    },
+    {
+     "file": "conifer_a_canopy.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "; heat range 1-4 (zero would mean no armour effects to fatigue at all)",
+   "chars": 14358,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Mapmod_1.7 by Charge/DATA/descr_aerial_map_ground_types.txt"
+   ],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Mapmod_1.7 by Charge/Readme.txt",
+   "title": "Readme",
+   "ext": "txt",
+   "kb": 2,
+   "tags": [],
+   "game_files": [
+    {
+     "file": "descr_aerial_map_ground_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_climates.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "1) for easier further operations with files make folder named [insert your choice] in the M2/Data.",
+   "chars": 1738,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Medieval II Animation packs for improving 2-handers/UpdatedSkeleton/Custom skeleton - all units/descr_skeleton.txt",
+   "title": "descr skeleton",
+   "ext": "txt",
+   "kb": 575,
+   "tags": [
+    "units",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 5
+    },
+    {
+     "file": "navy_selected.cas",
+     "hits": 5
+    },
+    {
+     "file": "idle.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_princess_stand_a_turn_90_ccw.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_merchant_stand_a_idle_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "reverse.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_quicksail.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_static2die.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_preist_stand_a_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "loop.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_general_stand_a_idle_selected.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_walk_backward_to_stand_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_die_backward_2.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_merchant_stand_a_turn_90_cw.cas",
+     "hits": 2
+    }
+   ],
+   "summary": "; This file contains the animation linkages; it gets parsed on application startup but is not otherwise",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Medieval II Animation packs for improving 2-handers/UpdatedSkeleton/Experimental Animations - No shuffleBack/descr_skeleton.txt",
+   "title": "descr skeleton",
+   "ext": "txt",
+   "kb": 629,
+   "tags": [
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 5
+    },
+    {
+     "file": "navy_selected.cas",
+     "hits": 5
+    },
+    {
+     "file": "idle.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_princess_stand_a_turn_90_ccw.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_merchant_stand_a_idle_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "reverse.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_quicksail.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_static2die.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_preist_stand_a_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "loop.cas",
+     "hits": 3
+    },
+    {
+     "file": "mtw2_2h_axe_knockback_move_from_front.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_general_stand_a_idle_selected.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_walk_backward_to_stand_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_die_backward_2.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_backward_1.cas",
+     "hits": 2
+    }
+   ],
+   "summary": "; This file contains the animation linkages; it gets parsed on application startup but is not otherwise",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Medieval II Animation packs for improving 2-handers/UpdatedSkeleton/NoPush+Halberds/descr_skeleton.txt",
+   "title": "descr skeleton",
+   "ext": "txt",
+   "kb": 611,
+   "tags": [
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 5
+    },
+    {
+     "file": "navy_selected.cas",
+     "hits": 5
+    },
+    {
+     "file": "idle.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_princess_stand_a_turn_90_ccw.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_merchant_stand_a_idle_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "reverse.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_quicksail.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_static2die.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_preist_stand_a_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "loop.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_general_stand_a_idle_selected.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_walk_backward_to_stand_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_die_backward_2.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_merchant_stand_a_turn_90_cw.cas",
+     "hits": 2
+    }
+   ],
+   "summary": "; This file contains the animation linkages; it gets parsed on application startup but is not otherwise",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Medieval II Animation packs for improving 2-handers/UpdatedSkeleton/NoPush+HalberdsNoShuffleBack/descr_skeleton.txt",
+   "title": "descr skeleton",
+   "ext": "txt",
+   "kb": 611,
+   "tags": [
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 5
+    },
+    {
+     "file": "navy_selected.cas",
+     "hits": 5
+    },
+    {
+     "file": "idle.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_princess_stand_a_turn_90_ccw.cas",
+     "hits": 4
+    },
+    {
+     "file": "strat_merchant_stand_a_idle_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "reverse.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_quicksail.cas",
+     "hits": 3
+    },
+    {
+     "file": "navy_static2die.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_preist_stand_a_selected.cas",
+     "hits": 3
+    },
+    {
+     "file": "loop.cas",
+     "hits": 3
+    },
+    {
+     "file": "strat_general_stand_a_idle_selected.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_walk_backward_to_stand_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_general_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_spy_die_backward_2.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_die_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_assassin_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_cw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_stand_a_turn_90_ccw.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_diplomat_backward_1.cas",
+     "hits": 2
+    },
+    {
+     "file": "strat_merchant_stand_a_turn_90_cw.cas",
+     "hits": 2
+    }
+   ],
+   "summary": "; This file contains the animation linkages; it gets parsed on application startup but is not otherwise",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/strings_bin_converter_0_7_2/ReadMe strings_bin_converter_0_7_2.txt",
+   "title": "ReadMe strings bin converter 0 7 2",
+   "ext": "txt",
+   "kb": 3,
+   "tags": [
+    "strings",
+    "tools"
+   ],
+   "game_files": [
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "alpaca's MTW2 .strings.bin converter, version 0.7",
+   "chars": 2806,
+   "attachments": [],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/strings_bin_converter_0_7_2/strings_bin_converter_0_7_2/Python Release Python 2.5.1 _ Python.org.html",
+   "title": "Python Release Python 2.5.1 Python.org",
+   "ext": "html",
+   "kb": 45,
+   "tags": [
+    "strings",
+    "tools"
+   ],
+   "game_files": [
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Notice: Your browser is ancient . Please",
+   "chars": 11435,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/strings_bin_converter_0_7_2/strings_bin_converter_0_7_2/ReadMe strings_bin_converter_0_7_2.txt"
+   ],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base Script/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 2,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 1695,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base Script/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 2,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 1692,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/Kingdoms/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 7056,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/Kingdoms/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/Kingdoms/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/M2TW/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 7053,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/M2TW/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Base with Traits/M2TW/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 6,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 9992,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/Kingdoms/export_descr_character_traits.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/Kingdoms/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/Kingdoms/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 6,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 10114,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/M2/export_descr_character_traits.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/M2/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Random Winter with Traits/M2/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Randomized Winter/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 5211,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Randomized Winter/Kingdoms/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Randomized Winter/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 12 turns per year, characters age in December",
+   "chars": 5555,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/12 Turns/Randomized Winter/M2/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base Script/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 1,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 4 turns per year, characters age in 1st Quarter",
+   "chars": 1077,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base Script/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 1,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 4 turns per year, characters age in 1st Quarter",
+   "chars": 1074,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/Kingdoms/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 6375,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/Kingdoms/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/Kingdoms/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/M2/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 6372,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/M2/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Base with Traits/M2/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/Kingdoms/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 7503,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/Kingdoms/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/Kingdoms/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/Kingdoms/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/M2/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 7500,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/M2/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/M2/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Random Winter with Traits/M2/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Randomized Winter/Kingdoms/historic_events.txt",
+   "title": "historic events",
+   "ext": "txt",
+   "kb": 0,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [],
+   "summary": "{MILD_WINTER_BODY}October has come, and the snows have not fallen. Add some more of your own text.",
+   "chars": 270,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/4 Turns/Randomized Winter/M2/historic_events.txt",
+   "title": "historic events",
+   "ext": "txt",
+   "kb": 0,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [],
+   "summary": "{MILD_WINTER_BODY}October has come, and the snows have not fallen. Add some more of your own text.",
+   "chars": 270,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base Script/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 1,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 6 turns per year, characters age in 1st Period",
+   "chars": 1274,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base Script/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 1,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 6 turns per year, characters age in 1st Period",
+   "chars": 1271,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/Kingdoms/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 6571,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/Kingdoms/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/Kingdoms/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/M2/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 6568,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/M2/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Base with traits/M2/export_vnvs.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/Kingdoms/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 8318,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/Kingdoms/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/Kingdoms/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/Kingdoms/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/M2/export_descr_character_traits.txt",
+   "title": "export descr character traits",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [
+    "scripting",
+    "traits",
+    "characters",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 5
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "and IsRegionOneOf 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 57, 58, 60, 61, 63, 67",
+   "chars": 8501,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/M2/campaign_script.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/M2/export_vnvs.txt",
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Random Winter with Traits/M2/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Randomized Winter/Kingdoms/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 3,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 6 turns per year, characters age in 1st Period",
+   "chars": 2848,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Randomized Winter/Kingdoms/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Randomized Winter/M2/campaign_script.txt",
+   "title": "campaign script",
+   "ext": "txt",
+   "kb": 3,
+   "tags": [
+    "scripting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 5
+    }
+   ],
+   "summary": "; 1. 6 turns per year, characters age in 1st Period",
+   "chars": 2967,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/6 Turns/Randomized Winter/M2/historic_events.txt"
+   ],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/Turns_Scripts by GrnEyedDvl/Turns Scripts/READ_ME.txt",
+   "title": "READ ME",
+   "ext": "txt",
+   "kb": 4,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "historic_events.txt.strings.bin",
+     "hits": 1
+    }
+   ],
+   "summary": "I have reworked my original 12 Turns per Year script into several variations for both M2TW and for Kingdoms. Included are 24 variations of the original script, broken into 4, 6, and 12 turns per year.",
+   "chars": 4242,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/tw-script-main/vsc-extension-quickstart.md",
+   "title": "vsc-extension-quickstart",
+   "ext": "md",
+   "kb": 2,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [],
+   "summary": "* This folder contains all of the files necessary for your extension.",
+   "chars": 2790,
+   "attachments": [
+    "--- TOOLS n RESOURCES ---/tw-script-main/CHANGELOG.md",
+    "--- TOOLS n RESOURCES ---/tw-script-main/README.md"
+   ],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "--- TOOLS n RESOURCES ---/xidx_start/ReadMe.txt",
+   "title": "ReadMe",
+   "ext": "txt",
+   "kb": 5,
+   "tags": [],
+   "game_files": [],
+   "summary": "Unzip xidx.exe and extract_sounds_idx.bat to your Rome-Total war\\data\\sounds folder",
+   "chars": 4933,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "[M2TW modding tutorial] Single Model Units in Campaign.pdf",
+   "title": "Single Model Units in Campaign",
+   "ext": "pdf",
+   "kb": 1622,
+   "tags": [
+    "units",
+    "models-3d",
+    "campaign-map",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[MODDING] Creating and adding new 2D building art with GIMP (for beginners).pdf",
+   "title": "Creating and adding new 2D building art with GIMP (for beginners)",
+   "ext": "pdf",
+   "kb": 4073,
+   "tags": [
+    "textures",
+    "buildings",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "12",
+    "14"
+   ]
+  },
+  {
+   "path": "[Modding] Family trees compendium of knowledge.pdf",
+   "title": "Family trees compendium of knowledge",
+   "ext": "pdf",
+   "kb": 2951,
+   "tags": [
+    "characters",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] How to Ancillary Guide.pdf",
+   "title": "How to Ancillary Guide",
+   "ext": "pdf",
+   "kb": 2557,
+   "tags": [
+    "ancillaries",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "9"
+   ]
+  },
+  {
+   "path": "[Modding] How to change the voice accent of a factions characters.pdf",
+   "title": "How to change the voice accent of a factions characters",
+   "ext": "pdf",
+   "kb": 623,
+   "tags": [
+    "sounds",
+    "factions",
+    "characters",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sounds_accents.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_sounds_music.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_soldier_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_stratmap_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_units_battle_events.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_units_voice.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This tutorial demonstrates how to change the accent of an existing faction in your mod, with another existing accent. For example: making your faction use the Scottish accent, instead of the English accent.",
+   "chars": 9482,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] Implementing Marian Reforms in M2TW.pdf",
+   "title": "Implementing Marian Reforms in M2TW",
+   "ext": "pdf",
+   "kb": 351,
+   "tags": [
+    "scripting",
+    "units",
+    "resources",
+    "campaign-map",
+    "buildings"
+   ],
+   "game_files": [],
+   "summary": "Required programs: Notepad (or other text editor)",
+   "chars": 6563,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "12",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW A Guide to settlement_mechanics.pdf",
+   "title": "M2TW A Guide to settlement mechanics",
+   "ext": "pdf",
+   "kb": 323,
+   "tags": [
+    "settlements",
+    "buildings"
+   ],
+   "game_files": [],
+   "summary": "This file is one of the most important files for any modification. It controls the behaviour of settlements; how order takes effect, population growth, general income, even wages and upkeep among other things. The file itself is only about 6.40 kb in size and has a rather simple",
+   "chars": 14218,
+   "attachments": [],
+   "phases": [
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW A Guide to the Export_Descr_Buildings File.pdf",
+   "title": "M2TW A Guide to the Export Descr Buildings File",
+   "ext": "pdf",
+   "kb": 297,
+   "tags": [
+    "buildings",
+    "resources"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 6
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This guide assumes that you have unpacked the data files using the method found here: http://medieval2.heavengames.com/m2t...er/index.shtml",
+   "chars": 24342,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW Advanced Family Tree.pdf",
+   "title": "M2TW Advanced Family Tree",
+   "ext": "pdf",
+   "kb": 329,
+   "tags": [
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "descr_names.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Platform and Version: M2TW/Kingdoms v1.05",
+   "chars": 26518,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW Be a Modder Doctoring of Medieval 2 units.pdf",
+   "title": "M2TW Be a Modder Doctoring of Medieval 2 units",
+   "ext": "pdf",
+   "kb": 2888,
+   "tags": [
+    "units",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW Creating a World - Mod Install for Steam.pdf",
+   "title": "M2TW Creating a World - Mod Install for Steam",
+   "ext": "pdf",
+   "kb": 3130,
+   "tags": [
+    "installation",
+    "factions",
+    "units",
+    "scripting",
+    "models-3d",
+    "characters",
+    "campaign-map",
+    "sounds",
+    "projectiles",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "mymod.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "[Modding] M2TW : Creating a World, a series of tools and tutorials by Gigantus",
+   "chars": 48566,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW Creating a World - Replacing Strat Models.pdf",
+   "title": "M2TW Creating a World - Replacing Strat Models",
+   "ext": "pdf",
+   "kb": 3130,
+   "tags": [
+    "models-3d",
+    "installation",
+    "factions",
+    "units",
+    "scripting",
+    "characters",
+    "campaign-map",
+    "sounds",
+    "projectiles",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "mymod.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "[Modding] M2TW : Creating a World, a series of tools and tutorials by Gigantus",
+   "chars": 48566,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW How to create an emerging faction with Baron's Alliance script/[Modding] M2TW How to create an emerging faction with Baron's Alliance script.pdf",
+   "title": "M2TW How to create an emerging faction with Baron's Alliance script",
+   "ext": "pdf",
+   "kb": 282,
+   "tags": [
+    "scripting",
+    "factions"
+   ],
+   "game_files": [
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 2
+    },
+    {
+     "file": "symbol_scotland.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_portugal.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "Well, I decided to write this tutorial for create an emerging faction using the Barons Alliance script. First, I must give credit to CeltiberoRamiroI, who helped me with the final step. This tutorial is for any Kingdoms's mod.",
+   "chars": 8544,
+   "attachments": [],
+   "phases": [
+    "7",
+    "11"
+   ]
+  },
+  {
+   "path": "[Modding] M2TW How to create an emerging faction with Barons Alliance script.pdf",
+   "title": "M2TW How to create an emerging faction with Barons Alliance script",
+   "ext": "pdf",
+   "kb": 282,
+   "tags": [
+    "scripting",
+    "factions"
+   ],
+   "game_files": [
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 2
+    },
+    {
+     "file": "symbol_scotland.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_portugal.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "Well, I decided to write this tutorial for create an emerging faction using the Barons Alliance script. First, I must give credit to CeltiberoRamiroI, who helped me with the final step. This tutorial is for any Kingdoms's mod.",
+   "chars": 8544,
+   "attachments": [],
+   "phases": [
+    "7",
+    "11"
+   ]
+  },
+  {
+   "path": "[Modding] RTW  Guide for Traits and Ancillaries.pdf",
+   "title": "RTW Guide for Traits and Ancillaries",
+   "ext": "pdf",
+   "kb": 392,
+   "tags": [
+    "traits",
+    "ancillaries",
+    "troubleshooting",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 12
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_ancillaries.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_stat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_sm_cultures.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Guide: The complete traits/ancillaries guide",
+   "chars": 28957,
+   "attachments": [],
+   "phases": [
+    "8",
+    "9",
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] RTW  Guide to Plugins.pdf",
+   "title": "RTW Guide to Plugins",
+   "ext": "pdf",
+   "kb": 319,
+   "tags": [
+    "buildings",
+    "resources"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_stat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Required programmes: Notepad (or other text editor)",
+   "chars": 6834,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] RTW How To Modify Siege Tower Aspects.pdf",
+   "title": "RTW How To Modify Siege Tower Aspects",
+   "ext": "pdf",
+   "kb": 326,
+   "tags": [
+    "settlements",
+    "projectiles",
+    "units"
+   ],
+   "game_files": [
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles_new.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Modding area: Units / Buildings (Siege Towers, Wall Towers)",
+   "chars": 12732,
+   "attachments": [],
+   "phases": [
+    "12",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Modding] RTW How-to Spawn an army.pdf",
+   "title": "RTW How-to Spawn an army",
+   "ext": "pdf",
+   "kb": 296,
+   "tags": [
+    "units",
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_battle.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Original Thread : How-to: Spawn an army (spawn_army command: a closer look)",
+   "chars": 8170,
+   "attachments": [],
+   "phases": [
+    "7",
+    "13"
+   ]
+  },
+  {
+   "path": "[Modding] Tutorial How To Add In Your Own Music To M2TW.pdf",
+   "title": "Tutorial How To Add In Your Own Music To M2TW",
+   "ext": "pdf",
+   "kb": 1806,
+   "tags": [
+    "sounds",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Modding] Unique Names (and avoiding labels).pdf",
+   "title": "Unique Names (and avoiding labels)",
+   "ext": "pdf",
+   "kb": 3956,
+   "tags": [
+    "strings",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "[Resource] Ambient building reduction mod/[Resource] Ambient building reduction mod.pdf",
+   "title": "Ambient building reduction mod",
+   "ext": "pdf",
+   "kb": 934,
+   "tags": [
+    "resources",
+    "buildings",
+    "campaign-map"
+   ],
+   "game_files": [],
+   "summary": "With thanks to leo.civil.uefs for the idea behind this.",
+   "chars": 7243,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Resource] Creating a World - Changing hidden key board settings (console key).pdf",
+   "title": "Creating a World - Changing hidden key board settings (console key)",
+   "ext": "pdf",
+   "kb": 1696,
+   "tags": [
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_shortcuts.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Some of us are plagued by a mapping of the console key to a character that is needed to type the 'cheats' - here is your salvation!",
+   "chars": 11258,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "[Resource] Experiments with units and results.pdf",
+   "title": "Experiments with units and results",
+   "ext": "pdf",
+   "kb": 426,
+   "tags": [
+    "units"
+   ],
+   "game_files": [],
+   "summary": "Here are the results of some experiments others and I have made. Some of the results will be obvious to some people, but they were all answers to questions I had when playing around with unit attributes.",
+   "chars": 23004,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Resource] List of non or mal functioning script terms (events, conditions and commands).pdf",
+   "title": "List of non or mal functioning script terms (events, conditions and commands)",
+   "ext": "pdf",
+   "kb": 5742,
+   "tags": [
+    "scripting",
+    "buildings",
+    "ancillaries"
+   ],
+   "game_files": [],
+   "summary": "I have been looking for a list or mentioning of script terms, be it events, conditions or commands that don't work, but",
+   "chars": 23701,
+   "attachments": [],
+   "phases": [
+    "7",
+    "9",
+    "12"
+   ]
+  },
+  {
+   "path": "[Tutorial] A Guide on the Descr_Projectile.txt.pdf",
+   "title": "A Guide on the Descr Projectile.txt",
+   "ext": "pdf",
+   "kb": 3714,
+   "tags": [
+    "projectiles",
+    "units"
+   ],
+   "game_files": [
+    {
+     "file": "descr_projectile.txt",
+     "hits": 29
+    },
+    {
+     "file": "export_unit_descr.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Good day to all, here's my second tutorial on another file that nobodies have done yet but can affect drastically your",
+   "chars": 31920,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial] Adding New Faction from Nothing – Step by Step/[Tutorial] Adding New Faction from Nothing – Step by Step.pdf",
+   "title": "Adding New Faction from Nothing – Step by Step",
+   "ext": "pdf",
+   "kb": 2733,
+   "tags": [
+    "factions",
+    "models-3d",
+    "units",
+    "textures",
+    "sounds",
+    "installation",
+    "culture",
+    "characters",
+    "campaign-map",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 7
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 6
+    },
+    {
+     "file": "main_spear.mesh",
+     "hits": 6
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 5
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "main_general.mesh",
+     "hits": 4
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_lbc_db.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_offmap_models.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 3
+    },
+    {
+     "file": "bireme_off_map.cas",
+     "hits": 3
+    },
+    {
+     "file": "mini_spear.mesh",
+     "hits": 2
+    },
+    {
+     "file": "main_infantry.mesh",
+     "hits": 2
+    },
+    {
+     "file": "main_cavalry.mesh",
+     "hits": 2
+    },
+    {
+     "file": "main_missile.mesh",
+     "hits": 2
+    },
+    {
+     "file": "main_royal.mesh",
+     "hits": 2
+    },
+    {
+     "file": "assassin.cas",
+     "hits": 2
+    },
+    {
+     "file": "shadow_model_sword.cas",
+     "hits": 2
+    },
+    {
+     "file": "descr_cultures.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "descr_movies_tracks.xml",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_advice.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "I write new tutorial for adding new faction from nothing. I call this operation cloning as basically it is.",
+   "chars": 45197,
+   "attachments": [
+    "[Tutorial] Adding New Faction from Nothing – Step by Step/texts.txt"
+   ],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] AI Personalities.pdf",
+   "title": "AI Personalities",
+   "ext": "pdf",
+   "kb": 3431,
+   "tags": [],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "This isn't necessarily my own tutorial although there is a slight foreword to it with a couple of ideas which are in fact not",
+   "chars": 19837,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "[Tutorial] Creating a world - adding a new faction/[Tutorial] Creating a World – Adding a new Faction.pdf",
+   "title": "Creating a World – Adding a new Faction",
+   "ext": "pdf",
+   "kb": 4679,
+   "tags": [
+    "factions",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "strategy.sd",
+     "hits": 2
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "shared.sd",
+     "hits": 1
+    },
+    {
+     "file": "strat.sd",
+     "hits": 1
+    }
+   ],
+   "summary": "The more experienced modders in the community will know the great work that DukeofSerbia published two years ago.",
+   "chars": 14736,
+   "attachments": [],
+   "phases": [
+    "11"
+   ]
+  },
+  {
+   "path": "[Tutorial] Creating a world - adding a new faction/creating a world - adding a new faction/creating a world - adding a new faction.pdf",
+   "title": "creating a world - adding a new faction",
+   "ext": "pdf",
+   "kb": 437,
+   "tags": [
+    "factions",
+    "models-3d",
+    "characters",
+    "units",
+    "installation",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_lbc_db.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "descr_faction_movies.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "symbol_turks.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_carthage_rebel.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_standards.txt",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod3.mesh",
+     "hits": 1
+    },
+    {
+     "file": "shared.sd",
+     "hits": 1
+    },
+    {
+     "file": "strategy.sd",
+     "hits": 1
+    },
+    {
+     "file": "configuration.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "Tools used in this endeavour ............................................................................................................................................ 2",
+   "chars": 27757,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Creating a World - Faction Limits for Agents.pdf",
+   "title": "Creating a World - Faction Limits for Agents",
+   "ext": "pdf",
+   "kb": 5214,
+   "tags": [
+    "troubleshooting",
+    "factions",
+    "scripting",
+    "buildings"
+   ],
+   "game_files": [],
+   "summary": "One day I got tired of the endless spy and priest spams of the AI. Turns out using the faction_capabilities didn't work as it",
+   "chars": 16668,
+   "attachments": [],
+   "phases": [
+    "7",
+    "11",
+    "12"
+   ]
+  },
+  {
+   "path": "[Tutorial] Creating a World - Replacing Strat Models.pdf",
+   "title": "Creating a World - Replacing Strat Models",
+   "ext": "pdf",
+   "kb": 4618,
+   "tags": [
+    "models-3d",
+    "units",
+    "troubleshooting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_sword.cas",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_generic_king.cas",
+     "hits": 1
+    },
+    {
+     "file": "stark_general.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "This entry in descr_character (only the default model in this example):",
+   "chars": 17078,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Custom EffectsModels for Projectiles/[Tutorial] Custom Effects_Models for Projectiles.pdf",
+   "title": "Custom Effects Models for Projectiles",
+   "ext": "pdf",
+   "kb": 1565,
+   "tags": [
+    "models-3d",
+    "projectiles",
+    "textures"
+   ],
+   "game_files": [
+    {
+     "file": "descr_effect_impacts.txt",
+     "hits": 7
+    },
+    {
+     "file": "descr_arrow_trail_effects.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_projectile.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_flaming_projectiles.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_artillery_effects.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "bullet.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_effect_impact.txt",
+     "hits": 1
+    },
+    {
+     "file": "debri02.cas",
+     "hits": 1
+    },
+    {
+     "file": "debris.cas",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    },
+    {
+     "file": "dirt_explode_01.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "After searching far and wide I have not really found any tutorials on how to create your own visual effects for projectiles,",
+   "chars": 23232,
+   "attachments": [
+    "[Tutorial] Custom EffectsModels for Projectiles/CODE.txt"
+   ],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "[Tutorial] Errabundi's Rebels Right in Place (RRiP).pdf",
+   "title": "Errabundi's Rebels Right in Place (RRiP)",
+   "ext": "pdf",
+   "kb": 3107,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "As I got mad, when I saw Bulgarian Rebels in Serbia (Belgrad Region) and other freaks similar to this crap, I decided to",
+   "chars": 12122,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Field costs/[Tutorial] Field costs.pdf",
+   "title": "Field costs",
+   "ext": "pdf",
+   "kb": 2642,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "historic_events.strings.bin",
+     "hits": 2
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Thanks to repman who give me the permission to use his script from DLV as guideline.",
+   "chars": 31395,
+   "attachments": [
+    "[Tutorial] Field costs/Field costs code.txt"
+   ],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "[Tutorial] Garrison Script.pdf",
+   "title": "Garrison Script",
+   "ext": "pdf",
+   "kb": 2981,
+   "tags": [
+    "scripting",
+    "settlements"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "This is the code, which we implent in campaign_script.txt",
+   "chars": 13527,
+   "attachments": [],
+   "phases": [
+    "7",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How piety works and how to activate the alternative piety mode.pdf",
+   "title": "How piety works and how to activate the alternative piety mode",
+   "ext": "pdf",
+   "kb": 876,
+   "tags": [
+    "religion",
+    "settlements",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 1
+    }
+   ],
+   "summary": "Piety is a new attribute that was added into M2TW replacing the old Management of RTW/BI, in theory because it was more appropiate for a middle ages setting. In the same way other attributes were also changed, like influence which became chivalry/dread.",
+   "chars": 15932,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to add a religion.pdf",
+   "title": "How to add a religion",
+   "ext": "pdf",
+   "kb": 3229,
+   "tags": [
+    "religion",
+    "campaign-map",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_religions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_religions_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "symbol_england.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings_enums.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_buildings_enums.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Notepad, irfanview(could probbaly pass off with something else), microsoft word(or anything that allows you to find and",
+   "chars": 25790,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to add an animal handler unit (Wardogs).pdf",
+   "title": "How to add an animal handler unit (Wardogs)",
+   "ext": "pdf",
+   "kb": 2377,
+   "tags": [
+    "units",
+    "mounts"
+   ],
+   "game_files": [
+    {
+     "file": "descr_models_battle.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_animals.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This is what I came to these forums to find out about, back at the beginning of the year. I wanted a Wardog unit to add as",
+   "chars": 20767,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to add any type of horse to any cavalry unit(easy).pdf",
+   "title": "How to add any type of horse to any cavalry unit(easy)",
+   "ext": "pdf",
+   "kb": 675,
+   "tags": [
+    "units",
+    "mounts",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "mount_eastern_armoured_horse_lod0.mesh",
+     "hits": 2
+    },
+    {
+     "file": "mount_eastern_armoured_horse_lod1.mesh",
+     "hits": 2
+    },
+    {
+     "file": "mount_eastern_armoured_horse_lod2.mesh",
+     "hits": 2
+    },
+    {
+     "file": "mount_eastern_armoured_horse_lod3.mesh",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "For example we give English Demi Lancers eastern armoured horse.",
+   "chars": 8213,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to add mercenaries_.pdf",
+   "title": "How to add mercenaries",
+   "ext": "pdf",
+   "kb": 6319,
+   "tags": [
+    "mercenaries",
+    "units",
+    "scripting",
+    "campaign-map",
+    "sprites"
+   ],
+   "game_files": [
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "me_monster_bombard_crew_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "me_monster_bombard_crew_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "me_monster_bombard_crew_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "I havn't found a toturial on this so hear goes.",
+   "chars": 29374,
+   "attachments": [],
+   "phases": [
+    "7",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How To Add New Historic Events.pdf",
+   "title": "How To Add New Historic Events",
+   "ext": "pdf",
+   "kb": 2579,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "txt.strings.bin",
+     "hits": 4
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_stat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This tutorial will show you how to add your own historic events and make them come up during the game.",
+   "chars": 11478,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to add strat map character levels & change battle models/[Tutorial] How to add strat map character levels & change battle models.pdf",
+   "title": "How to add strat map character levels & change battle models",
+   "ext": "pdf",
+   "kb": 3943,
+   "tags": [
+    "models-3d",
+    "campaign-map",
+    "characters",
+    "scripting",
+    "troubleshooting",
+    "traits",
+    "textures",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_character.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 3
+    },
+    {
+     "file": "shadow_sword.cas",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 2
+    },
+    {
+     "file": "northern_generic_king.cas",
+     "hits": 2
+    },
+    {
+     "file": "northern_kings_lod0.mesh",
+     "hits": 2
+    },
+    {
+     "file": "northern_kings_lod1.mesh",
+     "hits": 2
+    },
+    {
+     "file": "northern_kings_lod2.mesh",
+     "hits": 2
+    },
+    {
+     "file": "northern_kings_lod3.mesh",
+     "hits": 2
+    },
+    {
+     "file": "northern_heir.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_chracter.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This has been asked in the mod workshop many times so i thought why not make a clear & detailed tutorial over it.",
+   "chars": 34063,
+   "attachments": [
+    "[Tutorial] How to add strat map character levels & change battle models/texts.txt"
+   ],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to change a factions accent to an already existing accent on the campaign map.pdf",
+   "title": "How to change a factions accent to an already existing accent on the campaign map",
+   "ext": "pdf",
+   "kb": 1566,
+   "tags": [
+    "sounds",
+    "campaign-map",
+    "installation",
+    "factions"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sounds_accents.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_sounds_units_battle_events.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_sounds_music.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_soldier_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_stratmap_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_units_voice.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This tutorial demonstrates how to change the accent of an existing faction in your mod, with another existing accent. For example: making your faction use the Scottish accent, instead of the English accent.",
+   "chars": 22952,
+   "attachments": [],
+   "phases": [
+    "11",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to change an already existing faction to a completely new one.pdf",
+   "title": "How to change an already existing faction to a completely new one",
+   "ext": "pdf",
+   "kb": 1380,
+   "tags": [
+    "factions",
+    "scripting",
+    "units",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "symbol_portugal.cas",
+     "hits": 2
+    },
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "Well, I thought is time to translate some of my tuts, which I have written on our German fora, into almost proper English",
+   "chars": 16320,
+   "attachments": [],
+   "phases": [
+    "7",
+    "11",
+    "12",
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial] How To Create a New Faction (using Normans_Saxons)/[Tutorial] How To Create a New Faction (using Normans_Saxons).pdf",
+   "title": "How To Create a New Faction (using Normans Saxons)",
+   "ext": "pdf",
+   "kb": 4100,
+   "tags": [
+    "factions",
+    "campaign-map",
+    "characters",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "strategy.sd",
+     "hits": 2
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "In many respects it is easier to add a new faction this way than from complete scratch - both factions are already half-",
+   "chars": 22890,
+   "attachments": [
+    "[Tutorial] How To Create a New Faction (using Normans_Saxons)/texts.txt"
+   ],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How To Create A New Region.pdf",
+   "title": "How To Create A New Region",
+   "ext": "pdf",
+   "kb": 3606,
+   "tags": [
+    "campaign-map",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "map_regions.tga",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "imperial_campaign_regions_and_settlement_names.txt.strings.bin",
+     "hits": 1
+    }
+   ],
+   "summary": "This is a step by step guide to creating a new region in MTW2.",
+   "chars": 18435,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to make arrows stay in the ground longer (very easy).pdf",
+   "title": "How to make arrows stay in the ground longer (very easy)",
+   "ext": "pdf",
+   "kb": 3646,
+   "tags": [
+    "projectiles",
+    "textures",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "arrow_projectile_ground_impact.cas",
+     "hits": 3
+    },
+    {
+     "file": "descr_effect_impacts.txt",
+     "hits": 1
+    },
+    {
+     "file": "arrow_ground_impact.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "How to make arrows stick in the ground for longer/ for the entire battle.",
+   "chars": 11091,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to make Mounted Greekfirethrowers_Naffatun with just text/[Tutorial] How to make Mounted Greekfirethrowers_Naffatun with just text.pdf",
+   "title": "How to make Mounted Greekfirethrowers Naffatun with just text",
+   "ext": "pdf",
+   "kb": 1790,
+   "tags": [
+    "mounts",
+    "projectiles",
+    "units",
+    "sprites",
+    "models-3d",
+    "buildings",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "greek_firethrower_lod0.mesh",
+     "hits": 3
+    },
+    {
+     "file": "greek_firethrower_lod1.mesh",
+     "hits": 3
+    },
+    {
+     "file": "greek_firethrower_lod2.mesh",
+     "hits": 3
+    },
+    {
+     "file": "greek_firethrower_lod3.mesh",
+     "hits": 3
+    },
+    {
+     "file": "naffatun_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "naffatun_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "naffatun_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "greek_firethrower_ug1_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "greek_firethrower_ug1_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "greek_firethrower_ug1_lod2.mesh",
+     "hits": 1
+    }
+   ],
+   "summary": "This is done mainly with text and a little bit of gimp for your pics.",
+   "chars": 24474,
+   "attachments": [
+    "[Tutorial] How to make Mounted Greekfirethrowers_Naffatun with just text/texts.txt"
+   ],
+   "phases": [
+    "12",
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "[Tutorial] How to script unit recruitment according to a characters title (Anc).pdf",
+   "title": "How to script unit recruitment according to a characters title (Anc)",
+   "ext": "pdf",
+   "kb": 2088,
+   "tags": [
+    "scripting",
+    "units",
+    "characters",
+    "traits",
+    "mercenaries",
+    "buildings",
+    "ancillaries"
+   ],
+   "game_files": [],
+   "summary": "due my recent work on IND to develop a title based recruitment system, I thought some of you might be interested in my",
+   "chars": 18592,
+   "attachments": [],
+   "phases": [
+    "7",
+    "8",
+    "9",
+    "10",
+    "12",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] How-To_ Add a New Climate Zone.pdf",
+   "title": "How-To Add a New Climate Zone",
+   "ext": "pdf",
+   "kb": 1534,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_aerial_map_ground_types.txt",
+     "hits": 4
+    },
+    {
+     "file": "map_ground_types.tga",
+     "hits": 4
+    },
+    {
+     "file": "descr_climates.txt",
+     "hits": 3
+    },
+    {
+     "file": "map_climates.tga",
+     "hits": 3
+    },
+    {
+     "file": "descr_climates_lookup.txt",
+     "hits": 2
+    },
+    {
+     "file": "conifer_a_winter.cas",
+     "hits": 2
+    },
+    {
+     "file": "conifer_a_impassable_winter.cas",
+     "hits": 2
+    },
+    {
+     "file": "conifer_a_canopy_winter.cas",
+     "hits": 2
+    },
+    {
+     "file": "descr_geography_new.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "- You will need (V) Vercingetorix's PAK Extractor and (A) Alpaca's Strings.Bin Converter to access these files.",
+   "chars": 21657,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Legion-Names for MTW2.pdf",
+   "title": "Legion-Names for MTW2",
+   "ext": "pdf",
+   "kb": 4770,
+   "tags": [
+    "characters",
+    "units",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This is my English translation of my German Tutorial, which you can read for example there:",
+   "chars": 17487,
+   "attachments": [],
+   "phases": [
+    "10",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Mines.pdf",
+   "title": "Mines",
+   "ext": "pdf",
+   "kb": 556,
+   "tags": [
+    "resources",
+    "buildings",
+    "settlements",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_resources.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_settlement_mechanics.xml",
+     "hits": 2
+    }
+   ],
+   "summary": "First of all you need three files in which the mining issues are set:",
+   "chars": 9643,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial] Prisoner Treatment.pdf",
+   "title": "Prisoner Treatment",
+   "ext": "pdf",
+   "kb": 1599,
+   "tags": [
+    "scripting",
+    "traits",
+    "ancillaries"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_capmaign_db.xml",
+     "hits": 1
+    }
+   ],
+   "summary": "In this tutorial we'll have a look at the ransom behavior of the AI, how to manipulate it and how to force a certain player",
+   "chars": 11169,
+   "attachments": [],
+   "phases": [
+    "7",
+    "8",
+    "9"
+   ]
+  },
+  {
+   "path": "[Tutorial] Scripted buildings create_building and destroy_buildings/[Tutorial] Scripted buildings_ create_building and destroy_buildings.pdf",
+   "title": "Scripted buildings create building and destroy buildings",
+   "ext": "pdf",
+   "kb": 2352,
+   "tags": [
+    "buildings",
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 3
+    }
+   ],
+   "summary": "Buildings can be instantly constructed and destroyed with script. The commands are probably well known to scripters but",
+   "chars": 27991,
+   "attachments": [
+    "[Tutorial] Scripted buildings create_building and destroy_buildings/CODE.txt"
+   ],
+   "phases": [
+    "7",
+    "12"
+   ]
+  },
+  {
+   "path": "[Tutorial] Test that a faction is dead_alive including hordes.pdf",
+   "title": "Test that a faction is dead alive including hordes",
+   "ext": "pdf",
+   "kb": 1102,
+   "tags": [
+    "factions",
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "I_NumberOfSettlements is one way to test whether a faction is alive but it doesn't necessarily work for horde factions",
+   "chars": 9117,
+   "attachments": [],
+   "phases": [
+    "7",
+    "11"
+   ]
+  },
+  {
+   "path": "[Tutorial] The Holy Banana of Jerusalem (Projectile).pdf",
+   "title": "The Holy Banana of Jerusalem (Projectile)",
+   "ext": "pdf",
+   "kb": 2478,
+   "tags": [
+    "projectiles"
+   ],
+   "game_files": [
+    {
+     "file": "descr_projectile.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "let me present to you the Holy Banana of Jerusalem brought to us by the good people at The Creative Assembly (see",
+   "chars": 12039,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial]A Guide to Export_Descr_Buildings.pdf",
+   "title": "A Guide to Export Descr Buildings",
+   "ext": "pdf",
+   "kb": 1031,
+   "tags": [
+    "buildings",
+    "resources"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 23
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This guide assumes that you have unpacked the data files using the method found here: http://medieval2.heavengames.com/m2t...er/index.shtml",
+   "chars": 39088,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial]El Monstero's Definitive Guide to Modding Med 2's Music.pdf",
+   "title": "El Monstero's Definitive Guide to Modding Med 2's Music",
+   "ext": "pdf",
+   "kb": 146302,
+   "tags": [
+    "sounds",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial]How to add strat map character levels & change battle models.pdf",
+   "title": "How to add strat map character levels & change battle models",
+   "ext": "pdf",
+   "kb": 1569,
+   "tags": [
+    "models-3d",
+    "campaign-map",
+    "characters",
+    "scripting",
+    "troubleshooting",
+    "traits",
+    "textures",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_character.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 3
+    },
+    {
+     "file": "shadow_sword.cas",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 2
+    },
+    {
+     "file": "northern_generic_king.cas",
+     "hits": 2
+    },
+    {
+     "file": "northern_heir.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 1
+    },
+    {
+     "file": "northern_kings_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "northern_kings_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "northern_kings_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "northern_kings_lod3.mesh",
+     "hits": 1
+    },
+    {
+     "file": "descr_chracter.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This has been asked in the mod workshop many times so i thought why not make a clear & detailed tutorial over it.",
+   "chars": 30765,
+   "attachments": [],
+   "phases": [
+    "7",
+    "8",
+    "10",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "[Tutorial]How to enable shield wall formation for units/[Tutorial] How to enable shield wall formation for units.pdf",
+   "title": "How to enable shield wall formation for units",
+   "ext": "pdf",
+   "kb": 947,
+   "tags": [
+    "units"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "A discussion I had some time ago led me to write this tutorial.In this tutorial I will show you how to enable shield wall",
+   "chars": 10183,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "[Tutorial]Scripted sieges/[Tutorial] Scripted sieges.pdf",
+   "title": "Scripted sieges",
+   "ext": "pdf",
+   "kb": 1089,
+   "tags": [
+    "scripting",
+    "settlements"
+   ],
+   "game_files": [],
+   "summary": "\"Under some certain conditions, I want an army of a specific AI-controlled faction to lay siege upon a specific settlement",
+   "chars": 18303,
+   "attachments": [
+    "[Tutorial]Scripted sieges/CODED.txt"
+   ],
+   "phases": [
+    "7",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "[TW Guide] A Guide for Guilds.pdf",
+   "title": "A Guide for Guilds",
+   "ext": "pdf",
+   "kb": 7994,
+   "tags": [
+    "buildings",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "12"
+   ]
+  },
+  {
+   "path": "A Beginners Guide to Scripting & Scripting.pdf",
+   "title": "A Beginners Guide to Scripting & Scripting",
+   "ext": "pdf",
+   "kb": 1462,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_advice.txt",
+     "hits": 4
+    },
+    {
+     "file": "export_descr_advice_enums.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Wambat is holding a weekly raffle giveaway of Steam games to promote the Fourth Age Total War mod and his Let's Play campaign!",
+   "chars": 35697,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "A Guide to the export_descr_unit.txt file.pdf",
+   "title": "A Guide to the export descr unit.txt file",
+   "ext": "pdf",
+   "kb": 496,
+   "tags": [
+    "units",
+    "sounds",
+    "projectiles",
+    "mounts",
+    "mercenaries",
+    "campaign-map",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 7
+    },
+    {
+     "file": "medieval2.preference.cfg",
+     "hits": 3
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 2
+    },
+    {
+     "file": "ne_late_bodyguard_ug1_lod0.mesh",
+     "hits": 2
+    },
+    {
+     "file": "ne_late_bodyguard_ug1_lod1.mesh",
+     "hits": 2
+    },
+    {
+     "file": "ne_late_bodyguard_ug1_lod2.mesh",
+     "hits": 2
+    },
+    {
+     "file": "ne_late_bodyguard_ug1_lod3.mesh",
+     "hits": 2
+    },
+    {
+     "file": "gendarmes_lod0.mesh",
+     "hits": 2
+    },
+    {
+     "file": "gendarmes_lod1.mesh",
+     "hits": 2
+    },
+    {
+     "file": "gendarmes_lod2.mesh",
+     "hits": 2
+    },
+    {
+     "file": "gendarmes_lod3.mesh",
+     "hits": 2
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_units_x.txt",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_accents.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectile.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_ship.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_animals.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mount.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "[Tutorial] A Beginner's Guide to the Export_Descr_Unit",
+   "chars": 39101,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Adding New Faction from Nothing – Step by Step.pdf",
+   "title": "Adding New Faction from Nothing – Step by Step",
+   "ext": "pdf",
+   "kb": 667,
+   "tags": [
+    "factions",
+    "models-3d",
+    "units",
+    "textures",
+    "sounds",
+    "installation",
+    "culture",
+    "characters",
+    "campaign-map",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 7
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 6
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 5
+    },
+    {
+     "file": "main_spear.mesh",
+     "hits": 5
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 4
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "main_general.mesh",
+     "hits": 4
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_lbc_db.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_offmap_models.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 3
+    },
+    {
+     "file": "bireme_off_map.cas",
+     "hits": 3
+    },
+    {
+     "file": "diplomat.cas",
+     "hits": 2
+    },
+    {
+     "file": "shadow_model_sword.cas",
+     "hits": 2
+    },
+    {
+     "file": "descr_cultures.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "descr_movies_tracks.xml",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_advice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_advice_enums.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_advice_timing.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_advice.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "I write new tutorial for adding new faction from nothing. I call this operation cloning as basically it is.",
+   "chars": 43832,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "An Intermediate Guide to Scripting.pdf",
+   "title": "An Intermediate Guide to Scripting",
+   "ext": "pdf",
+   "kb": 951,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_advise.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Wambat is holding a weekly raffle giveaway of Steam games to promote the Fourth Age Total War mod and his Let's Play campaign!",
+   "chars": 41947,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "AOR concept 199+ AOR with just 8 resources.pdf",
+   "title": "AOR concept 199+ AOR with just 8 resources",
+   "ext": "pdf",
+   "kb": 36435,
+   "tags": [
+    "resources",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "battle_model_to_cas_blender_tutorial.pdf",
+   "title": "battle model to cas blender tutorial",
+   "ext": "pdf",
+   "kb": 1897,
+   "tags": [
+    "models-3d"
+   ],
+   "game_files": [],
+   "summary": "convert any character cas model to dae using IWTE, animated cas_mesh to dae option",
+   "chars": 2912,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "Buildings and AoR.pdf",
+   "title": "Buildings and AoR",
+   "ext": "pdf",
+   "kb": 992,
+   "tags": [
+    "resources",
+    "buildings",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "(barracks AND denmark) OR france,england",
+   "chars": 26263,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Campaign Map Not Loading..._.pdf",
+   "title": "Campaign Map Not Loading...",
+   "ext": "pdf",
+   "kb": 8173,
+   "tags": [
+    "campaign-map",
+    "troubleshooting"
+   ],
+   "game_files": [
+    {
+     "file": "map_regions.tga",
+     "hits": 14
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 13
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 6
+    },
+    {
+     "file": "descr_terrain.txt",
+     "hits": 4
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 3
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 2
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 2
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 1
+    },
+    {
+     "file": "map_ground_types.tga",
+     "hits": 1
+    },
+    {
+     "file": "descr_aerial_map_ground_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 1
+    },
+    {
+     "file": "map_heigths.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "OK this isn't actually a question - but it's not a tutorial either and I wanted to get it into the answers database.....",
+   "chars": 38011,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Console command list.pdf",
+   "title": "Console command list",
+   "ext": "pdf",
+   "kb": 1995,
+   "tags": [],
+   "game_files": [
+    {
+     "file": "export_descr_building.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Here's some nice clues about console commands. Most of this text is laboriously copied and pasted from the kingdoms.exe:",
+   "chars": 26836,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "Crash to Desktop - TWC Wiki.pdf",
+   "title": "Crash to Desktop - TWC Wiki",
+   "ext": "pdf",
+   "kb": 1419,
+   "tags": [
+    "troubleshooting",
+    "campaign-map",
+    "units",
+    "characters",
+    "mercenaries",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 18
+    },
+    {
+     "file": "map_regions.tga",
+     "hits": 9
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 7
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 2
+    },
+    {
+     "file": "descr_model_battle.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_ui_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 1
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 1
+    },
+    {
+     "file": "descr_terrain.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_desc_character_traits.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_formations.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This page was last edited on 27 January 2021, at 08:23.",
+   "chars": 18780,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "Create Inquisitors.pdf",
+   "title": "Create Inquisitors",
+   "ext": "pdf",
+   "kb": 1982,
+   "tags": [
+    "scripting",
+    "religion"
+   ],
+   "game_files": [
+    {
+     "file": "descr_character.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "I added inquisitors to other factions. But, I can only appear with a script.",
+   "chars": 9494,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10"
+   ]
+  },
+  {
+   "path": "Creating a World - 29 Factions on selection display/Creating a World - 29 Factions on selection display.pdf",
+   "title": "Creating a World - 29 Factions on selection display",
+   "ext": "pdf",
+   "kb": 1483,
+   "tags": [
+    "factions"
+   ],
+   "game_files": [
+    {
+     "file": "menu_english.txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Installation: extract the download into your mod's data folder",
+   "chars": 14450,
+   "attachments": [],
+   "phases": [
+    "11"
+   ]
+  },
+  {
+   "path": "Creating a World - Adding a culture/Adding a culture.htm",
+   "title": "Adding a culture",
+   "ext": "htm",
+   "kb": 207,
+   "tags": [
+    "buildings",
+    "culture",
+    "strings",
+    "models-3d",
+    "scripting",
+    "troubleshooting",
+    "factions",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "offmap_city_roman.cas",
+     "hits": 9
+    },
+    {
+     "file": "offmap_port_roman.cas",
+     "hits": 9
+    },
+    {
+     "file": "offmap_town_roman.cas",
+     "hits": 6
+    },
+    {
+     "file": "offmap_town_barb.cas",
+     "hits": 5
+    },
+    {
+     "file": "offmap_village_dummy.cas",
+     "hits": 4
+    },
+    {
+     "file": "descr_cultures.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_offmap_models.txt",
+     "hits": 3
+    },
+    {
+     "file": "offmap_fishing_village_roman.cas",
+     "hits": 3
+    },
+    {
+     "file": "offmap_port_barb.cas",
+     "hits": 3
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_walls.txt",
+     "hits": 2
+    },
+    {
+     "file": "northern_european_village.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_wooden_castle.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_town.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_stone_keep.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_large_town.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_castle.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_city.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_large_castle.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_large_city.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_fortress.cas",
+     "hits": 1
+    },
+    {
+     "file": "northern_european_huge_city.cas",
+     "hits": 1
+    },
+    {
+     "file": "ne_fort_buildings.cas",
+     "hits": 1
+    },
+    {
+     "file": "ne_fort_walls.cas",
+     "hits": 1
+    },
+    {
+     "file": "ne_port_villiage.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "process of adding a new culture is very simple and does not require the",
+   "chars": 66218,
+   "attachments": [
+    "Creating a World - Adding a culture/descr_offmap_models - New Culture.txt",
+    "Creating a World - Adding a culture/event_strings - New Culture.txt",
+    "Creating a World - Adding a culture/expanded - New Culture.txt",
+    "Creating a World - Adding a culture/export_buildings - New Culture.txt",
+    "Creating a World - Adding a culture/export_descr_buildings_enums - New Culture.txt",
+    "Creating a World - Adding a culture/shared - New Cultures.txt"
+   ],
+   "phases": [
+    "6",
+    "7",
+    "10",
+    "11",
+    "12",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a world - adding a new faction/creating a world - adding a new faction.pdf",
+   "title": "creating a world - adding a new faction",
+   "ext": "pdf",
+   "kb": 437,
+   "tags": [
+    "factions",
+    "models-3d",
+    "characters",
+    "units",
+    "installation",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_banners_new.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_lbc_db.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_names.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    },
+    {
+     "file": "descr_faction_movies.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "symbol_turks.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_rebels.cas",
+     "hits": 1
+    },
+    {
+     "file": "symbol_carthage_rebel.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_standards.txt",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "turkish_horse_archers_lod3.mesh",
+     "hits": 1
+    },
+    {
+     "file": "shared.sd",
+     "hits": 1
+    },
+    {
+     "file": "strategy.sd",
+     "hits": 1
+    },
+    {
+     "file": "configuration.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "Tools used in this endeavour ............................................................................................................................................ 2",
+   "chars": 27757,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Adding detailed Regions.pdf",
+   "title": "Creating a World - Adding detailed Regions",
+   "ext": "pdf",
+   "kb": 325,
+   "tags": [
+    "campaign-map",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "There is more than just the descr_regions file to this. The most obvious additional (and essential) file is the",
+   "chars": 2855,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Adding detailed Regions/Creating a World - Adding detailed Regions.pdf",
+   "title": "Creating a World - Adding detailed Regions",
+   "ext": "pdf",
+   "kb": 325,
+   "tags": [
+    "campaign-map",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "There is more than just the descr_regions file to this. The most obvious additional (and essential) file is the",
+   "chars": 2855,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Bare Geomod/Creating a World - Bare Geomod.pdf",
+   "title": "Creating a World - Bare Geomod",
+   "ext": "pdf",
+   "kb": 968,
+   "tags": [
+    "campaign-map",
+    "factions",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 2
+    },
+    {
+     "file": "descr_shortcut.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_cursor_actions_battle_classic.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Kingdoms Geomod Base Folder - a mod folder based on Medieval 2 'Vanilla' for use with the Geomod tool.",
+   "chars": 19630,
+   "attachments": [],
+   "phases": [
+    "11",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Character portraits, creation and use/Creating a World - Character portraits, creation and use.pdf",
+   "title": "Creating a World - Character portraits, creation and use",
+   "ext": "pdf",
+   "kb": 1758,
+   "tags": [
+    "characters",
+    "traits",
+    "textures",
+    "culture"
+   ],
+   "game_files": [],
+   "summary": "Who is getting the portrait? .................................................................................................................................... 2",
+   "chars": 11049,
+   "attachments": [],
+   "phases": [
+    "8",
+    "10",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Developer's Setup Kit for Sound Editing/[Tutorial] Creating a World - Developer's Setup Kit for Sound Editing 2.pdf",
+   "title": "Creating a World - Developer's Setup Kit for Sound Editing 2",
+   "ext": "pdf",
+   "kb": 2137,
+   "tags": [
+    "sounds",
+    "animation",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "configuration.cfg",
+     "hits": 2
+    },
+    {
+     "file": "descr_skeletons.txt",
+     "hits": 1
+    },
+    {
+     "file": "strat_diplomat_stand_a_idle.cas",
+     "hits": 1
+    },
+    {
+     "file": "strat_diplomat_backward_1.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_accents.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "The most common way of providing custom sound in a mod is to include the generated IDX an DAT files, usually omitting the TXT files and any supporting sound files. This provides a major inconvenience when having to update",
+   "chars": 23218,
+   "attachments": [
+    "Creating a World - Developer's Setup Kit for Sound Editing/[Tutorial] Creating a World - Developer's Setup Kit for Animation Editing.pdf",
+    "Creating a World - Developer's Setup Kit for Sound Editing/[Tutorial] Creating a World - Developer's Setup Kit for Sound Editing.pdf"
+   ],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "Creating a World - EDA_EDB_names converter for data_text files/Creating a World - EDA_EDB_names converter for data_text files.pdf",
+   "title": "Creating a World - EDA EDB names converter for data text files",
+   "ext": "pdf",
+   "kb": 5218,
+   "tags": [
+    "ancillaries",
+    "buildings",
+    "tools"
+   ],
+   "game_files": [],
+   "summary": "One day I got tired of repeating all my entries from the look up files to the data bases just for the sake of a parenthesis.",
+   "chars": 10909,
+   "attachments": [],
+   "phases": [
+    "9",
+    "12"
+   ]
+  },
+  {
+   "path": "Creating a World - EDA_EDB_names converter for data_text files/Creating a World - Name Converter/Creating a World - Name Converter.xlsx",
+   "title": "Creating a World - Name Converter",
+   "ext": "xlsx",
+   "kb": 103,
+   "tags": [
+    "tools",
+    "strings",
+    "ancillaries"
+   ],
+   "game_files": [
+    {
+     "file": "export_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_ancillaries.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Can be used for generating entries for data\\text\\names.txt as well as",
+   "chars": 9247,
+   "attachments": [],
+   "phases": [
+    "6",
+    "9"
+   ]
+  },
+  {
+   "path": "Creating a World - Editable Settlement Faction Symbols/Creating a World - Editable Settlement Faction Symbols.pdf",
+   "title": "Creating a World - Editable Settlement Faction Symbols",
+   "ext": "pdf",
+   "kb": 852,
+   "tags": [
+    "factions",
+    "settlements"
+   ],
+   "game_files": [],
+   "summary": "This is simply a set of faction symbols in 4 different sizes.",
+   "chars": 4802,
+   "attachments": [],
+   "phases": [
+    "11",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Faction Limits for Agents.pdf",
+   "title": "Creating a World - Faction Limits for Agents",
+   "ext": "pdf",
+   "kb": 95267,
+   "tags": [
+    "troubleshooting",
+    "factions",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "11"
+   ]
+  },
+  {
+   "path": "Creating a World - Functional Grape Shot/[Modding] M2TW Creating a World - Functional Grape Shot.pdf",
+   "title": "M2TW Creating a World - Functional Grape Shot",
+   "ext": "pdf",
+   "kb": 3129,
+   "tags": [
+    "installation",
+    "factions",
+    "units",
+    "scripting",
+    "models-3d",
+    "characters",
+    "campaign-map",
+    "sounds",
+    "projectiles",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "mymod.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "[Modding] M2TW : Creating a World, a series of tools and tutorials by Gigantus",
+   "chars": 48566,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot.pdf",
+   "title": "Creating a World - Functional Grape Shot",
+   "ext": "pdf",
+   "kb": 578,
+   "tags": [
+    "projectiles"
+   ],
+   "game_files": [
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    }
+   ],
+   "summary": "In it’s wisdom, CA provided us with the banana shot and through the crusades campaign the grape shot as",
+   "chars": 4640,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot/GrapeShot files/GrapeShot/data/descr_projectile.txt",
+   "title": "descr projectile",
+   "ext": "txt",
+   "kb": 49,
+   "tags": [
+    "projectiles",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "onager_rock.cas",
+     "hits": 7
+    },
+    {
+     "file": "big_boulder_high.cas",
+     "hits": 6
+    },
+    {
+     "file": "big_boulder_med.cas",
+     "hits": 6
+    },
+    {
+     "file": "big_boulder_low.cas",
+     "hits": 6
+    },
+    {
+     "file": "descr_projectile.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_flaming_projectiles.txt",
+     "hits": 5
+    },
+    {
+     "file": "missile_ballista_bolt_high.cas",
+     "hits": 4
+    },
+    {
+     "file": "missile_ballista_bolt_med.cas",
+     "hits": 4
+    },
+    {
+     "file": "missile_ballista_bolt_low.cas",
+     "hits": 4
+    },
+    {
+     "file": "none.cas",
+     "hits": 4
+    },
+    {
+     "file": "missile_scorpion_bolt_high.cas",
+     "hits": 3
+    },
+    {
+     "file": "missile_scorpion_bolt_med.cas",
+     "hits": 3
+    },
+    {
+     "file": "missile_scorpion_bolt_low.cas",
+     "hits": 3
+    },
+    {
+     "file": "arrow_projectile.cas",
+     "hits": 3
+    },
+    {
+     "file": "export_unit_descr.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    },
+    {
+     "file": "sling_stone.cas",
+     "hits": 1
+    },
+    {
+     "file": "bolt_high.cas",
+     "hits": 1
+    },
+    {
+     "file": "bolt_med.cas",
+     "hits": 1
+    },
+    {
+     "file": "bolt_low.cas",
+     "hits": 1
+    },
+    {
+     "file": "weapon_javelin_high.cas",
+     "hits": 1
+    },
+    {
+     "file": "weapon_javelin_low.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "cannon_ball4.cas",
+     "hits": 1
+    },
+    {
+     "file": "cannon_ball3.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "; to calculate projectile parameters take",
+   "chars": 52169,
+   "attachments": [
+    "Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot/GrapeShot files/GrapeShot/data/descr_flaming_projectiles.txt"
+   ],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot/GrapeShot files/GrapeShot/data/text/shared.txt",
+   "title": "shared",
+   "ext": "txt",
+   "kb": 29,
+   "tags": [],
+   "game_files": [],
+   "summary": "{ST_STATE_IN_SETTLEMENT}Visiting settlement",
+   "chars": 14602,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "Creating a World - Functional Grape Shot/Creating a World - Functional Grape Shot/GrapeShot files/GrapeShot/ReadMe GrapeShot.txt",
+   "title": "ReadMe GrapeShot",
+   "ext": "txt",
+   "kb": 1,
+   "tags": [
+    "projectiles"
+   ],
+   "game_files": [
+    {
+     "file": "descr_area_effects.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_flaming_projectile.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectile.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "descr_area_effects had the wrong projectile (grape_bullet) in it's entry. Should have been musket_bullet.",
+   "chars": 696,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "Creating a World - Height Map with 3Dem/Creating a World - Height Map with 3Dem.pdf",
+   "title": "Creating a World - Height Map with 3Dem",
+   "ext": "pdf",
+   "kb": 420,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [],
+   "summary": "Those out there with knowledge of the subject matter will quickly recognize that the original tutorial was published",
+   "chars": 6520,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - High Resolution Screenshots.pdf",
+   "title": "Creating a World - High Resolution Screenshots",
+   "ext": "pdf",
+   "kb": 125177,
+   "tags": [
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "Creating a World - Instant garrisons and their disbandmen.pdf",
+   "title": "Creating a World - Instant garrisons and their disbandmen",
+   "ext": "pdf",
+   "kb": 850,
+   "tags": [
+    "scripting",
+    "settlements",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Garrison scripts are a pain in the butt, face it",
+   "chars": 23320,
+   "attachments": [],
+   "phases": [
+    "7",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Killing characters multiple ways.pdf",
+   "title": "Creating a World - Killing characters multiple ways",
+   "ext": "pdf",
+   "kb": 104001,
+   "tags": [
+    "characters",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - LOD reduction without texture loss/Creating a World - LOD reduction without texture loss/Creating a World - LOD reduction without texture loss.pdf",
+   "title": "Creating a World - LOD reduction without texture loss",
+   "ext": "pdf",
+   "kb": 1033,
+   "tags": [
+    "textures",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "mymodel.mesh",
+     "hits": 1
+    },
+    {
+     "file": "mymodel_converted_lod1.mesh",
+     "hits": 1
+    }
+   ],
+   "summary": "General Information and links ................................................................................................................................. 3",
+   "chars": 7992,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "Creating a World - Name Converter/[Tool] Creating a World - EDA_EDB_names converter for data_text files.pdf",
+   "title": "[Tool] Creating a World - EDA EDB names converter for data text files",
+   "ext": "pdf",
+   "kb": 5341,
+   "tags": [
+    "tools",
+    "ancillaries",
+    "buildings",
+    "strings"
+   ],
+   "game_files": [],
+   "summary": "One day I got tired of repeating all my entries from the look up files to the data bases just for the sake of a parenthesis.",
+   "chars": 11082,
+   "attachments": [
+    "Creating a World - Name Converter/Creating a World - Name Converter.xlsx"
+   ],
+   "phases": [
+    "6",
+    "9",
+    "12"
+   ]
+  },
+  {
+   "path": "Creating a World - Named Forts/Creating a World - Named Forts.docx",
+   "title": "Creating a World - Named Forts",
+   "ext": "docx",
+   "kb": 920,
+   "tags": [
+    "scripting",
+    "buildings",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "southern_princess.cas",
+     "hits": 1
+    },
+    {
+     "file": "shadow_model_princess_northern.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_character.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "one unused faction ( aztecs used in this tutorial)",
+   "chars": 5151,
+   "attachments": [
+    "Creating a World - Named Forts/Creating a World - Named Forts.pdf"
+   ],
+   "phases": [
+    "7",
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Registry Entries for the Launcher/[Modding] M2TW Creating a World - Registry Entries for the Launcher.pdf",
+   "title": "M2TW Creating a World - Registry Entries for the Launcher",
+   "ext": "pdf",
+   "kb": 3130,
+   "tags": [
+    "installation",
+    "factions",
+    "units",
+    "scripting",
+    "models-3d",
+    "characters",
+    "campaign-map",
+    "sounds",
+    "projectiles",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "mymod.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "[Modding] M2TW : Creating a World, a series of tools and tutorials by Gigantus",
+   "chars": 48566,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Stone Forts on the Battle Map/Creating a World - Stone Forts on the Battle Map.pdf",
+   "title": "Creating a World - Stone Forts on the Battle Map",
+   "ext": "pdf",
+   "kb": 115971,
+   "tags": [
+    "campaign-map",
+    "buildings",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [
+    "Creating a World - Stone Forts on the Battle Map/Named forts.pdf"
+   ],
+   "phases": [
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - The BinEditor/BinEditor/The BinEditor Manual.pdf",
+   "title": "The BinEditor Manual",
+   "ext": "pdf",
+   "kb": 606,
+   "tags": [
+    "tools",
+    "strings"
+   ],
+   "game_files": [],
+   "summary": "Getting started .............................................................................................................................................. 3",
+   "chars": 7273,
+   "attachments": [],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "Creating a World - The BinEditor/Creating a World - The BinEditor.pdf",
+   "title": "Creating a World - The BinEditor",
+   "ext": "pdf",
+   "kb": 28860,
+   "tags": [
+    "tools",
+    "strings",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "6"
+   ]
+  },
+  {
+   "path": "Creating a World - The Recruit Limit Script/Creating a World - The Recruit Limit Script.pdf",
+   "title": "Creating a World - The Recruit Limit Script",
+   "ext": "pdf",
+   "kb": 570,
+   "tags": [
+    "scripting",
+    "troubleshooting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Variable Files .............................................................................................................................................................. 4",
+   "chars": 7427,
+   "attachments": [],
+   "phases": [
+    "7",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - The Recruit Limit Script/Recruit Limitation/4a_wallchecks.txt",
+   "title": "4a wallchecks",
+   "ext": "txt",
+   "kb": 2,
+   "tags": [
+    "settlements",
+    "units",
+    "scripting",
+    "troubleshooting",
+    "mounts",
+    "factions",
+    "campaign-map"
+   ],
+   "game_files": [],
+   "summary": "set_counter captured_wall_size 0 ; default to \"village\"",
+   "chars": 14674,
+   "attachments": [
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/0_FactionTurnLogScript.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/10a_regioncounters.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/10b_settingrecruitpools.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/1_counters.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/2_basevalues.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/3a_upgradecity.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/3b_upgradecastle.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/4b_capturechecks.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/5_Settlementcapturemain.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6a_trainsiege.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6b_trainship.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6c_trainlightinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6d_trainspearinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6e_trainmissileinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6f_trainheavyinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6g_trainlightcavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6h_trainmissilecavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/6i_trainheavycavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7a_disbandsiege.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7b_disbandship.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7c_disbandlightinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7d_disbandspearinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7e_disbandmissileinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7f_disbandheavyinfantry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7g_disbandlightcavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7h_disbandmissilecavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/7i_disbandheavycavalry.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/8a_checklimitscrossed.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/8b_checklimitbelow.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/9_reimbursement.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/_value list.txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/_variable - [faction].txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/_variable - [number].txt",
+    "Creating a World - The Recruit Limit Script/Recruit Limitation/_variable - [settlement].txt"
+   ],
+   "phases": [
+    "7",
+    "11",
+    "12",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World - Unit Sprite Generating/Creating a World - Unit Sprite Generating.pdf",
+   "title": "Creating a World - Unit Sprite Generating",
+   "ext": "pdf",
+   "kb": 1113,
+   "tags": [
+    "sprites",
+    "units"
+   ],
+   "game_files": [
+    {
+     "file": "battle_models.modeldb",
+     "hits": 3
+    }
+   ],
+   "summary": "The full credit for this tutorial goes to Caliban who posted the original in May 2007. Further credit is extended to alpaca for his DDS<->Texture tool and NVIDIA, ImageMagick and u7angel for the DDS converter.",
+   "chars": 15839,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "Creating a World - Unit Sprite Generating/Sprite Generating Setup/sprite_script.txt",
+   "title": "sprite script",
+   "ext": "txt",
+   "kb": 0,
+   "tags": [
+    "sprites",
+    "scripting",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 13,
+   "attachments": [],
+   "phases": [
+    "7",
+    "14"
+   ]
+  },
+  {
+   "path": "Creating a World - Unpacking the Game/Creating a World - Unpacking the Game.pdf",
+   "title": "Creating a World - Unpacking the Game",
+   "ext": "pdf",
+   "kb": 676,
+   "tags": [
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "The reason .............................................................................................................................................................. 3",
+   "chars": 7093,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "Creating a World – Basic mapping from scratch/creating a world - basic mapping from scratch.pdf",
+   "title": "creating a world - basic mapping from scratch",
+   "ext": "pdf",
+   "kb": 879,
+   "tags": [
+    "campaign-map",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "configuration.cfg",
+     "hits": 3
+    },
+    {
+     "file": "map_big.tga",
+     "hits": 2
+    },
+    {
+     "file": "map_base.tga",
+     "hits": 2
+    },
+    {
+     "file": "map_climates.tga",
+     "hits": 2
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_terrain.txt",
+     "hits": 1
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_ground_types.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_regions.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_small.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_fog.tga",
+     "hits": 1
+    },
+    {
+     "file": "water_surface.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_roughness.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_trade_routes.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_fe.tga",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Required installations: ....................................................................................................................................... 2",
+   "chars": 30791,
+   "attachments": [
+    "Creating a World – Basic mapping from scratch/creating a world - basic mapping from scratch.docx"
+   ],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Creating a World – Starting Steam Mods the easy Way/Creating a World – Starting Steam Mods the easy Way.pdf",
+   "title": "Creating a World – Starting Steam Mods the easy Way",
+   "ext": "pdf",
+   "kb": 588,
+   "tags": [
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "configuration.cfg",
+     "hits": 3
+    },
+    {
+     "file": "name_of_file.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "Manual Method ............................................................................................................................................................ 2",
+   "chars": 8204,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "Creating a World – Working with the Worldwind mapper/[Modding] Creating a World – Working with the Worldwind mapper.pdf",
+   "title": "Creating a World – Working with the Worldwind mapper",
+   "ext": "pdf",
+   "kb": 3130,
+   "tags": [
+    "campaign-map",
+    "installation",
+    "factions",
+    "units",
+    "scripting",
+    "models-3d",
+    "characters",
+    "sounds",
+    "projectiles",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "pagan_priest.cas",
+     "hits": 3
+    },
+    {
+     "file": "shadow_staff.cas",
+     "hits": 3
+    },
+    {
+     "file": "mymod.cfg",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_units.txt",
+     "hits": 2
+    },
+    {
+     "file": "catholic_priest.cas",
+     "hits": 1
+    },
+    {
+     "file": "descr_area_effects.xml",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectiles.txt",
+     "hits": 1
+    },
+    {
+     "file": "grape.cas",
+     "hits": 1
+    },
+    {
+     "file": "battle.sd",
+     "hits": 1
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_music_types.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "[Modding] M2TW : Creating a World, a series of tools and tutorials by Gigantus",
+   "chars": 48566,
+   "attachments": [],
+   "phases": [
+    "7",
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Creating New Faction Symbols – Rome_ Total War Heaven.pdf",
+   "title": "Creating New Faction Symbols – Rome Total War Heaven",
+   "ext": "pdf",
+   "kb": 9186,
+   "tags": [
+    "factions"
+   ],
+   "game_files": [],
+   "summary": "So in my Judea Total War thread a number of people mentioned liking my faction icons, so I thought I’d share the secret of making",
+   "chars": 4727,
+   "attachments": [],
+   "phases": [
+    "11"
+   ]
+  },
+  {
+   "path": "Download s- Ancillary lists complete download pack/Ancillaries list part 1 people.docx",
+   "title": "Ancillaries list part 1 people",
+   "ext": "docx",
+   "kb": 16,
+   "tags": [
+    "mounts",
+    "characters",
+    "ancillaries"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 5467,
+   "attachments": [
+    "Download s- Ancillary lists complete download pack/Ancillaries list part 2 items.docx",
+    "Download s- Ancillary lists complete download pack/Ancillaries list part 3 animals-pets.docx",
+    "Download s- Ancillary lists complete download pack/Ancillaries list part 4 relics.docx",
+    "Download s- Ancillary lists complete download pack/Ancillaries list part 5 unique characters.docx"
+   ],
+   "phases": [
+    "9",
+    "10",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "editing desc_settlement_mechanics.xml.pdf",
+   "title": "editing desc settlement mechanics.xml",
+   "ext": "pdf",
+   "kb": 867,
+   "tags": [
+    "settlements"
+   ],
+   "game_files": [],
+   "summary": "can someone thoroughly explain the pip_modifier value, pip_min value, and pip_max value ? what is the <factor",
+   "chars": 4661,
+   "attachments": [],
+   "phases": [
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "EDU mount_effect and spear_bonus questions.pdf",
+   "title": "EDU mount effect and spear bonus questions",
+   "ext": "pdf",
+   "kb": 418,
+   "tags": [
+    "units",
+    "mounts"
+   ],
+   "game_files": [
+    {
+     "file": "descr_mount.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Can anybody enlighten me on these please?",
+   "chars": 8305,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "Everything you need to know about permanent stone and or buildable forts.pdf",
+   "title": "Everything you need to know about permanent stone and or buildable forts",
+   "ext": "pdf",
+   "kb": 2487,
+   "tags": [
+    "buildings",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "descr_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 2
+    },
+    {
+     "file": "se_fort_buildings.cas",
+     "hits": 1
+    },
+    {
+     "file": "se_fort_walls.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "This tutorial aims at combining all the information about stone forts in game (MTW2:Kingdoms v1.5): (1) placing permanent/temporary (i.e. destructible) stone forts on the campaign map, (2) building permanent/temporary (i.e. destructible) stone forts on",
+   "chars": 34892,
+   "attachments": [],
+   "phases": [
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Formatted campaign modeldb files for all campaigns - Kingdoms & Vanilla 1.5/Formatted campaign modeldb files for all campaigns - Kingdoms & Vanilla 1.5.pdf",
+   "title": "Formatted campaign modeldb files for all campaigns - Kingdoms & Vanilla 1.5",
+   "ext": "pdf",
+   "kb": 122475,
+   "tags": [
+    "models-3d",
+    "campaign-map",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "GUIDE - Crashes and how to fix them.pdf",
+   "title": "GUIDE - Crashes and how to fix them",
+   "ext": "pdf",
+   "kb": 1851,
+   "tags": [
+    "troubleshooting",
+    "campaign-map",
+    "units",
+    "buildings",
+    "traits",
+    "projectiles",
+    "models-3d",
+    "factions",
+    "ancillaries"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 12
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 9
+    },
+    {
+     "file": "map_regions.tga",
+     "hits": 7
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 6
+    },
+    {
+     "file": "mesoamerican_king.cas",
+     "hits": 5
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_model_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_win_conditions.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 3
+    },
+    {
+     "file": "shadow_sword.cas",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "late_general_northern.cas",
+     "hits": 1
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_campaign_ai_db.xml",
+     "hits": 1
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_campaign_db.xml",
+     "hits": 1
+    },
+    {
+     "file": "vista.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "The purpose of this guide is to explain what is causing the various types of crashes to desktop (CTD) in mods and provide some advice on how to fix them.",
+   "chars": 41232,
+   "attachments": [],
+   "phases": [
+    "8",
+    "9",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Hero Ability/hero ability Forum.pdf",
+   "title": "hero ability Forum",
+   "ext": "pdf",
+   "kb": 786,
+   "tags": [
+    "characters",
+    "sounds",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "battle.sd",
+     "hits": 8
+    },
+    {
+     "file": "descr_hero_abilities.xml",
+     "hits": 5
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 3
+    },
+    {
+     "file": "campaign_script.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_sounds_generic.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_hero_abilites.xml",
+     "hits": 1
+    }
+   ],
+   "summary": "First you need to open descr_hero_abilities.xml it should automatically open in Internet Explorer- this file contains the code for Hero abilities. The code looks like this (you can edit the code by going to File - Edit with XML Editor) - The red text is the explanation for the",
+   "chars": 31330,
+   "attachments": [
+    "Hero Ability/Hero Ability.txt"
+   ],
+   "phases": [
+    "10",
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "How To Change The Symbols Of A Faction – Rome_ Total War Heaven.pdf",
+   "title": "How To Change The Symbols Of A Faction – Rome Total War Heaven",
+   "ext": "pdf",
+   "kb": 9302,
+   "tags": [
+    "factions",
+    "installation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_standards.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_banner.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_building_battle.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Are you creating a new faction, but do not want to use the original symbols that came with it? Or are you just tired of using the ones",
+   "chars": 8663,
+   "attachments": [],
+   "phases": [
+    "11"
+   ]
+  },
+  {
+   "path": "How to create a complex religion change script/How to create a complex religion change script.pdf",
+   "title": "How to create a complex religion change script",
+   "ext": "pdf",
+   "kb": 349,
+   "tags": [
+    "scripting",
+    "religion",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_event_effects.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_event_images.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Who doesn't know the history of the Cathars and the crusade against Aragon? It's a really interesting history, and we can represent it with a campaign_script, so I decided to make a tutorial for religion changes, I didn't specify the definitive conditions, but it is like this:",
+   "chars": 19044,
+   "attachments": [
+    "How to create a complex religion change script/How to create a complex religion change script.txt"
+   ],
+   "phases": [
+    "7",
+    "10",
+    "12"
+   ]
+  },
+  {
+   "path": "How to create a dismounted unit.pdf",
+   "title": "How to create a dismounted unit",
+   "ext": "pdf",
+   "kb": 575,
+   "tags": [
+    "units",
+    "mounts",
+    "models-3d",
+    "buildings",
+    "sprites"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 6
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 5
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 5
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 5
+    },
+    {
+     "file": "armored_clergy_lod2.mesh",
+     "hits": 4
+    },
+    {
+     "file": "armored_clergy_ug1_lod1.mesh",
+     "hits": 4
+    },
+    {
+     "file": "armored_clergy_ug1_lod2.mesh",
+     "hits": 4
+    },
+    {
+     "file": "armored_clergy_lod0.mesh",
+     "hits": 3
+    },
+    {
+     "file": "armored_clergy_lod1.mesh",
+     "hits": 3
+    },
+    {
+     "file": "armored_clergy_ug1_lod0.mesh",
+     "hits": 3
+    },
+    {
+     "file": "normans_knights_templar_lod0.mesh",
+     "hits": 3
+    },
+    {
+     "file": "knights_templar_lod0.mesh",
+     "hits": 3
+    },
+    {
+     "file": "knights_templar_lod1.mesh",
+     "hits": 3
+    },
+    {
+     "file": "knights_templar_lod2.mesh",
+     "hits": 3
+    },
+    {
+     "file": "tsars_guard_lod0.mesh",
+     "hits": 2
+    },
+    {
+     "file": "tsars_guard_lod1.mesh",
+     "hits": 2
+    },
+    {
+     "file": "knights_templar_lod3.mesh",
+     "hits": 2
+    },
+    {
+     "file": "armored_clergy_ug_lod.mesh",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_armored_clergy_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_tsars_guard_lod0.mesh",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_tsars_guard_lod1.mesh",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_tsars_guard_lod2.mesh",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_tsars_guard_lod3.mesh",
+     "hits": 1
+    },
+    {
+     "file": "dismounted_tsars_guard_ug1_lod0.mesh",
+     "hits": 1
+    }
+   ],
+   "summary": "allright i wrote this tut awhile back it was a little buggy so i have fixed it up and added dismounted tsars guard",
+   "chars": 54108,
+   "attachments": [],
+   "phases": [
+    "12",
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "How to create a new accent/[Tutorial] How to create a new accent.pdf",
+   "title": "How to create a new accent",
+   "ext": "pdf",
+   "kb": 1371,
+   "tags": [
+    "sounds"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_sounds_units_voice.txt",
+     "hits": 7
+    },
+    {
+     "file": "export_descr_sounds_stratmap_voice.txt",
+     "hits": 6
+    },
+    {
+     "file": "descr_sounds_accents.txt",
+     "hits": 5
+    },
+    {
+     "file": "descr_sounds_units_confirm.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_descr_sounds_soldier_voice.txt",
+     "hits": 5
+    },
+    {
+     "file": "export_descr_sounds_units_battle_events.txt",
+     "hits": 4
+    },
+    {
+     "file": "export_descr_sounds_prebattle.txt",
+     "hits": 3
+    },
+    {
+     "file": "descr_sound_accent.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_sounds_stramap_voice.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sound_accents_copy.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "In this tutorial we'll create a new accent for a faction of a modfoldered mod step by step.",
+   "chars": 45386,
+   "attachments": [
+    "How to create a new accent/code.txt"
+   ],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "How to Improve cavalry charges.pdf",
+   "title": "How to Improve cavalry charges",
+   "ext": "pdf",
+   "kb": 302,
+   "tags": [
+    "mounts",
+    "units"
+   ],
+   "game_files": [],
+   "summary": "Go to descr_mount and change the radius of the horse and the mass, like this",
+   "chars": 3347,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "How to limit recruitment & construction by area (hidden resources).pdf",
+   "title": "How to limit recruitment & construction by area (hidden resources)",
+   "ext": "pdf",
+   "kb": 1291,
+   "tags": [
+    "troubleshooting",
+    "resources",
+    "buildings",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_regions.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    }
+   ],
+   "summary": "Wambat is holding a weekly raffle giveaway of Steam games to promote the Fourth Age Total War mod and his Let's Play campaign!",
+   "chars": 28700,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "How to make a berserker unit.pdf",
+   "title": "How to make a berserker unit",
+   "ext": "pdf",
+   "kb": 68225,
+   "tags": [
+    "units",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "How to make completely new portraits/How to make completely new portraits.pdf",
+   "title": "How to make completely new portraits",
+   "ext": "pdf",
+   "kb": 3298,
+   "tags": [
+    "characters",
+    "traits",
+    "textures"
+   ],
+   "game_files": [],
+   "summary": "*Photoshop,or some similar editing software",
+   "chars": 10220,
+   "attachments": [],
+   "phases": [
+    "8",
+    "10",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "How to merge animations from 2 different mods.pdf",
+   "title": "How to merge animations from 2 different mods",
+   "ext": "pdf",
+   "kb": 713,
+   "tags": [
+    "animation",
+    "units",
+    "projectiles",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 4
+    },
+    {
+     "file": "cr_spear_die_galloping.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_die_standing.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_run.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_run_to_charge.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_run_to_stand_a.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_run_to_walk.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_shuffle_forward.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_idle.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_to_charge.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_to_run.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_to_walk.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_turn_90_ccw_1.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_stand_a_turn_90_cw_1.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_swim.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_swim_to.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_walk.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_walk_to_run.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_walk_to_stand_a.cas",
+     "hits": 3
+    },
+    {
+     "file": "cr_spear_charge.cas",
+     "hits": 2
+    },
+    {
+     "file": "hr_spear_fs_horse_stand_a_idle.cas",
+     "hits": 2
+    },
+    {
+     "file": "med_elephant_stand_a_to_run.cas",
+     "hits": 1
+    },
+    {
+     "file": "med_elephant_stand_a_to_swim.cas",
+     "hits": 1
+    },
+    {
+     "file": "med_elephant_stand_a_to_walk.cas",
+     "hits": 1
+    },
+    {
+     "file": "med_elephant_stand_a_turn_45_ccw_1.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "This is my 1st tutorial. So, if you notice mistakes, be gentle and just point them. I'll correct them quickly.",
+   "chars": 28350,
+   "attachments": [],
+   "phases": [
+    "13",
+    "14"
+   ]
+  },
+  {
+   "path": "How To – Edit a resource.pdf",
+   "title": "How To – Edit a resource",
+   "ext": "pdf",
+   "kb": 1266,
+   "tags": [
+    "resources",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "How-To-Add-New-Historic-Events.pdf",
+   "title": "How-To-Add-New-Historic-Events",
+   "ext": "pdf",
+   "kb": 1341,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "txt.strings.bin",
+     "hits": 4
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_stat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "This tutorial will show you how to add your own historic events and make them come up during the game.",
+   "chars": 11359,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "junge dense forest.pdf",
+   "title": "junge dense forest",
+   "ext": "pdf",
+   "kb": 500,
+   "tags": [],
+   "game_files": [
+    {
+     "file": "tropical_group_a.cas",
+     "hits": 2
+    },
+    {
+     "file": "palm_small_a.cas",
+     "hits": 1
+    },
+    {
+     "file": "palm_small_b.cas",
+     "hits": 1
+    },
+    {
+     "file": "tropical_group_b.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "I've been searching the forums but to no avail. Is there a fix for the dense forest/jungle climate texture on the strat map?",
+   "chars": 2872,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "List of Hardcoded Limits.pdf",
+   "title": "List of Hardcoded Limits",
+   "ext": "pdf",
+   "kb": 298,
+   "tags": [
+    "troubleshooting",
+    "projectiles",
+    "buildings",
+    "ancillaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_model_battle.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_rebel_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sm_factions.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_character_trait.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_projectile_new.txt",
+     "hits": 1
+    },
+    {
+     "file": "map_regions.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "(This thread is a duplicate of Simetrical's thread here, incorporating research by many individuals. The threads will be maintained in duplicate, with all changes in one being made to the other as well.)",
+   "chars": 8360,
+   "attachments": [],
+   "phases": [
+    "9",
+    "12",
+    "13"
+   ]
+  },
+  {
+   "path": "M2TW Heaven - How to make new units.pdf",
+   "title": "M2TW Heaven - How to make new units",
+   "ext": "pdf",
+   "kb": 440,
+   "tags": [
+    "units"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Berserkergang – the new unit in all it’s glory but",
+   "chars": 10543,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "M2TW_Berserker_Resources/m2tw berserker resources.pdf",
+   "title": "m2tw berserker resources",
+   "ext": "pdf",
+   "kb": 66866,
+   "tags": [
+    "units",
+    "resources",
+    "animation"
+   ],
+   "game_files": [
+    {
+     "file": "descr_skeleton.txt",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_basepose.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_idle.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_to_advance.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_to_combat_jog.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_to_charge.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_lf_high_morale_1.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_lf_high_morale_2.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_lf_high_morale_3.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_turn_45cw.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_turn_45ccw.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_turn_90cw.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_ready_turn_90ccw.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_advance.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_advance_to_combat_jog.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_advance_to_ready.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_combat_jog.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_combat_jog_to_advance.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_combat_jog_to_ready.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_run_to_charge.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_charge.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_charge_attack.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_attack_centre_mid_d_slashrl_success.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_attack_slash_mid_success.cas",
+     "hits": 1
+    },
+    {
+     "file": "e_berserker_attack_2_hit_a_success.cas",
+     "hits": 1
+    }
+   ],
+   "summary": "Create a new entry in descr_skeleton.txt:",
+   "chars": 4001,
+   "attachments": [
+    "M2TW_Berserker_Resources/code.txt"
+   ],
+   "phases": [
+    "10",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "M2TW_Ultimate_Docudemons_5.3.xlsx",
+   "title": "M2TW Ultimate Docudemons 5.3",
+   "ext": "xlsx",
+   "kb": 320,
+   "tags": [
+    "scripting",
+    "installation"
+   ],
+   "game_files": [],
+   "summary": "[audio] enable = enable/disable all audio 1 true or 0 false",
+   "chars": 60000,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "Making a unique-specific settlements capture trait.pdf",
+   "title": "Making a unique-specific settlements capture trait",
+   "ext": "pdf",
+   "kb": 73882,
+   "tags": [
+    "traits",
+    "settlements",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "8",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Merge animations FEB.pdf",
+   "title": "Merge animations FEB",
+   "ext": "pdf",
+   "kb": 184,
+   "tags": [
+    "animation",
+    "installation"
+   ],
+   "game_files": [],
+   "summary": "1. Create a folder named workshop somewhere in your drive or on your",
+   "chars": 3836,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "Mongol invasion script/Mongol invasion script.pdf",
+   "title": "Mongol invasion script",
+   "ext": "pdf",
+   "kb": 46260,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [],
+   "summary": "monitor_event FactionTurnStart FactionType mongols",
+   "chars": 1007,
+   "attachments": [
+    "Mongol invasion script/Mongol invasion script.txt"
+   ],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "Naval Invasions Tutorial.pdf",
+   "title": "Naval Invasions Tutorial",
+   "ext": "pdf",
+   "kb": 88014,
+   "tags": [
+    "scripting",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "Non mergins fleets problem solved.pdf",
+   "title": "Non mergins fleets problem solved",
+   "ext": "pdf",
+   "kb": 34598,
+   "tags": [
+    "troubleshooting",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "README FIRST.txt",
+   "title": "README FIRST",
+   "ext": "txt",
+   "kb": 10,
+   "tags": [
+    "projectiles",
+    "installation",
+    "units",
+    "troubleshooting",
+    "sounds",
+    "models-3d",
+    "factions",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "descr_projectile.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 1
+    }
+   ],
+   "summary": "TWCENTER tutorials, guides and resources Compilation by Werety",
+   "chars": 9786,
+   "attachments": [],
+   "phases": [
+    "10",
+    "11",
+    "13",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Recruit Generals PART 1.pdf",
+   "title": "Recruit Generals PART 1",
+   "ext": "pdf",
+   "kb": 541,
+   "tags": [
+    "characters",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "medieval2.preference.cfg",
+     "hits": 1
+    },
+    {
+     "file": "preference.cfg",
+     "hits": 1
+    }
+   ],
+   "summary": "Medieval II: Total War General Discussion",
+   "chars": 13687,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Recruit Generals PART 2.pdf",
+   "title": "Recruit Generals PART 2",
+   "ext": "pdf",
+   "kb": 566,
+   "tags": [
+    "characters",
+    "installation",
+    "buildings"
+   ],
+   "game_files": [],
+   "summary": "Medieval II: Total War General Discussion",
+   "chars": 7931,
+   "attachments": [],
+   "phases": [
+    "10",
+    "12",
+    "15"
+   ]
+  },
+  {
+   "path": "Religion conversion script/Religion conversion script.pdf",
+   "title": "Religion conversion script",
+   "ext": "pdf",
+   "kb": 313,
+   "tags": [
+    "scripting",
+    "religion",
+    "buildings"
+   ],
+   "game_files": [
+    {
+     "file": "historic_events.txt.strings.bin",
+     "hits": 1
+    },
+    {
+     "file": "export_desc_building.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "developed for SS6.1 for novgorod republic.",
+   "chars": 17642,
+   "attachments": [
+    "Religion conversion script/Religion conversion script.txt"
+   ],
+   "phases": [
+    "7",
+    "10",
+    "12"
+   ]
+  },
+  {
+   "path": "Representing raiding via traits/Representing raiding via traits.pdf",
+   "title": "Representing raiding via traits",
+   "ext": "pdf",
+   "kb": 0,
+   "tags": [
+    "traits"
+   ],
+   "game_files": [],
+   "summary": ";------------------------------------------------------------------------------------; raiding traits 2016; Genghis Skhan;",
+   "chars": 4001,
+   "attachments": [
+    "Representing raiding via traits/Representing raiding via traits.txt"
+   ],
+   "phases": [
+    "8"
+   ]
+  },
+  {
+   "path": "River Glitch Solution/River Glitch solution.pdf",
+   "title": "River Glitch solution",
+   "ext": "pdf",
+   "kb": 845,
+   "tags": [
+    "troubleshooting",
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "map_feaures.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "Hy all. I have the problem with the rivers disappearing on the strategic map. Have a look at this picture:",
+   "chars": 4209,
+   "attachments": [
+    "River Glitch Solution/River Glitch_twc thread.pdf",
+    "River Glitch Solution/sea edges - Page 7.pdf"
+   ],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "RTW - Making a new campaign map.pdf",
+   "title": "RTW - Making a new campaign map",
+   "ext": "pdf",
+   "kb": 1536,
+   "tags": [
+    "campaign-map",
+    "resources",
+    "mercenaries",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "map_regions.tga",
+     "hits": 24
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 8
+    },
+    {
+     "file": "map_climates.tga",
+     "hits": 6
+    },
+    {
+     "file": "descr_disasters.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_terrain.txt",
+     "hits": 4
+    },
+    {
+     "file": "map_fe.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_ground_types.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_trade_routes.tga",
+     "hits": 4
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 2
+    },
+    {
+     "file": "map_roughness.tga",
+     "hits": 2
+    },
+    {
+     "file": "water_surface.tga",
+     "hits": 2
+    },
+    {
+     "file": "map_britons.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_brutii.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_carthage.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_egypt.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_gaul.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_german.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_illyria.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_julii.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "Wambat is holding a weekly raffle giveaway of Steam games to promote the Fourth Age Total War mod and his Let's Play campaign!",
+   "chars": 37358,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "Smooth Coastlines in One Layer/Smooth Coastlines in One Layer.pdf",
+   "title": "Smooth Coastlines in One Layer",
+   "ext": "pdf",
+   "kb": 1135,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [],
+   "summary": "This technique is based on layer styles first suggested by _Capper_ in his tutorial. I attempted to perfect his technique. With this method, there will be no sea or land clipping at all. The best thing, once you set the layer styles, you do not have to do anything, just fill the land",
+   "chars": 11769,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "Smoother Coast by Capper/Smoother Coast by Capper.pdf",
+   "title": "Smoother Coast by Capper",
+   "ext": "pdf",
+   "kb": 347,
+   "tags": [],
+   "game_files": [
+    {
+     "file": "map_heights.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "Smoother Coasts by Capper-twt, original here.",
+   "chars": 562,
+   "attachments": [],
+   "phases": []
+  },
+  {
+   "path": "The Complete EDU Guide RTW.pdf",
+   "title": "The Complete EDU Guide RTW",
+   "ext": "pdf",
+   "kb": 1445,
+   "tags": [
+    "units",
+    "projectiles",
+    "sounds",
+    "mounts",
+    "mercenaries"
+   ],
+   "game_files": [
+    {
+     "file": "descr_mount.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_model_battle.txt",
+     "hits": 3
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_formations_ai.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_formations.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_projectile_new.txt",
+     "hits": 2
+    },
+    {
+     "file": "export_descr_unit.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_battle.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_units.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_animals.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_engines.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_ship.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_sounds_weapons.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Modding area: Units (balance, function, stats)",
+   "chars": 39829,
+   "attachments": [],
+   "phases": [
+    "13",
+    "15"
+   ]
+  },
+  {
+   "path": "The Complete Fix For The -prec- Attribute For Mods That Feature Javelin Infantry.pdf",
+   "title": "The Complete Fix For The -prec- Attribute For Mods That Feature Javelin Infantry",
+   "ext": "pdf",
+   "kb": 352,
+   "tags": [
+    "units",
+    "projectiles",
+    "troubleshooting"
+   ],
+   "game_files": [
+    {
+     "file": "eb_missile_soliferrum_high.cas",
+     "hits": 2
+    },
+    {
+     "file": "descr_projectile.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "The \"prec\" weapon attribute has always been buggy. The player will find that ordering a \"prec\" infantry to shoot while inside a settlement will cause it to flounder around for like 30 seconds before doing something. The AI will find that their infantry will suddenly stand still, stuck in",
+   "chars": 16794,
+   "attachments": [],
+   "phases": [
+    "13"
+   ]
+  },
+  {
+   "path": "The Guide to the BMDB (battle_models.modeldb) for absolute beginners and non-English speakers.pdf",
+   "title": "The Guide to the BMDB (battle models.modeldb) for absolute beginners and non-English speakers",
+   "ext": "pdf",
+   "kb": 75391,
+   "tags": [
+    "models-3d",
+    "needs-manual-read"
+   ],
+   "game_files": [
+    {
+     "file": "battle_models.modeldb",
+     "hits": 5
+    }
+   ],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "Turning footsoldiers into Captains & Generals with text editing only.pdf",
+   "title": "Turning footsoldiers into Captains & Generals with text editing only",
+   "ext": "pdf",
+   "kb": 644,
+   "tags": [
+    "characters",
+    "models-3d"
+   ],
+   "game_files": [
+    {
+     "file": "descr_character.txt",
+     "hits": 3
+    },
+    {
+     "file": "battle_models.modeldb",
+     "hits": 2
+    }
+   ],
+   "summary": "As I really don't like the vanilla full-plate captain & general models that much, I've done some research and have found a way to swap them with other models easily. Here we go:",
+   "chars": 11341,
+   "attachments": [],
+   "phases": [
+    "10",
+    "14",
+    "15"
+   ]
+  },
+  {
+   "path": "Tutorial - Hero Abilities/Tutorial - Hero Abilities.pdf",
+   "title": "Tutorial - Hero Abilities",
+   "ext": "pdf",
+   "kb": 0,
+   "tags": [
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "battle.sd",
+     "hits": 1
+    }
+   ],
+   "summary": "Number of times the ability can be used, defaults to 1 if not specified",
+   "chars": 3810,
+   "attachments": [
+    "Tutorial - Hero Abilities/Tutorial - Hero Abilities.txt"
+   ],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "Tutorial - Stone building discount.pdf",
+   "title": "Tutorial - Stone building discount",
+   "ext": "pdf",
+   "kb": 1751,
+   "tags": [
+    "buildings"
+   ],
+   "game_files": [],
+   "summary": "I have tried to give this building trait to a new building and it just won't show up. Is it a guild-only function?",
+   "chars": 6984,
+   "attachments": [],
+   "phases": [
+    "12"
+   ]
+  },
+  {
+   "path": "TUTORIAL_ Adding a Provincial Campaign into Kingdoms.pdf",
+   "title": "TUTORIAL Adding a Provincial Campaign into Kingdoms",
+   "ext": "pdf",
+   "kb": 839,
+   "tags": [
+    "campaign-map"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_descriptions.txt.strings.bin",
+     "hits": 2
+    },
+    {
+     "file": "imperial_campaign_regions_and_settlement_names.txt.strings.bin",
+     "hits": 2
+    },
+    {
+     "file": "menu_english.txt.strings.bin",
+     "hits": 2
+    },
+    {
+     "file": "crusader_regions_and_settlement_names.txt.strings.bin",
+     "hits": 1
+    }
+   ],
+   "summary": "I have finally been able to create a provincial campaign using Kindgoms, specifically the Crusades Campaign. My goal was to copy the Crusades campaign and then make my own personal",
+   "chars": 7310,
+   "attachments": [],
+   "phases": [
+    "15"
+   ]
+  },
+  {
+   "path": "tw-script for VSC/GitHub - EddieEldridge_tw-script_ Language extension for Medieval 2 modding.html",
+   "title": "GitHub - EddieEldridge tw-script Language extension for Medieval 2 modding",
+   "ext": "html",
+   "kb": 242,
+   "tags": [
+    "scripting"
+   ],
+   "game_files": [
+    {
+     "file": "campaign_script.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_descr_character_traits.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_buildings.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_ancillaries.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_traits.txt",
+     "hits": 1
+    },
+    {
+     "file": "export_vnvs.txt",
+     "hits": 1
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 1
+    }
+   ],
+   "summary": "Search code, repositories, users, issues, pull requests...",
+   "chars": 7609,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  },
+  {
+   "path": "TWorg - Making a new campaign map.pdf",
+   "title": "TWorg - Making a new campaign map",
+   "ext": "pdf",
+   "kb": 23387,
+   "tags": [
+    "campaign-map",
+    "resources",
+    "mercenaries",
+    "characters"
+   ],
+   "game_files": [
+    {
+     "file": "map_regions.tga",
+     "hits": 24
+    },
+    {
+     "file": "descr_regions.txt",
+     "hits": 8
+    },
+    {
+     "file": "map_climates.tga",
+     "hits": 6
+    },
+    {
+     "file": "descr_disasters.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_strat.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_terrain.txt",
+     "hits": 4
+    },
+    {
+     "file": "map_fe.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_features.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_ground_types.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_heights.tga",
+     "hits": 4
+    },
+    {
+     "file": "map_trade_routes.tga",
+     "hits": 4
+    },
+    {
+     "file": "export_descr_buildings.txt",
+     "hits": 4
+    },
+    {
+     "file": "descr_events.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_mercenaries.txt",
+     "hits": 2
+    },
+    {
+     "file": "descr_regions_and_settlement_name_lookup.txt",
+     "hits": 2
+    },
+    {
+     "file": "map_roughness.tga",
+     "hits": 2
+    },
+    {
+     "file": "water_surface.tga",
+     "hits": 2
+    },
+    {
+     "file": "map_britons.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_brutii.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_carthage.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_egypt.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_gaul.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_german.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_illyria.tga",
+     "hits": 1
+    },
+    {
+     "file": "map_julii.tga",
+     "hits": 1
+    }
+   ],
+   "summary": "I know there is the research post, but the info there is a bit muddled, and I missed some stuff first time round, so I",
+   "chars": 36896,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "UV Unwrapping Tips - Compiled by ProJYeet.pdf",
+   "title": "UV Unwrapping Tips - Compiled by ProJYeet",
+   "ext": "pdf",
+   "kb": 4936,
+   "tags": [
+    "models-3d"
+   ],
+   "game_files": [],
+   "summary": ": Makes the size of object its actual size",
+   "chars": 6870,
+   "attachments": [],
+   "phases": [
+    "14"
+   ]
+  },
+  {
+   "path": "Varied Adoption.pdf",
+   "title": "Varied Adoption",
+   "ext": "pdf",
+   "kb": 28916,
+   "tags": [
+    "characters",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "10",
+    "15"
+   ]
+  },
+  {
+   "path": "Yes or No Event Tutorial.pdf",
+   "title": "Yes or No Event Tutorial",
+   "ext": "pdf",
+   "kb": 164995,
+   "tags": [
+    "scripting",
+    "needs-manual-read"
+   ],
+   "game_files": [],
+   "summary": "",
+   "chars": 0,
+   "attachments": [],
+   "phases": [
+    "7"
+   ]
+  }
+ ],
+ "unreadable": [
+  "[M2TW modding tutorial] Single Model Units in Campaign.pdf",
+  "[MODDING] Creating and adding new 2D building art with GIMP (for beginners).pdf",
+  "[Modding] Family trees compendium of knowledge.pdf",
+  "[Modding] How to Ancillary Guide.pdf",
+  "[Modding] M2TW Be a Modder Doctoring of Medieval 2 units.pdf",
+  "[Modding] Tutorial How To Add In Your Own Music To M2TW.pdf",
+  "[Modding] Unique Names (and avoiding labels).pdf",
+  "[Tutorial]El Monstero's Definitive Guide to Modding Med 2's Music.pdf",
+  "[TW Guide] A Guide for Guilds.pdf",
+  "AOR concept 199+ AOR with just 8 resources.pdf",
+  "Creating a World - Faction Limits for Agents.pdf",
+  "Creating a World - High Resolution Screenshots.pdf",
+  "Creating a World - Killing characters multiple ways.pdf",
+  "Creating a World - Stone Forts on the Battle Map/Creating a World - Stone Forts on the Battle Map.pdf",
+  "Creating a World - The BinEditor/Creating a World - The BinEditor.pdf",
+  "Creating a World - Unit Sprite Generating/Sprite Generating Setup/sprite_script.txt",
+  "Formatted campaign modeldb files for all campaigns - Kingdoms & Vanilla 1.5/Formatted campaign modeldb files for all campaigns - Kingdoms & Vanilla 1.5.pdf",
+  "How to make a berserker unit.pdf",
+  "How To – Edit a resource.pdf",
+  "Making a unique-specific settlements capture trait.pdf",
+  "Naval Invasions Tutorial.pdf",
+  "Non mergins fleets problem solved.pdf",
+  "The Guide to the BMDB (battle_models.modeldb) for absolute beginners and non-English speakers.pdf",
+  "Varied Adoption.pdf",
+  "Yes or No Event Tutorial.pdf"
+ ],
+ "files_indexed": 321
+}

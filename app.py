@@ -1,4 +1,4 @@
-"""Unit Transfer — launch the local web UI.
+"""Medieval 2 GUI Toolkit — launch the local web UI.
 
 Usage:
   python app.py                 # use the remembered MED2 root (choose it in the UI if unset)
@@ -38,15 +38,29 @@ from unittransfer.logutil import setup as setup_logging
 from unittransfer.server import WEB_DIR, Handler, serve
 
 APP_PATH = Path(__file__).resolve()
-CACHE_DIR = APP_PATH.parent / ".cache" / "icons"
+
+# ---- what our exit codes mean, for Launch-Medieval2-GUI-Toolkit.bat ----
+#: A startup check failed. The console already carries the reason, check by check.
+EXIT_PREFLIGHT = 2
+#: The server IS running, but no browser opened by itself — so the launcher keeps
+#: its window, because the address in it is the user's only way in.
+EXIT_NO_BROWSER = 3
+#: Decoded icons. Not next to the app — see :func:`config.cache_dir` for why a
+#: cache must not sit in a folder OneDrive or Dropbox is syncing.
+CACHE_DIR = config.cache_dir("icons")
 
 
 def _parse(argv):
     port, root, verbose, mode = 8756, None, False, "launch"
+    wait_port = False
     passthrough = []
     it = iter(argv)
     for a in it:
-        if a in ("--port", "-p"):
+        if a == "--wait-port":
+            # Set by a restart-in-place: the server that asked for us is still
+            # holding the port for another moment. Only ever passed by us.
+            wait_port = True
+        elif a in ("--port", "-p"):
             port = int(next(it))
             passthrough += ["--port", str(port)]
         elif a in ("--verbose", "-v"):
@@ -59,11 +73,11 @@ def _parse(argv):
         else:
             root = a
             passthrough.append(a)
-    return port, root, verbose, mode, passthrough
+    return port, root, verbose, mode, passthrough, wait_port
 
 
 def main(argv):
-    port, root, verbose, mode, passthrough = _parse(argv)
+    port, root, verbose, mode, passthrough, wait_port = _parse(argv)
 
     if root:
         config.save_settings(med2_root=str(Path(root)))
@@ -71,17 +85,31 @@ def main(argv):
     # Logs go to the console (when there is one) and always to config/server.log,
     # so the detached server still leaves a full trail.
     log = setup_logging(verbose)
-    log.info("Unit Transfer %s — %s", mode, APP_PATH.parent)
+    log.info("Medieval 2 GUI Toolkit %s — %s", mode, APP_PATH.parent)
+
+    # A restart-in-place starts us while the server being replaced still holds the
+    # port: it cannot answer the request that asked for the restart *after* it has
+    # stopped, so it replies, spawns us, and only then lets go. Waiting here — and
+    # before the preflight port check — is what makes that order work.
+    if wait_port and not startup.wait_for_port(port):
+        log.error("Port %d never came free — the server being replaced is still "
+                  "holding it. Nothing was started.", port)
+        return EXIT_PREFLIGHT
 
     # ---- preflight: say WHY a launch fails instead of dying silently ----
     checks = startup.preflight(port, WEB_DIR)
     if not startup.report(checks):
         if mode == "serve":
             # detached: no console of ours to read, so put it on screen
-            _alert("Unit Transfer could not start.\n\n"
+            _alert("Medieval 2 GUI Toolkit could not start.\n\n"
                    + "\n".join(f"• {c.name}: {c.detail}" for c in checks if c.blocking)
                    + f"\n\nDetails: {startup.server_log_path()}")
-        return 1
+        # EXIT_PREFLIGHT, not 1: report() has just printed which check failed and
+        # why, so the launcher must point at that instead of listing guesses. It
+        # used to say "Pillow is missing -> pip install pillow" on every failure,
+        # Pillow installed or not, which is how a wrong reason ends up on screen
+        # directly underneath the right one.
+        return EXIT_PREFLIGHT
     if mode == "check":
         log.info("Startup checks passed (--check: not starting the server).")
         return 0
@@ -89,7 +117,7 @@ def main(argv):
     # Already running on this port? Just show that window — don't start a second
     # server only to have it fail to bind.
     if mode != "serve" and _already_ours(port):
-        log.info("Unit Transfer is already running on port %d — opening that "
+        log.info("The Medieval 2 GUI Toolkit is already running on port %d — opening that "
                  "window instead of starting a second one.", port)
         _open_browser(log, port)
         return 0
@@ -123,11 +151,9 @@ def _launch_detached(log, port: int, passthrough) -> int:
     log.info("Server is up: http://127.0.0.1:%d/", port)
     log.info("Stop the tool with Quit in the UI. Log: %s", startup.server_log_path())
     if not browser_ok:
-        # Exit code 3 tells the .bat to KEEP this window: the server is running
-        # but nothing appeared on screen, so this console is the user's only clue.
         log.error("No browser opened — leaving this window up so the address "
                   "above stays readable.")
-        return 3
+        return EXIT_NO_BROWSER
     return 0
 
 
@@ -179,18 +205,18 @@ def _run_server(log, port: int, verbose: bool, keep_console: bool) -> int:
         # first, but a race is possible). If the port is OUR server, just show it.
         log.error("Could not start on port %d: %s", port, e)
         if _already_ours(port):
-            log.info("Unit Transfer is already running on port %d — "
+            log.info("The Medieval 2 GUI Toolkit is already running on port %d — "
                      "opening that window instead.", port)
             open_browser()
             log.info("%s — reused the running instance.", startup.READY_MARKER)
             return 0
-        _alert(f"Unit Transfer could not start on port {port}.\n\n{e}\n\n"
+        _alert(f"Medieval 2 GUI Toolkit could not start on port {port}.\n\n{e}\n\n"
                f"Something else is using that port. Launch with --port 8757 "
                f"to pick another one.\n\nDetails: {startup.server_log_path()}")
         return 1
     except Exception:
-        log.error("Unit Transfer crashed:\n%s", traceback.format_exc())
-        _alert(f"Unit Transfer crashed.\n\nSee {startup.server_log_path()} "
+        log.error("Medieval 2 GUI Toolkit crashed:\n%s", traceback.format_exc())
+        _alert(f"Medieval 2 GUI Toolkit crashed.\n\nSee {startup.server_log_path()} "
                "for the traceback.")
         return 1
     return 0
@@ -238,7 +264,7 @@ def _open_browser(log, port: int) -> None:
 
 
 def _already_ours(port: int) -> bool:
-    """True if an existing Unit Transfer server is answering on ``port``."""
+    """True if an existing toolkit server is answering on ``port``."""
     import json
     import urllib.request
     try:
@@ -255,7 +281,7 @@ def _alert(msg: str) -> None:
     print(msg)
     try:
         import ctypes
-        ctypes.windll.user32.MessageBoxW(0, msg, "Unit Transfer", 0x10)
+        ctypes.windll.user32.MessageBoxW(0, msg, "Medieval 2 GUI Toolkit", 0x10)
     except Exception:
         pass
 

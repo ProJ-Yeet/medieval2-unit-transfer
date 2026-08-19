@@ -6,7 +6,7 @@
 
 The point is that the person you send it to installs nothing. The zip carries
 Python's official *embeddable* distribution with Pillow already in it, so they
-unzip and double-click `Unit Transfer.bat`.
+unzip and double-click `Medieval 2 GUI Toolkit.bat`.
 
 Only the bare minimum ships: `app.py`, `transfer_cli.py`, `Full Cleaner.bat`,
 `unittransfer/`, `web/`, the launcher, `Install-Dependencies.bat` and a README.
@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
 BUILD_CACHE = ROOT / ".cache" / "build"
 
-APP_NAME = "UnitTransfer"
+APP_NAME = "Medieval2-GUI-Toolkit"
 # The embeddable build must match the Python that resolves the Pillow wheel.
 PY_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 PY_TAG = f"{sys.version_info.major}{sys.version_info.minor}"
@@ -269,7 +269,7 @@ def assert_clean(stage: Path) -> None:
 
 PORTABLE_BAT = r"""@echo off
 setlocal
-title Unit Transfer
+title Medieval 2 GUI Toolkit
 cd /d "%~dp0"
 
 rem Everything needed is in this folder - no Python install required. The window
@@ -305,7 +305,7 @@ if "%RC%"=="0" (
 echo.
 if "%RC%"=="3" (
     echo ============================================================
-    echo  Unit Transfer IS RUNNING - but no browser opened by itself.
+    echo  Medieval 2 GUI Toolkit IS RUNNING - but no browser opened by itself.
     echo ============================================================
     echo.
     echo  Open this address in your browser:   http://127.0.0.1:8756/
@@ -314,10 +314,10 @@ if "%RC%"=="3" (
     echo  button in the tool's settings to stop it.
 ) else (
     echo ============================================================
-    echo  Unit Transfer exited with an error ^(code %RC%^).
+    echo  Medieval 2 GUI Toolkit exited with an error ^(code %RC%^).
     echo ============================================================
     echo.
-    echo  * Port 8756 taken?   run:  "Unit Transfer.bat" --port 8757
+    echo  * Port 8756 taken?   run:  "Medieval 2 GUI Toolkit.bat" --port 8757
     echo  * Wrong mods folder? set it in the tool's settings ^(gear icon^)
     echo  * Blocked by antivirus/SmartScreen? unblock the folder and retry.
     echo.
@@ -334,14 +334,14 @@ exit /b %RC%
 
 TROUBLESHOOT_BAT = r"""@echo off
 setlocal
-title Unit Transfer - Troubleshoot
+title Medieval 2 GUI Toolkit - Troubleshoot
 cd /d "%~dp0"
 
-rem Run this when "Unit Transfer.bat" doesn't work. It never closes on its own,
+rem Run this when "Medieval 2 GUI Toolkit.bat" doesn't work. It never closes on its own,
 rem and writes everything to troubleshoot-output.txt to send on for help.
 
 echo ============================================================
-echo  Unit Transfer - diagnostic
+echo  Medieval 2 GUI Toolkit - diagnostic
 echo ============================================================
 echo.
 
@@ -382,14 +382,14 @@ pause
 endlocal
 """
 
-README = """Unit Transfer — move Medieval II: Total War units between mods
-=============================================================
+README = """Medieval 2 GUI Toolkit — edit Medieval II: Total War mods
+=======================================================
 
 Getting started
 ---------------
 1. Unzip this whole folder somewhere (Desktop is fine). Don't run it from
    inside the zip.
-2. Double-click **Unit Transfer.bat**.
+2. Double-click **Medieval 2 GUI Toolkit.bat**.
 3. A window appears with the startup checks, then your browser opens the tool.
    The window closes on its own once everything is up.
 4. First run only: click the gear icon and point it at your Medieval II
@@ -492,8 +492,8 @@ To re-run just the startup checks:
 
 
 def write_docs(stage: Path, portable: bool) -> None:
-    (stage / "Unit Transfer.bat").write_text(
-        PORTABLE_BAT if portable else (ROOT / "Launch-Unit-Transfer.bat").read_text(
+    (stage / "Medieval 2 GUI Toolkit.bat").write_text(
+        PORTABLE_BAT if portable else (ROOT / "Launch-Medieval2-GUI-Toolkit.bat").read_text(
             encoding="utf-8"),
         encoding="utf-8")
     if portable:
@@ -510,7 +510,7 @@ def write_docs(stage: Path, portable: bool) -> None:
             "This build does NOT include Python. Run Install-Dependencies.bat first:\n"
             "it installs Python for you (downloaded from python.org, your user only,\n"
             "no administrator prompt, added to PATH) along with the image library.\n"
-            "After that, Unit Transfer.bat works on its own.")
+            "After that, Medieval 2 GUI Toolkit.bat works on its own.")
     cmd = ("runtime\\python.exe app.py --check" if portable else "py app.py --check")
     (stage / "README.txt").write_text(
         README.format(runtime_note=note, check_cmd=cmd), encoding="utf-8")
@@ -563,7 +563,7 @@ def main(argv=None) -> int:
     make_zip(stage, out)
     print(f"\n{out}")
     print(f"  {out.stat().st_size / 1e6:.1f} MB — send this to anyone; "
-          f"they unzip it and run 'Unit Transfer.bat'.")
+          f"they unzip it and run 'Medieval 2 GUI Toolkit.bat'.")
     return 0
 
 

@@ -30,6 +30,7 @@ existing Undo / "Revert to here" buttons work on edits too.
 """
 from __future__ import annotations
 
+import hashlib
 import shutil
 import time
 from dataclasses import dataclass, field, replace as _dc_replace
@@ -75,6 +76,10 @@ class ModelEdit:
     """
     entry: str                                   # entry name as it is today
     new_name: str = ""                           # rename (EDU refs follow)
+    # The entry as the user hand-edited it in Code View. Empty means "use what's
+    # in the modeldb"; when set it REPLACES the entry's text, and everything
+    # below still applies on top of it.
+    raw_entry: str = ""
     paths: Dict[int, str] = field(default_factory=dict)   # span index -> new path
     copies: List[dict] = field(default_factory=list)      # [{"i", "src"}] files to bring in
     # files copied into the mod without owning a slot — a texture imported for
@@ -117,8 +122,20 @@ class EditRequest:
     unit: str
     new_type: str = ""
     new_dictionary: str = ""
+    # The unit's EDU block as the user hand-edited it in Code View. Empty means
+    # "use what's on disk", which is every request that never opened the text
+    # pane. When it is set it REPLACES the block wholesale — line order, spacing
+    # and comments included — and `field_overrides` then apply on top of it, so a
+    # box edited after a text edit still lands.
+    raw_block: str = ""
     field_overrides: Dict[str, str] = field(default_factory=dict)
     remove_fields: List[str] = field(default_factory=list)
+    # The tool's own tier metadata (:data:`unittransfer.edu.MARKER`), which is a
+    # comment line and so cannot ride in `field_overrides` — `block_fields`
+    # skips comments, by design. ``None`` means "leave it alone"; ``""`` clears
+    # it, which is not the same thing and has to be tellable apart.
+    tier: Optional[str] = None
+    tier_variant: Optional[str] = None
     loc: Optional[dict] = None                   # {name, descr, descr_short}
     model_edits: List[ModelEdit] = field(default_factory=list)
     new_models: List[NewModel] = field(default_factory=list)
@@ -160,11 +177,16 @@ def request_from_dict(d: dict) -> EditRequest:
         unit=d.get("unit") or "",
         new_type=(d.get("new_type") or "").strip(),
         new_dictionary=(d.get("new_dictionary") or "").strip(),
+        raw_block=d.get("raw_block") or "",
         field_overrides={str(k): str(v) for k, v in (d.get("field_overrides") or {}).items()},
         remove_fields=[str(x) for x in (d.get("remove_fields") or [])],
+        tier=None if d.get("tier") is None else str(d.get("tier")).strip(),
+        tier_variant=(None if d.get("tier_variant") is None
+                      else str(d.get("tier_variant")).strip()),
         loc=d.get("loc"),
         model_edits=[ModelEdit(entry=str(m.get("entry") or "").lower(),
                                new_name=(m.get("new_name") or "").strip(),
+                               raw_entry=m.get("raw_entry") or "",
                                paths={int(k): str(v) for k, v in (m.get("paths") or {}).items()},
                                copies=list(m.get("copies") or []),
                                imports=list(m.get("imports") or []),
@@ -391,6 +413,68 @@ def _unit_icon_files(mod: Mod, dictionary: str) -> List[Tuple[Path, str, str]]:
     return out
 
 
+def icon_variants(mod: Mod, dictionary: str) -> Dict[str, List[dict]]:
+    """``{'card': [...], 'info': [...]}`` — the DISTINCT pictures, and who shares each.
+
+    A unit's card is looked up under the *player's* faction folder, so a mod may
+    ship one picture for ten factions or ten different ones. The editor showed
+    whichever folder happened to be found first, which is a lie the moment two of
+    them differ. Files are grouped by content hash, so "the same picture in ten
+    folders" is one row with ten factions on it.
+    """
+    out: Dict[str, List[dict]] = {"card": [], "info": []}
+    groups: Dict[Tuple[str, str], dict] = {}
+    for abs_p, rel, kind in _unit_icon_files(mod, dictionary):
+        try:
+            digest = hashlib.sha1(abs_p.read_bytes()).hexdigest()
+        except OSError:
+            continue
+        faction = abs_p.parent.name
+        key = (kind, digest)
+        row = groups.get(key)
+        if row is None:
+            row = {"rel": rel, "factions": [], "bytes": abs_p.stat().st_size}
+            groups[key] = row
+            out[kind].append(row)
+        row["factions"].append(faction)
+    for rows in out.values():
+        for row in rows:
+            row["factions"].sort()
+    return out
+
+
+def _raw_block(plan: "EditPlan", unit, req: EditRequest) -> str:
+    """The block a plan starts from: the file's, or the one typed in Code View.
+
+    Hand-edited text is checked before it is trusted with the file. Text that no
+    longer reads as exactly one unit block is refused outright — the save
+    replaces one block, so a second `type` line would be swallowed into the
+    first one's slot — and the plan falls back to what is on disk.
+
+    A `type` line renamed in the text is allowed but flagged, exactly as
+    renaming it in the field boxes is: only the Identity tab's rename chases the
+    name through recruitment, the campaigns and the voice bank
+    (:func:`_plan_type_refs`). If the Identity tab *is* renaming as well, that
+    rename wins — step 5 rewrites the line either way.
+    """
+    if not req.raw_block:
+        return unit.raw
+    from . import codeview
+    try:
+        doc = codeview.parse("edu", req.raw_block)
+    except codeview.CodeViewError as e:
+        plan.errors.append(f"the edited text isn't a valid unit block: {e.message}")
+        return unit.raw
+    if doc.ident != unit.type and not req.new_type:
+        plan.warnings.append(
+            f"the text renames `type` to '{doc.ident}' — nothing else in the mod "
+            "follows that. Use the Identity tab's rename to update the files that "
+            "recruit this unit.")
+    if req.raw_block != unit.raw:
+        plan.changes.append("unit block edited as text")
+    return req.raw_block
+
+
 def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
     unit = mod.edu.by_type().get(req.unit)
     if unit is None:
@@ -405,7 +489,7 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
     if req.new_type and req.new_type != unit.type and req.new_type in by_type:
         plan.errors.append(f"a unit called '{req.new_type}' already exists in {mod.name}")
 
-    block = unit.raw
+    block = _raw_block(plan, unit, req)
     db = mod.modeldb
     entries = db.by_name()
 
@@ -439,6 +523,21 @@ def plan_edit(mod: Mod, req: EditRequest) -> EditPlan:
                 plan.changes.append(f"{label} = {val}")
             for label in req.remove_fields:
                 plan.changes.append(f"removed field '{label}'")
+
+    # ---- 3b) the tool's own tier metadata ----
+    if req.tier is not None or req.tier_variant is not None:
+        marks = {}
+        if req.tier is not None:
+            marks["tier"] = req.tier
+        if req.tier_variant is not None:
+            marks["variant"] = req.tier_variant
+        before = block
+        block = edu_mod.set_marker(block, **marks)
+        if block != before:
+            plan.changes.append(
+                "tier = " + (", ".join(f"{k}={v or '(none)'}"
+                                       for k, v in sorted(marks.items())))
+                + " (the toolkit's own note, not a game field)")
 
     # ---- 4) point EDU slots at the new entries (only ones that really planned) ----
     planned = {n for n, _raw, _pad in plan.new_entries}
@@ -911,6 +1010,36 @@ def _texture_index_map(raw: str, pad: bool, defaults: Dict[str, str],
     return out
 
 
+def _raw_entry(plan: "EditPlan", entry, me: ModelEdit) -> str:
+    """The entry text a plan starts from: the modeldb's, or Code View's.
+
+    Hand-edited text is read back before it is trusted, by the same reader the
+    file parser uses. A modeldb entry is length-prefixed, so a bad edit is not a
+    typo in one line — the reader desyncs and everything after it is garbage —
+    which is why this refuses rather than writing something it could not read.
+    Renaming the entry in the text is left to the rename box, which is the only
+    path that chases the name through the EDU.
+    """
+    if not me.raw_entry:
+        return entry.raw
+    from . import codeview
+    ctx = {"pad": entry.first_entry_pad, "base": entry.raw}
+    try:
+        doc = codeview.parse("bmdb", me.raw_entry, ctx)
+    except codeview.CodeViewError as e:
+        plan.errors.append(f"{entry.name}: the edited text isn't a valid modeldb "
+                           f"entry: {e.message}")
+        return entry.raw
+    if doc.ident != entry.name and not me.new_name:
+        plan.errors.append(
+            f"the text renames the entry to '{doc.ident}' — use the rename box so "
+            "the units pointing at it follow.")
+        return entry.raw
+    if me.raw_entry != entry.raw:
+        plan.changes.append(f"{entry.name}: entry edited as text")
+    return me.raw_entry
+
+
 def _plan_model_edit(plan: EditPlan, mod: Mod, me: ModelEdit,
                      entries: Dict[str, "modeldb.ModelEntry"], taken: set) -> None:
     """Apply one entry's edits, in the only order that keeps them all meaningful.
@@ -926,7 +1055,7 @@ def _plan_model_edit(plan: EditPlan, mod: Mod, me: ModelEdit,
         plan.errors.append(f"model entry '{me.entry}' not found in this mod's modeldb")
         return
     pad = entry.first_entry_pad
-    raw = entry.raw
+    raw = _raw_entry(plan, entry, me)
 
     # ---- indexed slots (LOD meshes) + any file imported onto one of them ----
     paths = dict(me.paths)
@@ -1319,13 +1448,8 @@ def apply_edit(plan: EditPlan) -> Dict:
 
 
 def _invalidate(mod: Mod) -> None:
-    for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
-                 "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file", "sounds",
-                 "eop_dirs", "lua_tokens", "edu_vocab",
-                 # a type rename rewrites recruitment and the campaigns too
-                 "edb", "edb_vocab", "building_loc"):
-        mod.__dict__.pop(attr, None)
+    """Every cached read of this mod is now stale — see :meth:`Mod.drop_caches`."""
+    mod.drop_caches()
 
 
 # ---------------------------------------------------------------------------
@@ -1373,6 +1497,10 @@ def unit_detail(mod: Mod, unit_type: str) -> dict:
         "eop": unit.is_eop,
         "eop_file": eop.rel_to_root(mod, unit.eop_file) if unit.is_eop else "",
         "fields": edu_mod.block_fields(unit.raw),
+        # the toolkit's own note, kept apart from `fields` because it is not one:
+        # no game file has it and the engine never reads it
+        "tier": unit.tier,
+        "tier_variant": unit.variant,
         "loc": {"name": (loc.name if loc else "") or "",
                 "descr": (loc.descr if loc else "") or "",
                 "descr_short": (loc.descr_short if loc else "") or ""},
@@ -1380,12 +1508,16 @@ def unit_detail(mod: Mod, unit_type: str) -> dict:
         "model_names": sorted(entries.keys()),
         "icons": [{"rel": rel, "kind": kind}
                   for _abs, rel, kind in _unit_icon_files(mod, unit.dictionary)],
+        # the same files grouped by content: one row per DISTINCT picture, with
+        # every faction folder that holds it
+        "icon_variants": icon_variants(mod, unit.dictionary),
         "known_fields": edu_mod.CANONICAL_ORDER,
         "unit_count": len(mod.edu.units),
         # the faction checklists (EDU ownership/eras, and a model's skins) offer
         # every faction the mod knows about, not just the ones this unit has
         "all_factions": all_factions,
         "faction_names": {f: mod.faction_names.get(f.lower(), "") for f in all_factions},
+        "unknown_factions": unknown_mod_factions(mod),
         "unit_types": sorted(u.type for u in mod.edu.units),
     }
 
@@ -1418,11 +1550,50 @@ def model_payload(e: "modeldb.ModelEntry", slots=(), used_by=()) -> dict:
     }
 
 
+#: Tokens a modeldb texture record may carry that are NOT faction slots. `merc`
+#: is the mercenary skin, verified against every mercenary unit in DaC and TATR.
+MODELDB_SPECIAL = ("merc",)
+
+
+def mod_faction_slots(mod: Mod) -> List[str]:
+    """The faction slots this mod really has, from ``descr_sm_factions.txt``.
+
+    Empty when the mod has no roster — then every caller falls back to what the
+    files use, which is the old behaviour.
+    """
+    from . import factions as fac_mod
+    try:
+        return [f.lower() for f in fac_mod.faction_slots(mod)]
+    except Exception:                       # unreadable roster is not fatal here
+        return []
+
+
 def all_mod_factions(mod: Mod) -> List[str]:
-    """Every faction slot the mod knows about, for the skin checklists."""
-    return sorted({f for u in mod.edu.units for f in u.ownership}
-                  | {t.faction for e in mod.modeldb.entries for t in e.main_textures}
-                  | set(mod.icon_factions))
+    """Every faction slot the skin checklists may offer.
+
+    The roster is the truth: `data/ui/units/<folder>` is NOT — a mod inherits
+    hundreds of vanilla folders it has no faction for, which is where names like
+    `anduin` and both `merc` and `mercs` came from. Ownership lines are not the
+    truth either, since one may name a CULTURE rather than a faction.
+
+    A token the modeldb already uses is still listed, because unticking it would
+    silently drop a skin somebody wrote. :func:`unknown_mod_factions` is what
+    tells them apart on screen.
+    """
+    slots = mod_faction_slots(mod)
+    used = {t.faction.lower() for e in mod.modeldb.entries for t in e.main_textures}
+    if not slots:                           # no roster — fall back to what is used
+        return sorted(used | {f.lower() for u in mod.edu.units for f in u.ownership})
+    return sorted(set(slots) | used | set(MODELDB_SPECIAL))
+
+
+def unknown_mod_factions(mod: Mod) -> List[str]:
+    """Tokens the checklists offer that the faction roster does not define."""
+    slots = mod_faction_slots(mod)
+    if not slots:
+        return []
+    known = set(slots) | set(MODELDB_SPECIAL)
+    return sorted(f for f in all_mod_factions(mod) if f not in known)
 
 
 def _texture_table(slots: List[dict]) -> Dict[str, Dict[str, str]]:

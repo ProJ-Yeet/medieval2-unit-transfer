@@ -48,7 +48,7 @@ import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from . import config, edit, eop, luascan, modeldb
 from . import edu as edu_mod
@@ -332,15 +332,25 @@ def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
     the entry go with it. It is false when some other slot still names the model,
     when a second mount also names it and that one is staying, or when the entry is
     protected for any of the usual reasons.
+
+    TWO mention maps meet here and they are not interchangeable. ``mentions`` is
+    the caller's, keyed by modeldb ENTRY name with a row per name; ``by_mount`` is
+    this function's own, keyed by MOUNT name with a bare filename. Every lookup
+    below therefore has to pick the one that matches its key: a mount name goes to
+    ``by_mount``, a model name to ``mentions``. They used to share the name
+    ``mentions``, the second assignment shadowing the parameter, and the two
+    model-keyed lookups silently read the mount map — which answers for the wrong
+    thing whenever a mount and an entry share a name (four of them in DaC) and
+    hands :func:`mention_file` a string where it wants a row.
     """
     if not mod.mount_file.mounts:
         return [], []
     ridden = ridden_mounts(mod)
-    mentions = _mount_mentions(mod, report)
+    by_mount = _mount_mentions(mod, report)
     entries = mod.modeldb.by_name()
 
     dead = [m for m in mod.mount_file.mounts
-            if m.type and m.type.lower() not in ridden and m.type not in mentions]
+            if m.type and m.type.lower() not in ridden and m.type not in by_mount]
     dead_low = {m.type.lower() for m in dead}
 
     rows: List[dict] = []
@@ -353,6 +363,8 @@ def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
         other_mounts = [short_referrer(w) for w in slots.get("mount", [])
                         if short_referrer(w).lower() not in dead_low]
         entry = entries.get(model)
+        # `mentions`, not `by_mount`: the question is whether anything still names
+        # this MODEL, which is what would keep the entry alive after the mount goes
         frees = bool(model) and entry is not None and not others and not other_mounts \
             and not entry.first_entry_pad and model not in mentions
         rows.append({
@@ -365,7 +377,7 @@ def mount_audit(mod: Mod, users: Dict[str, Dict[str, List[str]]],
             "mentioned_in": mention_file(mentions, model) if entry is not None else "",
         })
     rows.sort(key=lambda r: r["mount"].lower())
-    held = [{"mount": name, "file": where} for name, where in sorted(mentions.items())]
+    held = [{"mount": name, "file": where} for name, where in sorted(by_mount.items())]
     return rows, held
 
 
@@ -425,10 +437,21 @@ def name_mentions(mod: Mod,
     return out
 
 
-def mention_file(mentions: Dict[str, dict], name: str) -> str:
-    """The "kept because …" label for a name, or ``""`` when nothing names it."""
+def mention_file(mentions: Dict[str, Union[dict, str]], name: str) -> str:
+    """The "kept because …" label for a name, or ``""`` when nothing names it.
+
+    Takes either mention map. :func:`name_mentions` gives a row per name because
+    the UI wants to know whether the hit was a Lua script and whether it was in a
+    comment; :func:`_mount_mentions` gives a bare filename, because a mount name
+    has spaces and is matched as a whole phrase rather than tokenised, and there
+    is nothing more to say about it. Both are legitimate and both get passed
+    here, so the label is read out of whichever shape arrived rather than the
+    caller having to remember which one it holds.
+    """
     row = mentions.get((name or "").lower())
-    return row["file"] if row else ""
+    if not row:
+        return ""
+    return row if isinstance(row, str) else row["file"]
 
 
 # ---------------------------------------------------------------------------
@@ -728,7 +751,7 @@ def _log_audit(mod: Mod, entries: dict, unused: List[dict], mentioned: List[dict
              len(orphans), len(dead_mounts))
     block("  scanned for references:", [
         f"export_descr_unit.txt + {len(mod.edu.eop_units)} M2TWEOP unit(s)",
-        f"descr_mount.txt, descr_character.txt",
+        "descr_mount.txt, descr_character.txt",
         f"{len(campaign)} campaign file(s): " + (", ".join(campaign) or "(none)"),
         f"{len(descr)} data/descr_*.txt token-scanned"
         + (f" (skipped: {', '.join(sorted(DESCR_SKIP))})" if DESCR_SKIP else ""),
@@ -872,6 +895,9 @@ def entry_detail(mod: Mod, name: str) -> dict:
         "model_names": sorted(mod.modeldb.by_name().keys()),
         "all_factions": all_factions,
         "faction_names": {f: mod.faction_names.get(f.lower(), "") for f in all_factions},
+        # tokens the roster does not define: still offered (they are in the file)
+        # but marked, rather than passed off as factions the mod has
+        "unknown_factions": edit.unknown_mod_factions(mod),
         "entry_count": len(mod.modeldb.entries),
     }
 

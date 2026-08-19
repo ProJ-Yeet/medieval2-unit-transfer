@@ -169,3 +169,34 @@ def browse_for_folder(title: str = "Select a folder") -> Optional[str]:
             _ole32.CoTaskMemFree(pidl)
     finally:
         ctypes.windll.ole32.CoUninitialize()
+
+
+def reveal(path: str) -> bool:
+    """Show ``path`` in the OS file manager, with the file itself selected.
+
+    The same "the server IS this machine" trick as the dialogs above: a browser
+    page cannot open a folder, but the process serving it can. Windows takes
+    ``explorer /select,<path>`` — note the comma is part of the switch and the
+    path must NOT be quoted separately from it, which is why this builds one
+    argument string rather than a list.
+
+    Returns whether the file manager was launched. Explorer answers 1 even on
+    success, so the exit code is not worth waiting for; anything that stops the
+    process starting at all raises and comes back False.
+    """
+    import os
+    import subprocess
+    target = os.path.abspath(path)
+    if not os.path.exists(target):
+        return False
+    try:
+        if sys.platform == "win32":
+            subprocess.Popen(["explorer", "/select,%s" % target])
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", "-R", target])
+        else:
+            # no portable "select the file" on Linux — open the folder it is in
+            subprocess.Popen(["xdg-open", os.path.dirname(target)])
+    except OSError:
+        return False
+    return True

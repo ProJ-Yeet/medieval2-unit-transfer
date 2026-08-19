@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from unittransfer import config, edu, engines
+from unittransfer import keyblock as kb
 from unittransfer.mod import Mod
 from unittransfer.transfer import (TransferOptions, apply_transfer,
                                    plan_transfer, undo)
@@ -80,15 +81,15 @@ for mod in (src, dac):
     check(f"{mod.name}: descr_engines parsed ({len(ef.engines)} blocks)",
           len(ef.engines) > 50)
     check(f"{mod.name}: descr_engines round-trips byte-exact",
-          ef.to_text() == mod.descr_engines_path.read_text(encoding=engines.ENCODING))
+          ef.to_text() == kb.read_text(mod.descr_engines_path, engines.ENCODING))
     sf = mod.engine_skeleton_file
     check(f"{mod.name}: descr_engine_skeleton parsed ({len(sf.skeletons)})",
           len(sf.skeletons) > 20)
     check(f"{mod.name}: descr_engine_skeleton round-trips byte-exact",
-          sf.to_text() == mod.descr_engine_skeleton_path.read_text(encoding=engines.ENCODING))
+          sf.to_text() == kb.read_text(mod.descr_engine_skeleton_path, engines.ENCODING))
     check(f"{mod.name}: descr_mounted_engines round-trips byte-exact",
           mod.mounted_engine_file.to_text() ==
-          mod.descr_mounted_engines_path.read_text(encoding=engines.ENCODING))
+          kb.read_text(mod.descr_mounted_engines_path, engines.ENCODING))
 
 # a known engine, checked field by field
 hb = src.engine_file.get("huge_bombard")
@@ -193,7 +194,7 @@ after = engines.parse_file(data / "descr_engines.txt")
 check("engine present in the destination descr_engines.txt",
       after.get("erebor_ballista") is not None)
 check("destination descr_engines round-trips after write",
-      after.to_text() == (data / "descr_engines.txt").read_text(encoding=engines.ENCODING))
+      after.to_text() == kb.read_text(data / "descr_engines.txt", engines.ENCODING))
 check("copied engine files landed in the destination",
       all((data / r).exists() for r in plan.engine_assets))
 check("destination engine blocks intact (count grew by exactly 1)",

@@ -35,7 +35,7 @@ import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
 from . import bmdb, config, edu as edu_mod, localization, modeldb as modeldb_mod
 from .logutil import log

@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Tuple
 
 from . import (config, edu as edu_mod, engines as engines_mod, eop, localization,
                modeldb, mounts, projectiles as projectiles_mod, sounds)
+from . import keyblock as kb
 from .logutil import block, counted, file_op, fingerprint, log
 from .mod import Mod
 
@@ -123,6 +124,11 @@ class TransferOptions:
     # destination's modeldb, which is the case that would otherwise leave the mount
     # unanimated. Off = the old behaviour, the base's mount as-is.
     import_mount_with_base: bool = True
+    # The officer version of the same three-way choice. Officers have their own
+    # modeldb entries and so their own animation sets, so "port as is" (crash if
+    # the destination lacks the skeleton), "port with the base's animations" and
+    # "use the base's officers" are three different answers.
+    import_officers_with_base: bool = True
     # manual per-field EDU overrides: {field_key: full value string}
     field_overrides: Dict[str, str] = field(default_factory=dict)
     # what to do about copied mesh/texture files:
@@ -230,6 +236,11 @@ class TransferPlan:
     mount_from_base_import: bool = False
     mount_anim_donor: str = ""
     mount_skeletons_swapped: List[str] = field(default_factory=list)
+    # The same three for the officers, which have their own modeldb entries and so
+    # their own animation sets — see `officer_base_import`.
+    officer_from_base_import: bool = False
+    officer_anim_donor: str = ""
+    officer_skeletons_swapped: List[str] = field(default_factory=list)
     # projectiles (descr_projectile.txt). rename map: old proj name -> resolved name
     # (only entries that were renamed on collision); raws to append; effect stats.
     projectile_renames: Dict[str, str] = field(default_factory=dict)
@@ -296,8 +307,29 @@ class TransferPlan:
     # comes from the base, so no soldier skeleton can be missing).
     skeleton_models: Dict[str, List[str]] = field(default_factory=dict)
     soldier_model_name: str = ""
+    #: copied model name (lowercased) -> the slot it fills for THIS unit, one of
+    #: :data:`SLOT_ORDER`. What the fix for a missing animation is depends
+    #: entirely on which slot asked for it, and that is not recoverable from the
+    #: modeldb entry alone.
+    model_slots: Dict[str, str] = field(default_factory=dict)
+    #: the base / replaced unit's soldier model, when the soldier line comes from
+    #: it — used to say the unit will now animate like that unit instead
+    base_soldier_model: str = ""
+    #: the two skeleton sets differ, so the unit moves differently after this
+    soldier_anim_changed: Tuple[str, str] = ("", "")
     missing_assets: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+
+    def _missing_for(self, slot: str) -> List[str]:
+        """Missing skeletons whose most important asker fills ``slot``."""
+        out = []
+        for s in self.missing_skeletons:
+            roles = {self.model_slots.get(o.lower(), "armour")
+                     for o in self.skeleton_models.get(s, [])}
+            best = next((r for r in SLOT_ORDER if r in roles), "armour")
+            if best == slot:
+                out.append(s)
+        return out
 
     def soldier_skeletons_missing(self) -> List[str]:
         """The missing skeletons the soldier-line model is the one asking for.
@@ -308,8 +340,22 @@ class TransferPlan:
         """
         if not self.soldier_model_name:
             return []
-        return [s for s in self.missing_skeletons
-                if self.soldier_model_name in self.skeleton_models.get(s, [])]
+        return self._missing_for("soldier")
+
+    def mount_skeletons_missing(self) -> List[str]:
+        return self._missing_for("mount")
+
+    def officer_skeletons_missing(self) -> List[str]:
+        return self._missing_for("officer")
+
+    def cosmetic_skeletons_missing(self) -> List[str]:
+        """Missing skeletons only an armour-upgrade entry asks for.
+
+        Not a crash. The engine takes the unit's animation from the SOLDIER
+        entry; an armour-upgrade entry is a visual swap at that armour level, so
+        its own skeleton line is never the one played.
+        """
+        return self._missing_for("armour")
 
     def summary(self) -> str:
         L = [f"Transfer '{self.unit_type}'  {self.source.name} -> {self.dest.name}"]
@@ -462,16 +508,27 @@ class TransferPlan:
             L.append("  ! ANIMATION WARNING (soldier line) - "
                      + ", ".join(soldier)
                      + f" absent from {self.dest.name}'s modeldb, asked for by the "
-                     f"soldier model '{self.soldier_model_name}' — set Soldier to the "
-                     "base / replaced unit to keep its own model and animations, or add "
-                     "the animation to this mod first (anim pack / descr_skeleton).")
-        others = [s for s in self.missing_skeletons if s not in set(soldier)]
-        if others:
-            L.append("  ! ANIMATION WARNING - skeletons absent from destination modeldb:")
-            for s in others:
-                who = ", ".join(self.skeleton_models.get(s, [])) or "a copied model"
-                L.append(f"      - {s}   (asked for by '{who}'; ensure this animation "
-                         "exists in your mod: anim pack / descr_skeleton)")
+                     f"soldier model '{self.soldier_model_name}'. The game CRASHES on "
+                     "load. Set Soldier to the base / replaced unit, or import the "
+                     "animation set yourself first (anim pack / descr_skeleton) — only "
+                     "do that if you already know how.")
+        for slot, label, fix in (
+                ("mount", "mount", "Pick “port with the base's animations” for the "
+                                   "mount, or import the animation set yourself."),
+                ("officer", "officer", "Pick “port with the base's animations” for the "
+                                       "officers, or import the animation set yourself.")):
+            miss = self._missing_for(slot)
+            if miss:
+                who = ", ".join(sorted({m for s in miss
+                                        for m in self.skeleton_models.get(s, [])}))
+                L.append(f"  ! ANIMATION WARNING ({label}) - " + ", ".join(miss)
+                         + f" absent from {self.dest.name}'s modeldb, asked for by "
+                         f"'{who}'. The game CRASHES on load. " + fix)
+        cosmetic = self.cosmetic_skeletons_missing()
+        if cosmetic:
+            L.append("  - armour-upgrade models name animation(s) this mod has not got ("
+                     + ", ".join(cosmetic) + "). Not a crash: the engine animates the "
+                     "unit from its SOLDIER entry and an upgrade level is a visual swap.")
         if self.missing_assets:
             L.append(f"  ! {len(self.missing_assets)} referenced files not found on disk (skipped)")
         for w in self.warnings:
@@ -480,6 +537,40 @@ class TransferPlan:
 
 
 # --------------------------------------------------------------------------
+#: Model slots, most animation-significant first. A missing skeleton is blamed on
+#: the highest slot that asks for it, because that is the one whose fix is real:
+#:
+#:   soldier — the entry the engine takes the unit's animation from. Missing = crash.
+#:   mount / officer — their own entries, each with its own animation set. Missing =
+#:     crash, fixable by borrowing the base unit's equivalent entry's animations.
+#:   armour — an armour-upgrade level. A visual swap only; the soldier entry still
+#:     drives the animation, so a missing skeleton here is cosmetic.
+SLOT_ORDER = ("soldier", "mount", "officer", "armour")
+
+
+def model_slots_for(source: Mod, unit, base_groups=()) -> Dict[str, str]:
+    """``model name (lower) -> slot``, first slot in :data:`SLOT_ORDER` wins."""
+    slots: Dict[str, str] = {}
+
+    def put(name, slot: str) -> None:
+        n = (name or "").strip().lower()
+        if n:
+            slots.setdefault(n, slot)
+
+    base_groups = set(base_groups)
+    if "soldier" not in base_groups:
+        put(getattr(unit, "soldier_model", ""), "soldier")
+    if "mount" not in base_groups and getattr(unit, "mount", ""):
+        put(source.mount_model(unit.mount), "mount")
+    if "officer" not in base_groups:
+        for o in unit.officers:
+            put(o, "officer")
+    if "armour_ug_models" not in base_groups:
+        for m in unit.armour_ug_models:
+            put(m, "armour")
+    return slots
+
+
 def _secondary_model_names(source: Mod, unit, opts: TransferOptions,
                            base_groups=()):
     """Return (included_models, excluded_models).
@@ -555,35 +646,54 @@ def mount_base_import(base_unit, dest: Mod, unit, opts: "TransferOptions"):
     return True, (dest.modeldb.get(model) if model else None)
 
 
-def _apply_mount_anim_donor(plan: "TransferPlan", source: Mod, dest: Mod,
-                            unit, donor) -> None:
-    """Give the copied mount's modeldb entry the base mount's animation set, if
-    its own skeletons are not in the destination.
+def officer_base_import(base_unit, dest: Mod, unit, opts: "TransferOptions"):
+    """The officer version of :func:`mount_base_import`.
+
+    An officer is a modeldb entry like any other and carries its own animation
+    set, so the same two-step is available: bring the source's officers across
+    but give them the base unit's officer's animations, which is the one set this
+    mod is already known to have.
+    """
+    if not (opts.import_officers_with_base and opts.officer_from == "base"):
+        return False, None
+    base_officers = list(getattr(base_unit, "officers", []) or []) if base_unit else []
+    if not base_officers or not unit.officers:
+        return False, None
+    return True, dest.modeldb.get(base_officers[0])
+
+
+def _swap_entry_animations(plan: "TransferPlan", dest: Mod, model_name: str,
+                           donor, what: str, undo_hint: str):
+    """Give one copied modeldb entry ``donor``'s animation set.
 
     A skeleton is an ``animations/*.cas`` pack the destination either has or
-    hasn't — copying the entry does not bring one along — so a mount whose
-    skeletons are missing here is a mount that does not animate. The base's mount
-    is by definition already working in this mod, so its records are the one
-    animation set we know is safe. Weapons and everything else stay the copied
-    entry's; only the mount type and the two skeleton names change.
+    hasn't — copying the entry does not bring one along — so an entry whose
+    skeletons are missing here is a model that does not animate, and the engine
+    takes the whole game down on load rather than shrugging. The donor is by
+    definition already working in this mod, so its records are the one animation
+    set we know is safe. Everything else stays the copied entry's; only the
+    skeleton names change.
+
+    Returns ``(donor name, swapped skeletons)`` or ``("", [])``.
     """
-    mount_model = (source.mount_model(unit.mount) or "").lower()
-    if not mount_model:
-        return
+    model_name = (model_name or "").lower()
+    if not model_name:
+        return "", []
     for i, (final_name, entry) in enumerate(plan.add_entries):
-        if entry.name.lower() != mount_model:
+        if entry.name.lower() != model_name:
             continue
         missing = [s for s in dict.fromkeys(entry.skeletons())
                    if s and s not in dest.modeldb.all_skeletons()]
         if not missing:
-            return                       # its own animations work here — keep them
+            return "", []                # its own animations work here — keep them
         if donor is None or not donor.animations:
             plan.warnings.append(
-                f"mount model '{entry.name}' needs animation(s) "
-                f"{', '.join(missing)}, which {dest.name} does not have — and the "
-                "base unit's mount has no readable modeldb entry to borrow an "
-                "animation set from. Copy the .cas files over by hand.")
-            return
+                f"{what} model '{entry.name}' needs animation(s) "
+                f"{', '.join(missing)}, which {dest.name} does not have, and the "
+                f"base unit's {what} has no readable modeldb entry to borrow an "
+                "animation set from. Copy the .cas files over by hand, or the game "
+                "will crash on load.")
+            return "", []
         raw = modeldb.rewrite_animations(entry.raw, donor.animations,
                                          pad=entry.first_entry_pad)
         plan.add_entries[i] = (final_name, modeldb.ModelEntry(
@@ -592,21 +702,41 @@ def _apply_mount_anim_donor(plan: "TransferPlan", source: Mod, dest: Mod,
             animations=modeldb.merged_animations(entry.animations, donor.animations),
             torch_index=entry.torch_index, torch=entry.torch, raw=raw,
             first_entry_pad=entry.first_entry_pad))
-        plan.mount_anim_donor = donor.name
-        plan.mount_skeletons_swapped = missing
-        # The mount no longer asks for them — but another copied model might, and
+        # This entry no longer asks for them — but another copied model might, and
         # dropping a skeleton this transfer still needs would hide a real problem.
         still_wanted = {s for n, e in plan.add_entries if n != final_name
                         for s in e.skeletons()}
         plan.missing_skeletons = [s for s in plan.missing_skeletons
                                   if s not in missing or s in still_wanted]
         plan.warnings.append(
-            f"the mount's model '{entry.name}' uses animation(s) "
-            f"{', '.join(missing)}, which {dest.name} does not have — it was given "
-            f"'{donor.name}'s instead (the base unit's mount), so the new mount "
-            "animates like the base's. Untick “take the base mount's animations” "
-            "to keep the original skeletons and copy them over yourself.")
-        return
+            f"the {what}'s model '{entry.name}' uses animation(s) "
+            f"{', '.join(missing)}, which {dest.name} does not have. It was given "
+            f"'{donor.name}'s instead (the base unit's {what}), so it animates like "
+            f"the base's — it may move unexpectedly in battle. {undo_hint}")
+        return donor.name, missing
+    return "", []
+
+
+def _apply_mount_anim_donor(plan: "TransferPlan", source: Mod, dest: Mod,
+                            unit, donor) -> None:
+    name, missing = _swap_entry_animations(
+        plan, dest, source.mount_model(unit.mount), donor, "mount",
+        "Pick “port as is” for the mount to keep the original skeletons and copy "
+        "them over yourself.")
+    plan.mount_anim_donor, plan.mount_skeletons_swapped = name, missing
+
+
+def _apply_officer_anim_donor(plan: "TransferPlan", source: Mod, dest: Mod,
+                              unit, donor) -> None:
+    for off in unit.officers:
+        name, missing = _swap_entry_animations(
+            plan, dest, off, donor, "officer",
+            "Pick “port as is” for the officers to keep the original skeletons and "
+            "copy them over yourself.")
+        if name:
+            plan.officer_anim_donor = name
+            plan.officer_skeletons_swapped += [s for s in missing
+                                               if s not in plan.officer_skeletons_swapped]
 
 
 def _resolve_projectiles(plan: "TransferPlan", source: Mod, dest: Mod,
@@ -1041,14 +1171,12 @@ def _override_projectiles(opts: TransferOptions) -> List[str]:
 
 
 def _follow_soldier_upgrades(plan: "TransferPlan", unit) -> None:
-    """Keep ``armour_ug_models`` honest when the soldier line comes from the base.
+    """Report — never override — an armour-upgrade list that shadows the soldier line.
 
     An armour-upgrade entry is the model the unit actually wears at that armour
-    level, so one naming the source's soldier model renders the source's model no
-    matter what the ``soldier`` line says — and drags its skeletons in with it.
-    When the list is *only* that model it carries no separate choice and follows
-    the soldier line to the base; when it lists other models too, the clash is
-    reported and left alone, because dropping those is a real change of intent.
+    level, so one naming the source's soldier model puts that model back on
+    screen whatever the ``soldier`` line says. The two rows are an independent
+    choice and stay one: this only says what the combination will look like.
     """
     if "soldier" not in plan.base_field_groups:
         return
@@ -1059,20 +1187,45 @@ def _follow_soldier_upgrades(plan: "TransferPlan", unit) -> None:
     if not soldier or soldier not in ug:
         return
     who = plan.replace_type or plan.options.base_type
-    if set(ug) == {soldier}:
-        plan.base_field_groups.append("armour_ug_models")
-        plan.warnings.append(
-            f"the armour upgrade models were '{soldier}' — the same model as the "
-            f"soldier line — so they come from '{who}' too. Left on the source they "
-            "would have put that model (and its animations) straight back into the "
-            "unit, and the Soldier row would have done nothing.")
-    else:
-        plan.warnings.append(
-            f"the soldier line comes from '{who}', but the armour upgrade models "
-            f"still list '{soldier}' — the source's soldier model. The game renders "
-            "the upgrade entry for the unit's armour level, so at that level the unit "
-            f"still uses '{soldier}' and needs its animations. Set Armour upgrades to "
-            f"'{who}' as well, or edit armour_ug_models by hand.")
+    only = set(ug) == {soldier}
+    plan.warnings.append(
+        f"the soldier line comes from '{who}', but the armour upgrade models "
+        + (f"are only '{soldier}' — the source's soldier model."
+           if only else
+           f"still list '{soldier}', the source's soldier model.")
+        + " The game renders the upgrade entry for the unit's armour level, so at "
+        f"that level the unit still looks like '{soldier}'. Set Armour upgrades to "
+        f"'{who}' as well if that is not what you want.")
+
+
+def _check_base_soldier_animations(plan: "TransferPlan", source: Mod, dest: Mod,
+                                   unit) -> None:
+    """Say so when taking the soldier line from the base CHANGES the animation.
+
+    Taking the base's soldier entry is the safe answer to a missing animation,
+    but it is not free: the entry carries the skeletons, so the unit now moves
+    the way the base unit moves. A pikeman animated as a swordsman does not
+    crash, it just fights wrong, and nothing on screen says why.
+    """
+    if "soldier" not in plan.base_field_groups or plan.base_unit is None:
+        return
+    base_model = (getattr(plan.base_unit, "soldier_model", "") or "").strip()
+    plan.base_soldier_model = base_model
+    src_entry = source.modeldb.get(unit.soldier_model) if unit.soldier_model else None
+    dst_entry = dest.modeldb.get(base_model) if base_model else None
+    if src_entry is None or dst_entry is None:
+        return
+    was = [s for s in dict.fromkeys(src_entry.skeletons()) if s]
+    now = [s for s in dict.fromkeys(dst_entry.skeletons()) if s]
+    if not was or not now or set(was) == set(now):
+        return
+    plan.soldier_anim_changed = (", ".join(was), ", ".join(now))
+    who = plan.replace_type or plan.options.base_type
+    plan.warnings.append(
+        f"the soldier line comes from '{who}', so the unit animates as "
+        f"{plan.soldier_anim_changed[1]} instead of {plan.soldier_anim_changed[0]}. "
+        "It will not crash, but it may move and fight unexpectedly in battle — a "
+        "different animation set means different attack timings and reach.")
 
 
 def base_field_groups_for(opts: TransferOptions) -> List[str]:
@@ -1380,6 +1533,11 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     if import_mount:
         plan.base_field_groups = [g for g in plan.base_field_groups if g != "mount"]
         plan.mount_from_base_import = True
+    # …and the same for the officers
+    import_off, off_donor = officer_base_import(plan.base_unit, dest, unit, opts)
+    if import_off:
+        plan.base_field_groups = [g for g in plan.base_field_groups if g != "officer"]
+        plan.officer_from_base_import = True
 
     # `armour_ug_models` shadows the soldier line: the game renders the entry for
     # the unit's armour level, so an upgrade list still naming the SOURCE's soldier
@@ -1397,6 +1555,8 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     # animations the Soldier row can make go away (see soldier_skeletons_missing).
     if unit.soldier_model and "soldier" not in plan.base_field_groups:
         plan.soldier_model_name = unit.soldier_model.lower()
+    plan.model_slots = model_slots_for(source, unit, plan.base_field_groups)
+    _check_base_soldier_animations(plan, source, dest, unit)
     if excluded:
         plan.warnings.append(
             f"{len(excluded)} secondary model(s) excluded; their EDU names are kept and "
@@ -1501,6 +1661,8 @@ def plan_transfer(source: Mod, unit_type: str, dest: Mod,
     # the one thing the destination may not have, so they come from the base's
     if plan.mount_from_base_import:
         _apply_mount_anim_donor(plan, source, dest, unit, anim_donor)
+    if plan.officer_from_base_import:
+        _apply_officer_anim_donor(plan, source, dest, unit, off_donor)
 
     # ---- mount definition (descr_mount.txt) ----
     # The EDU's `mount` field names a block here, and that block's `model` field
@@ -1835,10 +1997,21 @@ def apply_transfer(plan: TransferPlan) -> Dict:
             manifest["created"].append(rel)
         return target
 
-    def write_text(rel: str, text: str, encoding: str):
+    def write_text(rel: str, text: str, encoding: str, exact: bool = False):
+        """Write one of the destination's text files.
+
+        ``exact`` writes the string's line endings through untouched, for the
+        parsers that now READ them untouched (projectiles, mounts, engines).
+        Everything else still lets the platform put the CR back, because its
+        serialiser emits bare LF and always has. Handing exact text to the
+        translating writer would turn every CRLF into CRCRLF.
+        """
         target = backup_and(rel)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding=encoding)
+        if exact:
+            kb.write_text(target, text, encoding)
+        else:
+            target.write_text(text, encoding=encoding)
         file_op("WRITE", target, f"{encoding}, {len(text)} chars")
 
     conflicts = {c.rel: c for c in plan.asset_conflicts}
@@ -1932,21 +2105,28 @@ def apply_transfer(plan: TransferPlan) -> Dict:
             mtext = mtext.rstrip("\r\n") + "\n\n" + plan.mount_raw
         else:                       # destination had no descr_mount.txt at all
             mtext = plan.mount_raw
-        if not mtext.endswith("\n"):
-            mtext += "\n"
-        write_text("descr_mount.txt", mtext, mounts.ENCODING)
+        nl = kb.newline_of(mtext)
+        mtext = kb.to_newline(mtext, nl)
+        if not mtext.endswith(nl):
+            mtext += nl
+        write_text("descr_mount.txt", mtext, mounts.ENCODING, exact=True)
 
     # ---- 3c) projectile definitions (descr_projectile.txt) ----
     if plan.projectile_raws:
         ptext = dest.projectile_file.to_text()
-        block = "\n\n".join(r.strip("\r\n") for r in plan.projectile_raws)
+        # The block comes out of the SOURCE mod and need not be written the way
+        # this file is written, so it is rewritten to the destination's ending
+        # rather than dropped into the middle of it as it stands.
+        nl = kb.newline_of(ptext)
+        block = (nl + nl).join(r.strip("\r\n") for r in plan.projectile_raws)
         if ptext.strip():
-            ptext = ptext.rstrip("\r\n") + "\n\n" + block
+            ptext = ptext.rstrip("\r\n") + nl + nl + block
         else:                       # destination had no descr_projectile.txt at all
             ptext = block
-        if not ptext.endswith("\n"):
-            ptext += "\n"
-        write_text("descr_projectile.txt", ptext, projectiles_mod.ENCODING)
+        ptext = kb.to_newline(ptext, nl)
+        if not ptext.endswith(nl):
+            ptext += nl
+        write_text("descr_projectile.txt", ptext, projectiles_mod.ENCODING, exact=True)
 
     # ---- 3d) siege engines ----
     for rel, raws, current in (
@@ -1959,11 +2139,13 @@ def apply_transfer(plan: TransferPlan) -> Dict:
         if not raws:
             continue
         text = current()
-        block = "\n\n".join(r.strip("\r\n") for r in raws)
-        text = (text.rstrip("\r\n") + "\n\n" + block) if text.strip() else block
-        if not text.endswith("\n"):
-            text += "\n"
-        write_text(rel, text, engines_mod.ENCODING)
+        nl = kb.newline_of(text)          # same rule as the projectiles above
+        block = (nl + nl).join(r.strip("\r\n") for r in raws)
+        text = (text.rstrip("\r\n") + nl + nl + block) if text.strip() else block
+        text = kb.to_newline(text, nl)
+        if not text.endswith(nl):
+            text += nl
+        write_text(rel, text, engines_mod.ENCODING, exact=True)
 
     # ---- 3e) voice bank ----
     if plan.sound_text:
@@ -2143,11 +2325,8 @@ def _base_record(plan: TransferPlan, applied: bool, transfer_id: str = "",
 
 
 def _invalidate(mod: Mod):
-    for attr in ("edu", "loc", "modeldb", "mount_file", "mounts",
-                 "projectile_file", "effect_sets", "engine_file",
-                 "mounted_engine_file", "engine_skeleton_file", "sounds",
-                 "eop_dirs", "lua_tokens", "edu_vocab"):
-        mod.__dict__.pop(attr, None)
+    """Every cached read of this mod is now stale — see :meth:`Mod.drop_caches`."""
+    mod.drop_caches()
 
 
 # --------------------------------------------------------------------------

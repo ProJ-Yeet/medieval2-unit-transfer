@@ -63,6 +63,26 @@ b = modeldb.parse_text(WRAPPED)
 check("entry content is identical across layouts",
       [e.content_key() for e in a.entries] == [e.content_key() for e in b.entries])
 
+print("\n== a UTF-8 BOM in front of the header ==")
+# What a modder gets for opening a modeldb in Notepad and saving it. The first
+# token of the file is a NUMBER, so the mark lands glued to it — this used to
+# die on int() with nothing to tell the user what to fix.
+for label, text in (("single-line", SINGLE_LINE), ("wrapped", WRAPPED)):
+    bom = modeldb._BOM + text
+    db = modeldb.parse_text(bom)
+    check(f"{label}: a BOM'd file still parses",
+          [e.name for e in db.entries]
+          == [e.name for e in modeldb.parse_text(text).entries])
+    check(f"{label}: and is written back WITH its BOM, byte for byte",
+          db.to_text() == bom)
+try:
+    modeldb.parse_text("<?xml?>" + chr(10) + "<not_a_modeldb/>")
+    check("a file that is not a modeldb at all is refused", False)
+except ValueError as e:
+    check("...and it says so in words, not through int()",
+          "does not start like a battle_models.modeldb" in str(e)
+          and "invalid literal" not in str(e))
+
 print("\n== a real wrapped-header file, if present ==")
 sample = Path(r"C:\Users\projy\Downloads\battle_models.modeldb")
 if sample.is_file():

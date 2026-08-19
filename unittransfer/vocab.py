@@ -42,6 +42,12 @@ WEAPON_SOUND = ["none", "spear", "sword", "axe", "mace", "knife"]
 ARMOUR_SOUND = ["flesh", "leather", "metal"]
 MOUNT_CLASS = ["horse", "camel", "elephant"]
 
+# The tool's own unit metadata (unittransfer.edu.MARKER), offered rather than
+# enforced like everything else here: a tier is what the EDU cleanup sorts by,
+# and a mod is free to invent bands and variants this list has never heard of.
+TIER = ["0", "1", "2", "3", "4", "5"]
+TIER_VARIANT = ["aor", "general", "quest", "mercenary", "unique"]
+
 # stat_pri_attr / stat_sec_attr / stat_ter_attr
 WEAPON_ATTR = [
     "ap", "bp", "spear", "light_spear", "long_pike", "short_pike",
@@ -71,8 +77,13 @@ AI_ATTR = [
     "foot_slingers", "foot_pila", "foot_darts", "foot_francisca",
 ]
 
+# Banner names are NOT an engine set: every one of them is declared by the mod's
+# own `descr_banners_new.xml`, in three sections that map exactly onto the three
+# EDU lines (<FactionBanners> -> `banner faction`, <HolyBanners> -> `banner holy`,
+# <UnitSpecificBanners> -> `banner unit`). These lists are the fallback for a mod
+# with no such file, and hold only names vanilla's own EDU uses.
 BANNER_FACTION = ["main_infantry", "main_cavalry", "main_missile", "main_spear"]
-BANNER_HOLY = ["crusade", "jihad"]
+BANNER_HOLY = ["crusade", "crusade_cavalry"]
 
 # fixed sets keyed the way the page asks for them
 STATIC: Dict[str, List[str]] = {
@@ -122,6 +133,39 @@ def _type_names(path: Path) -> List[str]:
         if name and name.lower() not in seen:
             seen.add(name.lower())
             out.append(name)
+    return out
+
+
+_BANNER_SECTION = re.compile(r"<\s*(FactionBanners|HolyBanners|UnitSpecificBanners)\s*>"
+                             r"(.*?)</\s*\1\s*>", re.IGNORECASE | re.DOTALL)
+_BANNER_NAME = re.compile(r"<\s*Banner\b[^>]*?\bName\s*=\s*\"([^\"]*)\"", re.IGNORECASE)
+
+#: which XML section declares the names each `banner <kind>` line may use
+BANNER_SECTIONS = {"faction": "FactionBanners", "holy": "HolyBanners",
+                   "unit": "UnitSpecificBanners"}
+
+
+def banner_names(data: Path) -> Dict[str, List[str]]:
+    """The banners `descr_banners_new.xml` declares, keyed by `banner <kind>`.
+
+    Returns ``{"faction": [...], "holy": [...], "unit": [...]}``. The EDU writes
+    these names in whatever case the modder felt like (`crusade` against the
+    file's `Crusade`), so the caller compares case-insensitively; the names are
+    returned as the file spells them because that is what the picker should show.
+    A mod with no banners file gets three empty lists, and the fixed fallbacks
+    above take over.
+    """
+    out: Dict[str, List[str]] = {k: [] for k in BANNER_SECTIONS}
+    path = data / "descr_banners_new.xml"
+    try:
+        text = path.read_text(encoding="latin-1", errors="replace")
+    except OSError:
+        return out
+    by_tag = {m.group(1).lower(): m.group(2) for m in _BANNER_SECTION.finditer(text)}
+    for kind, tag in BANNER_SECTIONS.items():
+        body = by_tag.get(tag.lower())
+        if body:
+            out[kind] = list(dict.fromkeys(_BANNER_NAME.findall(body)))
     return out
 
 
@@ -202,6 +246,23 @@ def _harvest(mod) -> Dict[str, List[str]]:
     return got
 
 
+def _marker_values(mod, key: str) -> List[str]:
+    """Every value this mod's own unit markers already use for one marker key.
+
+    The same rule as every other list here — what the mod uses is offered —
+    except that the file being read is one the tool wrote itself. This is what
+    "a way to add more" means for tiers and variants: a value typed once
+    becomes part of the mod's vocabulary, and nothing has to be hardcoded to
+    let that happen.
+    """
+    try:
+        units = mod.edu.units
+    except Exception:
+        return []
+    seen = {u.tier if key == "tier" else u.variant for u in units}
+    return sorted(v for v in seen if v)
+
+
 def build(mod) -> Dict[str, object]:
     """The whole vocabulary payload for one mod."""
     got = _harvest(mod)
@@ -221,6 +282,7 @@ def build(mod) -> Dict[str, object]:
     effects = defined(lambda: sorted(mod.effect_sets))
     ships = _type_names(mod.data / "descr_ship.txt")
     animals = _type_names(mod.data / "descr_animals.txt")
+    banners = banner_names(mod.data)
 
     out: Dict[str, object] = dict(STATIC)
     out.update({
@@ -247,10 +309,16 @@ def build(mod) -> Dict[str, object]:
         "animal": _merge(animals, got["animal"]),
         "model": _merge(models, got["model"]),
         "accent": _merge(accents, got["accent"]),
-        "banner_faction": _merge(BANNER_FACTION, got["banner_faction"]),
-        "banner_holy": _merge(BANNER_HOLY, got["banner_holy"]),
-        "banner_unit": _merge(got["banner_unit"]),
+        # the banners file leads, exactly like descr_projectile and descr_mount:
+        # these names are the mod's own declarations, not an engine set
+        "banner_faction": _merge(banners["faction"] or BANNER_FACTION,
+                                 got["banner_faction"]),
+        "banner_holy": _merge(banners["holy"] or BANNER_HOLY, got["banner_holy"]),
+        "banner_unit": _merge(banners["unit"], got["banner_unit"]),
         "fire_effect": _merge(effects, got["fire_effect"]),
+        # the tool's own metadata, not a game field — see unittransfer.edu.MARKER
+        "tier": _merge(TIER, _marker_values(mod, "tier")),
+        "tier_variant": _merge(TIER_VARIANT, _marker_values(mod, "variant")),
     })
     # which names are actually DEFINED by a file, so the editor can flag a
     # reference to something that does not exist rather than just offering a list
@@ -259,4 +327,9 @@ def build(mod) -> Dict[str, object]:
         "mounted_engine": mounted, "ship": ships, "animal": animals,
         "model": models,
     }
+    # only when the mod HAS a banners file: with no file there is nothing to be
+    # undeclared against, and every name would be flagged
+    for kind in BANNER_SECTIONS:
+        if banners[kind]:
+            out["defined"]["banner_" + kind] = banners[kind]
     return out

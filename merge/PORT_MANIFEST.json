@@ -1,0 +1,2695 @@
+{
+ "upstream": {
+  "remote": "upstream-editor",
+  "ref": "refs/upstream/editor/main",
+  "clone_url": "https://github.com/Machiavello-1441/m2tw-editor.git",
+  "reviewed_sha": "b4768d51efc3e079bed7559f30e46e504d99b2eb",
+  "reviewed_date": "2026-08-14"
+ },
+ "dispositions": {
+  "port-concept": "rebuild the idea in our stack; a change here may mean the format knowledge changed",
+  "audit": "we already do this — compare and take the small wins",
+  "skip": "boilerplate, cloud plumbing, or something we own outright",
+  "out-of-scope": "excluded from V2 (ROADMAP.md); AI/autogenerate is permanent",
+  "untriaged": "new upstream file nobody has classified yet"
+ },
+ "files": {
+  ".gitignore": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "project scaffolding",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "README.md": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "project scaffolding",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/config.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/CampaignData.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/Character.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/Faction.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/HistoricEvent.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/Region.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/ScriptTemplate.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/SkeletonPose.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/entities/User.jsonc": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "base44/functions/uploadToDrive/entry.ts": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 cloud entity schemas — no cloud in our design",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "components.json": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "eslint.config.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "index.html": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "project scaffolding",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "jsconfig.json": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "package-lock.json": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "package.json": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "postcss.config.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/App.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/Layout.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/api/base44Client.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/AppErrorBoundary.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ProtectedRoute.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/UserNotRegisteredError.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ancillaries/AncillariesContext.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ancillaries/AncillariesFileLoader.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ancillaries/AncillariesParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ancillaries/AncillaryEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ancillaries/AncillaryList.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/anim/AnimBoneEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/anim/AnimInspector.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/anim/CasAnimParser.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/animation/BoneDataTable.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/animation/CasFileInfo.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/animation/ScalePanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/animation/SkeletonViewer.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/animation/SurveyPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/Mesh3DPreview.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "3D model + texture viewer",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/ModelPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "3D model + texture viewer",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/ModelViewer.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "3D model + texture viewer",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/ModelViewerSidebar.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "3D model + texture viewer",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/PoseEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "animation posing — future expansion",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/assets/TexturePanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "3D model + texture viewer",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/campaign/CampaignCard.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/campaign/CampaignForm.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/campaigns/CampaignDescriptionsEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/campaigns/CampaignEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/cultures/culturesParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "descr_cultures editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/AutoSavePanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/BuildingTextEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/BuildingTree.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/CapabilityEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/CapabilityLibrary.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/CodePreview.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/EDBContext.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/EDBExporter.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "12"
+   ],
+   "reason": "their EDB parser vs our buildings.py — compare field coverage",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/EDBParser.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "12"
+   ],
+   "reason": "their EDB parser vs our buildings.py — compare field coverage",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/EDBValidator.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "12"
+   ],
+   "reason": "their EDB parser vs our buildings.py — compare field coverage",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/GuildEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/GuildsParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/HiddenResourceEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/ImageCropModal.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/LevelCultureEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/LevelEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/LevelImageSection.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/RefDataContext.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/RefFileLoader.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/RequirementBuilder.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/SearchableSelect.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/UpgradesEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/ValidationPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/edb/useEDBAutoSave.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "'Auto' here is autosave (IndexedDB draft recovery), not autogenerate. In scope."
+  },
+  "src/components/export/CampaignPackagePicker.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/export/ModValidator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/export/TriggerValidationPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/export/ValidationDashboard.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/BannersTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11",
+    "14"
+   ],
+   "reason": "banner textures",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/DescriptionsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11"
+   ],
+   "reason": "descr_sm_factions, banners, faction strings",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/FactionSymbolsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11"
+   ],
+   "reason": "descr_sm_factions, banners, faction strings",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/MiscTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11"
+   ],
+   "reason": "descr_sm_factions, banners, faction strings",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/StringsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11"
+   ],
+   "reason": "descr_sm_factions, banners, faction strings",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/factions/SymbolGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "AI/autogenerate — permanently excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/home/DataFolderPicker.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "5"
+   ],
+   "reason": "which files they read and how they discover them",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/home/DataLoadingBanner.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "5"
+   ],
+   "reason": "which files they read and how they discover them",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/ImGuiEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/LuaAiAssistant.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "AI/autogenerate — permanently excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/LuaApiReference.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/LuaCodeEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/LuaScriptManager.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/lua/m2tweop_api.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/CampaignDescriptionsStrings.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/CampaignEventsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "descr_events.txt, NOT the script editor — the out-of-scope ruling was about ScriptEditor.jsx/ScriptingPanel. Kept in phase 15 deliberately."
+  },
+  "src/components/map/CharactersTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/CoastlineTracer.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Traces a coastline from the heightmap the user supplies — a drawing aid, so kept in scope. Flagged because it sits next to the excluded generators."
+  },
+  "src/components/map/DisastersTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/FactionsCampaignTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/FamilyTreeTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/Map3DPreview.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/MapCanvas.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/MapLayerPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/MapPaintToolbar.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/MapPixelTooltip.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/MapValidationPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/NewRegionForm.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/NewRegionPaintWizard.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/OsmBackground.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "DECISION NEEDED: pulls OpenStreetMap tiles as a backdrop to trace over. A reference layer, not generated mod data — but it is an external fetch, so confirm before porting."
+  },
+  "src/components/map/OsmRegionSearch.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "DECISION NEEDED: searches OSM to locate a place. Same call as OsmBackground."
+  },
+  "src/components/map/OverlayMapGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/PositionPickerButton.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/RegionColorDetector.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/RegionEditorPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/ReligionsEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/ScriptAIAssistant.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "AI/autogenerate — permanently excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/ScriptReferenceSidebar.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "script editor — future expansion (Scratch-style block UI)",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/ScriptTemplateSidebar.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "script editor — future expansion (Scratch-style block UI)",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/ScriptingPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "script editor — future expansion (Scratch-style block UI)",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/StratOverlay.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/StratPanel.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/additionalParsers.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/campaignEventsParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "See CampaignEventsTab — descr_events data, not scripting."
+  },
+  "src/components/map/campaignImporter.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/disastersParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/factionMoviesParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/mapLayerConstants.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/mapValidator.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/paintPresets.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/scriptAutocomplete.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "script editor — future expansion (Scratch-style block UI)",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/scriptReferenceData.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "script editor — future expansion (Scratch-style block UI)",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/stratParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/tgaExporter.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/map/tgaLoader.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/CharacterNamesTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/RebelFactionRow.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/RebelFactionsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/RebelUnitPicker.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/ReligionsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/ResourcesTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/banners/BannersTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11",
+    "14"
+   ],
+   "reason": "banner textures",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/banners/TextureStore.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11",
+    "14"
+   ],
+   "reason": "banner textures",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/banners/bannersParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11",
+    "14"
+   ],
+   "reason": "banner textures",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/spritesheet/SpriteCanvas.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "sprite sheet + sd XML editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/spritesheet/SpriteSheetEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "sprite sheet + sd XML editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/spritesheet/SpriteSheetsTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "sprite sheet + sd XML editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/spritesheet/sdXmlParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "sprite sheet + sd XML editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/stratmap/StratMapCharTab.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "strat map characters",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/stratmap/StratModelPreview.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "strat map characters",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/minorfiles/stratmap/stratCharParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "strat map characters",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/BBoxGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/BboxLayerGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/ExportPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/FeaturesLayerGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/GeoImportPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/GeoImporter.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/GroundTypeRangeEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/KoppenClimateFetcher.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/LandCoverFetcher.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/LayerPreviewPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/LayerSidebar.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/MapCanvas.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/MapEditorCanvas.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/MapStatusBar.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/OhmOverlay.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/OsmHistoricTagFetcher.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/OsmTagOverlayEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/ReferenceLayers.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/RegionsWorkshop.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/RiverChecker.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/SelectionBox.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/SelectionPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/SettlementBoundaryButton.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/SvgMapDownloader.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/TileRasterizer.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/ToolSettings.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/WorkflowPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/newmap/boundaryRasterizer.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/ConditionRow.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/EffectAttributeSelect.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/ModDataContext.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "4"
+   ],
+   "reason": "shared UI patterns — Code View may reuse",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/SearchableCombobox.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "4"
+   ],
+   "reason": "shared UI patterns — Code View may reuse",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/TriggerEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/ValidationPanel.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "4"
+   ],
+   "reason": "shared UI patterns — Code View may reuse",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/WhenToTestSelect.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/conditionDefs.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/effectsDescriptionBuilder.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "7"
+   ],
+   "reason": "trigger/condition grammar shared by traits + ancillaries",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/shared/tgaDecoder.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "4"
+   ],
+   "reason": "shared UI patterns — Code View may reuse",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/strings/stringsBinCodec.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "6"
+   ],
+   "reason": "`.strings.bin` codec",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/traits/TraitEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/traits/TraitList.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/traits/TraitsContext.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/traits/TraitsFileLoader.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/traits/TraitsParser.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/accordion.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/alert-dialog.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/alert.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/aspect-ratio.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/avatar.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/badge.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/breadcrumb.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/button.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/calendar.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/card.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/carousel.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/chart.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/checkbox.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/collapsible.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/command.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/context-menu.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/dialog.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/drawer.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/dropdown-menu.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/form.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/hover-card.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/input-otp.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/input.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/label.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/menubar.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/navigation-menu.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/pagination.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/popover.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/progress.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/radio-group.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/resizable.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/scroll-area.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/select.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/separator.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/sheet.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/sidebar.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/skeleton.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/slider.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/sonner.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/switch.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/table.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/tabs.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/textarea.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/toast.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/toaster.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/toggle-group.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/toggle.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/tooltip.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/ui/use-toast.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "shadcn/ui boilerplate — we have our own CSS",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/components/units/EDUParser.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13 (merge/audit-edu-sounds.md): NOTHING adopted. Its vocab is RTW-era or invented in 9 of 11 closed slots against 1756 real units (tech type, hit sound, discipline, training, formation `schiltron`, armour `plate`, weapon type, category, class). serializeUnit re-emits a unit from parsed values and drops every keyword its switch has no case for. Its hardcoded BANNER_HOLY did prompt the one change: banner names now come from the mod's descr_banners_new.xml."
+  },
+  "src/components/units/ModelDbPanel.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Its one candidate feature, 'duplicate faction texture', we have twice over and wired in: modeldb.add_texture_factions / set_texture_factions, reached from the unit editor, the transfer flow and the building-ownership fix."
+  },
+  "src/components/units/OwnershipTab.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Falls back to 24 hardcoded vanilla factions for a mod whose factions are Gondor and Mordor. Its missing-modeldb-texture warning is one we already have AND already offer to fix on save."
+  },
+  "src/components/units/UnitDescriptionTab.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Re-encodes an imported card to 48x56 and an info pic to 260x350; measured over DaC's art, 1440 of 1440 cards are 48x64 and no info pic is 260x350 (432x172 dominates 4290 files)."
+  },
+  "src/components/units/UnitEditor.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Tab layout only; ours is the guided/raw split plus Code View."
+  },
+  "src/components/units/UnitImagesTab.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Browser-side image handling; ours is the server icon pipeline."
+  },
+  "src/components/units/UnitList.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Search over type/category; ours filters, sorts and shows art."
+  },
+  "src/components/units/UnitStatRow.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Layout primitive."
+  },
+  "src/hooks/use-mobile.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/index.css": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/AuthContext.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/PageNotFound.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/app-params.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/autoGroundTypes.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "EXCLUDED as a generator, but it carries the canonical M2TW ground-type RGB table (fertile_low=0,128,128 etc). That table is format knowledge phase 15 needs to READ map_ground_types.tga — extract the constants, never the generator. Cross-check against Reference/TWCenter before trusting them."
+  },
+  "src/lib/casAnimCodec.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "animation — future expansion",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/casCodec.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/mapLayerStore.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "map layer handling",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/modeldbCodec.js": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their modeldb codec vs our modeldb.py — we own this format",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. We own this format (modeldb.py, splice-based)."
+  },
+  "src/lib/modeldbStore.js": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their modeldb codec vs our modeldb.py — we own this format",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. localStorage plumbing."
+  },
+  "src/lib/ms3dCodec.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/query-client.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/skeletonPoser.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "animation — future expansion",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/slerpUtils.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "animation — future expansion",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/stringsBinStore.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "6"
+   ],
+   "reason": "`.strings.bin` codec",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 6 also has a second, better source: Reference/TWCenter has strings_bin_converter_0_7_2 with a readme AND a Python implementation."
+  },
+  "src/lib/textureCodec.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/textureLoader.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/tgaEncoder.js": {
+   "disposition": "port-concept",
+   "phases": [
+    "14"
+   ],
+   "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/utils.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "Base44 auth/cloud plumbing — we are self-hosted",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/lib/worldCover.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "auto-generates map data from external sources — excluded",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/main.jsx": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages.config.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/AncillariesEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "9"
+   ],
+   "reason": "export_descr_ancillaries editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/AnimationEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/AssetsConverter.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/CampaignManager.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/CampaignMap.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/CampaignSettings.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "15"
+   ],
+   "reason": "campaign map + descr_strat — the flagship phase",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/CharactersEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10",
+    "15"
+   ],
+   "reason": "descr_character / names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/CulturesEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "descr_cultures editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/EDBEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "12"
+   ],
+   "reason": "EDB editor UI: collapsible tree, new-tree flow, capability/requirement builders",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/Export.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/FactionsEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "11"
+   ],
+   "reason": "descr_sm_factions, banners, faction strings",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/GoatTools.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/Home.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "5"
+   ],
+   "reason": "which files they read and how they discover them",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/LuaScripts.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/MinorFiles.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "10"
+   ],
+   "reason": "rebel factions / religions / resources / character names",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/NewMapEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/ScriptEditor.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/SoundEditor.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their sound editor vs our sounds.py",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted, and NOT a competitor to our voice-bank editor - different files. Its KNOWN_SOUND_FILES names 14 files of which 4 exist (DaC ships 32). Its parser round-trips 0 of those 32 and loses 2975 lines; in descr_sounds_weapons.txt (3856 lines) the only block it finds is the word 'end'. The COVERAGE gap is real and unclosed: nothing in the toolkit touches descr_sounds_*.txt."
+  },
+  "src/pages/StringsBinEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "6"
+   ],
+   "reason": "`.strings.bin` codec",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/TextEditor.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "4"
+   ],
+   "reason": "raw text editing — informs Code View",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/TraitsEditor.jsx": {
+   "disposition": "port-concept",
+   "phases": [
+    "8"
+   ],
+   "reason": "export_descr_character_traits editor",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/UnitCardGenerator.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "src/pages/UnitEditor.jsx": {
+   "disposition": "audit",
+   "phases": [
+    "13"
+   ],
+   "reason": "their EDU fields/dropdowns vs ours — adopt fields, never their hardcoded vocab",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": "Phase 13: nothing adopted. Holds the whole EDU, the strings file and every decoded card in localStorage; its parseExportUnits reads text and re-emits from a map. Phase 6's stringsbin.py owns that file, byte-exact over 81 real archives."
+  },
+  "src/utils/index.ts": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "React app shell — our shell is web/index.html",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "tailwind.config.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  },
+  "vite.config.js": {
+   "disposition": "skip",
+   "phases": [],
+   "reason": "JS toolchain — we have no build step",
+   "status": "triaged",
+   "first_seen": "7cab442",
+   "notes": ""
+  }
+ }
+}

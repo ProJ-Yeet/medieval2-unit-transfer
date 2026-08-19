@@ -9,10 +9,13 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
 from PIL import Image, ImageDraw
+
+from .logutil import log
 
 #: Where a user-supplied placeholder is looked for (kept out of the mod folders,
 #: like everything else this tool writes).
@@ -63,8 +66,9 @@ class IconCache:
         if custom.exists():
             return self.png_bytes(custom)
         cached = self.cache_dir / f"placeholder-{width}x{height}.png"
-        if cached.exists():
-            return cached.read_bytes()
+        hit = _read_cached(cached)
+        if hit is not None:
+            return hit
         data = _draw_placeholder(width, height)
         try:
             cached.write_bytes(data)
@@ -74,12 +78,22 @@ class IconCache:
 
     def png_bytes(self, src: Optional[Path]) -> bytes:
         if src is None or not Path(src).exists():
+            # Not a fault: mods ship the art they changed and leave the rest to
+            # the game's own files. The caller says which unit it was asking
+            # about — this layer only ever sees a path, and "(no path)" tells
+            # nobody anything.
+            if src is not None:
+                log.debug("ICON   listed but missing on disk: %s", src)
             return _BLANK_PNG
         src = Path(src)
         cached = self._key(src)
-        if cached.exists():
-            return cached.read_bytes()
+        hit = _read_cached(cached)
+        if hit is not None:
+            return hit
+        started = time.perf_counter()
         data = _decode_to_png(src)
+        log.debug("ICON   converted %s -> %d bytes of PNG in %.0f ms", src, len(data),
+                  (time.perf_counter() - started) * 1000)
         # Write atomically: concurrent requests for the same uncached icon must
         # never leave a torn/partial file that a later reader would serve.
         try:
@@ -89,6 +103,32 @@ class IconCache:
         except OSError:
             pass
         return data
+
+
+#: First eight bytes of every PNG. A cache entry that doesn't start with them is
+#: not a PNG we wrote, so it is a miss rather than something to serve.
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+
+def _read_cached(path: Path) -> Optional[bytes]:
+    """Bytes of a cache entry, or None when it can't be used.
+
+    Never raises, and never returns something that isn't a PNG. A cache lives on
+    a real filesystem in normal use, but it can end up somewhere a read *fails*:
+    a cloud-synced folder hands back ``OSError: [Errno 22]`` for a dehydrated
+    placeholder, and a file that is still syncing can read short. Both used to
+    surface as a black unit card — the icon handler catches the error and paints
+    a blank, so the grid filled up with nothing and looked like a failed
+    conversion. Treating it as a miss re-decodes from the mod's own TGA instead,
+    which is the one copy that is always there.
+    """
+    try:
+        if not path.exists():
+            return None
+        data = path.read_bytes()
+    except OSError:
+        return None
+    return data if data[:8] == _PNG_MAGIC else None
 
 
 def _draw_placeholder(width: int, height: int) -> bytes:

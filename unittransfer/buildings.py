@@ -67,7 +67,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from . import (config, edbvocab, edu as edu_mod, eop, localization,
-               modeldb as modeldb_mod)
+               minorfiles, modeldb as modeldb_mod, stringsbin)
 from .logutil import counted, file_op, fingerprint, log
 
 #: EDB is plain 8-bit text, like the EDU — latin-1 round-trips every byte.
@@ -104,6 +104,11 @@ BONUS_CAPS = frozenset({
     "construction_time_bonus_other", "construction_time_bonus_religious",
     "income_bonus", "taxable_income_bonus", "trade_level_bonus",
     "recruits_exp_bonus", "recruits_morale_bonus",
+    # from the reference tool's capability sheet — see merge/audit-edb.md
+    "construction_cost_bonus_defensive", "construction_cost_bonus_military",
+    "construction_cost_bonus_other", "construction_cost_bonus_religious",
+    "construction_time_bonus_military", "construction_time_bonus_stone",
+    "construction_time_bonus_wooden",
 })
 
 #: What each capability keyword does, for the editor's tooltips. From the TWC
@@ -159,10 +164,102 @@ CAP_HELP: Dict[str, str] = {
     "construction_time_bonus_defensive": "Defensive buildings are built faster.",
     "construction_time_bonus_other": "Other buildings are built faster.",
     "construction_time_bonus_religious": "Religious buildings are built faster.",
+    # ---- taken from the reference tool's capability sheet (Phase 12) ----
+    # Eleven keywords the engine reads that no installed mod happens to use.
+    # Adopted as FIELDS, which is the rule: a keyword is engine vocabulary, and a
+    # list built only from three mods' habits would keep every mod to those
+    # habits. The four whose own source says they do nothing say so here, because
+    # a keyword that silently does nothing is worse than a missing one.
+    "construction_cost_bonus_defensive": "Core (settlement) buildings cost 1% less per point.",
+    "construction_cost_bonus_other": "Buildings that are neither core nor temple_ cost 1% less per point.",
+    "construction_cost_bonus_religious": "temple_ buildings cost 1% less per point.",
+    "construction_cost_bonus_military": "No effect — the engine reads it and does nothing with it.",
+    "construction_time_bonus_stone": "Stone buildings are built 1% faster per point.",
+    "construction_time_bonus_wooden": "Wooden buildings are built 1% faster per point.",
+    "construction_time_bonus_military": "No effect — the engine reads it and does nothing with it.",
+    "gate_defences": "Boiling oil over the gate. 0 none, 1 oil.",
+    "upgrade_bodyguard": "Lets generals' bodyguards be upgraded after the Marian reforms event.",
+    "weapon_melee_simple": "Upgrades the weapons of melee troops that use blunt weapons.",
+    "fire_risk": "No effect — the fire disaster was cut before Rome shipped.",
 }
 
-#: Religions a building line may be tied to.
-RELIGIONS = ("catholic", "orthodox", "islam", "pagan", "heretic")
+#: ``keyword -> (group, argument range)`` for the capability picker: what to
+#: file it under and what the engine will accept. Groups come from the reference
+#: tool's spreadsheet, which is the one thing in its EDB half that our own list
+#: had nothing like — a flat alphabetical list of 60 keywords is a list you scan,
+#: not one you choose from. A keyword absent here falls under "Other".
+CAP_META: Dict[str, Tuple[str, str]] = {
+    "recruit_pool": ("Recruitment", ""),
+    "agent": ("Agents", "level 0-2"),
+    "agent_limit": ("Agents", "1+"),
+    "wall_level": ("Defence", "0-4"),
+    "tower_level": ("Defence", "1-3"),
+    "gate_strength": ("Defence", "0-2"),
+    "gate_defences": ("Defence", "0-1"),
+    "free_upkeep": ("Recruitment", "1+"),
+    "recruitment_slots": ("Recruitment", "1+"),
+    "recruitment_cost_bonus_naval": ("Recruitment", "1-2"),
+    "recruits_exp_bonus": ("Recruitment", "1-5"),
+    "recruits_morale_bonus": ("Recruitment", "1+"),
+    "retrain_cost_bonus": ("Recruitment", "0-1"),
+    "upgrade_bodyguard": ("Recruitment", "1+"),
+    "happiness_bonus": ("Population", "1-25"),
+    "law_bonus": ("Population", "1-25"),
+    "population_health_bonus": ("Population", "1-25"),
+    "population_growth_bonus": ("Population", "1-25"),
+    "population_loyalty_bonus": ("Population", "1-25"),
+    "stage_games": ("Population", "1-3"),
+    "stage_races": ("Population", "1-2"),
+    "fire_risk": ("Population", ""),
+    "income_bonus": ("Economy", "1+"),
+    "taxable_income_bonus": ("Economy", "1+"),
+    "trade_base_income_bonus": ("Economy", "1+"),
+    "trade_level_bonus": ("Economy", "1+"),
+    "trade_fleet": ("Economy", "1+"),
+    "farming_level": ("Economy", "1-3"),
+    "mine_resource": ("Economy", "1+"),
+    "road_level": ("Economy", "0-3"),
+    "religion_level": ("Religion", "1+"),
+    "amplify_religion_level": ("Religion", "1+"),
+    "pope_approval": ("Religion", "1+"),
+    "pope_disapproval": ("Religion", "1+"),
+    "construction_cost_bonus_stone": ("Construction", "1-100"),
+    "construction_cost_bonus_wooden": ("Construction", "1-100"),
+    "construction_cost_bonus_defensive": ("Construction", "1-100"),
+    "construction_cost_bonus_other": ("Construction", "1-100"),
+    "construction_cost_bonus_religious": ("Construction", "1-100"),
+    "construction_cost_bonus_military": ("Construction", "1-100"),
+    "construction_time_bonus_defensive": ("Construction", "1-100"),
+    "construction_time_bonus_other": ("Construction", "1-100"),
+    "construction_time_bonus_religious": ("Construction", "1-100"),
+    "construction_time_bonus_stone": ("Construction", "1-100"),
+    "construction_time_bonus_wooden": ("Construction", "1-100"),
+    "construction_time_bonus_military": ("Construction", "1-100"),
+    "armour": ("Unit upgrades", "1-6"),
+    "navy_bonus": ("Unit upgrades", "0-9"),
+    "archer_bonus": ("Unit upgrades", "0-9"),
+    "cavalry_bonus": ("Unit upgrades", "0-9"),
+    "heavy_cavalry_bonus": ("Unit upgrades", "0-9"),
+    "gun_bonus": ("Unit upgrades", "0-9"),
+    "weapon_melee_blade": ("Weapons", "0-9"),
+    "weapon_melee_simple": ("Weapons", "0-9"),
+    "weapon_missile_gunpowder": ("Weapons", "0-9"),
+    "weapon_missile_mechanical": ("Weapons", "0-9"),
+    "weapon_artillery_gunpowder": ("Weapons", "0-9"),
+    "weapon_artillery_mechanical": ("Weapons", "0-9"),
+    "weapon_naval_gunpowder": ("Weapons", "0-9"),
+    "weapon_projectile": ("Weapons", "0-9"),
+}
+
+#: The order the picker shows the groups in, coarsest first.
+CAP_GROUPS = ("Recruitment", "Unit upgrades", "Weapons", "Defence", "Agents",
+              "Population", "Economy", "Religion", "Construction", "Other")
+
+#: Vanilla's five religions — a last resort only. A building line's `religion`
+#: names whatever ``descr_religions.txt`` defines, and a mod routinely replaces
+#: the lot (DaC has ten, none of them `pagan`), so the real list comes from
+#: :func:`unittransfer.minorfiles.religion_names` via the mod's own vocab.
+VANILLA_RELIGIONS = ("catholic", "orthodox", "islam", "pagan", "heretic")
 
 #: Materials a level may be built from.
 MATERIALS = ("wooden", "stone")
@@ -185,6 +282,23 @@ def _code(line: str) -> str:
 
 def _indent(line: str) -> str:
     return _WS.match(line).group(1)
+
+
+def _is_annotation(code: str) -> bool:
+    """Is this line a modder's ``#`` note rather than something the engine reads?
+
+    The EDB's comment marker is ``;``, so a line starting with ``#`` is not a
+    comment as far as the format is concerned — but it is not a keyword either,
+    and the engine evidently ignores it: Divide and Conquer ships **109** of
+    them, all inside one capability block, grouping its ``recruit_pool`` lines by
+    faction (``# GONDOR``, ``# ERIADOR``, …), and the mod runs.
+
+    Reading one as a capability put ``#`` in the capability picker as if it were
+    engine vocabulary. Nothing is skipped on *write*: this module splices known
+    line ranges and never re-emits a block, so a line no parser claims survives
+    a save untouched.
+    """
+    return code.startswith("#")
 
 
 def _split_requires(text: str) -> Tuple[str, str]:
@@ -533,7 +647,7 @@ def _parse_level_body(lines: List[str], open_idx: int, close_idx: int,
     j = open_idx + 1
     while j < close_idx:
         code = _code(lines[j])
-        if not code or code in ("{", "}"):
+        if not code or code in ("{", "}") or _is_annotation(code):
             j += 1
             continue
         parts = code.split(None, 1)
@@ -547,7 +661,8 @@ def _parse_level_body(lines: List[str], open_idx: int, close_idx: int,
             if kw == "upgrades":
                 blk.upgrades_span = (sub_open, sub_close)
                 blk.upgrades = [c for k in range(sub_open + 1, sub_close)
-                                if (c := _code(lines[k])) and c not in ("{", "}")]
+                                if (c := _code(lines[k])) and c not in ("{", "}")
+                                and not _is_annotation(c)]
             else:
                 caps = _parse_capabilities(lines, sub_open, sub_close)
                 if kw == "capability":
@@ -567,7 +682,7 @@ def _parse_capabilities(lines: List[str], open_idx: int, close_idx: int) -> List
         raw = lines[j]
         code, comment = _strip_comment(raw)
         stripped = code.strip()
-        if not stripped or stripped in ("{", "}"):
+        if not stripped or stripped in ("{", "}") or _is_annotation(stripped):
             continue
         parts = stripped.split(None, 1)
         args, requires = _split_requires(parts[1] if len(parts) > 1 else "")
@@ -779,38 +894,18 @@ def cultures_of(mod) -> List[str]:
                   if p.is_dir() and (p / "buildings").is_dir())
 
 
-_FACTION_RE = re.compile(r"^\s*faction\s+(\S+)", re.I)
-_CULTURE_RE = re.compile(r"^\s*culture\s+(\S+)", re.I)
-
-
 def faction_cultures(mod) -> Dict[str, str]:
-    """faction slot -> culture, from ``data/descr_sm_factions.txt``.
+    """faction slot -> culture — :mod:`unittransfer.factions` is the source.
 
     Building icons are picked by *culture*, but a level's ``requires`` clause
     names *factions*, so this is what lets the browser show the right art for
-    "the buildings England can build".
+    "the buildings England can build". It used to read the file with a regex of
+    its own, which got the head line's comma modifier right by accident
+    (``faction egypt, spawned_on_event``) and would have been the fifth parser of
+    a file the toolkit now edits.
     """
-    path = mod.data / "descr_sm_factions.txt"
-    out: Dict[str, str] = {}
-    if not path.exists():
-        return out
-    try:
-        text = path.read_text(encoding=ENCODING)
-    except OSError:
-        return out
-    current = ""
-    for line in text.splitlines():
-        code = _code(line)
-        if not code:
-            continue
-        m = _FACTION_RE.match(code)
-        if m:
-            current = m.group(1).strip(",").lower()
-            continue
-        m = _CULTURE_RE.match(code)
-        if m and current:
-            out.setdefault(current, m.group(1).strip(",").lower())
-    return out
+    from . import factions as fac
+    return fac.faction_cultures(mod)
 
 
 _FACTIONS_CLAUSE = re.compile(r"factions\s*\{([^}]*)\}", re.I)
@@ -1431,8 +1526,19 @@ class BuildingPlan:
     changes: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+    #: True when this plan CREATES the line rather than editing one.
+    created: bool = False
+    #: For a create: the building-card files the new levels will want. Reported,
+    #: never written — see :func:`icon_slots`.
+    slots: List[dict] = field(default_factory=list)
 
     def summary(self) -> str:
+        if self.created:
+            out = [f"new building line {self.line!r} in {self.mod.name}"]
+            out += ["  " + c for c in self.changes]
+            out += ["  ! " + w for w in self.warnings]
+            out += ["  ERROR: " + e for e in self.errors]
+            return "\n".join(out)
         out = [f"building edits in {self.mod.name} ({self.line or 'multiple lines'})"]
         out += ["  " + c for c in self.changes]
         out += ["  ! " + w for w in self.warnings]
@@ -1463,6 +1569,11 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
     back-to-front in one pass, so several levels — and, via ``also``, several
     building lines — can be saved together without any of them moving the others.
     """
+    # a new tree is its own job: there is no line to splice into yet, and the
+    # two files it writes have to fail together
+    if body.get("create"):
+        return plan_new_tree(mod, body["create"])
+
     plan = BuildingPlan(mod=mod, line=str(body.get("line") or ""))
     edb = mod.edb
     if not mod.edb_path.exists():
@@ -1479,6 +1590,14 @@ def plan_edit(mod, body: dict) -> BuildingPlan:
             return plan
         if bl is None:
             bl = cur
+        # A line hand-edited in Code View replaces its whole block, and the box
+        # edits then apply on top of THAT text — line order, indenting and the
+        # EDB's many hand-written comments are edits no level payload can carry,
+        # so re-deriving them from the boxes would throw them away.
+        raw = str(part.get("raw_block") or "")
+        if raw:
+            edits.append(_raw_line_edit(plan, cur, part, raw))
+            continue
         for lv in (part.get("levels") or []):
             blk = cur.level(str(lv.get("name") or ""))
             if blk is None:
@@ -1605,6 +1724,41 @@ def _check_recruit_limit(mod, bl: Optional[BuildingLine], body: dict,
                                  f"the {RECRUIT_LIMIT}-unit limit")
 
 
+def _raw_line_edit(plan: BuildingPlan, bl: BuildingLine, part: dict,
+                   raw: str) -> LineEdit:
+    """One splice replacing a whole building line with hand-edited text.
+
+    The text is checked before it is trusted with the file: it has to still be
+    exactly one building line, and still be *this* one. Renaming a line in the
+    text would leave every `levels` list, plugin and settlement plan that names
+    it pointing at nothing, and unlike a unit's `type` there is no rename flow
+    to hand that to — so it is refused rather than warned about.
+    """
+    from . import codeview
+    try:
+        doc = codeview.parse("edb", raw)
+    except codeview.CodeViewError as e:
+        plan.errors.append(f"{bl.name}: the edited text isn't a valid building line: "
+                           f"{e.message}")
+        return LineEdit(bl.start, bl.start, "")
+    if doc.ident != bl.name:
+        plan.errors.append(
+            f"the text renames the line to '{doc.ident}' — a building line's name is "
+            f"used by its levels list and by the settlement plans, so '{bl.name}' "
+            "has to stay. Rename it everywhere by hand, or not at all.")
+        return LineEdit(bl.start, bl.start, "")
+    # box edits made after the text edit still land, on top of the typed text
+    text = render_block(raw, part)
+    if text != block_text_of(plan, bl):
+        plan.changes.append(f"{bl.name}: building line edited as text")
+    return LineEdit(bl.start, bl.end, text)
+
+
+def block_text_of(plan: BuildingPlan, bl: BuildingLine) -> str:
+    """The line's current on-disk text (the plan knows the mod it came from)."""
+    return block_text(plan.mod.edb, bl) if plan.mod is not None else ""
+
+
 def _plan_line_fields(edb: EdbFile, bl: BuildingLine, body: dict,
                       plan: BuildingPlan) -> List[LineEdit]:
     """``convert_to`` / ``religion`` on the building line itself."""
@@ -1631,6 +1785,496 @@ def _plan_line_fields(edb: EdbFile, bl: BuildingLine, body: dict,
             edits.append(LineEdit(idx, idx + 1, ""))
         plan.changes.append(f"{bl.name}: {key} {old or '(unset)'} -> {new or '(none)'}")
     return edits
+
+
+# ---------------------------------------------------------------------------
+# creating a building tree
+#
+# The one thing this module could not do before: every other operation edits a
+# line that is already there. A new tree is three files at once — the EDB block,
+# three text keys per level in export_buildings.txt (a level short of any one of
+# them is a CTD, and all 1099 real levels measured have all three), and the
+# per-culture icons, which are art and stay the modder's to draw.
+
+
+def upgrade_name(entry: str) -> str:
+    """The level an ``upgrades`` entry points at.
+
+    An entry may carry its own clause — ``ce_wooden_wall requires event_counter
+    cex_avail_wooden_wall_erebor 1`` — so the level is the first word and the
+    rest is a condition on taking that branch. 41 of the 771 upgrade entries in
+    the three installed mods are of that shape.
+    """
+    parts = (entry or "").split(None, 1)
+    return parts[0] if parts else ""
+
+
+#: Vanilla's ceiling on levels in one tree (TWCenter, *List of Hardcoded
+#: Limits*). M2TWEOP raises it and mods lean on that — Third Age 6's
+#: ``core_building`` is 51 levels deep — so passing it is said, not refused.
+VANILLA_MAX_LEVELS = 9
+
+#: Upgrades one level may offer (same source). The deepest real level offers 6.
+MAX_UPGRADES = 8
+
+#: Prefixes the game reads on a building line's name, with what each one costs
+#: you. Written from a sweep of the 277 real building lines in the three
+#: installed mods, not from the reference tool's four one-line hints — two of
+#: which are claims about the engine that the real files do not support (see
+#: ``merge/audit-edb.md``).
+TREE_PREFIXES: List[Dict[str, str]] = [
+    {"prefix": "", "label": "(no prefix)",
+     "hint": "An ordinary settlement building — what 145 of the 277 real lines are."},
+    {"prefix": "hinterland_", "label": "hinterland_",
+     "hint": "Vanilla's province-wide lines (roads, farms, mines, ports) carry it. "
+             "Nothing restricts it: the mods use it for 66 different things, "
+             "75 lines in all."},
+    {"prefix": "temple_", "label": "temple_",
+     "hint": "The religious lines. All 32 real ones also carry a `religion` line, "
+             "so pick a religion below if you take this."},
+    {"prefix": "guild_", "label": "guild_",
+     "hint": "Needs a matching entry in data/export_descr_guilds.txt. All 19 real "
+             "guild_ lines have one, and nothing else in that file does — a "
+             "guild the file does not name is never offered."},
+    {"prefix": "core_", "label": "core_",
+     "hint": "The settlement's own chain. Every mod measured defines exactly two — "
+             "core_building and core_castle_building — and both already exist, so "
+             "a third is not a thing any real mod does."},
+]
+
+#: What this module will and will not do to a whole tree, and why. Same
+#: ``ACTIONS``/``REFUSED`` pair the minor-file tabs and the faction roster use,
+#: so the screen can show the reason where the button would be.
+TREE_ACTIONS = {"create": True, "delete": False, "rename": False}
+
+TREE_REFUSED = {
+    "delete": "A building line is named from outside the EDB — every settlement in "
+              "descr_strat.txt that has one built, the twin line's `convert_to`, "
+              "export_descr_guilds.txt for a guild, and the campaign script. "
+              "Deleting the block here would leave a save game and a campaign start "
+              "pointing at a building that no longer exists, and this tool cannot "
+              "see most of those files. Take the levels out of the settlements "
+              "first, by hand.",
+    "rename": "The name is the key its levels list, its twin's `convert_to`, the "
+              "settlement plans and every script line that builds it all point at "
+              "— the same ruling the text pane already makes.",
+}
+
+_NAME_OK = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def _tree_indent(edb: EdbFile) -> str:
+    """One level of indentation, taken from the file being written into.
+
+    The EDB is hand-maintained and the three installed mods are not consistent
+    with each other (or, in Third Age 6's case, with themselves), so a new block
+    copies whatever the file's own `levels` lines use rather than imposing tabs
+    on a file written with spaces.
+    """
+    for bl in edb.buildings:
+        if bl.levels_line:
+            ind = _indent(edb.lines[bl.levels_line])
+            if ind:
+                return ind
+    return "\t"
+
+
+def new_tree_text(spec: dict, indent: str = "\t") -> str:
+    """Render a whole ``building … { … }`` block from the new-tree form.
+
+    Every level is chained into the next through its ``upgrades`` block, because
+    that is the only thing that makes a tree a tree — and the direction is
+    forced: all 771 upgrade entries in the three installed mods point at a level
+    listed *after* them on the `levels` line, which is what TWCenter's hardcoded
+    limits say the engine requires.
+    """
+    i1, i2, i3, i4 = indent, indent * 2, indent * 3, indent * 4
+    name = str(spec.get("name") or "").strip()
+    levels = list(spec.get("levels") or [])
+    names = [str(lv.get("name") or "").strip() for lv in levels]
+
+    out = [f"building {name}\n", "{\n"]
+    if str(spec.get("convert_to") or "").strip():
+        out.append(f"{i1}convert_to {str(spec['convert_to']).strip()}\n")
+    if str(spec.get("religion") or "").strip():
+        out.append(f"{i1}religion {str(spec['religion']).strip()}\n")
+    out.append(f"{i1}levels {' '.join(names)}\n")
+    out.append(f"{i1}{{\n")
+    for pos, lv in enumerate(levels):
+        settlement = str(lv.get("settlement") or "").strip()
+        requires = str(lv.get("requires") or "").strip()
+        head = names[pos]
+        if settlement:
+            head += " " + settlement
+        if requires:
+            head += " requires " + requires
+        out.append(f"{i2}{head}\n{i2}{{\n")
+        out.append(f"{i3}capability\n{i3}{{\n{i3}}}\n")
+        for key in ("material", "construction", "cost", "settlement_min"):
+            val = str(lv.get(key, "")).strip()
+            if val:
+                out.append(f"{i3}{key} {val}\n")
+        out.append(f"{i3}upgrades\n{i3}{{\n")
+        if pos + 1 < len(names):
+            out.append(f"{i4}{names[pos + 1]}\n")
+        out.append(f"{i3}}}\n{i2}}}\n")
+    out.append(f"{i1}}}\n")
+    # every one of the 277 real building lines has one, empty or not
+    out.append(f"{i1}plugins\n{i1}{{\n{i1}}}\n")
+    out.append("}\n")
+    return "".join(out)
+
+
+def _default_requires(mod) -> str:
+    """``factions { … }`` naming every culture the mod has.
+
+    A new tree nobody can build is the easiest thing in the world to write here
+    — Third Age 6 ships four levels whose clause is a literal `factions { }` —
+    so the default is "everyone", spelled with this mod's own names rather than
+    with vanilla's. The reference tool's new-building default is a hardcoded
+    ``northern_european, southern_european``, which in Divide and Conquer means
+    two of its nine cultures.
+
+    "Everyone" is the cultures a faction in this mod actually belongs to, not
+    every culture the file declares: Third Age 6's ``descr_cultures.txt`` lists
+    22, of which ten have no faction and no building art at all (``dummy``,
+    ``avari``, ``warg_riders`` …), and naming those in the clause would say
+    nothing while making it three times as long to read.
+    """
+    used = sorted(set(faction_cultures(mod).values()))
+    names = used or minorfiles.culture_names(mod) or cultures_of(mod)
+    if not names:
+        return ""
+    return "factions { " + "".join(f"{c}, " for c in names) + "}"
+
+
+def new_tree_spec(mod, spec: dict) -> dict:
+    """Fill a half-written new-tree form in, so the preview shows real text.
+
+    The form may send nothing but a name and a level count; everything else has
+    a default taken from the mod rather than from vanilla.
+    """
+    out = dict(spec)
+    out["name"] = str(spec.get("name") or "").strip()
+    settlement = str(spec.get("settlement") or "").strip()
+    requires = str(spec.get("requires") or "").strip() or _default_requires(mod)
+    levels = []
+    for pos, lv in enumerate(spec.get("levels") or []):
+        lv = dict(lv)
+        lv["name"] = str(lv.get("name") or "").strip()
+        lv.setdefault("settlement", settlement)
+        lv["requires"] = str(lv.get("requires") or "").strip() or requires
+        lv.setdefault("material", "wooden")
+        lv.setdefault("construction", "2")
+        lv.setdefault("cost", str(600 * (pos + 1)))
+        lv.setdefault("settlement_min", SETTLEMENT_LEVELS[min(pos, len(SETTLEMENT_LEVELS) - 1)])
+        # An empty box is absent, not blank: the form sends "" for a level whose
+        # shown name you left alone, and a level whose `{name}` key is empty is
+        # a blank entry in the construction panel.
+        lv["label"] = (str(lv.get("label") or "").strip()
+                       or lv["name"].replace("_", " ").title())
+        lv["descr"] = str(lv.get("descr") or "")
+        lv["descr_short"] = str(lv.get("descr_short") or "")
+        levels.append(lv)
+    out["levels"] = levels
+    return out
+
+
+def icon_slots(mod, spec: dict) -> List[dict]:
+    """The building-card files a new tree will want, and which already exist.
+
+    Written down rather than written: these are TGA art, and the toolkit has
+    nothing to put in them. A level with no card is not a crash — the same
+    ruling Phase 10a made about pips and settlement cards — so this is a list to
+    draw against, not a list of faults.
+
+    One row per level and culture, carrying both files: they are drawn as a pair
+    (the button and the constructed picture) and nobody makes one without the
+    other. Only the cultures with a ``data/ui/<culture>/buildings`` folder are
+    listed — a culture the mod has no art folder for has no slot to fill.
+    """
+    vanilla = config.get_vanilla_ui_root()
+    out: List[dict] = []
+    for lv in (spec.get("levels") or []):
+        level = str(lv.get("name") or "")
+        for culture in (cultures_of(mod) or list(mod.cultures)):
+            row = {"level": level, "culture": culture, "found": True}
+            for kind in ("small", "large"):
+                found, source = find_icon(mod, culture, level, kind, vanilla)
+                row[kind] = f"data/ui/{culture}/buildings/{icon_stem(culture, level, kind)}.tga"
+                row[kind + "_found"] = bool(found)
+                row[kind + "_source"] = source
+                row["found"] = row["found"] and bool(found)
+            out.append(row)
+    return out
+
+
+def plan_new_tree(mod, spec: dict) -> BuildingPlan:
+    """Plan the whole of a new building tree: EDB block, then its text keys.
+
+    Refuses rather than half-writes. A name already in the file, a level name
+    already used *anywhere* in the EDB (level names are the EDB's one global
+    namespace — ``EdbFile.by_level`` and every text key rely on it) or a name the
+    game cannot read all stop the plan, because the second half of this job
+    writes into a different file and there is no such thing as a tree that
+    reached one of them.
+    """
+    spec = new_tree_spec(mod, spec)
+    plan = BuildingPlan(mod=mod, line=spec["name"], created=True)
+    edb = mod.edb
+    if not mod.edb_path.exists():
+        plan.errors.append(f"{mod.name} has no data/{EDB_REL}")
+        return plan
+
+    name = spec["name"]
+    levels = spec["levels"]
+    if not name:
+        plan.errors.append("the new building line needs a name")
+    elif not _NAME_OK.match(name):
+        plan.errors.append(f"{name!r} is not a name the EDB can carry — letters, "
+                           "digits and underscores only, and no spaces")
+    elif edb.get(name) is not None:
+        plan.errors.append(f"{mod.name} already has a building line called {name!r}")
+    if not levels:
+        plan.errors.append("a building line needs at least one level")
+
+    taken = edb.by_level()
+    seen: set = set()
+    for lv in levels:
+        lname = lv["name"]
+        if not lname:
+            plan.errors.append("every level needs a name")
+        elif not _NAME_OK.match(lname):
+            plan.errors.append(f"level {lname!r}: letters, digits and underscores only")
+        elif lname in taken:
+            owner = taken[lname][0].name
+            plan.errors.append(
+                f"{mod.name} already has a level called {lname!r}, in the {owner!r} "
+                "line — a level name is the key its text, its icons and every "
+                "settlement plan use, so two of them cannot share one")
+        elif lname in seen:
+            plan.errors.append(f"level {lname!r} is in the new line twice")
+        seen.add(lname)
+    if name and name in taken:
+        plan.errors.append(f"{name!r} is already the name of a level in the "
+                           f"{taken[name][0].name!r} line")
+    if plan.errors:
+        return plan
+
+    if len(levels) > VANILLA_MAX_LEVELS:
+        plan.warnings.append(
+            f"{len(levels)} levels — vanilla stops at {VANILLA_MAX_LEVELS} per tree "
+            "and crashes past it. M2TWEOP raises the ceiling and mods use that "
+            "(Third Age 6's core_building is 51 deep), so this only works with EOP.")
+    for prefix, why in (("guild_", "needs a matching entry in "
+                                   "data/export_descr_guilds.txt — all 19 real "
+                                   "guild_ lines have one, and a guild that file "
+                                   "does not name is never offered"),
+                        ("core_", "is the settlement's own chain; every mod "
+                                  "measured defines exactly core_building and "
+                                  "core_castle_building, and nothing suggests a "
+                                  "third one does anything")):
+        if name.startswith(prefix):
+            plan.warnings.append(f"a {prefix} line {why}.")
+    if name.startswith("temple_") and not str(spec.get("religion") or "").strip():
+        plan.warnings.append("every one of the 32 real temple_ lines also carries a "
+                             "`religion` line; this one has none.")
+    convert = str(spec.get("convert_to") or "").strip()
+    if convert and edb.get(convert) is None:
+        plan.warnings.append(f"convert_to names {convert!r}, which this EDB has no "
+                             "building line for")
+
+    block = new_tree_text(spec, _tree_indent(edb))
+    text = edb.to_text()
+    if text and not text.endswith("\n"):
+        text += "\n"
+    text += "\n" + block
+    reparsed = parse_text(text)
+    new = reparsed.get(name)
+    if reparsed.warnings or new is None or len(new.blocks) != len(levels):
+        plan.errors.append("the new line would produce an EDB this tool can no "
+                           "longer read — refusing to write it")
+        return plan
+    plan.edb_text = text
+    plan.changes.append(f"{name}: new building line, {len(levels)} level"
+                        f"{'' if len(levels) == 1 else 's'} "
+                        f"({', '.join(lv['name'] for lv in levels)})")
+
+    plan.loc_text = _plan_new_localisation(mod, spec, plan)
+    plan.slots = icon_slots(mod, spec)
+    missing = [s for s in plan.slots if not s["found"]]
+    if missing:
+        plan.warnings.append(
+            f"{len(missing)} of {len(plan.slots)} building cards have no picture "
+            "yet — those levels show a blank card until you draw them. The paths "
+            "are listed below; this is art, not a fault.")
+    return plan
+
+
+def _plan_new_localisation(mod, spec: dict, plan: BuildingPlan) -> str:
+    """The text keys a new tree needs in ``data/text/export_buildings.txt``.
+
+    Three per level — ``{x}``, ``{x_desc}``, ``{x_desc_short}`` — because all
+    1099 levels in the three installed mods have all three and a level short of
+    one crashes the game at the construction panel. The tree's own
+    ``{<line>_name}`` is written too when the form gave it a name: it is the
+    heading the browser groups the levels under, and 227 of the 277 real lines
+    have one.
+    """
+    path = mod.data / LOC_REL
+    if not path.exists():
+        plan.errors.append(
+            f"{mod.name} has no data/{LOC_REL}, so the new levels would have no "
+            "names — and a level with no text key crashes the game. Nothing written.")
+        return ""
+    text = path.read_text(encoding=localization.ENCODING)
+    for lv in (spec.get("levels") or []):
+        key = lv["name"]
+        text = localization.upsert_record(text, key, str(lv.get("label") or key),
+                                          str(lv.get("descr") or ""),
+                                          str(lv.get("descr_short") or ""),
+                                          descr_suffix="_desc")
+        plan.changes.append(f"{key}: text keys written ({{{key}}}, {{{key}_desc}}, "
+                            f"{{{key}_desc_short}})")
+    label = str(spec.get("label") or "").strip()
+    if label:
+        # ONE key, not a three-key record: no real line has a `<line>_name_desc`
+        text = stringsbin.upsert_txt(text, {spec["name"] + "_name": label})
+        plan.changes.append(f"{spec['name']}_name: tree shown as {label!r}")
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Code View: one building line as text, and which line each box came from
+
+
+def block_text(edb: EdbFile, bl: BuildingLine) -> str:
+    """The verbatim text of one ``building … { … }`` block."""
+    return "".join(edb.lines[bl.start:bl.end])
+
+
+def block_spans(edb: EdbFile, bl: BuildingLine) -> Dict[str, List[List[int]]]:
+    """Map each editable thing in a building line to the lines it occupies.
+
+    Lines are 1-based and inclusive, counted from the first line of the BLOCK
+    (not of the file), because that is what the code view is showing. Labels are
+    the ones :func:`unittransfer.codeview` hands the page, and they are
+    hierarchical so a hover can be as coarse or as fine as the box that raised
+    it: hovering a level's card lights the whole level, hovering its cost line
+    lights one line.
+
+        building                  the `building <name>` line
+        convert_to / religion / classification / factions
+        levels                    the `levels a, b, c` line
+        level:<name>              the whole level block, brace to brace
+        level:<name>:header       its `<name> city requires …` line
+        level:<name>:<scalar>     cost, construction, material, …
+        level:<name>:upgrades     the whole upgrades block
+        level:<name>:cap#<i>      the i-th capability line (1-based)
+        level:<name>:fcap#<i>     the i-th faction_capability line
+    """
+    spans: Dict[str, List[List[int]]] = {}
+    base = bl.start
+
+    def put(label: str, first: int, last: int = None) -> None:
+        if first < base or first >= bl.end:
+            return
+        last = first if last is None else min(last, bl.end - 1)
+        spans.setdefault(label, []).append([first - base + 1, last - base + 1])
+
+    put("building", bl.start)
+    # convert_to / religion / the extras are found the way _plan_line_fields
+    # finds them to edit them — same scan, so the two can never disagree
+    for j in range(bl.start + 1, bl.end):
+        head = _code(edb.lines[j]).split(None, 1)[:1]
+        if head and head[0] in ("convert_to", "religion", "classification", "factions"):
+            put(head[0], j)
+    if bl.levels_line:
+        put("levels", bl.levels_line)
+    for p in bl.plugins:
+        put(f"plugin:{p.name}", p.start, p.end - 1)
+
+    for blk in bl.blocks:
+        key = f"level:{blk.name}"
+        put(key, blk.header, blk.end - 1)
+        put(key + ":header", blk.header)
+        for name, idx in blk.scalar_lines.items():
+            put(f"{key}:{name}", idx)
+        if blk.upgrades_span != (0, 0):
+            o, c = blk.upgrades_span
+            # the brace usually sits on its own line under the keyword; the
+            # highlight should cover the keyword the user is looking at, not
+            # start one line below it
+            head = o - 1 if (o - 1 > blk.header
+                             and _code(edb.lines[o - 1]) == "upgrades") else o
+            put(key + ":upgrades", head, c)
+        for i, c in enumerate(blk.capabilities, 1):
+            put(f"{key}:cap#{i}", c.line)
+            # the editor's rows carry a capability's LINE, not its position, so
+            # the same span is addressable that way too — that is what survives
+            # rows being filtered, reordered or hidden in the list
+            put(f"capline#{c.line}", c.line)
+        for i, c in enumerate(blk.faction_capabilities, 1):
+            put(f"{key}:fcap#{i}", c.line)
+            put(f"capline#{c.line}", c.line)
+    return spans
+
+
+def block_fields(edb: EdbFile, bl: BuildingLine) -> List[Tuple[str, str]]:
+    """``(label, value)`` for every span :func:`block_spans` reports.
+
+    A flat list of what the block says, in the same vocabulary as the spans —
+    enough for the page to show a value beside a highlight without walking the
+    tree itself.
+    """
+    out: List[Tuple[str, str]] = [("building", bl.name)]
+    for key, val in (("convert_to", bl.convert_to), ("religion", bl.religion)):
+        if val:
+            out.append((key, val))
+    for key, val in bl.extras.items():
+        out.append((key, val))
+    if bl.levels:
+        out.append(("levels", ", ".join(bl.levels)))
+    for blk in bl.blocks:
+        key = f"level:{blk.name}"
+        out.append((key + ":header",
+                    " ".join(x for x in (blk.settlement,
+                                         ("requires " + blk.requires) if blk.requires else "")
+                             if x)))
+        for name in blk.scalar_lines:
+            out.append((f"{key}:{name}", blk.scalars.get(name, "")))
+        if blk.upgrades_span != (0, 0):
+            out.append((key + ":upgrades", ", ".join(blk.upgrades)))
+        for i, c in enumerate(blk.capabilities, 1):
+            out.append((f"{key}:cap#{i}", _code(c.text())))
+        for i, c in enumerate(blk.faction_capabilities, 1):
+            out.append((f"{key}:fcap#{i}", _code(c.text())))
+    return out
+
+
+def render_block(base: str, body: dict) -> str:
+    """Apply the editor's level-edit payload to ONE building line's text.
+
+    The same :func:`plan_level_edit` and :func:`splice` the save runs, just
+    pointed at the block on its own instead of at the whole 30 000-line EDB — so
+    the code view shows exactly the bytes a save would put in the file, and
+    there is no second serialiser to drift from the first.
+    """
+    sub = parse_text(base)
+    if not sub.buildings:
+        return base
+    bl = sub.buildings[0]
+    plan = BuildingPlan(mod=None, line=bl.name)
+    edits: List[LineEdit] = []
+    for lv in (body.get("levels") or []):
+        blk = bl.level(str(lv.get("name") or ""))
+        if blk is None:
+            continue
+        e, _notes, _warn = plan_level_edit(sub, bl, blk, lv)
+        edits += e
+    if "convert_to" in body or "religion" in body:
+        edits += _plan_line_fields(sub, bl, body, plan)
+    return splice(sub.lines, edits) if edits else base
 
 
 def _plan_localisation(mod, body: dict, plan: BuildingPlan) -> str:
@@ -1729,7 +2373,7 @@ def apply_edit(plan: BuildingPlan) -> Dict:
         "id": tid,
         "when": time.strftime("%Y-%m-%d %H:%M:%S"),
         "mode": "buildings",
-        "action": "building",
+        "action": "building-new" if plan.created else "building",
         "source": mod.name,
         "source_root": str(mod.root),
         "dest": mod.name,
@@ -2105,17 +2749,46 @@ def unit_instances(mod, unit: str, culture: str = "") -> dict:
     edb = mod.edb
     key = unit.strip().lower()
     pairs = variant_pairs(edb)
+    #: line -> {its level name: the facing level in its city/castle twin}, and
+    #: line -> {level name: units it trains there}. Worked out once per line
+    #: rather than per row, because a unit with five pools in one building would
+    #: otherwise pair the same two blocks five times.
+    twin_levels: Dict[str, Dict[str, str]] = {}
+    twin_trains: Dict[str, Dict[str, set]] = {}
+
+    def _twin_of(bl):
+        """``(level pairing, what the twin trains per level)`` for one line."""
+        if bl.name not in twin_levels:
+            other = edb.get(pairs.get(bl.name, "")) if pairs.get(bl.name) else None
+            trains: Dict[str, set] = {}
+            if other is not None:
+                for r in _pool_rows(other):
+                    trains.setdefault(r["level"], set()).add(r["unit_key"])
+            twin_levels[bl.name] = pair_levels(bl, other) if other is not None else {}
+            twin_trains[bl.name] = trains
+        return twin_levels[bl.name], twin_trains[bl.name]
+
     rows = []
     for bl in edb.buildings:
         for r in _pool_rows(bl):
             if r["unit_key"] != key:
                 continue
             blk = bl.blocks[r["level_index"]]
+            # Does the settlement's other half train this unit at the facing
+            # tier? A city/castle pair that has drifted apart is the thing this
+            # panel is read to find, and the answer is per TIER: a twin that
+            # trains the unit five levels up is not the same building.
+            levels, trains = _twin_of(bl)
+            tw_level = levels.get(blk.name, "")
             rows.append({
                 "line": bl.name,
                 "line_label": _label(mod, bl.name + "_name", bl.name, culture),
                 "settlement": blk.settlement or bl.settlement,
                 "twin": pairs.get(bl.name, ""),
+                "twin_level": tw_level,
+                "twin_level_label": (_label(mod, tw_level, tw_level, culture)
+                                     if tw_level else ""),
+                "twin_has": bool(tw_level and key in trains.get(tw_level, ())),
                 "level": blk.name,
                 "level_label": _label(mod, blk.name, blk.name, culture),
                 "level_index": r["level_index"],
@@ -2197,12 +2870,20 @@ def overview(mod, culture: str = "") -> dict:
         "faction_cultures": mod.faction_cultures,
         "faction_names": mod.faction_names,
         "hidden_resources": edb.hidden_resources,
-        "religions": list(RELIGIONS),
+        # this mod's own religions, falling back to vanilla's five only when it
+        # has no descr_religions.txt to read them out of
+        "religions": (minorfiles.religion_names(mod) or list(VANILLA_RELIGIONS)),
+        # …and say so, or the picker silently offers `pagan` to a mod that has
+        # ten religions and none of them is pagan
+        "religions_are_vanilla": not minorfiles.religion_names(mod),
         "materials": list(MATERIALS),
         "settlement_levels": list(SETTLEMENT_LEVELS),
         "recruit_limit": RECRUIT_LIMIT,
-        "capabilities": [{"keyword": k, "help": v, "bonus": k in BONUS_CAPS}
+        "capabilities": [{"keyword": k, "help": v, "bonus": k in BONUS_CAPS,
+                          "group": CAP_META.get(k, ("Other", ""))[0],
+                          "range": CAP_META.get(k, ("Other", ""))[1]}
                          for k, v in sorted(CAP_HELP.items())],
+        "capability_groups": list(CAP_GROUPS),
         # what a `requires` clause may name, so the editor can offer checklists
         # of real names instead of a free-text box — see :mod:`edbvocab`
         "vocab": mod.edb_vocab,
@@ -2211,17 +2892,30 @@ def overview(mod, culture: str = "") -> dict:
                             for k, a in CONDITION_ARGS.items()],
         "vanilla_ui": bool(config.get_vanilla_ui_root()),
         "warnings": edb.warnings[:20],
+        # the new-tree form: what a name may start with, what the tool will and
+        # will not do to a whole tree, and the two limits it warns about
+        "prefixes": [dict(p) for p in TREE_PREFIXES],
+        "actions": dict(TREE_ACTIONS),
+        "refused": dict(TREE_REFUSED),
+        "max_levels": VANILLA_MAX_LEVELS,
+        "max_upgrades": MAX_UPGRADES,
+        "default_requires": _default_requires(mod),
     }
 
 
-def detail(mod, name: str, culture: str = "") -> dict:
+def detail(mod, name: str, culture: str = "", bl: "BuildingLine" = None) -> dict:
     """One building line in full — every level, capability and recruit pool.
 
     Unlike the browser grid this carries every culture's name and description
     (``loc_all``), because the editor has to be able to show and write any of
     them without going back to the server.
+
+    ``bl`` overrides the mod's own parse of the line. Code View passes the line
+    it just re-read out of hand-edited text, so the boxes can be redrawn from
+    text that is not on disk yet, while art, localisation and the unit index —
+    none of which live in the block — still come from the mod.
     """
-    bl = mod.edb.get(name)
+    bl = bl if bl is not None else mod.edb.get(name)
     if bl is None:
         raise KeyError(name)
     units = _units_index(mod)
@@ -2264,6 +2958,16 @@ def detail(mod, name: str, culture: str = "") -> dict:
             "factions": clause_factions(blk.requires),
             "scalars": dict(blk.scalars),
             "upgrades": list(blk.upgrades),
+            # the same list taken apart: an upgrade entry may carry its own
+            # clause (`wooden_wall requires factions { … }` — 41 of the 771 in
+            # the installed mods), and the editor needs it as conditions to put
+            # a picker on it rather than a read-only chip. The strings above are
+            # still what a save sends, so nothing else has to change shape.
+            "upgrade_paths": [
+                {"name": upgrade_name(u),
+                 "requires": _split_requires(u)[1],
+                 "conditions": clause_payload(_split_requires(u)[1])}
+                for u in blk.upgrades],
             "capabilities": caps,
             "faction_capabilities": fcaps,
             "has_faction_capability": blk.fcap_span != (0, 0),

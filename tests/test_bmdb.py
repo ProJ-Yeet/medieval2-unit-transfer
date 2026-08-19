@@ -8,7 +8,9 @@ never touched. Covers:
     descr_strat.txt / campaign_script.txt — is never called unused, and the padded
     first entry of a sentinel-less modeldb is never removed
   * mounts no unit rides: reported, removable from descr_mount.txt, and the model
-    entry they were the last referrer of comes free with them
+    entry they were the last referrer of comes free with them — including when a
+    mount is named after a model, where the audit has two differently shaped
+    mention maps in play and used to read the wrong one
   * cleanup: entries dropped, their files exported mirroring the mod's layout,
     files a surviving entry still uses left alone, and a standalone modeldb of
     exactly the removed entries that parses back
@@ -397,6 +399,74 @@ check("undo restores descr_mount.txt byte-exact",
       and "ut_test_mount" in (root_f / "data/descr_mount.txt").read_text(encoding="latin-1"))
 check("undo restores the modeldb byte-exact",
       (root_f / "data/unit_models/battle_models.modeldb").read_bytes() == before_db)
+
+# ---------------------------------------------------------------------------
+print("\n== a mount named after a model: the two mention maps stay apart ==")
+# The audit carries two "somebody still names it" maps and they are NOT
+# interchangeable: `name_mentions` is keyed by modeldb ENTRY name and holds a row
+# per name, `_mount_mentions` is keyed by MOUNT name and holds a bare filename.
+# mount_audit used one name for both, the second assignment shadowing the first,
+# so the two model-keyed lookups read the mount map. That answers for the wrong
+# thing the moment a mount and an entry share a name — four of them do in DaC —
+# and hands mention_file a string where it wants a row, which crashed the whole
+# audit before it returned anything.
+root_c = fresh_mod()
+spare_c = [u["entry"] for u in bmdb_mod.audit(Mod(root_c), scan_orphans=False)["unused"]]
+collide, other = spare_c[0], spare_c[1]
+
+dmc = root_c / "data/descr_mount.txt"
+dmc.write_text(
+    dmc.read_text(encoding="latin-1")
+    # nobody rides this one, and its MODEL is the name of the mount below
+    + f"\ntype\t\t\tut_collide_rider\nclass\t\t\thorse\nmodel\t\t\t{collide}\n"
+      "radius\t\t\t1.2\nheight\t\t\t2.0\nmass\t\t\t1.0\n"
+    # …and this one is NAMED for that model, which is the collision
+    + f"\ntype\t\t\t{collide}\nclass\t\t\thorse\nmodel\t\t\t{other}\n"
+      "radius\t\t\t1.2\nheight\t\t\t2.0\nmass\t\t\t1.0\n",
+    encoding="latin-1")
+
+# Two files name it, and the two scanners disagree about which. `_descr_tokens`
+# splits a path into tokens, so it sees the name in the first file; the mount
+# sweep matches the whole phrase and will not match one preceded by `/`, so it
+# only sees the second. Whichever filename comes back on the row therefore says
+# which map the lookup went to — that is what makes this a real check and not
+# just "it did not crash".
+(root_c / "data/descr_ut_aaa.txt").write_text(
+    f"; a path, so only the token sweep finds it\nmodels/{collide}/body.cas\n",
+    encoding="latin-1")
+(root_c / "data/descr_ut_bbb.txt").write_text(
+    f"; the bare phrase, which both sweeps find\nmount {collide}\n",
+    encoding="latin-1")
+
+mod_c = Mod(root_c)
+by_mount = bmdb_mod._mount_mentions(mod_c)
+by_entry = bmdb_mod.name_mentions(mod_c)
+check("the mount sweep really does hold a bare filename",
+      isinstance(by_mount.get(collide), str))
+check("…and the entry sweep a row", isinstance(by_entry.get(collide), dict))
+check("the two disagree about the file, so the row below can say which was read",
+      by_mount.get(collide) == "descr_ut_bbb.txt"
+      and by_entry.get(collide, {}).get("file") == "descr_ut_aaa.txt")
+
+a_c = bmdb_mod.audit(mod_c, scan_orphans=False)      # this is what used to crash
+row_c = next((r for r in a_c["unused_mounts"] if r["mount"] == "ut_collide_rider"), None)
+check("the audit gets all the way through a mount named after a model",
+      row_c is not None)
+check("the mount named after the model is held, not offered for removal",
+      collide in {m["mount"] for m in a_c["mentioned_mounts"]}
+      and collide not in {r["mount"] for r in a_c["unused_mounts"]})
+check("'mentioned_in' is read from the ENTRY map, which is the one keyed by model",
+      bool(row_c) and row_c["mentioned_in"] == "descr_ut_aaa.txt")
+
+# mention_file itself takes either shape, because both maps are legitimately
+# passed to it — see its docstring.
+check("mention_file reads a row", bmdb_mod.mention_file(
+    {"x": {"file": "descr_a.txt", "lua": False, "in_comment": False}}, "X")
+    == "descr_a.txt")
+check("…and a bare filename", bmdb_mod.mention_file({"x": "descr_b.txt"}, "X")
+      == "descr_b.txt")
+check("…and says nothing for a name neither holds",
+      bmdb_mod.mention_file({"x": "descr_b.txt"}, "nobody") == "")
 
 print("\n== mod-wide entry editing (the unit editor's engine, no unit) ==")
 root_d = fresh_mod()

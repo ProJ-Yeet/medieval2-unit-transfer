@@ -41,6 +41,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from . import keyblock as kb
+
 ENCODING = "latin-1"
 
 #: Engine keys whose value names a file, relative to the mod's ``data/`` folder.
@@ -274,7 +276,12 @@ def parse_file(path: str | Path) -> EngineFile:
     p = Path(path)
     if not p.exists():
         return EngineFile()
-    return parse_text(p.read_text(encoding=ENCODING))
+    # Read WITHOUT letting the platform decide what a line ending is: `to_text`
+    # is a pure splice of these raws, so whatever comes in goes back out. With
+    # universal newlines a file mixing CRLF and lone LF (Third Age Reforged
+    # ships one) came back longer than it went in, which is the one thing these
+    # modules promise not to do.
+    return parse_text(kb.read_text(p, ENCODING))
 
 
 # --------------------------------------------------------------------------
@@ -373,7 +380,12 @@ def parse_skeleton_file(path: str | Path) -> EngineSkeletonFile:
     p = Path(path)
     if not p.exists():
         return EngineSkeletonFile()
-    return parse_skeleton_text(p.read_text(encoding=ENCODING))
+    # Read WITHOUT letting the platform decide what a line ending is: `to_text`
+    # is a pure splice of these raws, so whatever comes in goes back out. With
+    # universal newlines a file mixing CRLF and lone LF (Third Age Reforged
+    # ships one) came back longer than it went in, which is the one thing these
+    # modules promise not to do.
+    return parse_skeleton_text(kb.read_text(p, ENCODING))
 
 
 # --------------------------------------------------------------------------

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from unittransfer import config, edu, modeldb, mounts
+from unittransfer import keyblock as kb
 from unittransfer.mod import Mod
 from unittransfer.transfer import TransferOptions, plan_transfer, apply_transfer, undo
 
@@ -59,7 +60,7 @@ after = Mod(dest_root)
 mt = after.mount_file.get(unit.mount)
 check("mount block now present in destination descr_mount.txt", mt is not None)
 check("descr_mount.txt still parses + round-trips",
-      after.mount_file.to_text() == mpath.read_text(encoding=mounts.ENCODING))
+      after.mount_file.to_text() == kb.read_text(mpath, mounts.ENCODING))
 model_name = (mt.model or "").lower() if mt else ""
 check("mount block keeps a model reference", bool(model_name))
 check("that model exists in the destination modeldb",

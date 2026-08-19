@@ -24,6 +24,7 @@ Run it with:
     python -m tests.test_compare_and_bulk
 """
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -203,8 +204,13 @@ elif not WEB.exists():
 elif not mods:
     print("  [skip] no mod installed to compare units from")
 else:
+    # Since the Phase 3 split the page's code is web/js/*.js, loaded as plain
+    # <script src> tags — one global scope, so concatenating them in tag order IS
+    # the page's program. (Scraping an inline <script> block, as this used to,
+    # now finds the HTML comment that explains the split and reads the comment.)
     src = WEB.read_text(encoding="utf-8")
-    script = src[src.index("<script>") + len("<script>"):src.rindex("</script>")]
+    tags = re.findall(r'<script src="js/([A-Za-z0-9_.-]+\.js)"></script>', src)
+    script = "\n".join((WEB.parent / "js" / t).read_text(encoding="utf-8") for t in tags)
     script = script.rsplit("init();", 1)[0]      # would talk to a server that isn't there
     edu = mods[0].edu_path.read_text(encoding="latin-1")
     print(f"  comparing the first two units of {mods[0].name}")

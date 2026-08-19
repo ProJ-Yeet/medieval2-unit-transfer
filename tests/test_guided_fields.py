@@ -18,6 +18,7 @@ The round-trip half runs the page's own JavaScript under node; it is skipped
     python -m tests.test_guided_fields
 """
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -32,7 +33,7 @@ from unittransfer.mod import Mod
 
 MODS = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
 WEB = ROOT / "web" / "index.html"
-VANILLA_EDU = ROOT / "UnitEditor11" / "vanilla" / "export_descr_unit.txt"
+VANILLA_EDU = ROOT / "Reference" / "UnitEditor11" / "vanilla" / "export_descr_unit.txt"
 
 ok = []
 
@@ -65,7 +66,8 @@ for mod in mods:
 
     # every value the mod's own EDU uses must be offered, or the drop-down would
     # invite the user to throw it away
-    used_attrs, used_accents, used_banners = set(), set(), set()
+    used_attrs, used_accents = set(), set()
+    used_banners: dict = {}
     for unit in mod.edu.units:
         for label, value in edu.block_fields(unit.raw):
             key = label.split("#")[0]
@@ -73,21 +75,55 @@ for mod in mods:
                 used_attrs |= {p.strip() for p in value.split(",") if p.strip()}
             elif key == "accent" and value.strip():
                 used_accents.add(value.strip())
-            elif key == "banner faction" and value.strip():
-                used_banners.add(value.strip())
+            elif key.startswith("banner ") and value.strip():
+                used_banners.setdefault(key.split(None, 1)[1], set()).add(value.strip())
     lower = lambda lst: {str(x).lower() for x in lst}
+    defined_of = lambda vv: vv["defined"]
     check(f"    {mod.name}: all {len(used_attrs)} attributes it uses are offered",
           lower(used_attrs) <= lower(v["unit_attr"]))
     check(f"    {mod.name}: all {len(used_accents)} accents it uses are offered",
           lower(used_accents) <= lower(v["accent"]))
-    check(f"    {mod.name}: all {len(used_banners)} faction banners are offered",
-          lower(used_banners) <= lower(v["banner_faction"]))
+    for kind in ("faction", "holy", "unit"):
+        used = used_banners.get(kind, set())
+        check(f"    {mod.name}: all {len(used)} `banner {kind}` values it uses "
+              f"are offered", lower(used) <= lower(v["banner_" + kind]))
+
+    # Phase 13: banner names are DECLARED by descr_banners_new.xml, one XML
+    # section per EDU line — they are the mod's own vocabulary, not an engine set
+    declared = vocab.banner_names(mod.data)
+    has_file = (mod.data / "descr_banners_new.xml").exists()
+    check(f"    {mod.name}: descr_banners_new.xml is read at all", 
+          not has_file or any(declared.values()))
+    for kind in ("faction", "holy", "unit"):
+        if not declared[kind]:
+            continue
+        check(f"    {mod.name}: defined banner_{kind} == the XML's "
+              f"<{vocab.BANNER_SECTIONS[kind]}> section",
+              defined_of(v).get("banner_" + kind) == declared[kind])
+        # A name the EDU uses but the XML does not declare is a finding about
+        # the MOD, not about us: it is reported, and the only thing asserted is
+        # that the value is still offered (the picker must never invite you to
+        # throw a mod's own value away). Third Age Reforged has exactly one —
+        # `Bomb Platforms` flies `main_none`.
+        stray = sorted(x for x in used_banners.get(kind, set())
+                       if x.lower() not in lower(declared[kind]))
+        if stray:
+            print(f"       finding: `banner {kind}` names not declared in "
+                  f"{mod.name}'s descr_banners_new.xml: {', '.join(stray)}")
+        check(f"    {mod.name}: the {len(stray)} undeclared `banner {kind}` "
+              f"name(s) are still offered",
+              lower(stray) <= lower(v["banner_" + kind]))
 
     # "defined" is what a file really declares — that is what a broken-reference
     # warning is measured against, so it must not be padded with EDU values
     defined = v["defined"]
-    check(f"    {mod.name}: defined models == the modeldb's entries",
-          set(defined["model"]) == {e.name for e in mod.modeldb.entries})
+    # a mod may ship its modeldb packed (Third Age Reforged does); there is then
+    # nothing on disk to compare against, and the check is skipped, not failed
+    if mod.modeldb_path.exists():
+        check(f"    {mod.name}: defined models == the modeldb's entries",
+              set(defined["model"]) == {e.name for e in mod.modeldb.entries})
+    else:
+        print(f"  [skip]     {mod.name}: no unpacked battle_models.modeldb")
     check(f"    {mod.name}: defined projectiles == descr_projectile's blocks",
           set(defined["projectile"]) == set(mod.projectile_file.by_name()))
     check(f"    {mod.name}: defined mounts == descr_mount's blocks",
@@ -115,9 +151,14 @@ if not node:
 elif not WEB.exists():
     print("  [skip] web/index.html not found")
 else:
+    # Since the Phase 3 split the page's code is web/js/*.js, loaded as plain
+    # <script src> tags — one global scope, so concatenating them in tag order
+    # IS the page's program. (Scraping an inline <script> block, as this used to,
+    # now finds the HTML comment that explains the split and reads the comment.)
     src = WEB.read_text(encoding="utf-8")
-    script = src[src.index("<script>") + len("<script>"):src.rindex("</script>")]
-    # `init()` would try to talk to a server that isn't there
+    tags = re.findall(r'<script src="js/([A-Za-z0-9_.-]+\.js)"></script>', src)
+    script = "\n".join((WEB.parent / "js" / t).read_text(encoding="utf-8") for t in tags)
+    # `init()` (boot.js) would try to talk to a server that isn't there
     script = script.rsplit("init();", 1)[0]
     # the page binds its hover-card listeners at load; node has no DOM, and this
     # suite only exercises the pure split/rejoin functions
@@ -166,6 +207,44 @@ expect('upkeep 0 shift+1',         step('stat_cost',2,'0',1,true),  '10');
 expect('attack 65, stepped down, lands back inside the range',
        step('stat_pri',0,'65',-1), '63');
 
+// ---- the lines that share a row ----
+// GF_PAIRS is the only place in the guided view where a card's POSITION is
+// decided by something other than the file, so the three ways it can go wrong
+// are checked directly: a key that no longer exists, a key claimed by two
+// groups, and a group split across sections (gfRows only ever sees one
+// section's labels, so such a group could never form a row at all).
+out.pairs={missing:[],dupe:[],split:[],rows:{}};
+{
+  const claimed={};
+  GF_PAIRS.forEach((g,i)=>g.forEach(k=>{
+    if(!GF_FIELDS[k])out.pairs.missing.push(k);
+    if(k in claimed)out.pairs.dupe.push(k); else claimed[k]=i;
+  }));
+  GF_PAIRS.forEach(g=>{
+    if(new Set(g.map(k=>GF_SECTION_OF[k])).size>1)out.pairs.split.push(g.join('|'));
+  });
+  // gfCard wants a whole host; the question here is only which labels end up on
+  // which row, so it is stood in for by a marker
+  const realCard=gfCard;
+  gfCard=(h,l)=>'<i data-c="'+l+'"></i>';
+  const rowsOf=shown=>{
+    const html=gfRows({},shown,{}),rows=[];
+    const re=/<div class="gfpair" style="--gfn:(\d+)">([\s\S]*?)<\/div>|<i data-c="([^"]*)"><\/i>/g;
+    let m;
+    while((m=re.exec(html))){
+      if(m[3]!=null)rows.push([m[3]]);
+      else rows.push([...m[2].matchAll(/data-c="([^"]*)"/g)].map(x=>x[1]));
+    }
+    return rows;
+  };
+  out.pairs.rows.basics=rowsOf(['type','dictionary','category','class','voice_type',
+    'accent','banner faction','banner holy','banner unit']);
+  out.pairs.rows.thin=rowsOf(['type','dictionary','category','class','banner faction']);
+  out.pairs.rows.officers=rowsOf(['soldier','officer','officer#2','officer#3','mount']);
+  out.pairs.rows.moved=rowsOf(['stat_fire_delay','stat_mental','stat_charge_dist']);
+  gfCard=realCard;
+}
+
 for(const text of EDU_TEXTS){
   for(const b of text.split(/^(?=type\s)/m)){
     if(!/^type\s/.test(b))continue;
@@ -212,6 +291,39 @@ console.log(JSON.stringify(out));
         check("nearly every line has a guided shape (<0.1% falls back to raw)",
               r["raw"] <= max(20, r["lines"] // 1000))
         print("  lines shown raw:", r["rawKeys"] or "none")
+
+        pairs = r["pairs"]
+        rows = pairs["rows"]
+        check("every paired key is a field that exists", not pairs["missing"])
+        check("no key is claimed by two rows", not pairs["dupe"])
+        check("no row is split across sections — it could never form one",
+              not pairs["split"])
+        check("the identity and description rows pair up",
+              rows["basics"][:3] == [["type", "dictionary"],
+                                     ["category", "class", "voice_type", "accent"],
+                                     ["banner faction", "banner holy"]])
+        check("a line in no pair keeps a row of its own",
+              rows["basics"][3] == ["banner unit"])
+        check("a pair whose other half the unit lacks is not padded out",
+              rows["thin"] == [["type", "dictionary"], ["category", "class"],
+                               ["banner faction"]])
+        check("a repeated key shares one row — the three officers",
+              rows["officers"] == [["soldier"],
+                                   ["officer", "officer#2", "officer#3"],
+                                   ["mount"]])
+        check("a row is written in the pair's order, not the file's",
+              rows["moved"] == [["stat_charge_dist", "stat_fire_delay"],
+                                ["stat_mental"]])
+        # the property that matters whatever the groups are: pairing MOVES cards,
+        # it never adds or drops one
+        want = {"basics": ["type", "dictionary", "category", "class", "voice_type",
+                           "accent", "banner faction", "banner holy", "banner unit"],
+                "thin": ["type", "dictionary", "category", "class", "banner faction"],
+                "officers": ["soldier", "officer", "officer#2", "officer#3", "mount"],
+                "moved": ["stat_fire_delay", "stat_mental", "stat_charge_dist"]}
+        check("no label is drawn twice, and none is lost",
+              all(sorted(x for row in rows[k] for x in row) == sorted(v)
+                  for k, v in want.items()))
     shutil.rmtree(tmp, ignore_errors=True)
 
 print("\n" + ("ALL PASSED" if all(ok) else "SOME FAILED"))

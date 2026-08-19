@@ -6,9 +6,10 @@ EDU / localisation / modeldb databases on demand.
 """
 from __future__ import annotations
 
+import os
 from functools import cached_property
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from . import (buildings as buildings_mod, edu, engines as engines_mod,
                eop as eop_mod, localization, luascan, modeldb,
@@ -22,6 +23,9 @@ class Mod:
         self.data = self.root / "data"
         if not self.data.is_dir():
             raise FileNotFoundError(f"no data/ folder under {self.root}")
+        # folder -> (its mtime when listed, {lower-case filename: path}). See
+        # :meth:`_dir_index`.
+        self._icon_dirs: Dict[Path, Tuple[int, Dict[str, Path]]] = {}
 
     @property
     def name(self) -> str:
@@ -82,6 +86,16 @@ class Mod:
         return self.data / sounds_mod.EDS_REL
 
     @property
+    def edct_path(self) -> Path:
+        """Character traits (``export_descr_character_traits.txt``)."""
+        return self.data / "export_descr_character_traits.txt"
+
+    @property
+    def eda_path(self) -> Path:
+        """Ancillaries (``export_descr_ancillaries.txt``)."""
+        return self.data / "export_descr_ancillaries.txt"
+
+    @property
     def edb_path(self) -> Path:
         """The settlement-building database (``export_descr_buildings.txt``)."""
         return self.data / buildings_mod.EDB_REL
@@ -89,6 +103,21 @@ class Mod:
     @property
     def building_loc_path(self) -> Path:
         return self.data / buildings_mod.LOC_REL
+
+    def drop_caches(self) -> None:
+        """Forget every cached read of this mod's files, after writing to them.
+
+        Derived from the class's own ``cached_property`` set, never from a list
+        of names. Two hand-written lists lived in ``edit`` and ``transfer`` and
+        had drifted to 17 and 14 of the 23: ``ownership_factions`` is built from
+        ``self.edu.units`` and was not among them while ``edu`` was, so after an
+        edit it went on answering out of the EDU that had just been replaced.
+        A property added later cannot be forgotten to be listed here.
+        """
+        for klass in type(self).__mro__:
+            for name, attr in vars(klass).items():
+                if isinstance(attr, cached_property):
+                    self.__dict__.pop(name, None)
 
     # ---- parsed databases (cached) -------------------------------------
     @cached_property
@@ -129,7 +158,40 @@ class Mod:
 
     @cached_property
     def loc(self) -> localization.Localization:
-        return localization.parse_file(self.export_units_path)
+        """Unit names and descriptions, read through the compiled cache if needed.
+
+        The game reads ``export_units.txt.strings.bin``, not the ``.txt``, and a
+        released mod can ship only the compiled one. Falling back to it means a
+        mod like that shows real unit names here instead of bare dictionary keys.
+        """
+        if self.export_units_path.exists():
+            return localization.parse_file(self.export_units_path)
+        return self.loc_from_bin(self.export_units_path)
+
+    @staticmethod
+    def loc_from_bin(txt_path: Path, descr_suffix: str = "_descr"
+                     ) -> localization.Localization:
+        """A :class:`Localization` built from a ``.txt``'s compiled ``.strings.bin``.
+
+        Empty when there is no readable archive — the callers all treat a missing
+        localisation as "show the code name", which is the right answer anyway.
+        """
+        from . import stringsbin
+        pairs = stringsbin.load_pairs(stringsbin.bin_path_for(txt_path))
+        if not pairs:
+            return localization.Localization()
+        short = descr_suffix + "_short"
+        entries: Dict[str, localization.LocEntry] = {}
+        for key, value in pairs.items():
+            if key.endswith(short):
+                entries.setdefault(key[: -len(short)],
+                                   localization.LocEntry()).descr_short = value
+            elif key.endswith(descr_suffix):
+                entries.setdefault(key[: -len(descr_suffix)],
+                                   localization.LocEntry()).descr = value
+            else:
+                entries.setdefault(key, localization.LocEntry()).name = value
+        return localization.Localization(entries=entries)
 
     @cached_property
     def modeldb(self) -> modeldb.ModelDb:
@@ -208,7 +270,7 @@ class Mod:
         keyed with ``_desc`` / ``_desc_short`` instead of ``_descr``."""
         p = self.building_loc_path
         if not p.exists():
-            return localization.Localization()
+            return self.loc_from_bin(p, descr_suffix="_desc")
         try:
             return localization.parse_file(p, descr_suffix="_desc")
         except (OSError, UnicodeError):
@@ -265,7 +327,11 @@ class Mod:
         out: Dict[str, str] = {}
         p = self.expanded_path
         if not p.exists():
-            return out
+            # same read-through as `loc`: a released mod may ship only the
+            # compiled expanded.txt.strings.bin, and faction names are worth having
+            from . import stringsbin
+            return {k.lower(): v for k, v in
+                    stringsbin.load_pairs(stringsbin.bin_path_for(p)).items()}
         try:
             txt = p.read_text(encoding="utf-16")
         except (OSError, UnicodeError):
@@ -319,21 +385,51 @@ class Mod:
         return self._find_icon(self.ui_unit_info_dir, unit.info_dirs(),
                                f"{unit.dictionary}_info", (".tga", ".dds"))
 
+    def _dir_index(self, fdir: Path) -> Dict[str, Path]:
+        """``lower-case filename -> path`` for one icon folder, listed once.
+
+        The lookup below has to be case-insensitive (a card named ``#Foo.tga``
+        for a dictionary of ``foo`` is common, and Linux would miss it), and it
+        used to get that by globbing the whole faction folder per extension per
+        candidate faction. Building the list of a mod's unit cards then cost
+        **224,712 globs** and 4.8 of the 4.9 seconds it took to answer
+        ``/api/units`` for Divide and Conquer — the visible half of "switching
+        mods doesn't switch the units".
+
+        One listing per folder replaces all of it. The folder's mtime is the
+        key, so a card that appears while the tool is running is still picked up:
+        adding or removing a file changes the folder's mtime, and the next
+        lookup re-lists it.
+        """
+        try:
+            stamp = fdir.stat().st_mtime_ns
+        except OSError:
+            return {}
+        hit = self._icon_dirs.get(fdir)
+        if hit is not None and hit[0] == stamp:
+            return hit[1]
+        index: Dict[str, Path] = {}
+        try:
+            with os.scandir(fdir) as it:
+                for entry in it:
+                    if entry.is_file():
+                        index.setdefault(entry.name.lower(), Path(entry.path))
+        except OSError:
+            return {}
+        self._icon_dirs[fdir] = (stamp, index)
+        return index
+
     def _find_icon(self, base: Path, factions: List[str], stem: str,
                    exts: tuple) -> Optional[Path]:
         if not base.is_dir():
             return None
         stem_lower = stem.lower()
         for fac in factions:
-            fdir = base / fac
-            if not fdir.is_dir():
+            index = self._dir_index(base / fac)
+            if not index:
                 continue
             for ext in exts:
-                cand = fdir / (stem + ext)
-                if cand.exists():
-                    return cand
-                # case-insensitive fallback (Windows is usually fine, be safe)
-                for p in fdir.glob("*" + ext):
-                    if p.stem.lower() == stem_lower:
-                        return p
+                hit = index.get(stem_lower + ext)
+                if hit is not None:
+                    return hit
         return None

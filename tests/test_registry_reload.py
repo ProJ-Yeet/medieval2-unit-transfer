@@ -1,7 +1,15 @@
 """Registry reloads a mod when its data files change on disk.
 
 Reproduces the reported issue: editing the source bmdb/EDU didn't take effect in a
-running server. The Registry now re-parses when a mod's files change.
+running server. The Registry re-parses when a mod's files change.
+
+It checks the *cost* of that promise too. Re-stating it as of Phase 14a: a
+resolved mod is trusted for :data:`server.REVALIDATE_SECONDS` before its files
+are stat'ed again, because the check used to run on every single request —
+scanning the mods folder and stat-ing twelve files, all of it inside one lock,
+for each of the hundreds of unit-card requests one screen makes. Our own writes
+call ``invalidate()`` and are therefore still immediate; somebody else's edit is
+picked up a moment later instead of instantly, which is the trade this asserts.
 
     python -m tests.test_registry_reload
 """
@@ -14,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from unittransfer import config
-from unittransfer.server import Registry
+from unittransfer.server import REVALIDATE_SECONDS, Registry
 
 ok = []
 def check(label, cond):
@@ -52,13 +60,22 @@ import os
 # force a distinct mtime even on coarse clocks
 os.utime(edu_path, (time.time() + 2, time.time() + 2))
 
+# inside the revalidation window the cached parse is still served — deliberate
+check("an edit within the window keeps the cached object", reg.get("TestMod") is m1)
+
+# once the window is out, somebody else's edit is picked up
+time.sleep(REVALIDATE_SECONDS + 0.05)
 m2 = reg.get("TestMod")
 check("edited mod is re-parsed (now 2 units)", len(m2.edu.units) == 2)
 check("a fresh Mod object was created", m2 is not m1)
+check("stable after reload (cached again)", reg.get("TestMod") is m2)
 
-# and stable again afterwards
-m2b = reg.get("TestMod")
-check("stable after reload (cached again)", m2b is m2)
+# our own writes never wait for the window at all
+EDU_THREE = EDU_TWO + ("\ntype Gamma\ndictionary Gamma\ncategory infantry\n"
+                       "soldier gamma_model, 30, 0, 1\n")
+edu_path.write_text(EDU_THREE, encoding="latin-1")
+reg.invalidate("TestMod")
+check("invalidate() reparses immediately", len(reg.get("TestMod").edu.units) == 3)
 
 import shutil
 shutil.rmtree(root, ignore_errors=True)

@@ -58,12 +58,27 @@ users = {}
 for u in mod.edu.units:
     for m in u.model_names():
         users.setdefault(m, []).append(u.type)
+# Step 4 also wants an entry whose MESH another entry reads, because by then the
+# textures are this test's own synthetic paths and a mesh is the only file left
+# that anyone else can be sharing. Preferred, not required: the folder step still
+# asserts the right thing on a mod where no entry shares a mesh at all.
+mesh_owners = {}
+for x in mod.modeldb.entries:
+    for m in x.mesh_files():
+        mesh_owners.setdefault(m, []).append(x.name)
 UNIT = SOLDIER = None
+fallback = None
 for u in mod.edu.units:
     e = entries.get((u.soldier_model or "").lower())
-    if e and e.lods and len(e.main_textures) > 2 and len(users.get(e.name, [])) > 1:
+    if not (e and e.lods and len(e.main_textures) > 2 and len(users.get(e.name, [])) > 1):
+        continue
+    if fallback is None:
+        fallback = (u.type, e.name)
+    if any(n != e.name for m in e.mesh_files() for n in mesh_owners.get(m, [])):
         UNIT, SOLDIER = u.type, e.name
         break
+if UNIT is None and fallback:
+    UNIT, SOLDIER = fallback
 assert UNIT, "no suitable unit found in the test mod"
 OTHERS = [t for t in users[SOLDIER] if t != UNIT]
 print(f"unit={UNIT!r} soldier={SOLDIER!r} also used by {len(OTHERS)} other unit(s)")
@@ -169,10 +184,6 @@ check("attachment sprites are still the format's empty string",
 print("\n4) standardise an entry's files into one folder")
 mod = Mod(root)
 e = mod.modeldb.by_name()[RENAMED]
-# a second entry sharing any file with ours, so the "who else uses this" path runs
-ours = set(e.mesh_files()) | set(e.texture_files())
-victim = next((x for x in mod.modeldb.entries if x.name != RENAMED
-               and ours & (set(x.mesh_files()) | set(x.texture_files()))), None)
 for rel in e.mesh_files() + e.texture_files():
     p = mod.data / rel
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -180,6 +191,14 @@ for rel in e.mesh_files() + e.texture_files():
         p.write_bytes(b"ASSET:" + rel.encode("latin-1"))
 
 TARGET = "unit_models/_ut_standard"
+# A second entry sharing a file that ACTUALLY MOVES, so the "who else uses this"
+# path runs. Sharing any file at all is the wrong question: a sprite is never
+# relocated, and an attachment texture outside this model's folder is a shared
+# pack that `edit.folder_info_of` reports in `external_dirs` and leaves where it
+# is. Neither can be repointed by a move that does not touch it.
+movers = set(edit.folder_moves(e, TARGET))
+victim = next((x for x in mod.modeldb.entries if x.name != RENAMED
+               and movers & (set(x.mesh_files()) | set(x.texture_files()))), None)
 report = edit.model_folder_report(mod, RENAMED, TARGET)
 check("report has moves queued", len(report["moves"]) > 0)
 check("report names the sharers" if victim else "report has no sharers",

@@ -8,7 +8,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from unittransfer import edu, localization, modeldb  # noqa: E402
+import shutil, tempfile  # noqa: E402
+from unittransfer import edu, factions, localization, modeldb  # noqa: E402
+from unittransfer import keyblock as kb  # noqa: E402
+
+#: written out rather than escaped, so the file has no literal control bytes
+NL_ = chr(13) + chr(10)
+MARK = bytes((0xEF, 0xBB, 0xBF))
 from unittransfer.mod import Mod  # noqa: E402
 
 MODS_ROOT = Path(r"C:/Users/projy/Downloads/Games/Total War MEDIEVAL II Definitive Edition/mods")
@@ -73,8 +79,60 @@ def test_mod(name):
     return ok
 
 
+def test_byte_order_mark():
+    """A game file re-saved by Notepad keeps every record, and its mark.
+
+    The mark only bites a file whose FIRST line is a record head rather than a
+    comment, which is why both installed mods escaped it: DaC's
+    descr_sm_factions.txt is the one real file that opens that way, and it lost
+    a faction. So the cases here are built rather than borrowed.
+    """
+    print("\n=== a UTF-8 byte-order mark ===")
+    ok = True
+    tmp = Path(tempfile.mkdtemp(prefix="ut_bom_"))
+    EDU_TXT = (
+        "type             Test Unit" + NL_ + "dictionary       Test_Unit" + NL_
+        + "category         infantry" + NL_ + "class            light" + NL_
+        + "soldier          testman, 8, 0, 1" + NL_ + "ownership        slave" + NL_)
+    FAC_TXT = ("faction\tscripts" + NL_ + "culture\tnorthern_european" + NL_
+               + "religion\tcatholic" + NL_)
+    # Each parser is held to ITS OWN reading contract, which is the honest
+    # comparison: factions keeps the file's line endings (keyblock), while EDU
+    # and the modeldb read through universal newlines and always have. What is
+    # being asserted either way is that the MARK survives the trip.
+    same = lambda f, enc: f.read_text(encoding=enc)          # noqa: E731
+    exact = lambda f, enc: kb.read_text(f, enc)              # noqa: E731
+    cases = [("EDU", EDU_TXT, edu.parse_file,
+              lambda o: len(o.units), lambda o: o.to_text(), same),
+             ("factions", FAC_TXT, factions.parse_file,
+              lambda o: len(o.records), lambda o: o.text(), exact)]
+    for label, body, parse, count, totext, reread in cases:
+        for tag, head in (("plain", b""), ("with a BOM", MARK)):
+            f = tmp / (label + tag.replace(" ", "_") + ".txt")
+            f.write_bytes(head + body.encode("latin-1"))
+            obj = parse(f)
+            ok &= check(f"{label} {tag}: the record is still found",
+                        count(obj) == 1)
+            ok &= check(f"{label} {tag}: text is the file, mark and all",
+                        totext(obj) == reread(f, "latin-1"))
+    # the modeldb is the one whose FIRST token is a number, so it crashed
+    # outright rather than losing a record quietly
+    src = MODS_ROOT / MODS[0] / "data/unit_models/battle_models.modeldb"
+    if src.is_file():
+        f = tmp / "bom.modeldb"
+        f.write_bytes(MARK + src.read_bytes())
+        db = modeldb.parse_file(f)
+        ok &= check(f"modeldb with a BOM: parses ({len(db.entries)} entries)",
+                    len(db.entries) == len(modeldb.parse_file(src).entries))
+        ok &= check("modeldb with a BOM: round-trips with the mark intact",
+                    db.to_text() == f.read_text(encoding=modeldb.ENCODING))
+    shutil.rmtree(tmp, ignore_errors=True)
+    return ok
+
+
 if __name__ == "__main__":
     all_ok = True
+    all_ok &= test_byte_order_mark()
     for name in MODS:
         try:
             all_ok &= test_mod(name)

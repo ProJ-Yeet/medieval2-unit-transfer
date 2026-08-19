@@ -1,18 +1,26 @@
-# Unit Transfer
+# Medieval 2 GUI Toolkit
 
-Move units between **Medieval II: Total War** mods — and edit them once they're
-there — without hand-editing text files.
+Edit **Medieval II: Total War** mods — move units between them, and change
+what's already there — without hand-editing text files.
 
-Six modes, switched from the dropdown in the top-left corner:
+*(Formerly released as "Unit Transfer" — same tool, growing scope.)*
+
+It opens on **⌂ Home**: every mod it can see, with what each module can do with
+that mod and which of the files each one reads are actually there — so a module
+that can't work on a mod says why on the card, instead of being found out three
+clicks in. The other modules are one click from there, or from the ☰ menu in the
+top-left corner:
 
 - **⚔ Unit Transfer** — copy a unit from one mod into another
 - **✎ Unit Editor** — change, clone or delete the units of a single mod
-- **🗄 BMDB Editor** — edit *any* `battle_models.modeldb` entry, and clean the
+- **🗄 BMDB + Sprites Editor** — edit *any* `battle_models.modeldb` entry, and clean the
   file of everything nothing uses
 - **🔊 Unit Sounds** — decide which voice-bank entry each unit speaks with
 - **🖼 Sprites** — generate and wire up the far-LOD unit sprites
 - **🏰 Buildings** — browse and edit `export_descr_buildings.txt`: every
   building's stats, and which units it recruits
+- **🔤 Strings** — read and write the compiled `data/text/*.txt.strings.bin`
+  files, which are what the game actually reads its text from
 
 Point it at two mods, pick a unit from one, and transfer it into the other. It
 figures out and carries across everything the unit actually depends on — battle
@@ -28,8 +36,8 @@ protected by the backup/undo system.
 ## Download
 
 Grab the latest build from **[Releases](../../releases/latest)** — unzip it and
-run `Unit Transfer.bat`. Nothing else to install: Python and the image library
-it needs are bundled inside.
+run `Medieval 2 GUI Toolkit.bat`. Nothing else to install: Python and the image
+library it needs are bundled inside.
 
 ## What it transfers
 
@@ -101,7 +109,7 @@ because stats and animations only make sense for the type they were written for.
   - **the voice bank and `text/export_units.txt` are not touched**, so the unit
     keeps its barks, its name and its description.
   - the replaced unit's **old battle models stay in the modeldb** (other units
-    may still use them) — the BMDB Editor's cleanup finds the ones that end up
+    may still use them) — the BMDB + Sprites Editor's cleanup finds the ones that end up
     unused.
 
 ### Unit packs — sending units to someone else
@@ -344,9 +352,9 @@ Everything else the two panels do is unchanged in either view: the composer's
 and its 🔒 locks, the editor's `✕` delete and canonical-position add, and the
 faction checklists and armour-tier `＋` menu described above.
 
-## BMDB Editor mode
+## BMDB + Sprites Editor mode
 
-Switch the dropdown to **🗄 BMDB Editor** to work on the mod's whole
+Switch the dropdown to **🗄 BMDB + Sprites Editor** to work on the mod's whole
 `battle_models.modeldb` instead of one unit's slice of it. The list is every
 entry in the file — what references it, how many LODs and faction skins it has,
 and a warning colour when nothing references it at all. Search filters by entry
@@ -838,6 +846,37 @@ different spacing is not an edit and opening a building does not rewrite it.
 
 Same backups and **🕑 Log → Undo** as everything else.
 
+## Strings mode
+
+Every piece of text the game shows lives in `data/text` as a pair: a `.txt`
+anyone can read, and a `.txt.strings.bin` compiled from it. **The game reads the
+`.bin`.** Edit the `.txt` and nothing changes on screen until the `.bin` agrees,
+which is where the old advice — delete the `.bin` and let the game rebuild it —
+comes from, and why a mod can sit for years showing text its own `.txt` has not
+said in months.
+
+**🔤 Strings** works on the `.bin` directly. Pick a file on the left, search, and
+edit any entry; the game says the new thing on the next launch with nothing
+deleted and nothing to rebuild. A file whose `.txt` is newer than its `.bin` says
+so, and **⟳ Rebuild from …** compiles the text file over the archive for when the
+`.txt` is the one that's right. Backups and **🕑 Log → Undo**, as everywhere else.
+
+Each entry also has a **`</>` code view**: the archive is binary, but an entry is
+exactly the `{tag}text` line of the `.txt` beside it, so that is what the pane
+shows — including `\n` for a line break, which is what the game's own compiler
+reads. Renaming a tag there is refused: it is the key everything else looks the
+string up by.
+
+Four files (`battle`, `shared`, `strat`, `tooltips`) store bare strings the engine
+addresses by position, with no tags at all — the ones alpaca's classic converter
+refused. They are listed and editable here by row number; they get no code view,
+because `{tag}text` is not a shape they have.
+
+This also means the rest of the toolkit no longer needs the `.txt` to be present:
+unit names, building names and faction names are read through the compiled
+archive when a released mod ships only that, and every job that writes a `.txt`
+now **recompiles** its cache instead of deleting it.
+
 ## M2TWEOP units
 
 M2TWEOP lifts the game's 500-unit ceiling by loading extra unit definitions from
@@ -984,7 +1023,7 @@ pip install pillow
 python app.py
 ```
 
-Or double-click `Launch-Unit-Transfer.bat` — it checks for Python and Pillow
+Or double-click `Launch-Medieval2-GUI-Toolkit.bat` — it checks for Python and Pillow
 first and, if Pillow is missing, installs it automatically (`pip install
 pillow`) before starting.
 
@@ -1048,6 +1087,17 @@ are pinned against a file whose every case is deliberate.
 through the transfer planner, and checks the extractor drops a zip member that
 tries to escape the folder.
 
+`tests/test_stringsbin.py` builds its own archives, then — if any mods are
+installed — decodes and re-encodes **every** `.strings.bin` it can find and
+requires the bytes back exactly. That sweep is what established the format, and
+it is the gate the whole Strings module stands on.
+
+`tests/test_triggers.py` does the same for the trigger language: a hand-built
+file with every awkward thing real ones have, then every `export_descr_character_traits.txt`
+and `export_descr_ancillaries.txt` on the machine — 4974 triggers and 20 013
+conditions — parsed, classified against the generated vocabulary, and handed back
+byte for byte.
+
 `tests/test_guided_fields.py` also runs the page's own JavaScript under `node`
 to prove the guided field editor's split-and-rejoin is lossless across every
 unit of every installed mod — the one property that, if broken, would quietly
@@ -1104,10 +1154,14 @@ open, and print the address.
 - `unittransfer/` — parsers and writers for each file format (EDU, localisation,
   `battle_models.modeldb`, `descr_mount`, `descr_projectile`,
   `descr_engines`/`descr_engine_skeleton`,
-  `export_descr_sounds_units_voice`, `export_descr_buildings`), the
+  `export_descr_sounds_units_voice`, `export_descr_buildings`,
+  `*.txt.strings.bin`), the
   dependency-resolution and transfer
   engine, the in-mod edit engine (`edit.py`), the voice-bank engine (`sounds.py`),
-  the building database (`buildings.py`),
+  the building database (`buildings.py`), the compiled-text codec
+  (`stringsbin.py`) and the module that edits it (`strings.py`),
+  the per-mod file discovery behind Home (`modfiles.py`), the shared trigger
+  grammar (`triggers.py`) and its generated vocabulary (`data/trigger_vocab.json`),
   the M2TWEOP unit-file layer (`eop.py`), the Lua reference scanner
   (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
   generation/conversion pipeline (`sprites.py`), the unit-pack format

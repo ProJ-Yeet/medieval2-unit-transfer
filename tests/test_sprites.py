@@ -179,11 +179,34 @@ else:
                  mod_root / "data/unit_models/battle_models.modeldb")
     mod = Mod(mod_root)
 
-    # pick a real entry with at least two factions so dedup has something to do
-    target = next((n for n, e in mod.modeldb.by_name().items()
-                   if len({t.faction for t in e.main_textures}) >= 2), None)
-    entry = mod.modeldb.by_name()[target]
-    facs = sorted({t.faction for t in entry.main_textures})[:2]
+    # A real entry with at least two factions, so dedup has something to do —
+    # and preferably two whose sprite lines ALREADY follow
+    # `<faction>_<model>_sprite`, because three checks below are about the
+    # wire-up reproducing such a line untouched. Most records in a real mod do
+    # not follow it (DaC points 1044 of them at one shared file), so picking the
+    # first entry with two factions was picking a shared line and asking the
+    # generator to have written it.
+    target = entry = None
+    facs = []
+    fallback = None
+    for n, e in mod.modeldb.by_name().items():
+        by_fac = sorted({t.faction for t in e.main_textures})
+        if len(by_fac) < 2:
+            continue
+        if fallback is None:
+            fallback = (n, e, by_fac[:2])
+        good = [f for f in by_fac
+                if next((t.sprite for t in e.main_textures if t.faction == f), "")
+                == sprites.sprite_line(*sprites._real_names(e, f))]
+        if len(good) >= 2:
+            target, entry, facs = n, e, good[:2]
+            break
+    conventional = target is not None
+    if not conventional and fallback:
+        target, entry, facs = fallback
+        print(f"  -- no entry in {donor.name} has two factions whose sprite line "
+              "follows <faction>_<model>_sprite; the three checks about "
+              "reproducing such a line are reported, not asserted")
 
     exp = root / sprites.EXPORT_REL
     exp.mkdir(parents=True)
@@ -236,7 +259,11 @@ else:
           fp[kept[0].lower()]["sprite"] == want)
     existing = next(t.sprite for t in entry.main_textures
                     if t.faction.lower() == kept[0].lower())
-    check("reproduces an already-correct line byte-exact", want == existing)
+    if conventional:
+        check("reproduces an already-correct line byte-exact", want == existing)
+    else:
+        print(f"  [ -- ] this entry's line is {existing!r}, not the generated "
+              f"{want!r} — a shared sprite, which the wire-up would repoint")
 
     from unittransfer import edit as edit_mod
     req = edit_mod.bmdb_request_from_dict({"model_edits": edits})
@@ -266,11 +293,15 @@ else:
     # `orphans` — an orphan here would mean the naming contract was broken.
     a = sprites.audit(mod)
     stem = sprites.sprite_stem(real_faction, real_model).lower()
-    check("audit does not call the installed file an orphan",
-          not any(stem in o.lower() for o in a.orphans))
-    check("audit resolves it against the modeldb",
-          any(r["model"] == target and r["faction"].lower() == kept[0].lower()
-              for r in a.ok))
+    if conventional:
+        check("audit does not call the installed file an orphan",
+              not any(stem in o.lower() for o in a.orphans))
+        check("audit resolves it against the modeldb",
+              any(r["model"] == target and r["faction"].lower() == kept[0].lower()
+                  for r in a.ok))
+    else:
+        print("  [ -- ] the modeldb line does not name the generated file, so the "
+              "audit is right to call it an orphan — nothing of ours to assert")
 
     shutil.rmtree(root, ignore_errors=True)
 

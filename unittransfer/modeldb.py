@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from . import keyblock as kb
 from typing import Dict, List, Optional, Tuple
 
 # modeldb is single-byte text (paths are ASCII). latin-1 round-trips every byte
@@ -253,9 +255,28 @@ def _read_entry(r: _Reader, pad: bool = False) -> ModelEntry:
                       torch_idx, torch, first_entry_pad=pad)
 
 
+#: The mark Notepad writes into anything it saves as UTF-8 (:data:`kb.BOMS`).
+#: A modeldb's very first token is a NUMBER — the length of the magic string —
+#: so the mark lands glued to it and the file used to die on int(). Skipped for
+#: parsing and left in `header_raw`, so a file that arrived with one is written
+#: back with one: this reads the file, it does not quietly repair it.
+_BOM = kb.BOMS[0]
+
+
 def parse_text(text: str) -> ModelDb:
     r = _Reader(text)
-    magic = r.get_string()
+    for mark in kb.BOMS:
+        if text.startswith(mark):
+            r.i = len(mark)
+            break
+    try:
+        magic = r.get_string()
+    except ValueError:
+        raise ValueError(
+            "this does not start like a battle_models.modeldb: its first token "
+            "should be the length of 'serialization::archive', and it is "
+            f"{r.s[r.i:r.i + 24].split(chr(10))[0]!r}. A file re-saved by a text "
+            "editor in the wrong encoding usually looks like this.") from None
     if magic != ARCHIVE_MAGIC:
         raise ValueError(f"not a modeldb archive (magic={magic!r})")
     header_ints = [r.get_int() for _ in range(8)]
@@ -712,6 +733,151 @@ def set_texture_factions(raw: str, factions, prefer: Optional[str] = None,
     for start, end, text in sorted(edits, key=lambda e: e[0], reverse=True):
         out = out[:start] + text + out[end:]
     return out
+
+
+# ---------------------------------------------------------------------------
+# Code View support: which line each field of an entry sits on, and putting
+# right the one thing a person cannot maintain by hand
+
+
+def parse_entry_text(raw: str, pad: bool = False) -> ModelEntry:
+    """Read ONE entry out of its own text, as :func:`parse_text` reads them all.
+
+    The same :func:`_read_entry` the file parser uses — there is no second reader
+    — plus the check the file parser gets for free from knowing the entry count:
+    that the text holds exactly one entry and nothing after it. Without that,
+    text with a stray extra record would read as one entry and silently drop the
+    rest on the next save.
+    """
+    r = _Reader(raw)
+    entry = _read_entry(r, pad=pad)
+    entry.raw = raw
+    entry.first_entry_pad = pad
+    r._skip_ws()
+    if r.i < r.n:
+        raise ValueError(f"{r.n - r.i} characters left over after the entry")
+    return entry
+
+
+def _line_of(text: str, offset: int) -> int:
+    """1-based line number of a character offset."""
+    return text.count("\n", 0, offset) + 1
+
+
+def entry_spans(raw: str, pad: bool = False) -> Dict[str, List[List[int]]]:
+    """Map each editable field of one entry to the line(s) it occupies.
+
+    Labels match how the editor addresses the same field, so a hover needs no
+    translation table:
+
+        name                     the entry's own name
+        path#<i>                 the i-th slot of :func:`path_slots_raw`
+        fac:<faction>:<kind>     the same slot by faction + kind, which is how
+                                 the texture boxes are keyed (kind is prefixed
+                                 ``attach_`` for an attachment record)
+        anim#<i>                 the i-th animation record's three names
+
+    Derived from the very span walkers the rewriters use, so a label can never
+    point at a line the editor would not have edited.
+    """
+    spans: Dict[str, List[List[int]]] = {}
+
+    def put(label: str, start: int, end: int) -> None:
+        spans.setdefault(label, []).append(
+            [_line_of(raw, start), _line_of(raw, max(start, end - 1))])
+
+    lead = len(raw) - len(raw.lstrip())
+    m = _NAME_PREFIX_RE.match(raw[lead:])
+    if m:
+        put("name", lead, lead + m.end() + int(m.group(1)))
+
+    slots = path_slots_raw(raw, pad=pad)
+    for (start, end, _v, _k), slot in zip(entry_path_spans(raw, pad=pad), slots):
+        put(f"path#{slot['i']}", start, end)
+        if slot["kind"] != "mesh":
+            kind = slot["kind"] if slot["group"] == "main" else "attach_" + slot["kind"]
+            put(f"fac:{slot['faction']}:{kind}", start, end)
+
+    for i, a in enumerate(animation_spans(raw, pad=pad)):
+        lo = min(v[0] for v in a.values())
+        hi = max(v[1] for v in a.values())
+        put(f"anim#{i}", lo, hi)
+    return spans
+
+
+#: One length-prefixed string on its own line: ``<indent><length> <characters>``,
+#: optionally with a trailing token of its own (a LOD's draw distance).
+_PREFIXED_LINE_RE = _re.compile(r"^(\s*)(\d+)( )(.*)$")
+
+
+def prefix_problems(base: str, edited: str, pad: bool = False) -> List[dict]:
+    """Length prefixes the user's edit has left behind, against a known-good text.
+
+    A modeldb string is written ``<length> <that many characters>``, so editing a
+    texture path in a text box and not also counting its new characters desyncs
+    the reader for the whole rest of the file. The length is bookkeeping, not
+    content, and nobody should be asked to maintain it by hand — so the editor
+    has to be able to say exactly which line is wrong and offer to fix it.
+
+    Doing that needs to know which lines hold a *string* at all: a count (``5``),
+    a torch index followed by six floats (``0 -1 0 0 0 0 0 0``) and a texture
+    path all look alike from the outside. Guessing gets those wrong, so this
+    takes the answer from ``base`` — text that parsed — and only reports lines
+    the span walkers already identified as strings there. That means the two
+    texts must still line up: once a line has been added or removed, this reports
+    nothing and the reader's own error stands.
+
+    Returns ``[{"line", "said", "should", "value"}, …]``, 1-based.
+    """
+    base_lines, new_lines = base.split("\n"), edited.split("\n")
+    if len(base_lines) != len(new_lines):
+        return []
+    try:
+        spans = entry_spans(base, pad=pad)
+    except (ValueError, IndexError):
+        return []
+    # every line the trustworthy parse says carries a length-prefixed string
+    holders = sorted({a for label, ranges in spans.items()
+                      if label == "name" or label.startswith("path#")
+                      for a, _b in ranges})
+
+    out: List[dict] = []
+    for n in holders:
+        old, new = base_lines[n - 1].rstrip("\r"), new_lines[n - 1].rstrip("\r")
+        if old == new:
+            continue
+        mo, mn = _PREFIXED_LINE_RE.match(old), _PREFIXED_LINE_RE.match(new)
+        if not mo or not mn:
+            continue
+        said_old, rest_old = int(mo.group(2)), mo.group(4)
+        said_new, rest_new = int(mn.group(2)), mn.group(4)
+        # whatever followed the string on the old line (a LOD distance, or
+        # nothing) is not part of it and is expected to still be there
+        trailing = rest_old[said_old:]
+        should = len(rest_new) - len(trailing) if rest_new.endswith(trailing) else len(rest_new)
+        if should < 0 or should == said_new:
+            continue
+        out.append({"line": n, "said": said_new, "should": should,
+                    "value": rest_new[:should]})
+    return out
+
+
+def repair_prefixes(base: str, edited: str, pad: bool = False) -> str:
+    """Rewrite each stale ``<length>`` in ``edited`` to match its own string.
+
+    Only ever called because someone pressed the button: the numbers change on
+    screen, so nothing is corrected behind their back.
+    """
+    problems = {p["line"]: p for p in prefix_problems(base, edited, pad=pad)}
+    if not problems:
+        return edited
+    lines = edited.split("\n")
+    for n, p in problems.items():
+        body = lines[n - 1].rstrip("\r")
+        eol = "\r" if lines[n - 1].endswith("\r") else ""
+        m = _PREFIXED_LINE_RE.match(body)
+        lines[n - 1] = f"{m.group(1)}{p['should']}{m.group(3)}{m.group(4)}{eol}"
+    return "\n".join(lines)
 
 
 def rename_entry_raw(raw: str, new_name: str) -> str:

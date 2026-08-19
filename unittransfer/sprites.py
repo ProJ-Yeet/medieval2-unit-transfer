@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from . import config, edit, modeldb
+from . import config, modeldb
 from .logutil import log
 from .mod import Mod
 
@@ -888,11 +888,13 @@ def model_roles(mod: Mod) -> Dict[str, set]:
         add(soldier, "soldier")
         for o in u.officers:
             add(o, "officer")
-        for a in u.armour_ug_models:
-            # level 0 of the upgrade list is the soldier model again; counting it
-            # as an upgrade would make "armour upgrades only" select most of the
-            # modeldb, which is the opposite of what the filter is for
-            if (a or "").strip().lower() != soldier:
+        # An `armour_ug_models` line beats the soldier line. Level 0 of a real
+        # upgrade ladder is usually the soldier model restated, and skipping it
+        # for that reason dropped models the unit visibly switches between out of
+        # "pick armour upgrades" — they need a sprite like every other level. A
+        # one-entry list is not a ladder, so that one stays a soldier model.
+        if len(u.armour_ug_models) > 1:
+            for a in u.armour_ug_models:
                 add(a, "armour")
     for model in (mod.mounts or {}).values():
         add(model, "mount")

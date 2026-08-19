@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
-title Unit Transfer - Install Dependencies
+title Medieval 2 GUI Toolkit - Install Dependencies
 
-rem Run this once if Launch-Unit-Transfer.bat couldn't start the tool. It sorts
+rem Run this once if Launch-Medieval2-GUI-Toolkit.bat couldn't start the tool. It sorts
 rem out everything the tool needs - Python itself, its PATH entry, and Pillow
 rem (the image library) - asking before it downloads anything. It never closes
 rem on its own, so any error stays readable.
@@ -16,7 +16,7 @@ set "PY_ARCH=amd64"
 if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "PY_ARCH=arm64"
 
 echo ============================================================
-echo  Unit Transfer - installing dependencies
+echo  Medieval 2 GUI Toolkit - installing dependencies
 echo ============================================================
 echo.
 
@@ -74,7 +74,7 @@ echo.
 if %errorlevel%==0 (
     for /f "tokens=*" %%v in ('%PY% -c "import PIL;print(PIL.__version__)"') do echo Pillow is already installed: %%v
     echo.
-    echo Nothing to do - you can run Launch-Unit-Transfer.bat now.
+    echo Nothing to do - you can run Launch-Medieval2-GUI-Toolkit.bat now.
     echo.
     pause
     exit /b 0
@@ -99,7 +99,7 @@ if not %errorlevel%==0 (
 
 echo.
 echo ============================================================
-echo  Done. You can run Launch-Unit-Transfer.bat now.
+echo  Done. You can run Launch-Medieval2-GUI-Toolkit.bat now.
 echo ============================================================
 echo.
 pause

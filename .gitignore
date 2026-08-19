@@ -18,9 +18,17 @@ graphify-out/
 .gitattributes
 
 # Saved reference material — TWC tutorial pages with their whole _files asset
-# dumps, the ModdingTool source, the Sounds Parser and Sprite prototypes. ~100 MB
+# dumps, the ModdingTool source, the Sounds Parser and Sprite prototypes. 3.4 GB
 # of other people's work, kept locally to read; none of it ours to redistribute.
-Reference/
+# The generated INDEX is the exception: it is ours, it is small, and it is what
+# every later phase greps to find the tutorial for a format. A parent directory
+# that is excluded can't have its children re-included, so the exclusion is
+# spelled out level by level to leave a hole for it.
+Reference/*
+!Reference/TWCenter/
+Reference/TWCenter/*
+!Reference/TWCenter/INDEX.md
+!Reference/TWCenter/INDEX.json
 
 # Third-party reference tools kept locally for comparison (not ours to ship)
 UnitEditor11/

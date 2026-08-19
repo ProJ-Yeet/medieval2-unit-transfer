@@ -12,7 +12,7 @@ name in brackets. Sources::
 
     factions      data/descr_sm_factions.txt  (+ display names from text/expanded.txt)
     cultures      data/descr_cultures.txt, and the cultures factions claim
-    religions     data/descr_religions.txt
+    religions     data/descr_religions.txt  (its `religions { … }` list)
     hidden res.   the `hidden_resources` line at the top of the EDB itself
     resources     data/descr_sm_resources.txt
     buildings     the EDB's own lines and levels
@@ -22,6 +22,11 @@ name in brackets. Sources::
 Everything here is best-effort: a mod missing one of these files gets an empty
 list for it, never an error, and the clause editor always keeps a raw-text
 escape hatch for anything not on a list.
+
+Three of the lists — cultures, religions and resources — are *not* parsed here.
+They come from :mod:`unittransfer.minorfiles`, which is the module that edits
+those files, so the names the clause editor offers and the names that module
+writes can never drift apart. One engine, one parser per format.
 """
 from __future__ import annotations
 
@@ -58,20 +63,23 @@ def _read_utf16(path: Path) -> str:
     return _read(path, ("utf-16", "latin-1"))
 
 
+# Three of these lists come out of files the Minor Files module owns, and it owns
+# them properly — the same parser that edits them, not a regex beside it. That is
+# the whole point of the one-engine rule: `descr_cultures.txt` in particular has
+# a `culture` keyword on its agent lines' neighbours and a tail outside the
+# brace, and a regex for `^culture (\S+)` was only ever right by luck.
+
+
 def religions(mod) -> List[str]:
-    """Religion names, from the ``religions { … }`` block of descr_religions.txt."""
-    text = _read(mod.data / "descr_religions.txt")
-    m = re.search(r"^\s*religions\s*\{(.*?)\}", text, re.S | re.M)
-    if not m:
-        # some mods only have the per-religion blocks
-        return sorted(set(re.findall(r"^\s*religion\s+(\S+)", text, re.M)))
-    return [t for t in m.group(1).split() if t]
+    """Religion names — :func:`unittransfer.minorfiles.religion_names` is the source."""
+    from . import minorfiles
+    return minorfiles.religion_names(mod)
 
 
 def cultures(mod) -> List[str]:
     """Culture names — from descr_cultures.txt, plus any a faction claims."""
-    text = _read(mod.data / "descr_cultures.txt")
-    out = list(dict.fromkeys(re.findall(r"^\s*culture\s+(\S+)", text, re.M)))
+    from . import minorfiles
+    out = list(minorfiles.culture_names(mod))
     for c in mod.faction_cultures.values():
         if c not in out:
             out.append(c)
@@ -79,9 +87,9 @@ def cultures(mod) -> List[str]:
 
 
 def resources(mod) -> List[str]:
-    """Trade resources, from the ``type <name>`` lines of descr_sm_resources.txt."""
-    text = _read(mod.data / "descr_sm_resources.txt")
-    return sorted(set(re.findall(r"^\s*type\s+(\S+)", text, re.M)))
+    """Trade resources — :func:`unittransfer.minorfiles.resource_names` is the source."""
+    from . import minorfiles
+    return sorted(set(minorfiles.resource_names(mod)))
 
 
 #: Where the region list lives, relative to ``data/``.
