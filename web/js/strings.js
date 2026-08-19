@@ -65,7 +65,7 @@ function strFileRow(f){
   const state_ = f.error ? `<span class="w-bad">unreadable</span>`
     : f.stale ? `<span class="w-warn">${esc(f.txt)} is newer</span>`
     : f.txt ? `<span class="count">${esc(f.txt)}</span>`
-    : `<span class="count">no .txt beside it</span>`;
+    : `<span class="count">No .txt beside it</span>`;
   return `<button class="strfile${on?' on':''}" onclick="strOpen('${q1(esc(f.rel))}')">
     <div class="nm">${esc(f.label)}${f.tagged?'':' <span class="badge">by position</span>'}</div>
     <div class="sub">${f.error?'':`${f.entries} entries · `}${state_}</div>
@@ -131,7 +131,7 @@ reads what the text file says. Backed up first, and undoable from 🕑 Log."
     </table>
     ${more > 0 ? `<div class="strmore"><button onclick="strMore()">Show ${
       Math.min(more, STR_PAGE)} more</button>
-      <span class="count">${more} not shown — narrow the search above</span></div>` : ''}`;
+      <span class="count">${more} not shown. Narrow the search above.</span></div>` : ''}`;
 }
 
 function strRowHtml(row){

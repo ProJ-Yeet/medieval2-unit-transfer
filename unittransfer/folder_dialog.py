@@ -175,10 +175,16 @@ def reveal(path: str) -> bool:
     """Show ``path`` in the OS file manager, with the file itself selected.
 
     The same "the server IS this machine" trick as the dialogs above: a browser
-    page cannot open a folder, but the process serving it can. Windows takes
-    ``explorer /select,<path>`` — note the comma is part of the switch and the
-    path must NOT be quoted separately from it, which is why this builds one
-    argument string rather than a list.
+    page cannot open a folder, but the process serving it can.
+
+    Windows is the fussy one. ``explorer /select,<path>`` needs the comma glued
+    to the switch and the path quoted *inside* the same argument, and passing a
+    LIST does the opposite: :func:`subprocess.list2cmdline` wraps the whole
+    ``/select,<a path with a space in it>`` token in quotes the moment the path
+    has a space in it, Explorer fails to parse the switch, and it silently opens
+    the user's Documents folder instead. Every real mod path has a space
+    in it somewhere, so this passes one command STRING and quotes the path
+    itself. ``normpath`` goes with it: Explorer will not follow forward slashes.
 
     Returns whether the file manager was launched. Explorer answers 1 even on
     success, so the exit code is not worth waiting for; anything that stops the
@@ -186,12 +192,13 @@ def reveal(path: str) -> bool:
     """
     import os
     import subprocess
-    target = os.path.abspath(path)
+    target = os.path.normpath(os.path.abspath(path))
     if not os.path.exists(target):
         return False
     try:
         if sys.platform == "win32":
-            subprocess.Popen(["explorer", "/select,%s" % target])
+            # one command string, path quoted inside the /select argument
+            subprocess.Popen('explorer /select,"%s"' % target)
         elif sys.platform == "darwin":
             subprocess.Popen(["open", "-R", target])
         else:

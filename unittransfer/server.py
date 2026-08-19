@@ -111,6 +111,9 @@ EDU cleanup (export_descr_unit.txt as a whole, see :mod:`unittransfer.edusort`)
   GET  /api/edu/order?mod=       -> every section and the units in it, in the
                                     order a cleanup would leave them
   POST /api/edu/sort/plan|/apply -> tidy, tier, group and reorder the whole unit
+                                    file. `marks` sets a unit's tier, variant or
+                                    classification; `style` is how the section
+                                    banners are drawn
                                     file (one backup + undo). `plan` never
                                     returns the new text, only what would change
 
@@ -145,6 +148,10 @@ Buildings mode (export_descr_buildings.txt, see :mod:`unittransfer.buildings`)
   GET  /api/buildings?mod=&culture=
                                  -> every building line, light (the browser grid);
                                     `culture` picks which per-culture name shows
+  GET  /api/buildings/variants?mod=&line=&culture=
+                                 -> one building line beside its city/castle
+                                    twin, tier by tier, with every unit marked
+                                    as trained on both sides or on one
   GET  /api/building?mod=&line=&culture=
                                  -> one line in full: levels, stats, capabilities,
                                     recruit pools, which cultures have art and
@@ -1277,7 +1284,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._err(404, "unknown mod")
                 return self._json(modfiles.report(self.registry.get(name)))
             if u.path in ("/api/buildings", "/api/building",
-                          "/api/buildings/checks", "/api/buildings/unit"):
+                          "/api/buildings/checks", "/api/buildings/unit",
+                          "/api/buildings/variants"):
                 name = (q.get("mod") or [None])[0]
                 if not name or name not in self.registry.names():
                     return self._err(404, "unknown mod")
@@ -1294,6 +1302,13 @@ class Handler(BaseHTTPRequestHandler):
                 if u.path == "/api/buildings/unit":
                     return self._json(buildings.unit_instances(
                         mod, (q.get("type") or [""])[0], culture))
+                if u.path == "/api/buildings/variants":
+                    # one line beside its city/castle twin, tier by tier
+                    try:
+                        return self._json(buildings.variant_compare(
+                            mod, (q.get("line") or [""])[0], culture))
+                    except KeyError as e:
+                        return self._err(404, f"no building line {e}")
                 return self._json(buildings.detail(mod, (q.get("line") or [""])[0],
                                                    culture))
             if u.path == "/building_icon":
@@ -1763,7 +1778,11 @@ class Handler(BaseHTTPRequestHandler):
                 mod,
                 banners=body.get("banners", True), tidy=body.get("tidy", True),
                 group=body.get("group", True), tiers=body.get("tiers", True),
-                hand=body.get("hand"))
+                hand=body.get("hand"),
+                # the ordering screen's per-unit tier / variant / classification
+                marks=body.get("marks"),
+                # and how the section banners it writes are drawn
+                style=body.get("style"))
         except (KeyError, OSError) as e:
             return {"error": str(e)}
         out = {"plan": plan.payload()}

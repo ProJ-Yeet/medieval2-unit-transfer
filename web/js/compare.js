@@ -209,8 +209,8 @@ function edCmpSection(sec){
 }
 function edCmpField(f){
   const e=state.ed;
-  const missing=f.absent==='a'?`<span class="w-warn"> — ${esc(e.unit)} has no such line</span>`
-    :f.absent==='b'?`<span class="w-warn"> — ${esc(e.cmp.unit)} has no such line</span>`:'';
+  const missing=f.absent==='a'?`<span class="w-warn"> ${esc(e.unit)} has no such line.</span>`
+    :f.absent==='b'?`<span class="w-warn"> ${esc(e.cmp.unit)} has no such line.</span>`:'';
   return `<div class="cmpfield">${esc(f.title)}
       <span class="count">${esc(f.label)}</span>${missing}</div>
     ${f.rows.map(edCmpRow).join('')}`;
@@ -269,7 +269,7 @@ function edCmpPicker(){
     <fieldset><legend>Compare with another unit</legend>
       <div class="count">Pick a unit from <b>${esc(e.mod)}</b>. Its stats are shown beside
         ${esc(e.loc.name||e.d.type)}’s, slot by slot, with the better side in green and the
-        worse in red — and both columns stay editable, so a gap can be closed from either
+        worse in red. Both columns stay editable, so a gap can be closed from either
         end. <b>Save changes</b> then writes both units.</div>
       <input class="q" id="cmpQ" style="margin-top:8px;width:100%"
         placeholder="Filter ${esc(e.mod)}’s units…" value="${esc(e.cmpQ||'')}">

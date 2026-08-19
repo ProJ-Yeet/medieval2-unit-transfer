@@ -88,12 +88,12 @@ function trgSatisfied(requires, exports){
 }
 function trgCondWarn(tr, cond){
   const d = tr.byTerm[cond.term];
-  if(!d) return cond.term ? `“${cond.term}” isn’t a condition anything documents — it may still be valid` : '';
+  if(!d) return cond.term ? `“${cond.term}” isn’t a condition anything documents, though it may still be valid` : '';
   const ev = tr.byEvent[tr.when];
   if(!tr.when || !ev) return '';
   if(trgSatisfied(d.requires, ev.exports)) return '';
   const need = (d.requires||[]).map(g=>g.join(' and ')).join(', or ');
-  return `needs ${need}, which ${tr.when} does not export — this can never be true`;
+  return `needs ${need}, which ${tr.when} does not export, so this can never be true`;
 }
 
 /* ---- markup ---- */
@@ -113,10 +113,10 @@ function trgHtml(tr){
       ? `${esc(ev.hint||'')} <span class="count">· exports ${
           (ev.exports||[]).map(esc).join(', ')||'nothing'}</span>`
       : (tr.when?`<span class="w-bad">no engine event is called “${esc(tr.when)}”</span>`
-               :'<span class="count">pick the moment this trigger is tested</span>')}</div>
+               :'<span class="count">Pick the moment this trigger is tested</span>')}</div>
     <div class="trgconds" id="trgc-${tr.uid}">
       ${tr.conds.map((c,i)=>trgCondHtml(tr,c,i)).join('')
-        || '<div class="count">No conditions — this fires every time the event happens.</div>'}
+        || '<div class="count">No conditions, so this fires every time the event happens.</div>'}
     </div>
     ${tr.readOnly?'':`<button class="trgadd" onclick="trgAddCond(trgOf('${tr.uid}'))">
       ＋ Add condition</button>`}
@@ -135,7 +135,7 @@ function trgEventSelect(tr){
   const opt = e=>`<option value="${esc(e.event)}" ${e.event===tr.when?'selected':''}>${
     esc(e.event)}${e.uses?` (${e.uses})`:''}</option>`;
   const unknown = tr.when && !tr.byEvent[tr.when]
-    ? `<option value="${esc(tr.when)}" selected>${esc(tr.when)} — unknown</option>` : '';
+    ? `<option value="${esc(tr.when)}" selected>${esc(tr.when)} (unknown)</option>` : '';
   return `<select id="trgev-${tr.uid}" ${tr.readOnly?'disabled':''}
       onchange="trgSet(trgOf('${tr.uid}'),'when',this.value)">
     ${unknown}
@@ -174,10 +174,10 @@ function trgTermSelect(tr, cond, i){
   const opt = c=>`<option value="${esc(c.term)}" ${c.term===cond.term?'selected':''}>${
     esc(c.term)}${c.uses?` (${c.uses})`:''}</option>`;
   const unknown = cond.term && !tr.byTerm[cond.term]
-    ? `<option value="${esc(cond.term)}" selected>${esc(cond.term)} — unknown</option>` : '';
+    ? `<option value="${esc(cond.term)}" selected>${esc(cond.term)} (unknown)</option>` : '';
   return `<select class="trgterm" ${tr.readOnly?'disabled':''}
       onchange="trgSet(trgOf('${tr.uid}'),'term',this.value,${i})">
-    ${unknown}${cond.term?'':'<option value="" selected>— pick a condition —</option>'}
+    ${unknown}${cond.term?'':'<option value="" selected>Pick a condition</option>'}
     <optgroup label="used in this mod">${used.map(opt).join('')}</optgroup>
     <optgroup label="every other engine condition">${rest.map(opt).join('')}</optgroup>
   </select>`;
@@ -213,7 +213,7 @@ function trgArgsHtml(tr, cond, i, shape){
         html += `<datalist id="${dl}">${list.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
     }
   }
-  return html || '<span class="count">no argument</span>';
+  return html || '<span class="count">No argument</span>';
 }
 
 function trgEffectHtml(tr, eff, i){

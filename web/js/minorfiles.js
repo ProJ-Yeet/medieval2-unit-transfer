@@ -60,7 +60,7 @@ function renderMinor(){
   const f = state.mf;
   if(!f){ loadMinor(); return; }
   const rows = mfRows();
-  count.textContent = f.exists ? `${rows.length}/${f.count}` : '—';
+  count.textContent = f.exists ? `${rows.length}/${f.count}` : '';
   main.innerHTML = mfTabsHtml() + (f.exists ? `<div class="trwrap">
     <div class="trlist">
       ${f.actions.includes('add')
@@ -214,7 +214,7 @@ function mfFindingsHtml(d){
   const out = (d.findings||[]).map(f =>
     `<div class="trfind w-warn">line ${f.line}: ${esc(f.message)}</div>`);
   if((d.missing_loc||[]).length && d.loc_writable) out.push(`<div class="trfind w-warn">
-    There is no <code>{${esc(d.loc_tag)}}</code> entry in ${esc(d.loc_file)} — this
+    There is no <code>{${esc(d.loc_tag)}}</code> entry in ${esc(d.loc_file)}, so this
     ${esc(d.noun)} shows its code name in game. Type the words beside the name below,
     or save and the key is created with the code name as placeholder text.</div>`);
   return out.join('');
@@ -252,9 +252,9 @@ function mfArt(rel){
   // so the redundant half is dropped here rather than in one of the parsers —
   // neither file is wrong about its own format.
   const r=(rel||'').trim().replace(/\\/g,'/').replace(/^data\//i,'');
-  if(!r)return '<span class="mfnoart" title="No path set">—</span>';
+  if(!r)return '<span class="mfnoart" title="No path set">none</span>';
   return `<img class="mfpip" loading="lazy" src="/icon?mod=${enc(state.mf.mod)}&kind=modfile&rel=${enc(r)}"
-    alt="" title="${esc(r)} — blank here means the file is not unpacked in this mod, which is normal: it may be inside a .pack archive"
+    alt="" title="${esc(r)}. Blank here means the file is not unpacked in this mod, which is normal: it may be inside a .pack archive."
     onerror="this.classList.add('gone')">`;
 }
 function mfNameRow(d, placeholder){
@@ -271,7 +271,7 @@ function mfNameRow(d, placeholder){
         placeholder="${esc(d.loc_writable
           ? (((d.loc||{})[tag] === undefined) ? 'not in ' + d.loc_file + ' yet'
              : 'what the player reads')
-          : (shown || 'read by position — edit it in the Strings module'))}"
+          : (shown || 'read by position, so edit it in the Strings module'))}"
         title="${esc(d.loc_writable ? 'What the player reads. Saved into data/'
           + d.loc_file + '.' : d.loc_note || '')}"
         oninput="mfSetLoc('${q1(esc(tag))}',this.value)">` : ''}
@@ -284,7 +284,7 @@ function mfRebelForm(d){
   const w = d.w, v = d.vocab || {};
   return `<section class="trsec">
     <div class="trsechead">The rebel faction
-      <span class="count">what spawns in a region whose descr_regions line names it</span></div>
+      <span class="count">What spawns in a region whose descr_regions line names it</span></div>
     <div class="trgrid">
       ${mfNameRow(d, 'Evil_Rebels')}
       <label class="lbl" data-label="category">Category</label>
@@ -295,7 +295,7 @@ function mfRebelForm(d){
           ${(v.categories||[]).includes(w.category) ? ''
             : `<option value="${esc(w.category)}" selected>${esc(w.category)} (unknown)</option>`}
         </select>
-        <div class="trhint count">the four the engine knows — anything else is
+        <div class="trhint count">The four the engine knows. Anything else is
           read and ignored</div>
       </div>
       <label class="lbl" data-label="chance">Chance</label>
@@ -308,7 +308,7 @@ function mfRebelForm(d){
     </div>
     <div class="treffects">
       <div class="trsechead" style="margin:8px 0 0">Units
-        <span class="count">${(w.units||[]).length} — a rebel faction with none
+        <span class="count">${(w.units||[]).length}. A rebel faction with none
           cannot spawn. The whole rest of the line is the unit type, spaces and
           all.</span></div>
       ${(w.units||[]).map((u,k)=>`<div class="treff" data-label="unit#${k+1}">
@@ -336,7 +336,7 @@ function mfResourceForm(d){
   const w = d.w;
   return `<section class="trsec">
     <div class="trsechead">The resource
-      <span class="count">placed on the campaign map by descr_regions.txt</span></div>
+      <span class="count">Placed on the campaign map by descr_regions.txt</span></div>
     <div class="trgrid">
       ${mfNameRow(d, 'timber')}
       <label class="lbl" data-label="trade_value">Trade value</label>
@@ -365,7 +365,7 @@ function mfReligionForm(d){
   const w = d.w;
   return `<section class="trsec">
     <div class="trsechead">The religion
-      <span class="count">a religion is written down three times — this file's
+      <span class="count">A religion is written down three times: this file's
         list, this block, and descr_religions_lookup.txt. A save keeps all
         three in step.</span></div>
     <div class="trgrid">
@@ -378,13 +378,13 @@ function mfReligionForm(d){
             placeholder="ui/pips/pip_catholic.tga"
             oninput="mfSet('pip_path',this.value.trim())">
         </div>
-        <div class="trhint count">what the campaign map draws for it — the one
+        <div class="trhint count">What the campaign map draws for it. The one
           line a religion block has</div>
       </div>
     </div>
     ${d.listed === false ? `<div class="trfind w-bad">This religion has a block but
       is not in the <code>religions { … }</code> list, and the engine reads the
-      list — so as far as the game is concerned it does not exist.</div>` : ''}
+      list, so as far as the game is concerned it does not exist.</div>` : ''}
   </section>`;
 }
 
@@ -395,7 +395,7 @@ function mfCultureForm(d){
      <input data-label="${k}" value="${esc(w[k])}" oninput="mfSet('${k}',this.value.trim())">`;
   return `<section class="trsec">
     <div class="trsechead">The culture
-      <span class="count">the record does not end at its closing brace — the fort,
+      <span class="count">The record does not end at its closing brace. The fort,
         the ports, the watchtower and the six agents below belong to it too</span></div>
     <div class="trgrid">
       ${mfNameRow(d, 'southern_european')}
@@ -405,7 +405,7 @@ function mfCultureForm(d){
   </section>
   <section class="trsec">
     <div class="trsechead">Settlement ladder
-      <span class="count">${(w.levels||[]).length} level(s) — each one a strat
+      <span class="count">${(w.levels||[]).length} level(s), each one a strat
         model, the settlement plan that goes with it, and the card</span></div>
     ${(w.levels||[]).map((l,k) => `<div class="mflvl" data-label="level.${esc(l.name)}">
       <div class="mflvlname">${esc(l.name)}</div>
@@ -423,7 +423,7 @@ function mfCultureForm(d){
   </section>
   <section class="trsec">
     <div class="trsechead">Agents
-      <span class="count">card, info card, pip and cost. The two numbers after
+      <span class="count">Card, info card, pip and cost. The two numbers after
         them are the same <code>1 1</code> in all 234 real agent lines, so they
         are carried by position and never rewritten.</span></div>
     ${Object.entries(w.agents||{}).map(([a,g]) => `<div class="treff" data-label="agent.${esc(a)}">
@@ -436,12 +436,12 @@ function mfCultureForm(d){
     </div>`).join('')}
     ${(v.agents||[]).filter(a => !(w.agents||{})[a]).length
       ? `<div class="trfind w-warn">No ${(v.agents||[]).filter(a =>
-          !(w.agents||{})[a]).map(esc).join(', ')} line — this culture cannot
+          !(w.agents||{})[a]).map(esc).join(', ')} line, so this culture cannot
           recruit one. Adding an agent line means saying where it goes, which
           this file's own order decides, so it is written in the code view.</div>`
       : ''}
     ${(w.ports||[]).length ? `<div class="trhint count" style="margin-top:8px">Ports:
-      ${(w.ports||[]).map(p => esc(p.key)).join(', ')} — edited in the code view,
+      ${(w.ports||[]).map(p => esc(p.key)).join(', ')}, edited in the code view,
       because a port ladder is a pair of lines per level rather than a field.</div>` : ''}
   </section>`;
 }
@@ -452,7 +452,7 @@ function mfMissingLevels(w, v){
   if(!gone.length) return '';
   return `<div class="trhint count" style="margin-top:8px">Not defined here:
     ${gone.map(esc).join(', ')}. That is only a fault when the OTHER cultures in
-    this file define it — a mod that drops a level everywhere has removed it.</div>`;
+    this file define it. A mod that drops a level everywhere has removed it.</div>`;
 }
 
 // 800 names is a textarea, not 800 boxes. One name per line, which is exactly
@@ -462,7 +462,7 @@ function mfNamesForm(d){
   const has = new Set((w.sections||[]).map(s => s.name));
   return `<section class="trsec">
     <div class="trsechead">The faction's names
-      <span class="count">one name per line, and a name is one word — the engine
+      <span class="count">One name per line, and a name is one word: the engine
         picks from these when it generates a family</span></div>
     <div class="trgrid">${mfNameRow(d, 'england')}</div>
     ${(w.sections||[]).map((s,k) => `<div style="margin-top:10px" data-label="${esc(s.name)}">

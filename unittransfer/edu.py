@@ -106,6 +106,10 @@ class Unit:
     stat_sec: List[str] = field(default_factory=list)   # CSV values of stat_sec
     tier: str = ""                       # tool metadata, not a game field (see MARKER)
     variant: str = ""                    # tool metadata, not a game field (see MARKER)
+    #: ``general`` / ``hero`` / ``none`` … — the roster classification the EDU
+    #: cleanup sorts special units by. Tool metadata like the two above; see
+    #: :data:`unittransfer.edusort.SPECIAL_VALUES` for what it may say.
+    special: str = ""
     order: str = ""                      # hand-placed position within its section
     raw: str = ""                        # verbatim block text (incl. leading blank/comment lines)
     # M2TWEOP unit: this block lives in one of the extender's own files rather than
@@ -319,6 +323,7 @@ def _parse_block(raw: str) -> Unit:
     u = Unit(raw=raw)
     meta = marker_fields(raw)
     u.tier, u.variant = meta.get("tier", ""), meta.get("variant", "")
+    u.special = meta.get("special", "")
     u.order = meta.get("order", "")
     for line in raw.splitlines():
         s = line.strip()

@@ -2806,6 +2806,121 @@ def unit_instances(mod, unit: str, culture: str = "") -> dict:
             "instances": rows}
 
 
+def variant_compare(mod, line: str, culture: str = "") -> dict:
+    """One building line beside its city/castle twin, tier by tier.
+
+    The two halves of a settlement building are written as two separate lines in
+    the EDB with nothing tying them together, so they drift: a unit is added to
+    the city barracks and forgotten in the castle one, and the only way to see it
+    was to open both lines and read them against each other by eye. This puts
+    them in one answer.
+
+    The pairing is the same one the mirror findings use — :func:`variant_pairs`
+    for the lines, :func:`pair_levels` for the tiers within them — so what this
+    shows and what "⇄ Mirror" acts on can never disagree.
+
+    A tier is a row of units, and every unit carries ``where``:
+
+    ``both``
+        trained on both sides. ``same`` then says whether the four numbers and
+        the ``requires`` clause match as well, because a unit both sides train
+        with different pools is a divergence the old mirror findings never
+        reported at all.
+    ``a`` / ``b``
+        trained on one side only. This is what a mirror closes.
+
+    Units are keyed lower-case, as everywhere else here, and a level with no
+    facing tier in the twin is still listed: "this tier has no counterpart" is
+    an answer, and hiding the row would make the chains look shorter than they
+    are.
+    """
+    edb = mod.edb
+    bl = edb.get(line)
+    if bl is None:
+        raise KeyError(line)
+    pairs = variant_pairs(edb)
+    other_name = pairs.get(bl.name, "")
+    other = edb.get(other_name) if other_name else None
+    units = _units_index(mod)
+
+    def _side(b):
+        """``{level name: {unit key: pool row}}`` for one line."""
+        out: Dict[str, Dict[str, dict]] = {}
+        for r in _pool_rows(b):
+            out.setdefault(r["level"], {}).setdefault(r["unit_key"], r)
+        return out
+
+    head = {
+        "mod": mod.name,
+        "line": bl.name,
+        "line_label": _label(mod, bl.name + "_name", bl.name, culture),
+        "settlement": bl.settlement,
+        "twin": other_name,
+        "twin_label": (_label(mod, other_name + "_name", other_name, culture)
+                       if other_name else ""),
+        "twin_settlement": other.settlement if other is not None else "",
+        "levels": [],
+    }
+    if other is None:
+        # Not an error: most lines are buildable in both settlement types and so
+        # have no opposite half at all. The page says so rather than showing an
+        # empty table.
+        head["reason"] = ("This building line has no city/castle counterpart the "
+                          "tool can match, so there is nothing to compare it with.")
+        return head
+
+    forward = pair_levels(bl, other)
+    mine, theirs = _side(bl), _side(other)
+    by_name = {blk.name: blk for blk in other.blocks}
+
+    for i, blk in enumerate(bl.blocks):
+        tw = forward.get(blk.name, "")
+        here, there = mine.get(blk.name, {}), theirs.get(tw, {}) if tw else {}
+        rows = []
+        for key in sorted(set(here) | set(there)):
+            a, b = here.get(key), there.get(key)
+            info = units.get(key) or {}
+            where = "both" if a and b else ("a" if a else "b")
+            # WHICH fields disagree, not just that some do. Measured on Divide
+            # and Conquer's barracks pair, 411 of 466 shared units "differ" —
+            # nearly all of them only in `requires`, because a city clause names
+            # the city factions and a castle clause names the castle ones. A
+            # single yes/no would therefore flag the whole roster and mean
+            # nothing; naming the fields lets the page keep the numbers and the
+            # clause apart, and treat a missing unit as the real finding.
+            diff = [f for f in ("initial", "per_turn", "maximum", "experience",
+                                "requires")
+                    if a and b and _norm(str(a[f])) != _norm(str(b[f]))]
+            rows.append({
+                "unit": (a or b)["unit"],
+                "name": info.get("name") or (a or b)["unit"],
+                "missing": not info or bool(info.get("missing")),
+                "where": where,
+                "same": not diff,
+                "diff": diff,
+                "numbers_differ": bool([f for f in diff if f != "requires"]),
+                "a": _pool_brief(a) if a else None,
+                "b": _pool_brief(b) if b else None,
+            })
+        head["levels"].append({
+            "level": blk.name,
+            "level_label": _label(mod, blk.name, blk.name, culture),
+            "level_index": i,
+            "twin_level": tw,
+            "twin_level_label": _label(mod, tw, tw, culture) if tw else "",
+            "twin_level_index": (other.blocks.index(by_name[tw])
+                                 if tw in by_name else -1),
+            "units": rows,
+            "only_a": sum(1 for r in rows if r["where"] == "a"),
+            "only_b": sum(1 for r in rows if r["where"] == "b"),
+            "differs": sum(1 for r in rows if r["numbers_differ"]),
+        })
+    head["only_a"] = sum(l["only_a"] for l in head["levels"])
+    head["only_b"] = sum(l["only_b"] for l in head["levels"])
+    head["differs"] = sum(l["differs"] for l in head["levels"])
+    return head
+
+
 def _art_sources(mod, level: str, vanilla) -> Dict[str, Dict[str, str]]:
     """``{culture: {'small': src, 'large': src}}`` for one level, '' where absent.
 

@@ -178,7 +178,7 @@ function anFindingsHtml(d){
     `<div class="trfind w-warn">line ${f.line}: ${esc(f.message)}</div>`);
   if((d.missing_loc||[]).length) out.push(`<div class="trfind w-warn">${
     d.missing_loc.length} text key(s) are not in export_ancillaries.txt (${
-    d.missing_loc.map(esc).join(', ')}) — acquiring this ancillary, or opening the
+    d.missing_loc.map(esc).join(', ')}). Acquiring this ancillary, or opening the
     character screen holding it, crashes the game with no error. Type the words
     beside the key below, or save and they are created with the key as
     placeholder text.</div>`);
@@ -200,7 +200,7 @@ function anFormHtml(w, d){
   };
   return `<section class="trsec">
     <div class="trsechead">The ancillary
-      <span class="count">the order of these lines is what every real EDA writes —
+      <span class="count">The order of these lines is what every real EDA writes, and
         this editor keeps it</span></div>
     <div class="anhead">
       <img class="anbig" src="${anImgUrl(w.image)}" alt="" onerror="iconRetry(this)">
@@ -221,14 +221,14 @@ function anFormHtml(w, d){
             placeholder="item" oninput="anSet('type',this.value.trim())">
           <datalist id="anTypes">${(d.types||[]).map(t =>
             `<option value="${esc(t)}">`).join('')}</datalist>
-          <div class="trhint count">a character holds one ancillary per type — this
+          <div class="trhint count">A character holds one ancillary per type, so this
             is what a new one replaces</div>
         </div>
         <label class="lbl" data-label="image">Image</label>
         <div>
           <input data-label="image" value="${esc(w.image)}" placeholder="name.tga"
             oninput="anSet('image',this.value.trim())">
-          ${d.image_found === false ? `<div class="trhint w-warn">not found in
+          ${d.image_found === false ? `<div class="trhint w-warn">Not found in
             data/ui/ancillaries or the vanilla UI</div>` : ''}
         </div>
         <label class="lbl" data-label="transferable">Transferable</label>
@@ -252,9 +252,9 @@ function anFormHtml(w, d){
         <datalist id="anNames">${(d.known||[]).map(n =>
           `<option value="${esc(n)}">`).join('')}</datalist>
         ${(w.excluded_ancillaries||[]).length > 3
-          ? '<div class="trhint w-bad">more than 3 is an errorless crash</div>'
+          ? '<div class="trhint w-bad">More than 3 is an errorless crash.</div>'
           : (w.unique && !(w.excluded_ancillaries||[]).includes(w.name)
-             ? `<div class="trhint w-warn">a Unique ancillary needs its own name here,
+             ? `<div class="trhint w-warn">A Unique ancillary needs its own name here,
                 or it can still be acquired twice</div>` : '')}
       </div>
       <label class="lbl" data-label="exclude_cultures">ExcludeCultures</label>
@@ -267,7 +267,7 @@ function anFormHtml(w, d){
     </div>
     <div class="treffects">
       <div class="trsechead" style="margin:8px 0 0">Effects
-        <span class="count">${(w.effects||[]).length}/8 — more than 8 makes this
+        <span class="count">${(w.effects||[]).length}/8. More than 8 makes this
           ancillary impossible to gain from a trigger</span></div>
       ${(w.effects||[]).map((e,k)=>anEffectHtml(e,k,d)).join('')}
       ${(w.effects||[]).length < 8
@@ -297,7 +297,7 @@ function anEffectHtml(e, k, d){
 function anTriggersHtml(d){
   if(state.an.adding) return `<section class="trsec">
     <div class="trsechead">Triggers</div>
-    <div class="count" style="padding:6px">Create the ancillary first — a trigger
+    <div class="count" style="padding:6px">Create the ancillary first. A trigger
       cannot grant one the file has not defined yet.</div></section>`;
   return `<section class="trsec">
     <div class="trsechead">Triggers <span class="count">${d.trigs.length

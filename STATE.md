@@ -1,14 +1,25 @@
 # STATE — Medieval 2 GUI Toolkit V2
-_Updated: 2026-08-19 · **v2.0.0 released** · after 14f_
+_Updated: 2026-08-20 · **v2.0.0 released, then corrected in place** · after 14i_
 
 ## Next up
-**PHASE 14 IS COMPLETE — 14a through 14g, all seven — and v2.0.0 IS PUBLISHED.**
-The suite is green: **54 of 54 modules** (14f added `test_unit_view`, 25 checks
-over 8233 real pool rows; 14e added `test_edusort`, 56).
+**PHASE 14 IS COMPLETE — 14a through 14i — and v2.0.0 IS PUBLISHED.**
+The suite is green: **55 of 55 modules** (14i added `test_variants_and_marks`,
+82 checks; 14f added `test_unit_view`, 25 over 8233 real pool rows; 14e added
+`test_edusort`, 56).
 
-Phases 0–14 are committed (`65fb9e5`), pushed, tagged `v2.0.0` and released with
-the 53.7 MB portable zip:
-<https://github.com/ProJ-Yeet/medieval2-unit-transfer/releases/tag/v2.0.0>
+Phases 0–14 are committed, pushed, tagged `v2.0.0` and released with the
+portable zip:
+<https://github.com/ProJ-Yeet/medieval2-gui-toolkit/releases/tag/v2.0.0>
+
+**The repo is `medieval2-gui-toolkit` now** (14i). GitHub forwards the old
+address, so an existing clone or release link still resolves, but write the new
+one down anywhere it is typed fresh.
+
+**14i is a CORRECTION PASS folded into 2.0.0, not a point release.** The user
+asked for it that way: the tag, the version string and the release page all stay
+2.0.0, and `merge/RELEASE_2_0_0.md` carries the new work as a "The correction
+pass" section rather than a changelog of its own. If a future round is asked for
+as a version of its own, that is 2.0.1 — read memory `release-numbering` first.
 
 **The 2.0.0 numbering overrode a locked decision, on purpose.** The old rule
 reserved 2.0.0 for the Campaign Map Editor; the user was shown the conflict and
@@ -19,6 +30,43 @@ decisions section carries the reasoning; don't re-propose the old rule.
 **The next phase is 15** (3D model viewer), and it **needs an upstream sync
 first** — Phase 14 ported nothing, so it never needed one, but 15 does. See
 Upstream below.
+
+### What 14i did
+The list that came back from actually using 2.0.0. Ten items, no new direction.
+
+**Two of them were real defects with a single cause each.** "Open file location"
+opened Documents, every time, for everyone: `explorer /select,<path>` was passed
+as an argument LIST, and `subprocess.list2cmdline` quotes the whole
+`/select,C:\…` token the moment the path has a space in it — Explorer then fails
+to parse the switch and falls back to the default folder. Every real mod path has
+a space in it. It is one command STRING now, with the path quoted inside the
+switch. And Ctrl+Z did nothing in the Code View, because undo.js takes the
+keystroke whenever an editor is open and restores a snapshot of the BOXES; the
+pane keeps its own stack now, and an empty stack hands the keystroke back to the
+editor so undo walks out of the text and into the form.
+
+**The freeze report was `bldRenderBody` throwing on a null.** Every panel that
+takes the dialog over leaves `#bldBody` out of the document, and the throw came
+out of an onclick — so it killed that click and everything after it. `bldTouched`
+now returns early for any stashed panel, `bldRenderBody` returns early with no
+body at all, and the stale-`state.bld` paths around the settlement filter, the
+level list and the faction picker are closed with it.
+
+The rest: the sidebars fold (every `<h3>` in every `aside.filters`, wrapped by
+reading the markup rather than by hand), a ＋ on the tier Variant, Abilities
+merged into **Weapons & abilities**, the cleanup dialog's banner format made
+editable with a live sample, the ordering screen rebuilt as a list of units with
+tier / variant / **classification** drop-downs filled in from what was detected,
+**⇄ Compare city / castle** on the building editor with per-unit and whole-line
+mirroring, one set of names for the three recruitment numbers (**Initial Pool /
+Replenish Rate / Max Pool**), the recruitment row split over two lines so the
+`requires` clause has room, the building Code View following field edits at last,
+the faction sort lifted out of the drop-down it sorts, unit cards on the voice
+rows, and a prose sweep that took ~300 clause-joining em dashes to zero.
+
+New server surface: `GET /api/buildings/variants` (one line beside its twin,
+tier by tier) and `marks` / `style` on `/api/edu/sort/plan|apply`. New marker
+key `special=` on `;@m2gt`, read by `edusort.special_of`.
 
 ### What 14f did
 The unit view was already the screen that gathered every building line training
@@ -45,7 +93,8 @@ underneath. Both fixed; see ROADMAP.md's 14f outcome.
 | Prose sweep | done | 19 note blocks in `buildings/transfer/editor/sprites.js` rewritten as lead + points via a shared `docPoints()` in core.js |
 | 13 — EDU + Sounds audit | done | `merge/audit-edu-sounds.md`; measured over 1756 real units; **nothing adopted from their code**, banners rederived from the mod's own file, two silent rewrites of ours fixed |
 | EDB corpus follow-up | done | `#` annotation lines no longer read as capabilities (3 parsers + regression case); the `plugins` and upgrade-clause sweeps no longer depend on which mods are installed; `merge/audit-edb.md` corrected |
-| 14 — bug-fix and polish pass | **done** | all seven: 14a, 14b, 14c, 14d, 14e, 14f, 14g |
+| 14 — bug-fix and polish pass | **done** | 14a–14i |
+| 14i — the post-release correction pass | done | repo renamed to `medieval2-gui-toolkit`; Code View Ctrl+Z/Y; folding sidebars; "Open file location" fixed (Explorer arg quoting); ＋ on tier Variant; Abilities folded into **Weapons & abilities**; editable banner format + the ordering screen as a unit list with tier/variant/**classification**; **⇄ Compare city / castle** (`/api/buildings/variants`); **Initial Pool / Replenish Rate / Max Pool** everywhere; two-line recruit rows; building Code View follows field edits; faction sort as a toggle; unit cards on voice rows; ~300 em dashes → 0. Folded into the 2.0.0 release notes, not a new version |
 | 14f — EDB unit view, twin compare | done | Requires editable from the unit side, a per-TIER **Twin** column (239 divergences in DaC, 0 in Reforged) with `⇄` to close one, a read-only `pools` code view, the recruitment numbers named, BMDB → **BMDB + Sprites Editor**, Minor Files art. Two shared-machinery bugs fixed. `test_unit_view` 25/25 |
 | 14g — the second prose sweep | done | 21 clause-joining dashes → **0**, four documented keeps. 6 of the old 115 hits' causes were defects in `tools/prose_check.py` itself, not in the writing |
 | 14e — EDU cleanup and unit tiers | done | `unittransfer/edusort.py` + the `;@m2gt` marker in `edu.py`. Tiers are READ from the mod's own banners (907 of DaC's 916 sit under one). DaC: 15% of the roster moves, and a second run is byte-identical. `test_edusort` 56/56 |

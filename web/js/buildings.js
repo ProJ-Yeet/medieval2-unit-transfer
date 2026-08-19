@@ -164,10 +164,10 @@ async function renderBuildings(){
   const lines=ov.lines.filter(bldMatches);
   count.textContent=`${lines.length}/${ov.lines.length}`;
   const head=`<div class="faction-head">
-      <h2>${esc(state.src)} — buildings</h2>
+      <h2>${esc(state.src)}: buildings</h2>
       <span class="n">${lines.length} line${lines.length===1?'':'s'}, ${
         lines.reduce((n,l)=>n+l.level_count,0)} levels</span>
-      ${ov.vanilla_ui?'':'<span class="n w-warn">no unpacked vanilla UI — missing art shows a placeholder</span>'}
+      ${ov.vanilla_ui?'':'<span class="n w-warn">No unpacked vanilla UI, so missing art shows a placeholder</span>'}
       ${ov.religions_are_vanilla?`<span class="n w-warn"
         title="This mod has no data/descr_religions.txt, so the religion pickers
 offer the base game's five. If it defines its own, add that file.">using vanilla’s
@@ -295,20 +295,21 @@ this path, so the game uses the base game's picture. Drop a .tga in to override 
   if(src==='vanilla*')return `<span class="w-warn" title="No vanilla art for this
 culture either, so another vanilla culture's picture is standing in.">falling back to
     vanilla art from another culture</span>`;
-  return '<span class="w-warn">no art anywhere — showing a placeholder</span>';
+  return '<span class="w-warn">No art anywhere. Showing a placeholder.</span>';
 }
 function bldArtBadge(a){
   if(a.borrowed)return `<span class="src vanilla"
-    title="This mod has no ${esc(state.bld.culture)} art for this building — showing its ${esc(a.culture)} art instead"
+    title="This mod has no ${esc(state.bld.culture)} art for this building, so its ${esc(a.culture)} art is shown instead."
     >${esc(a.culture)}</span>`;
   if(a.source==='vanilla')return `<span class="src vanilla"
-    title="Borrowed from the unpacked vanilla UI — this mod ships no art for it">vanilla</span>`;
+    title="Borrowed from the unpacked vanilla UI. This mod ships no art for it.">vanilla</span>`;
   if(!a.source)return `<span class="src placeholder"
     title="Neither this mod nor the unpacked vanilla UI has art for this building">no art</span>`;
   return '';
 }
 function bldMatches(l){
-  const b=state.bld,S=b.sel,qq=search.value.trim().toLowerCase();
+  const b=state.bld; if(!b)return true;
+  const S=b.sel,qq=search.value.trim().toLowerCase();
   if(qq&&!(l.label.toLowerCase().includes(qq)||l.name.toLowerCase().includes(qq)
       ||l.levels.some(x=>x.toLowerCase().includes(qq))
       ||(l.level_labels||[]).some(x=>x.toLowerCase().includes(qq))))return false;
@@ -337,14 +338,17 @@ function bldBuildFilters(){
     .sort((a,b2)=>bldFacLabel(a).localeCompare(bldFacLabel(b2)));
   bldFactionFilter.innerHTML=factions.map(f=>
     `<label class="opt"><input type="checkbox" value="${esc(f)}">${esc(bldFacLabel(f))}</label>`).join('')
-    ||'<span class="count">—</span>';
+    ||'<span class="count">None</span>';
   const wire=(box,key2)=>box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{
     cb.checked?b.sel[key2].add(cb.value):b.sel[key2].delete(cb.value); render();});
   wire(bldReligionFilter,'religion'); wire(bldFactionFilter,'faction');
   document.querySelectorAll('.bldset').forEach(cb=>cb.onchange=()=>{
-    cb.checked?b.sel.settlement.add(cb.value):b.sel.settlement.delete(cb.value); render();});
+    const b2=state.bld; if(!b2)return;
+    cb.checked?b2.sel.settlement.add(cb.value):b2.sel.settlement.delete(cb.value);
+    render();});
   bldRecruitOnly.onchange=render;
   bldMissingArt.onchange=render;
+  paintFilterFolds();
 }
 // A `requires factions { … }` clause names factions AND cultures; only the
 // factions have an in-game name to show alongside the code.
@@ -483,7 +487,7 @@ function bldCvBlocked(){
   const cv=state.bld&&state.bld.cv;
   if(!cv||!cv.err)return '';
   return 'The code view can’t be read: '+cv.err+
-    ' — fix it (or undo your typing) before saving.';
+    ' Fix it, or undo your typing, before saving.';
 }
 function bldCvToggleHtml(){
   return `<button class="${state.bld.cv?'on':''}" title="Show this building line exactly as
@@ -616,6 +620,7 @@ function renderBuildingEditor(){
           d.religion?` · religion <b>${esc(d.religion)}</b>`:''}</div>
         <div class="count">Defined in <code>data/export_descr_buildings.txt</code>${
           d.plugins.length?` · ${d.plugins.length} plugin(s): ${esc(d.plugins.map(p=>p.name).join(', '))}`:''}</div></div>
+      <span id="bldVarBtn">${bldVarBtnHtml()}</span>
     </div>
     <div class="lvstrip">${d.levels.map((l,i)=>`
       <div class="lvchip ${i===b.lvl?'on':''} ${bldLevelDirty(i)?'dirty':''}" onclick="bldPickLevel(${i})">
@@ -644,6 +649,25 @@ function renderBuildingEditor(){
   bldRenderBody(lv,orig);
   if(b.cv){cvWire(b.cv); cvBindHover(b.cv,document.getElementById('bldGui'));}
 }
+/* The way into the city/castle comparison, big and top right where the thing
+   it compares is named. The twin is worked out server-side and arrives with the
+   checks, so the button knows whether there is anything on the other side before
+   it is pressed: a line buildable in both settlement types has no other half,
+   and the button says so instead of opening an empty panel. */
+function bldVarBtnHtml(){
+  const b=state.bld,twin=bldTwin();
+  if(!twin)
+    return `<button class="vcbtn" disabled title="A city/castle pair is matched by name
+(barracks against castle_barracks, stables against c_stables). This line has no
+counterpart the tool can match \u2014 usually because it is buildable in both
+settlement types already.">\u21c4 No city/castle twin</button>`;
+  const ck=b.checks||{};
+  const gaps=(ck.mirror||[]).reduce((n,m)=>n+m.only_here.length+m.only_there.length,0);
+  return `<button class="vcbtn primary" onclick="bldCompareVariants()"
+    title="Put this building beside its ${esc(b.d.settlement==='city'?'castle':'city')} half,
+tier by tier, and close any unit one of them trains and the other does not.">
+    \u21c4 Compare city / castle${gaps?` <span class="badge warn">${gaps}</span>`:''}</button>`;
+}
 function bldPickLevel(i){
   const b=state.bld; b.lvl=i; b.plan=null;
   // the ticks belong to the level they were made on — every row here is a
@@ -660,7 +684,18 @@ function bldClose(){
 function bldRenderBody(lv,orig){
   const b=state.bld,ov=b.ov;
   const body=document.getElementById('bldBody');
-  const scroll=body?body.scrollTop:0;
+  /* The form is not always the thing in the dialog. Every panel that takes the
+     modal over — Add units, the per-unit comparison, the city/castle comparison
+     — leaves `#bldBody` out of the document, and a repaint aimed at it then
+     threw on a null. That throw came out of an onclick, so it killed the click
+     that caused it and everything after it: the page stopped responding, which
+     is what "the tool crashed" looks like from the outside.
+
+     Every caller is a change to the working copy, and the working copy is what
+     the form is rebuilt from when the panel closes. So there is nothing to do
+     here, and doing nothing is correct rather than merely safe. */
+  if(!body)return;
+  const scroll=body.scrollTop;
   // The pool and capability lists are scrollers of their OWN inside the body, so
   // putting the body back where it was is not enough: ticking a unit two hundred
   // rows down redrew the list and threw you back to the top of it.
@@ -676,7 +711,7 @@ function bldRenderBody(lv,orig){
   const plain=[...lv.caps,...lv.fcaps].filter(c=>!c.pool);
   const shown=pools.filter(bldPoolMatches);
   body.innerHTML=`
-    <div class="bsec"><h4>Art <span class="count">culture: ${esc(b.culture||'—')}</span></h4>
+    <div class="bsec"><h4>Art <span class="count">Culture: ${esc(b.culture||'none')}</span></h4>
       <div class="bart">
         <figure class="small"><img onerror="iconRetry(this)" src="${bldIcon(orig.name,'small')}">
           <figcaption>#${esc(b.culture)}_${esc(orig.name)}.tga<br>
@@ -689,7 +724,7 @@ function bldRenderBody(lv,orig){
           <div class="tags" style="margin-top:5px">${Object.keys(orig.art).length
             ? Object.keys(orig.art).map(c=>`<span class="badge ${c===b.culture?'cls':''}"
                 style="cursor:pointer" onclick="bldSetCulture('${q1(esc(c))}')">${esc(c)}</span>`).join('')
-            : '<span class="count">none — every culture falls back to the placeholder</span>'}</div>
+            : '<span class="count">None. Every culture falls back to the placeholder.</span>'}</div>
         </div>
       </div></div>
 
@@ -704,14 +739,14 @@ function bldRenderBody(lv,orig){
         <span class="k" style="flex:0 0 88px">${qm('Index (0-based) of the level in the opposite city/castle line that this one becomes when the settlement is converted.','Convert to')}Convert to</span>
         ${numBox('data-scalar="convert_to"',lv.scalars.convert_to||'','1')}</div>
       <div class="brow"><span class="k">${qm('The smallest settlement size that may build this level. Below it the building is not offered at all.','Settlement min')}Settlement min</span>${sel('settlement_min',ov.settlement_levels,lv.scalars.settlement_min||'','(unset)')}
-        <span class="k" style="flex:0 0 88px">${qm('The largest settlement size that may build this level — leave unset for no ceiling.','Settlement max')}max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
+        <span class="k" style="flex:0 0 88px">${qm('The largest settlement size that may build this level. Leave it unset for no ceiling.','Settlement max')}max</span>${sel('settlement_max',ov.settlement_levels,lv.scalars.settlement_max||'','(none)')}</div>
       <div class="brow"><span class="k">${qm('Whether this level belongs to cities, to castles, or to both. It pins the level to one settlement type; leaving it open means either can build it.','Buildable in')}Buildable in</span>
         <select data-settlement>
           <option value="" ${lv.settlement===''?'selected':''}>City and castle</option>
           <option value="city" ${lv.settlement==='city'?'selected':''}>City only</option>
           <option value="castle" ${lv.settlement==='castle'?'selected':''}>Castle only</option>
         </select></div>
-      <div class="brow"><span class="k">${qm('Everything that has to be true before this level can be built: which factions, which events, which resources. Every term names something declared elsewhere in the mod, and a typo is silent — the building simply never becomes available.','Requires')}Requires</span>
+      <div class="brow"><span class="k">${qm('Everything that has to be true before this level can be built: which factions, which events, which resources. Every term names something declared elsewhere in the mod, and a typo is silent: the building simply never becomes available.','Requires')}Requires</span>
         <div class="clausebar">
           <div class="sum">${bldClauseSummary(lv.conds)}</div>
           <button class="reqbtn" onclick="bldEditClause('level')">✎ Edit requirements</button>
@@ -783,7 +818,7 @@ function bldLocSection(lv,orig){
   const named=c=>{
     const r=all[c]||{};
     const tag=c===''?'shared (every culture)':c;
-    return `${tag}${bldLocPlaceholder(r)?' — no text':''}`;
+    return `${tag}${bldLocPlaceholder(r)?' (no text)':''}`;
   };
   const owner=bldLocCulture(lv,b.culture);
   return `<div class="bsec"><h4>Name &amp; description
@@ -803,7 +838,7 @@ function bldLocSection(lv,orig){
         <textarea data-loc="descr" style="flex:1;min-height:56px;padding:4px 7px;font-size:12.5px"
           >${esc(rec.descr)}</textarea></div>
       <div class="bnote">Editing <code>{${esc(rec.key)}}</code>${rec.present?''
-        :' — <b>new</b>, this key is not in the file yet'}. ${
+        :'. <b>New</b>: this key is not in the file yet'}. ${
         cur===b.culture?`This is the culture the browser is showing.`
         :cur===''?`Shown to any culture that has no key of its own.`
         :`The browser is showing <b>${esc(b.culture||'the shared key')}</b>, which reads its name from
@@ -871,7 +906,7 @@ function bldPressureHtml(lv){
     recruitment panel; past that the panel overflows and the game can crash on
     opening it.
     ${hard.length?'':`These counts assume every event counter, hidden resource and
-      settlement condition holds <i>at the same time</i> — an upper bound, so it may
+      settlement condition holds <i>at the same time</i>. It is an upper bound, so it may
       never actually happen. The unconditional count is the one that always does.`}
     <div class="plist">${rows}</div>
     ${p.rows.length>10?`<div class="count">…and ${p.rows.length-10} more faction(s).</div>`:''}
@@ -882,7 +917,7 @@ function bldRequiresHelp(){
   const txt=bldClauseText(lv.conds);
   return `<div class="bnote">${txt
     ? `Written into the EDB as <code>requires ${esc(txt)}</code>`
-    : 'No conditions — anyone can build this, at any time.'}</div>`;
+    : 'No conditions. Anyone can build this, at any time.'}</div>`;
 }
 // Switching culture changes both the art and the NAMES, and the names come from
 // the server — so the grid is re-fetched. The open editor is not: it already
@@ -903,8 +938,9 @@ async function bldSetCulture(c){
 // index into the level's combined cap list, so one data attribute addresses both
 // the capability and the faction_capability arrays
 function bldCapList(){
-  const lv=state.bld.work.levels[state.bld.lvl];
-  return [...lv.caps,...lv.fcaps];
+  const b=state.bld;
+  const lv=b&&b.work&&b.work.levels[b.lvl];
+  return lv?[...lv.caps,...lv.fcaps]:[];
 }
 /* ---- which recruit pools are shown ----
    A big level trains hundreds of units, almost all of them gated to one faction,
@@ -931,45 +967,68 @@ function bldPoolFilterHtml(pools){
     new Set(facs).forEach(f=>counts.set(f,(counts.get(f)||0)+1));
   });
   // By unit count first, because "who trains the most here" is the question the
-  // list is usually scanned for — but a long roster is easier to FIND a name in
+  // list is usually scanned for. A long roster is easier to FIND a name in
   // alphabetically, so the order is a remembered choice rather than a ruling.
+  //
+  // That choice used to be an entry in this very drop-down, which made it a
+  // filter you had to pick to un-pick: choosing it closed the list, and the
+  // sorted list only appeared when you opened it again. It is a button beside
+  // the list now, so the order changes with the list still in front of you.
   const az=bldFacSort()==='az';
   const rows=[...counts.entries()].sort(az
     ? (a,b)=>bldFacName(a[0]).localeCompare(bldFacName(b[0]))
     : (a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
   if(!rows.length&&!open)return '';
+  const picked=sel.size
+    ? [...sel].map(f=>f==='(any)'?'anyone':bldFacName(f)).join(', ').slice(0,40)
+    : 'any';
   return qm('Narrow the list below to the units one faction can actually train here. '
       +'A big level trains hundreds, almost all of them gated to one faction, so '
       +'"who can train what" is usually the question you arrive with.','Faction filter')
     +`<select class="mini" onchange="bldPoolFacPick(this.value);this.value=''"
       style="flex:0 0 auto;max-width:230px">
-      <option value="">Faction: ${sel.size?[...sel].map(f=>f==='(any)'?'anyone':bldFacName(f)).join(', ')
-        .slice(0,40):'any'}…</option>
-      ${sel.size?'<option value="(clear)">— show everything —</option>':''}
-      ${open?`<option value="(any)">no faction clause (${open})</option>`:''}
-      <option value="(sort)">— sort ${az?'by unit count':'A to Z'} instead —</option>
-      ${rows.map(([f,n])=>`<option value="${esc(f)}">${esc(bldFacName(f))} — ${n}</option>`).join('')}
-    </select>`;
+      <option value="">Faction: ${esc(picked)}…</option>
+      ${sel.size?'<option value="(clear)">Show everything</option>':''}
+      ${open?`<option value="(any)">No faction clause (${open})</option>`:''}
+      ${rows.map(([f,n])=>`<option value="${esc(f)}">${esc(bldFacName(f))} (${n})</option>`).join('')}
+    </select>
+    <span class="viewtoggle" title="Which order the faction list above is in.">
+      <button class="${az?'on':''}" ${az?'disabled':''}
+        onclick="bldFacSortToggle()">A to Z</button>
+      <button class="${az?'':'on'}" ${az?'':'disabled'}
+        onclick="bldFacSortToggle()">Unit count</button>
+    </span>`;
 }
 const bldFacSort=()=>((state.settings||{}).bld_facsort==='az'?'az':'count');
 function bldFacSortToggle(){
   const v=bldFacSort()==='az'?'count':'az';
   state.settings.bld_facsort=v; api.post('/api/settings',{bld_facsort:v});
-  bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
+  bldRedrawLevel();
 }
 function bldPoolFacPick(v){
-  const b=state.bld;
+  const b=state.bld; if(!b)return;
   b.poolFac=b.poolFac||new Set();
   if(!v)return;
-  if(v==='(sort)')return bldFacSortToggle();
   if(v==='(clear)')b.poolFac.clear();
   else if(b.poolFac.has(v))b.poolFac.delete(v); else b.poolFac.add(v);
-  bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
+  bldRedrawLevel();
 }
 function bldSetView(v){
-  state.bld.view=v;
+  const b=state.bld; if(!b)return;
+  b.view=v;
   state.settings.bld_view=v; api.post('/api/settings',{bld_view:v});
-  bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
+  bldRedrawLevel();
+}
+/* Repaint the level the editor is on, or do nothing at all.
+   Everything that changes how the recruitment list LOOKS lands here rather than
+   reaching into `state.bld.work` itself: a mod switch nulls `state.bld` and a
+   closed dialog leaves `work` null, and a control that survives either — the
+   sidebar, a remembered setting, a keystroke — would otherwise throw on a stale
+   object and take the whole page down with it. */
+function bldRedrawLevel(){
+  const b=state.bld;
+  if(!b||!b.work||!b.d||!b.work.levels[b.lvl]||!b.d.levels[b.lvl])return;
+  bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
 }
 // The cached ownership answer for a pool, if one has been fetched — drawn as a
 // small flag on the row rather than fetched eagerly for hundreds of units.
@@ -982,39 +1041,55 @@ function bldPoolOwnFlag(c){
   const bits=[];
   if(row.missing_ownership.length)bits.push('not owned by '+row.missing_ownership.join(', '));
   if(row.missing_textures.length)bits.push('no texture for '+row.missing_textures.join(', '));
-  return `<span class="ownflag" title="${esc(bits.join('; '))} — saving fixes this">⚠</span>`;
+  return `<span class="ownflag" title="${esc(bits.join('; '))}. Saving fixes this.">⚠</span>`;
 }
 function bldPoolRow(c){
   const b=state.bld,i=bldCapList().indexOf(c);
   const info=b.d.units[(c.pool.unit||'').toLowerCase()];
   const missing=!info||info.missing;
+  /* Two lines, not one. The row used to put the unit, four number boxes, the
+     whole `requires` clause and five buttons side by side, and the clause is the
+     only one of those with no natural width: a real one names half a dozen
+     factions and a settlement level, so it was squeezed into whatever the fixed
+     columns left over and read as an ellipsis. The numbers keep the top line,
+     which is what the eye scans down; the clause gets a line to itself and the
+     full width of the panel. */
   return `<div class="poolrow ${c.del?'gone':''} ${missing?'missing':''} ${
       bldBulkHas(c)?'picked':''}" data-cap="${i}">
-    ${bldPickBox(c,i)}
-    <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
-    <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
-      <div class="ut">${missing?'<span class="w-bad">not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
-    <div class="nums">
-      <label>${qm(POOL_HELP.initial,'Starting points')}start${numBox('data-pool="initial"',c.pool.initial,'pool')}</label>
-      <label>${qm(POOL_HELP.per_turn,'Points per turn')}per turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns',
+    <div class="prtop">
+      ${bldPickBox(c,i)}
+      <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,c.pool.unit)}" alt="">
+      <div class="who"><div class="un" title="${esc(c.pool.unit)}">${esc(info&&!missing?info.name:c.pool.unit)}</div>
+        <div class="ut">${missing?'<span class="w-bad">Not in this mod’s EDU</span>':esc(c.pool.unit)}</div></div>
+      <div class="nums">
+        <label>${qm(POOL_HELP.initial,POOL_LABEL.initial)}${POOL_LABEL.initial}${
+          numBox('data-pool="initial"',c.pool.initial,'pool')}</label>
+        <label>${qm(POOL_HELP.per_turn,POOL_LABEL.per_turn)}${POOL_LABEL.per_turn}${
+          numBox('data-pool="per_turn"',c.pool.per_turn,'turns',
           `<span class="turns">= ${esc(poolTurns(c.pool.per_turn))}</span>`)}</label>
-      <label>${qm(POOL_HELP.maximum,'Maximum points')}max${numBox('data-pool="maximum"',c.pool.maximum,'pool')}</label>
-      <label>${qm(POOL_HELP.experience,'Starting experience')}exp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
+        <label>${qm(POOL_HELP.maximum,POOL_LABEL.maximum)}${POOL_LABEL.maximum}${
+          numBox('data-pool="maximum"',c.pool.maximum,'pool')}</label>
+        <label>${qm(POOL_HELP.experience,POOL_LABEL.experience)}${POOL_SHORT.experience}${
+          numBox('data-pool="experience"',c.pool.experience,'1')}</label>
+      </div>
+      <div class="acts">
+        ${bldPoolActs(c,i)}
+        ${missing?'':`<button title="Open this unit in the Unit Editor"
+          onclick="openUnitFromBuilding('${q1(esc(c.pool.unit))}')">✎ Edit</button>`}
+        <button class="${c.del?'':'danger'}" onclick="bldToggleDel(${i})"
+          title="${c.del?'Keep this recruit pool':'Remove this recruit pool'}">${c.del?'↺':'🗑'}</button>
+      </div>
+      ${c.faction?'<span class="badge">faction</span>':''}
     </div>
-    <div class="clausebar" style="flex:1;min-width:120px">
-      <div class="sum">${bldClauseSummary(c.conds)}</div>
-      ${bldPoolOwnFlag(c)}
-      <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
-      ${bldCopyBtn(i)}
-    </div>
-    <div class="acts">
-      ${bldPoolActs(c,i)}
-      ${missing?'':`<button title="Open this unit in the Unit Editor"
-        onclick="openUnitFromBuilding('${q1(esc(c.pool.unit))}')">✎ Edit</button>`}
-      <button class="${c.del?'':'danger'}" onclick="bldToggleDel(${i})"
-        title="${c.del?'Keep this recruit pool':'Remove this recruit pool'}">${c.del?'↺':'🗑'}</button>
-    </div>
-    ${c.faction?'<span class="badge">faction</span>':''}</div>`;
+    <div class="prbot">
+      <span class="prk">Requires</span>
+      <div class="clausebar">
+        <div class="sum">${bldClauseSummary(c.conds)}</div>
+        ${bldPoolOwnFlag(c)}
+        <button class="reqbtn" onclick="bldEditClause('cap',${i})">✎</button>
+        ${bldCopyBtn(i)}
+      </div>
+    </div></div>`;
 }
 function bldPoolCard(c){
   const b=state.bld,i=bldCapList().indexOf(c);
@@ -1032,10 +1107,14 @@ function bldPoolCard(c){
       ${bldPoolOwnFlag(c)}
     </div>
     <div class="stats">
-      <label>${qm(POOL_HELP.initial,'Starting points')}start${numBox('data-pool="initial"',c.pool.initial,'pool')}</label>
-      <label>${qm(POOL_HELP.per_turn,'Points per turn')}/turn${numBox('data-pool="per_turn"',c.pool.per_turn,'turns')}</label>
-      <label>${qm(POOL_HELP.maximum,'Maximum points')}max${numBox('data-pool="maximum"',c.pool.maximum,'pool')}</label>
-      <label>${qm(POOL_HELP.experience,'Starting experience')}xp${numBox('data-pool="experience"',c.pool.experience,'1')}</label>
+      <label>${qm(POOL_HELP.initial,POOL_LABEL.initial)}${POOL_LABEL.initial}${
+        numBox('data-pool="initial"',c.pool.initial,'pool')}</label>
+      <label>${qm(POOL_HELP.per_turn,POOL_LABEL.per_turn)}${POOL_LABEL.per_turn}${
+        numBox('data-pool="per_turn"',c.pool.per_turn,'turns')}</label>
+      <label>${qm(POOL_HELP.maximum,POOL_LABEL.maximum)}${POOL_LABEL.maximum}${
+        numBox('data-pool="maximum"',c.pool.maximum,'pool')}</label>
+      <label>${qm(POOL_HELP.experience,POOL_LABEL.experience)}${POOL_SHORT.experience}${
+        numBox('data-pool="experience"',c.pool.experience,'1')}</label>
     </div>
     <div class="turns" data-turns style="text-align:center">a unit ${esc(poolTurns(c.pool.per_turn))}</div>
     <div class="clausebar"><div class="sum">${bldClauseSummary(c.conds)}</div>${bldCopyBtn(i)}</div>
@@ -1052,7 +1131,7 @@ function bldPoolCard(c){
 function bldPoolActs(c,i){
   const b=state.bld,twin=bldTwin(),above=b.work.levels.length-1-b.lvl;
   const unit=q1(esc(c.pool.unit));
-  return `${twin&&bldTwinLevel()?`<button title="Copy this pool into ${esc(twin)} — the ${
+  return `${twin&&bldTwinLevel()?`<button title="Copy this pool into ${esc(twin)}, the ${
       esc(b.d.settlement==='city'?'castle':'city')} half of this building"
     onclick="bldMirrorRowNow(${i})">⇄</button>`:''}
     ${above>0?`<button title="Add this unit to the ${above} tier(s) above, with slightly better numbers"
@@ -1114,7 +1193,7 @@ const bldRenderBodyNow=()=>bldRenderBody(state.bld.work.levels[state.bld.lvl],
    reference to the same terms, or editing one afterwards edits all of them. */
 function bldCopyBtn(i){
   return `<button class="reqbtn" onclick="bldCopyCond(${i})"
-    title="Copy these requirements — tick other units under ☑ Bulk edit and paste them on">⧉</button>`;
+    title="Copy these requirements. Tick other units under ☑ Bulk edit and paste them on.">⧉</button>`;
 }
 function bldCopyCond(i){
   const c=bldCapList()[+i]; if(!c)return;
@@ -1127,8 +1206,8 @@ function bldCopyCond(i){
   const bu=bldBulk();
   if(!bu.on){bu.on=true;}                     // there is nowhere to paste it otherwise
   bldRenderBodyNow();
-  toast(`Copied ${name}’s requirements${state.condClip.text?': '+state.condClip.text:' (none — always)'
-    } — tick the units to paste onto.`,4200);
+  toast(`Copied ${name}’s requirements${state.condClip.text?': '+state.condClip.text:' (none, so always)'
+    }. Tick the units to paste onto.`,4200);
 }
 /* Put a clause onto one row. `replace` swaps it outright; `add` joins the new
    terms onto what is already there. M2TW evaluates a clause left to right with
@@ -1187,7 +1266,18 @@ function bldBulkNums(){
   toast(`${keys.map(k=>POOL_LABEL[k]||k).join(', ')} set on ${sel.length} pool${
     sel.length===1?'':'s'}.`);
 }
-const POOL_LABEL={initial:'start',per_turn:'per turn',maximum:'max',experience:'exp'};
+/* What the three recruitment numbers are CALLED, in one place.
+
+   They used to be labelled by shape rather than by job: "start / per turn / max"
+   describes the arithmetic and says nothing about what the number does to the
+   game, and each screen had spelt it differently anyway. These are the names
+   every screen in the toolkit now uses, so the number you set on a row is the
+   number you recognise in the comparison panel and in the bulk editor. */
+const POOL_LABEL={initial:'Initial Pool',per_turn:'Replenish Rate',
+                  maximum:'Max Pool',experience:'Experience'};
+//: The same names where a row has no width to spare for the long one.
+const POOL_SHORT={initial:'Initial Pool',per_turn:'Replenish Rate',
+                  maximum:'Max Pool',experience:'XP'};
 /* Which unit a clause is taken FROM is its own choice, not "whichever you ticked
    first": the unit you want to copy is usually one you have NOT ticked, because
    the ticks are the units you are about to paste onto. So it is a box over every
@@ -1214,7 +1304,7 @@ function bldBulkBar(shown){
   const b=state.bld,sel=bldBulkSel(),n=sel.length,clip=state.condClip;
   const bn=b.bulkNums||(b.bulkNums={initial:'',per_turn:'',maximum:'',experience:''});
   const num=k=>`<label>${POOL_LABEL[k]}<input data-bulknum="${k}" value="${esc(bn[k])}"
-    placeholder="—" inputmode="decimal"></label>`;
+    placeholder="0" inputmode="decimal"></label>`;
   return `<div class="bulkbar">
     <span class="n">${n} selected</span>
     <button onclick="bldBulkAll(true)">Tick all ${shown.length} shown</button>
@@ -1223,16 +1313,16 @@ function bldBulkBar(shown){
       title="Edit one requires clause and put it on every ticked unit">✎ Requirements for ${n}…</button>
     ${bldCopySelect(sel)}
     <button ${clip&&n?'':'disabled'} onclick="bldBulkPaste()"
-      title="${clip?esc('Paste '+clip.unit+'’s requirements: '+(clip.text||'(none — always)'))
+      title="${clip?esc('Paste '+clip.unit+'’s requirements: '+(clip.text||'(none, so always)'))
                   :'Copy a unit’s requirements first'}">📌 Paste${
         clip?` ${esc(clip.unit)}’s`:''}</button>
     <select onchange="bldSetPasteMode(this.value)" title="What pasting does to what the row already says">
-      <option value="replace" ${bldPasteMode()==='replace'?'selected':''}>replace theirs</option>
-      <option value="add" ${bldPasteMode()==='add'?'selected':''}>add to theirs</option>
+      <option value="replace" ${bldPasteMode()==='replace'?'selected':''}>Replace theirs</option>
+      <option value="add" ${bldPasteMode()==='add'?'selected':''}>Add to theirs</option>
     </select>
     <button class="danger" ${n?'':'disabled'} onclick="bldBulkDelete()">🗑 Remove ${n}</button>
     <div class="bnote" style="flex:1 1 100%;margin:0">${clip
-      ? `Clipboard: <b>${esc(clip.unit)}</b> — <code>${esc(clip.text||'always')}</code>`
+      ? `Clipboard: <b>${esc(clip.unit)}</b>, <code>${esc(clip.text||'always')}</code>`
       : 'Copy a clause off one unit with ⧉ on its row, then paste it onto the ticked ones.'}</div>
     <div class="bnums">${['initial','per_turn','maximum','experience'].map(num).join('')}
       <button ${n?'':'disabled'} onclick="bldBulkNums()">Apply numbers to ${n}</button>
@@ -1329,17 +1419,17 @@ function bldUpgradesSection(lv,orig){
           <div class="clausebar" style="flex:1;min-width:110px">
             <div class="sum">${bldClauseSummary(conds)}</div>
             <button class="reqbtn" onclick="bldEditClause('upgrade',${i})"
-              title="Who takes this branch. An upgrade may carry its own requires clause — 41 of the 771 in the installed mods do.">✎</button>
+              title="Who takes this branch. An upgrade may carry its own requires clause: 41 of the 771 in the installed mods do.">✎</button>
           </div>
           <button class="x danger" onclick="bldUpgRemove(${i})"
             title="Stop upgrading into this">🗑</button></div>`;
-      }).join(''):'<div class="upgrow"><span class="count">Nothing — this is the end of its branch.</span></div>'}
+      }).join(''):'<div class="upgrow"><span class="count">Nothing. This is the end of its branch.</span></div>'}
     </div>
     ${forward.length?`<div class="brow" style="margin-top:6px">
       <select class="mini" id="upgAdd" style="flex:0 0 260px">
         <option value="">＋ Also upgrade into…</option>
         ${forward.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
-      </select><span class="count">Only levels later in the line are offered —
+      </select><span class="count">Only levels later in the line are offered:
         an upgrade can never point backwards.</span></div>`
       :'<div class="bnote">This is the last level in the line, so it has nothing to upgrade into.</div>'}
   </div>`;
@@ -1416,11 +1506,14 @@ function bldToggleDel(i){
 function bldTouched(){
   state.bld.planStale=!!state.bld.plan;
   const b=state.bld;
-  // The building form is not on screen while the unit view has the modal, and
-  // its body element does not exist — staging from over there redraws its own
-  // panel and the form is rebuilt from the same working copy on the way back.
-  if(b.cmp)return;
+  // The building form is not on screen while another panel has the modal, and
+  // its body element does not exist. Staging from over there redraws its own
+  // panel, and the form is rebuilt from the same working copy on the way back.
+  // `stash` is what every such panel sets, so this covers the ones written after
+  // it as well as the two that were named here.
+  if(b.cmp||b.vc||b.stash)return;
   bldRenderBody(b.work.levels[b.lvl],b.d.levels[b.lvl]);
+  bldCvFollow();
 }
 /* The working copy as it was when the building opened, so every widget can say
    which of its values is yours. b.orig is the JSON of that moment; it is parsed
@@ -1498,9 +1591,28 @@ function bldWire(){
 }
 function bldDirtyNote(){
   paintDirty();
-  state.bld.planStale=!!state.bld.plan;
-  const chip=document.querySelectorAll('.lvchip')[state.bld.lvl];
-  if(chip)chip.classList.toggle('dirty',bldLevelDirty(state.bld.lvl));
+  const b=state.bld; if(!b)return;
+  b.planStale=!!b.plan;
+  const chip=document.querySelectorAll('.lvchip')[b.lvl];
+  if(chip)chip.classList.toggle('dirty',bldLevelDirty(b.lvl));
+  bldCvFollow();
+}
+/* Keep the text pane in step with the boxes.
+
+   Every other editor that adopted the pane calls `cvFromGui` the moment one of
+   its boxes changes, which is what makes the pane a promise about the bytes a
+   save would write rather than a picture of the record as it opened. This one
+   never did: cost, culture, name, a `requires` term, a recruit pool's numbers —
+   all of it changed the working copy, none of it reached the pane, and the text
+   beside the form went on showing the file. It is called from the two places
+   every change in this editor already goes through, so a new control gets it
+   without knowing the pane exists.
+
+   `cvFromGui` is itself debounced and does nothing while the caret is IN the
+   pane, so this is safe to call on every keystroke. */
+function bldCvFollow(){
+  const b=state.bld;
+  if(b&&b.cv&&!b.cmp)cvFromGui(b.cv);
 }
 function bldAddCap(){
   const lv=state.bld.work.levels[state.bld.lvl];
@@ -1561,7 +1673,7 @@ function bldClauseText(conds){
 }
 // One readable line for a row that has no room for the full editor.
 function bldClauseSummary(conds){
-  if(!conds||!conds.length)return '<span class="count">always</span>';
+  if(!conds||!conds.length)return '<span class="count">Always</span>';
   return conds.map((c,i)=>{
     const j=i?`<span class="cj">${esc(c.join||'and')}</span> `:'';
     return j+`<span class="cterm${c.negate?' neg':''}">${esc(bldCondSummary(c))}</span>`;
@@ -1669,7 +1781,7 @@ function renderClauseDialog(){
     : (c.unit?`who can recruit <b>${esc(c.unit)}</b> here`
              :`when <b>${esc(c.host.keyword)}</b> applies`);
   document.getElementById('modal').innerHTML=`
-    <h2>Requirements — ${what}</h2>
+    <h2>Requirements: ${what}</h2>
     <div class="mbody">
       ${bulk?bldBulkClauseHead(c):''}
       <div class="condlist" id="condList"></div>
@@ -1678,7 +1790,7 @@ function renderClauseDialog(){
           <option value="">＋ Add a requirement…</option>
           ${Object.keys(COND_LABEL).map(k=>`<option value="${k}">${esc(COND_LABEL[k])}</option>`).join('')}
         </select>
-        <span class="count">Terms are evaluated left to right — M2TW has no brackets.</span>
+        <span class="count">Terms are evaluated left to right. M2TW has no brackets.</span>
       </div>
       <div id="condOwn"></div>
       <div class="bsec" style="margin-top:12px"><h4>Written as</h4>
@@ -1736,7 +1848,7 @@ function renderCondList(){
   const c=state.bld.clause;
   const box=document.getElementById('condList');
   box.innerHTML=c.conds.length?c.conds.map(condRowHtml).join('')
-    :'<div class="condrow"><span class="count">No requirements — anyone, always.</span></div>';
+    :'<div class="condrow"><span class="count">No requirements. Anyone, always.</span></div>';
   document.getElementById('condText').textContent=bldClauseText(c.conds)||'(no requires clause)';
   wireCondRows();
   bldClauseOwnership();
@@ -1749,8 +1861,8 @@ function condRowHtml(cond,i){
     case 'event_counter': body=
       condPick(i,0,'event',v[0])+
       `<select data-cv="${i}:1" style="flex:0 0 150px">
-        <option value="1" ${v[1]!=='0'?'selected':''}>has happened (1)</option>
-        <option value="0" ${v[1]==='0'?'selected':''}>has not happened (0)</option></select>`;
+        <option value="1" ${v[1]!=='0'?'selected':''}>Has happened (1)</option>
+        <option value="0" ${v[1]==='0'?'selected':''}>Has not happened (0)</option></select>`;
       break;
     case 'region_religion': body=
       condPick(i,0,'religion',v[0])
@@ -1775,7 +1887,7 @@ function condRowHtml(cond,i){
         <option value="and" ${cond.join!=='or'?'selected':''}>and</option>
         <option value="or" ${cond.join==='or'?'selected':''}>or</option></select>`
       :'<span class="cjoin lead">if</span>'}
-    <label class="chk">${qm('Invert this term — it holds when the condition is NOT met.','not')}<input
+    <label class="chk">${qm('Invert this term. It holds when the condition is NOT met.','not')}<input
       type="checkbox" data-cneg="${i}" ${cond.negate?'checked':''}> not</label>
     <span class="ckind">${qm(bldCondKindHelp(cond.kind)||'A term of the requires clause.',
       COND_LABEL[cond.kind]||cond.kind)}${esc(COND_LABEL[cond.kind]||cond.kind)}</span>
@@ -1802,7 +1914,7 @@ function condOptions(list,dep){
   const v=bldVocab();
   switch(list){
     case 'event': return (v.events||[]).map(e=>({value:e.name,
-      label:(e.title?e.title+' — ':'')+(e.source==='edb'?'used in this EDB'
+      label:(e.title?e.title+'. ':'')+(e.source==='edb'?'Used in this EDB'
         :e.source==='script'?'set by a script':'from historic_events.txt')}));
     // Each of these means "the regions where it holds", so descr_regions.txt is
     // what the picker shows — a bare code name says nothing about where it bites.
@@ -1853,12 +1965,12 @@ function condWhereHtml(kind,code){
       ${p.faction?`<i>${esc(condOwnerName(p.faction))}</i>`:''}</div>`).join('');
   return `<span class="where" data-where="${esc(kind)}">📍 ${places.length} settlement${
       places.length===1?'':'s'}
-    <span class="wpop"><div class="whead">${esc(code)} — from
+    <span class="wpop"><div class="whead">${esc(code)}, from
       <code>world/maps/base/descr_regions.txt</code></div>${rows}</span></span>`;
 }
 function condFactionsHtml(cond,i){
   const chosen=cond.values||[];
-  const label=chosen.length?chosen.map(bldFacName).join(', '):'nobody — this can never be built';
+  const label=chosen.length?chosen.map(bldFacName).join(', '):'nobody, so this can never be built';
   return `<button class="facbtn" onclick="bldFacPicker(${i})"
       title="Pick the factions and cultures this applies to">
       ${chosen.length?esc(label):'<span class="w-bad">'+esc(label)+'</span>'}</button>`;
@@ -1938,13 +2050,13 @@ function renderFacPicker(){
       <label class="facrow allrow${chosen.has(ALL)?' on':''}${edited(ALL)?' edited':''}">
         <input type="checkbox" data-fac="${esc(ALL)}" ${chosen.has(ALL)?'checked':''}>
         <span class="fn">All factions</span>
-        <span class="fc">${esc(ALL)} — the wildcard; ticking it makes the rest moot</span></label>
+        <span class="fc">${esc(ALL)}: the wildcard. Ticking it makes the rest moot.</span></label>
       <h4 class="fgh">Factions</h4>
       <div class="faclist">${(v.factions||[]).filter(match).map(r=>row(r,false)).join('')
-        ||'<span class="count">none match</span>'}</div>
-      <h4 class="fgh">Cultures <span class="count">— covers every faction of that culture</span></h4>
+        ||'<span class="count">None match</span>'}</div>
+      <h4 class="fgh">Cultures <span class="count">Covers every faction of that culture</span></h4>
       <div class="faclist">${(v.cultures||[]).filter(match).map(r=>row(r,true)).join('')
-        ||'<span class="count">none match</span>'}</div>
+        ||'<span class="count">None match</span>'}</div>
       <div id="facOwn"></div>
     </div>
     <div class="foot">
@@ -2008,7 +2120,7 @@ async function bldOwnChecks(units,factions){
 function bldOwnHtml(row){
   if(!row)return '';
   if(!row.known)return `<div class="ownwarn bad">“${esc(row.unit)}” is not a unit in
-    this mod’s EDU — nothing will ever be recruited from this pool.</div>`;
+    this mod’s EDU, so nothing will ever be recruited from this pool.</div>`;
   const bits=[],fixes=[];
   if(row.missing_ownership.length){
     bits.push(`<b>${row.missing_ownership.map(bldFacName).map(esc).join(', ')}</b> ${
@@ -2045,7 +2157,7 @@ function bldOwnManyHtml(rows){
     us.length>12?` <span class="count">+${us.length-12} more</span>`:''}`;
   const bits=[];
   if(unknown.length)bits.push(`<div><b class="w-bad">${unknown.length}</b> not in this mod’s
-    EDU at all — nothing will ever be recruited from ${unknown.length===1?'that pool':'those pools'}:
+    EDU at all, so nothing will ever be recruited from ${unknown.length===1?'that pool':'those pools'}:
     ${list(unknown)}</div>`);
   if(noOwn.length)bits.push(`<div><b>${noOwn.length}</b> ${noOwn.length===1?'does':'do'} not list
     every one of those factions in <code>ownership</code>, so the building would train nothing for
@@ -2112,34 +2224,34 @@ function bldAddPoolDialog(){
 
       <div class="bsec" style="margin-top:10px"><h4>Numbers each new pool starts with</h4>
         <div class="brow bpnums">
-          <label>${qm(POOL_HELP.initial,'Immediate recruitment')}immediate${
+          <label>${qm(POOL_HELP.initial,POOL_LABEL.initial)}${POOL_LABEL.initial}${
             numBox('data-bp="initial"',b.pick.nums.initial,'pool')}</label>
-          <label>${qm(POOL_HELP.per_turn,'Replenish rate')}replenish${
+          <label>${qm(POOL_HELP.per_turn,POOL_LABEL.per_turn)}${POOL_LABEL.per_turn}${
             numBox('data-bp="per_turn"',b.pick.nums.per_turn,'turns',
               `<span class="turns">= ${esc(poolTurns(b.pick.nums.per_turn))}</span>`)}</label>
-          <label>${qm(POOL_HELP.maximum,'Max pool')}max pool${
+          <label>${qm(POOL_HELP.maximum,POOL_LABEL.maximum)}${POOL_LABEL.maximum}${
             numBox('data-bp="maximum"',b.pick.nums.maximum,'pool')}</label>
-          <label>${qm(POOL_HELP.experience,'Starting experience')}xp${
+          <label>${qm(POOL_HELP.experience,POOL_LABEL.experience)}${POOL_SHORT.experience}${
             numBox('data-bp="experience"',b.pick.nums.experience,'1')}</label>
         </div>
 
         ${above>0?`<label class="chk" title="${esc(bldTiersAboveNames())}">
           <input type="checkbox" id="bpTiers" onchange="bldPickOpt('tiers',this.checked)">
           Add to the <b>${above}</b> tier(s) above this one as well
-          <span class="count">— ${esc(bldTiersAboveNames())}</span></label>
+          <span class="count">${esc(bldTiersAboveNames())}</span></label>
         <div class="brow bpnums" id="bpBump" style="display:none">
-          <span class="k">…each tier up by</span>
-          <label>immediate${numBox('data-bpb="initial"',b.pick.bump.initial,'1')}</label>
-          <label>replenish${numBox('data-bpb="per_turn"',b.pick.bump.per_turn,'0.05')}</label>
-          <label>max pool${numBox('data-bpb="maximum"',b.pick.bump.maximum,'1')}</label>
-          <label>xp${numBox('data-bpb="experience"',b.pick.bump.experience,'1')}</label>
+          <span class="k">Each tier up by</span>
+          <label>${POOL_LABEL.initial}${numBox('data-bpb="initial"',b.pick.bump.initial,'1')}</label>
+          <label>${POOL_LABEL.per_turn}${numBox('data-bpb="per_turn"',b.pick.bump.per_turn,'0.05')}</label>
+          <label>${POOL_LABEL.maximum}${numBox('data-bpb="maximum"',b.pick.bump.maximum,'1')}</label>
+          <label>${POOL_SHORT.experience}${numBox('data-bpb="experience"',b.pick.bump.experience,'1')}</label>
         </div>`
         :'<div class="bnote">This is the top tier, so there is nothing above to copy into.</div>'}
 
         ${twin&&twinLv?`<label class="chk"><input type="checkbox" id="bpMirror"
             onchange="bldPickOpt('mirror',this.checked)">
           Mirror into <code>${esc(twin)}</code> · <code>${esc(twinLv)}</code>
-          — the ${esc(b.d.settlement==='city'?'castle':'city')} half of this building</label>`
+          (the ${esc(b.d.settlement==='city'?'castle':'city')} half of this building)</label>`
         :`<div class="bnote">No city/castle twin the tool can match for this line, so there is
           nothing to mirror into.</div>`}
       </div>
@@ -2172,8 +2284,9 @@ function bldPickOpt(key,on){
 function bldPickCancel(){
   const modal=document.getElementById('modal');
   modal.innerHTML=state.bld.stash; state.bld.stash=null; state.bld.cmp=null;
+  state.bld.vc=null;
   usePlace(state.bld.stashScroll); state.bld.stashScroll=null;
-  bldRenderBody(state.bld.work.levels[state.bld.lvl],state.bld.d.levels[state.bld.lvl]);
+  bldRedrawLevel();
 }
 // The rows the filter boxes are letting through right now.
 function bldPickShown(){
@@ -2212,7 +2325,7 @@ function bldPickRender(){
     </div>`).join('')||'<div class="caprow"><span class="count">No units match.</span></div>';
   const n=p.picked.size;
   const cnt=document.getElementById('bpCount');
-  if(cnt)cnt.textContent=n?`${n} ticked${units.length<n?' — some are outside the filter':''}`
+  if(cnt)cnt.textContent=n?`${n} ticked${units.length<n?', some of them outside the filter':''}`
                           :'Tick the units to add.';
   const add=document.getElementById('bpAdd');
   if(add){add.textContent=n?`Add ${n} unit${n===1?'':'s'}`:'Add';add.disabled=!n;}
@@ -2316,9 +2429,9 @@ function bldAddPicked(types){
              +(mirrored?` +${mirrored} staged in ${bldTwin()}`:'');
   toast(rows.length===1
     ? `${list[0]} added to ${label}${rows[0].conds.length
-        ? ` — restricted to its ${rows[0].conds[0].values.length} owning faction(s)`
-        : ' — it has no ownership, so anyone here can train it'}${extra}`
-    : `${rows.length} units added to ${label} — ${gated} gated to their own ownership${
+        ? `, restricted to its ${rows[0].conds[0].values.length} owning faction(s)`
+        : ', and it has no ownership, so anyone here can train it'}${extra}`
+    : `${rows.length} units added to ${label}. ${gated} gated to their own ownership${
         gated<rows.length?`, ${rows.length-gated} with no ownership to gate to`:''
       }.${extra} They are ticked for bulk edit.`,4600);
 }
@@ -2352,9 +2465,13 @@ async function bldLoadChecks(force){
   // The whole body, not just the panel: knowing the twin is what puts the ⇄
   // button on every pool row, and the answer only lands after the first draw.
   if(document.getElementById('bldChecks'))bldRenderBodyNow();
+  // …and the header's "Compare city / castle" button, which cannot know whether
+  // there IS a twin until this answer arrives.
+  const btn=document.getElementById('bldVarBtn');
+  if(btn)btn.innerHTML=bldVarBtnHtml();
 }
 // The twin line's name, and the level in it that mirrors the one on screen.
-function bldTwin(){ return (state.bld.checks||{}).twin||''; }
+function bldTwin(){ return ((state.bld||{}).checks||{}).twin||''; }
 function bldTwinLevel(i){
   const b=state.bld,ck=b.checks||{};
   const lv=b.work.levels[i==null?b.lvl:i];
@@ -2415,7 +2532,7 @@ function bldChecksInner(){
       <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,g.pool.unit)}" alt="">
       <div class="ckwho"><div class="un">${esc(g.unit)}</div>
         <div class="ut">trained at ${g.present.map(bldLevelLabel).map(esc).join(', ')}
-          — missing from <b>${g.missing_levels.map((n,i)=>esc(bldLevelLabel(g.missing[i]))).join(', ')}</b></div></div>
+          Missing from <b>${g.missing_levels.map((n,i)=>esc(bldLevelLabel(g.missing[i]))).join(', ')}</b>.</div></div>
       <button onclick="bldFillGap('${q1(esc(g.unit))}')">Add to the missing tier(s)</button>
     </div>`).join('')}</div></div>`);
 
@@ -2447,8 +2564,8 @@ function bldChecksInner(){
       <span class="count">across the whole line</span>
       <button style="margin-left:auto" onclick="bldLoadChecks(true)">Re-check</button></h4>
     ${rows.join('')||'<div class="bnote">Nothing to flag on this tier.</div>'}
-    ${elsewhere>0?`<div class="bnote">${elsewhere} more finding(s) on other tiers of this line —
-      switch tier above to see them.</div>`:''}`;
+    ${elsewhere>0?`<div class="bnote">${elsewhere} more finding(s) on other tiers of this line.
+      Switch tier above to see them.</div>`:''}`;
 }
 // Scroll the recruitment list to a unit and flash its rows — the useful answer
 // to "this unit is listed twice" is being shown both of them.
@@ -2473,7 +2590,8 @@ function bldMirrorRow(p,dir){
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,p.unit)}" alt="">
     <div class="ckwho"><div class="un">${esc(p.unit)}</div>
       <div class="ut">${dir==='push'?'only in this settlement type':'only in the twin'}
-        · ${esc(p.initial)} / ${esc(p.per_turn)} per turn / max ${esc(p.maximum)} / ${esc(p.experience)} xp</div></div>
+        · ${POOL_LABEL.initial} ${esc(p.initial)}, ${POOL_LABEL.per_turn} ${esc(p.per_turn)},
+        ${POOL_LABEL.maximum} ${esc(p.maximum)}, ${POOL_SHORT.experience} ${esc(p.experience)}</div></div>
     <button onclick="bldMirrorOne('${q1(esc(p.unit))}','${dir}')">${
       dir==='push'?'Copy to the twin':'Add here'}</button></div>`;
 }
@@ -2575,7 +2693,7 @@ function bldMirrorOne(unit,dir){
   if(!bldMirrorApply(p,dir,m))return toast(`${unit} is already there.`);
   bldTouched(); renderBuildingEditor();
   toast(dir==='push'
-    ? `${unit} staged into ${ck.twin} · ${m.twin} — saved with the rest.`
+    ? `${unit} staged into ${ck.twin} · ${m.twin}. It is saved with the rest.`
     : `${unit} added to this tier.`);
 }
 function bldMirrorAll(dir){
@@ -2606,7 +2724,7 @@ function bldMirrorRowNow(i){
     ? `${twin} · ${level} already trains ${c.pool.unit}.`
     : `${c.pool.unit} is already staged for ${twin}.`);
   bldTouched(); renderBuildingEditor();
-  toast(`${c.pool.unit} staged into ${twin} · ${level} — saved with the rest.`,4000);
+  toast(`${c.pool.unit} staged into ${twin} · ${level}. It is saved with the rest.`,4000);
 }
 // …and the same row pushed up every tier above this one.
 function bldTiersRowNow(i){
@@ -2623,6 +2741,229 @@ function bldTiersRowNow(i){
   toast(`${c.pool.unit} added to ${n} higher tier(s).`);
 }
 
+/* =========================================================================
+   The city half and the castle half, side by side
+
+   A settlement building is written as TWO lines in the EDB with nothing tying
+   them together — `barracks` and `castle_barracks` are as unrelated to the file
+   as any two buildings in it — so over years of edits they drift. A unit gets
+   added to the city chain and forgotten in the castle one, and the only way to
+   find that was to open both lines and read them against each other by eye.
+
+   This panel is that reading, done for you. Tier by tier, every unit either half
+   trains, and what each half gives it. `⇄ Mirror` closes one gap; `⇄ Mirror all`
+   closes every gap on the tier or in the whole line.
+
+   Nothing here writes to disk. A unit copied INTO this line goes into its
+   working copy exactly as one added by hand does; a unit copied into the twin is
+   staged in `work.also` and appears in the editor's "Also changing" panel. Both
+   are written by the same Save, with the same backup and the same Undo — the
+   same road every other edit in this editor takes.
+   ========================================================================= */
+async function bldCompareVariants(){
+  const b=state.bld; if(!b||!b.line)return;
+  const modal=document.getElementById('modal');
+  if(!b.stash){b.stashScroll=stashPlace(); b.stash=modal.innerHTML;}
+  modal.innerHTML=`<h2>City and castle, side by side</h2>
+    <div class="mbody"><div class="empty">Reading both halves of this building…</div></div>
+    <div class="foot"><button onclick="bldPickCancel()">Back</button></div>`;
+  let r;
+  try{ r=await api.get(`/api/buildings/variants?mod=${enc(b.mod)}&line=${enc(b.line)}`
+                       +`&culture=${enc(b.culture||'')}`); }
+  catch(e){ r={error:''+e}; }
+  if(!r||r.error){
+    modal.querySelector('.mbody').innerHTML=`<div class="w-bad">${esc((r&&r.error)||'no answer')}</div>`;
+    return;
+  }
+  activity('compared city/castle',`${b.line} against ${r.twin||'nothing'} in ${b.mod}`);
+  b.vc={r,only:'gaps'};
+  bldVarRender();
+}
+// Which rows the panel shows. Both halves of a real building agree about most of
+// their roster, so "everything" is a thousand rows of nothing to do — the gaps
+// are what the panel is opened for, and they lead.
+function bldVarFilter(v){ if(state.bld.vc){state.bld.vc.only=v; bldVarRender();} }
+function bldVarRows(lv){
+  const only=(state.bld.vc||{}).only;
+  if(only==='all')return lv.units;
+  if(only==='numbers')return lv.units.filter(u=>u.where!=='both'||u.numbers_differ);
+  return lv.units.filter(u=>u.where!=='both');
+}
+// Which side of the panel is which settlement type, in the reader's words.
+const bldVarSide=(r,side)=>side==='a'
+  ? (r.settlement||'this half') : (r.twin_settlement||'the other half');
+function bldVarRender(){
+  const b=state.bld,vc=b.vc; if(!vc)return;
+  const r=vc.r;
+  const modal=document.getElementById('modal');
+  if(!r.twin){
+    modal.innerHTML=`<h2>City and castle, side by side</h2>
+      <div class="mbody"><div class="bnote">${esc(r.reason||'')}${docPoints('',[
+        'A pair is matched by name: <code>barracks</code> against '
+          +'<code>castle_barracks</code>, <code>stables</code> against <code>c_stables</code>.',
+        'A line buildable in <b>both</b> settlement types has no second half to '
+          +'compare, because it already is both.'])}</div></div>
+      <div class="foot"><button onclick="bldPickCancel()">Back</button></div>`;
+    return;
+  }
+  const gaps=r.only_a+r.only_b;
+  const tab=(k,label,n)=>`<button class="${vc.only===k?'on':''}"
+    onclick="bldVarFilter('${k}')">${label}${n==null?'':` <span class="badge">${n}</span>`}</button>`;
+  modal.innerHTML=`<h2>${esc(r.line_label||r.line)}
+      <span class="pill">city and castle, side by side</span></h2>
+    <div class="mbody">
+      <div class="vchead">
+        <div class="vcside"><span class="badge">${esc(r.settlement)}</span>
+          <b>${esc(r.line_label||r.line)}</b><code>${esc(r.line)}</code></div>
+        <div class="vcvs">⇄</div>
+        <div class="vcside"><span class="badge cls">${esc(r.twin_settlement)}</span>
+          <b>${esc(r.twin_label||r.twin)}</b><code>${esc(r.twin)}</code></div>
+      </div>
+      <div class="count">${docPoints(gaps
+        ? `<b class="w-warn">${gaps}</b> unit(s) are trained by one half and not the other.`
+        : 'Both halves train the same units at every tier.',[
+        r.differs?`<b>${r.differs}</b> unit(s) are trained by both, with different `
+          +'numbers. That is often deliberate, so it is not counted as a gap.':'',
+        'A <code>requires</code> clause that differs is not counted either: a city '
+          +'clause names the city factions and a castle clause names the castle ones.',
+        'Nothing is written until you Save the building, and a mirror into the '
+          +'other half is listed under <b>Also changing</b> first.'])}</div>
+      <div class="sndtabs" style="margin:8px 0">
+        ${tab('gaps','Only on one side',gaps)}
+        ${tab('numbers','Gaps and different numbers',gaps+r.differs)}
+        ${tab('all','Every unit',r.levels.reduce((n,l)=>n+l.units.length,0))}
+        ${gaps?`<button class="primary" style="margin-left:auto"
+          onclick="bldVarMirrorAll()">⇄ Mirror every gap (${gaps})</button>`:''}
+      </div>
+      ${r.levels.map(bldVarLevelHtml).join('')}
+    </div>
+    <div class="foot">
+      <span class="count">${bldAlsoCount()?`${bldAlsoCount()} row(s) staged for other lines`:''}</span>
+      <button onclick="bldPickCancel()">Back to the building</button>
+    </div>`;
+}
+function bldVarLevelHtml(lv,i){
+  const r=state.bld.vc.r;
+  const rows=bldVarRows(lv);
+  const gaps=lv.only_a+lv.only_b;
+  if(!lv.twin_level)
+    return `<fieldset class="vclv"><legend>${esc(lv.level_label||lv.level)}</legend>
+      <div class="bnote">This tier has no facing tier in <code>${esc(r.twin)}</code>,
+        so there is nothing to compare it with.</div></fieldset>`;
+  return `<fieldset class="vclv"><legend>${esc(lv.level_label||lv.level)}
+      <span class="count">tier ${i+1}</span> ⇄ ${esc(lv.twin_level_label||lv.twin_level)}</legend>
+    <div class="vcbar">
+      <span class="count">${lv.units.length} unit(s) across both halves${
+        gaps?` · <b class="w-warn">${gaps}</b> on one side only`:' · none missing'}${
+        lv.differs?` · ${lv.differs} with different numbers`:''}</span>
+      ${gaps?`<button style="margin-left:auto" onclick="bldVarMirrorLevel(${i})"
+        title="Copy every unit this tier is missing into whichever half is missing it">
+        ⇄ Mirror this tier (${gaps})</button>`:''}
+    </div>
+    ${rows.length?`<div class="vclist">
+      <div class="vcrow vchd"><span class="vcu">Unit</span><span class="vcw">Trained by</span>
+        <span class="vcn">${esc(r.settlement)}</span>
+        <span class="vcn">${esc(r.twin_settlement)}</span>
+        <span class="vca"></span></div>
+      ${rows.map(u=>bldVarRowHtml(u,i)).join('')}</div>`
+     :'<div class="bnote">Nothing to show here with the current filter.</div>'}
+  </fieldset>`;
+}
+// The four numbers of one side, or a plain "not trained here".
+function bldVarNums(p){
+  if(!p)return '<span class="w-warn">not trained</span>';
+  return `<span title="${esc(POOL_LABEL.initial)}">${esc(p.initial)}</span>
+    <span title="${esc(POOL_LABEL.per_turn)}">${esc(p.per_turn)}</span>
+    <span title="${esc(POOL_LABEL.maximum)}">${esc(p.maximum)}</span>
+    <span title="${esc(POOL_SHORT.experience)}">${esc(p.experience)}</span>`;
+}
+function bldVarRowHtml(u,li){
+  const r=state.bld.vc.r;
+  const where=u.where==='both'
+    ? `<span class="badge good" title="Both halves of this building train it at this tier.">both</span>`
+    : u.where==='a'
+      ? `<span class="badge" title="Only the ${esc(r.settlement)} half trains it here.">${esc(r.settlement)} only</span>`
+      : `<span class="badge cls" title="Only the ${esc(r.twin_settlement)} half trains it here.">${esc(r.twin_settlement)} only</span>`;
+  const act=u.where==='both'
+    ? (u.numbers_differ
+        ? `<span class="count" title="${esc(u.diff.join(', '))}">Different ${
+             esc(u.diff.filter(f=>f!=='requires').join(', '))}</span>`
+        : '<span class="count">In step</span>')
+    : `<button onclick="bldVarMirrorOne(${li},'${q1(esc(u.unit))}')"
+        title="Copy this unit into the half that is missing it. Nothing is written until you Save.">⇄ Mirror</button>`;
+  return `<div class="vcrow ${u.where==='both'?'':'gap'}">
+    <span class="vcu">
+      <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.unit)}" alt="">
+      <span class="vcnm"><span class="nm">${esc(u.name||u.unit)}</span>
+        <span class="ty">${u.missing?'<span class="w-bad">Not in this mod’s EDU</span>'
+                                     :esc(u.unit)}</span></span></span>
+    <span class="vcw">${where}</span>
+    <span class="vcn ${u.where==='b'?'off':''}">${bldVarNums(u.a)}</span>
+    <span class="vcn ${u.where==='a'?'off':''}">${bldVarNums(u.b)}</span>
+    <span class="vca">${act}</span></div>`;
+}
+/* Copy one unit into the half that does not train it.
+
+   Into THIS line it is an ordinary added row in the working copy; into the twin
+   it is an `also` row, staged against that line's own level. Both go through the
+   calls the single-row ⇄ on a pool row already uses, so a mirror from here and a
+   mirror from there stage identically. */
+function bldVarMirrorApply(lv,u){
+  const r=state.bld.vc.r;
+  if(u.where==='a'){                          // this half has it, the twin does not
+    return bldStagePool(r.twin,lv.twin_level,u.a,null);
+  }
+  if(bldHasUnit(lv.level_index,u.unit))return false;
+  bldAddPoolRow(u.unit,lv.level_index,u.b,null);
+  return true;
+}
+// The panel's own copy of the answer is what it draws from, so a mirrored row
+// has to be marked there too or it would offer the same button again.
+function bldVarTake(lv,u){
+  if(u.where==='a'){u.b=Object.assign({},u.a);}
+  else{u.a=Object.assign({},u.b);}
+  u.where='both'; u.same=true; u.diff=[]; u.numbers_differ=false; u.staged=true;
+  lv.only_a=lv.units.filter(x=>x.where==='a').length;
+  lv.only_b=lv.units.filter(x=>x.where==='b').length;
+  const r=state.bld.vc.r;
+  r.only_a=r.levels.reduce((n,l)=>n+l.only_a,0);
+  r.only_b=r.levels.reduce((n,l)=>n+l.only_b,0);
+}
+function bldVarMirrorOne(li,unit){
+  const vc=state.bld.vc; if(!vc)return;
+  const lv=vc.r.levels[li]; if(!lv)return;
+  const u=lv.units.find(x=>x.unit===unit); if(!u||u.where==='both')return;
+  const into=u.where==='a'?vc.r.twin_settlement:vc.r.settlement;
+  if(!bldVarMirrorApply(lv,u))return toast(`${unit} is already staged there.`);
+  bldVarTake(lv,u);
+  bldTouched(); bldVarRender();
+  toast(`${unit} staged into the ${into} half. Save the building to write it.`,4000);
+}
+function bldVarMirrorLevel(li){
+  const vc=state.bld.vc; if(!vc)return;
+  const lv=vc.r.levels[li]; if(!lv)return;
+  let n=0;
+  lv.units.filter(u=>u.where!=='both').forEach(u=>{
+    if(bldVarMirrorApply(lv,u)){bldVarTake(lv,u); n++;}
+  });
+  if(!n)return toast('Nothing left to copy on this tier.');
+  bldTouched(); bldVarRender();
+  toast(`${n} unit(s) staged. Save the building to write them.`,4000);
+}
+function bldVarMirrorAll(){
+  const vc=state.bld.vc; if(!vc)return;
+  let n=0;
+  vc.r.levels.forEach(lv=>{
+    if(!lv.twin_level)return;
+    lv.units.filter(u=>u.where!=='both').forEach(u=>{
+      if(bldVarMirrorApply(lv,u)){bldVarTake(lv,u); n++;}
+    });
+  });
+  if(!n)return toast('Nothing left to copy.');
+  bldTouched(); bldVarRender();
+  toast(`${n} unit(s) staged across every tier. Save the building to write them.`,5000);
+}
+
 /* ---- the same unit, everywhere it is recruited ----
    A unit is typically trained from four or five buildings whose numbers drifted
    apart over years of edits, and no view in the mod puts them side by side. This
@@ -2633,7 +2974,7 @@ async function bldShowUnit(unit){
   const b=state.bld;
   const modal=document.getElementById('modal');
   if(!b.stash){b.stashScroll=stashPlace();b.stash=modal.innerHTML;}
-  modal.innerHTML=`<h2>${esc(unit)} — everywhere it is recruited</h2>
+  modal.innerHTML=`<h2>${esc(unit)}: everywhere it is recruited</h2>
     <div class="mbody"><div class="empty">Reading every building line…</div></div>
     <div class="foot"><button onclick="bldPickCancel()">Back</button></div>`;
   let r;
@@ -2721,8 +3062,8 @@ function bldUnitRender(){
   //: "start / per turn / max" said what the numbers were shaped like and not
   //: what they do; these are the names the same three fields now carry
   //: everywhere the toolkit shows them.
-  const KEYS=[['initial','Immediate recruitment'],['per_turn','Replenish rate'],
-              ['maximum','Max pool'],['experience','xp']];
+  const KEYS=[['initial',POOL_LABEL.initial],['per_turn',POOL_LABEL.per_turn],
+              ['maximum',POOL_LABEL.maximum],['experience',POOL_SHORT.experience]];
   // A value that is not the one most of the rows use is what you came here to
   // find, so it is marked rather than left to be spotted.
   const common=KEYS.map(([k])=>{
@@ -2739,14 +3080,15 @@ function bldUnitRender(){
           <div class="count"><code>${esc(c.unit)}</code>${c.r.info.missing
             ?' · <span class="w-bad">not in this mod’s EDU</span>':''}</div>
           <div class="count">Every building line that trains it. Change a number here and it is
-            staged like any other edit — Preview and Save write the lot in one pass.</div></div>
+            staged like any other edit. Preview and Save write the lot in one pass.</div></div>
       </div>
       <div class="cvsplit${c.cv?'':' off'}">
         <div id="bcGui">${rows.length?`<div class="poollist" id="bcList">
-          <div class="bcrow bchead"><span>Building</span><span>Tier</span>
+          <div class="bcrow bchead"><span class="bcb">Building</span>
+            <span class="count">Tier</span>
             <span class="bctw" title="Whether the city/castle counterpart trains this unit at the tier facing this one">Twin</span>
-            ${KEYS.map(([k,l])=>`<span title="${esc(POOL_HELP[k]||'')}">${esc(l)}</span>`).join('')}
-            <span>Requires</span></div>
+            ${KEYS.map(([k,l])=>`<span class="bcn" title="${esc(POOL_HELP[k]||'')}">${esc(l)}</span>`).join('')}
+            <span class="bcreq">Requires</span></div>
           ${rows.map((r,i)=>bldUnitRow(r,i,KEYS,common)).join('')}
         </div>`:'<div class="bnote">No building line trains this unit.</div>'}</div>
         ${c.cv?`<div style="padding-top:4px">${cvHtml(c.cv)}</div>`:''}
@@ -2786,7 +3128,7 @@ function bldUnitRow(r,i,KEYS,modal){
         ${numBox(`data-bc="${k}" data-bcline="${r.cap_line}"`,v,k==='per_turn'?'turns':(k==='experience'?'1':'pool'))}</span>`;
     }).join('')}
     <span class="count bcreq ${reqEdited?'changed':''}" title="${esc(req||'no conditions')}"><span>${
-      esc(req||'—')}</span>
+      esc(req||'None')}</span>
       <button class="reqbtn" title="Edit who can recruit it from this building"
         onclick="bldUnitEditReq(${i})">✎</button></span></div>`;
 }
@@ -2797,7 +3139,7 @@ function bldUnitRow(r,i,KEYS,modal){
    edit — the same call the building editor's own mirror uses. */
 function bldUnitTwinCell(r){
   if(!r.twin)
-    return `<span class="count bctw" title="This building line has no city/castle counterpart.">—</span>`;
+    return `<span class="count bctw" title="This building line has no city/castle counterpart.">None</span>`;
   if(!r.twin_level)
     return `<span class="count bctw" title="${esc(r.twin)} has no tier facing this one.">no tier</span>`;
   const where=`${r.twin} · ${r.twin_level_label||r.twin_level}`;
@@ -2863,7 +3205,7 @@ function bldUnitApply(){
   c.edits={};
   bldPickCancel();                   // back to the building editor
   bldTouched(); renderBuildingEditor();
-  toast(`${here+elsewhere} pool(s) staged${elsewhere?` — ${elsewhere} in other building line(s)`:''}.`,4200);
+  toast(`${here+elsewhere} pool(s) staged${elsewhere?`, ${elsewhere} of them in other building line(s)`:''}.`,4200);
 }
 
 /* ---- hop to the Unit Editor and back ----
@@ -2874,7 +3216,7 @@ function bldUnitApply(){
 function openUnitFromBuilding(type){
   const b=state.bld;
   if(bldDirty()&&!confirm(
-      'You have unsaved building changes. They are kept while you edit the unit — '
+      'You have unsaved building changes. They are kept while you edit the unit, and '
       +'switch to the Unit Editor now?'))return;
   state.bldReturn={line:b.line,lvl:b.lvl,label:b.d.label};
   closeModal();
@@ -2985,14 +3327,14 @@ function bldPlanHtml(p,stale){
     <span class="stext">${esc(c)}</span></div>`));
   (p.errors||[]).forEach(c=>rows.push(`<div class="srow bad"><span class="sicon">✕</span>
     <span class="stext">${esc(c)}</span></div>`));
-  if(!rows.length)rows.push(`<div class="srow"><span class="sicon">–</span>
+  if(!rows.length)rows.push(`<div class="srow"><span class="sicon">·</span>
     <span class="stext">Nothing would change.</span></div>`);
   const files=[p.edb_rewritten?'export_descr_buildings.txt':'',
                p.loc_rewritten?'text/export_buildings.txt':'',
                p.edu_rewritten?'export_descr_unit.txt':'',
                p.modeldb_rewritten?'unit_models/battle_models.modeldb':''].filter(Boolean);
   return `<div class="bsec" style="margin-top:14px"><h4>Preview${
-      stale?' <span class="w-warn">(out of date — edited since)</span>':''}</h4>
+      stale?' <span class="w-warn">(out of date: edited since)</span>':''}</h4>
     <div class="sum">${rows.join('')}
       ${files.length?`<div class="srow shead" style="margin-top:6px"><span class="sicon">→</span>
         <span class="stext">writes ${files.map(f=>`<code>${esc(f)}</code>`)
@@ -3012,7 +3354,7 @@ async function bldSave(){
     if(res.error){ toast(res.error,5000);
       document.getElementById('bldPlan').innerHTML=bldPlanHtml(res.plan||{error:res.error},false);
       return; }
-    toast(`Saved — ${(res.plan.changes||[]).length} change(s) written to ${b.mod}`);
+    toast(`Saved. ${(res.plan.changes||[]).length} change(s) written to ${b.mod}.`);
     state.bld.ov=await api.get('/api/buildings?mod='+enc(state.src));
     _bldFiltersFor='';
     await openBuilding(b.line,true);           // re-read from disk, keep the level
@@ -3178,11 +3520,11 @@ function bldNtPaint(){
       </div>
 
       <div class="bsec"><h4>Levels <span class="n">${n.levels.length}</span>
-          <span class="count">each one upgrades into the next</span>
+          <span class="count">Each one upgrades into the next</span>
           <button style="margin-left:auto" onclick="bldNtAddLevel()"
             ${n.levels.length>=NT_MAX_ROWS?'disabled':''}>＋ Add level</button></h4>
-        <div class="ntlv"><span class="i"></span><span class="count">code name</span>
-          <span class="count">shown as</span><span></span></div>
+        <div class="ntlv"><span class="i"></span><span class="count">Code name</span>
+          <span class="count">Shown as</span><span></span></div>
         ${n.levels.map((lv,i)=>`<div class="ntlv">
           <span class="i">${i+1}</span>
           <input id="ntN${i}" value="${esc(lv.name)}" placeholder="code name"
@@ -3248,7 +3590,7 @@ async function bldNtCreate(){
       toast(res.error,6000);
       return;
     }
-    toast(`Created ${name} — ${(res.plan.changes||[]).length} change(s) written to ${state.src}`);
+    toast(`Created ${name}. ${(res.plan.changes||[]).length} change(s) written to ${state.src}.`);
     state.bld.nt=null;
     // the EDB is a different file now, so the overview is re-read rather than patched
     await loadBuildings(true);

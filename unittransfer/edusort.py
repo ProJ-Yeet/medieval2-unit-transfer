@@ -54,12 +54,29 @@ ENCODING = edu_mod.ENCODING
 CAT_WORDS = ("INFANTRY", "ARCHERS", "ARCHER", "HORSE ARCHERS", "HORSE ARCHER",
              "CAVALRY", "CALVARY", "GENERALS", "GENERAL", "OTHER")
 
-BANNER_RE = re.compile(
-    r"^\s*;-{2,}\s*(?P<name>.*?)\s*(?:TIER\s+(?P<tier>\d+)\s+)?"
-    r"(?P<cat>" + "|".join(sorted(CAT_WORDS, key=len, reverse=True)) + r")"
-    r"\s*-{2,}\s*$", re.IGNORECASE)
+#: The characters a banner's rule may be drawn with. The reader accepts every
+#: one of them because the WRITER can now be told to use any of them
+#: (:data:`BANNER_STYLE`), and a banner this tool writes but cannot read back is
+#: worse than no banner at all: the next run would carry it as an ordinary
+#: comment AND write a fresh one, so a file would gain a banner on every pass.
+#: Broadening it also picks up the `;====== GONDOR INFANTRY ======` a mod wrote
+#: by hand, which is our furniture by any reasonable reading — and the trailing
+#: :data:`CAT_WORDS` still has to match, so an ordinary rule of equals signs
+#: over a paragraph of notes is not mistaken for one.
+BANNER_FILL = "-=*~#_+."
 
-BANNER_WIDTH = 96
+BANNER_RE = re.compile(
+    r"^\s*;[;" + re.escape(BANNER_FILL) + r"]{2,}\s*(?P<name>.*?)"
+    r"\s*(?:TIER\s+(?P<tier>\d+)\s+)?"
+    r"(?P<cat>" + "|".join(sorted(CAT_WORDS, key=len, reverse=True)) + r")"
+    r"\s*[" + re.escape(BANNER_FILL) + r"]{2,}\s*$", re.IGNORECASE)
+
+#: How wide a banner is, counted honestly: the line :func:`banner` returns is
+#: exactly this many characters. It reads 95 rather than a round 96 because 95
+#: is what this module has always written, and the default has to stay byte for
+#: byte what it was or a file already cleaned up would show a change on a run
+#: that was asked to change nothing.
+BANNER_WIDTH = 95
 
 #: Sub-groups within a faction, in the order DaC writes them. The key is what
 #: :meth:`unittransfer.edu.Unit.kind` returns; the value is the banner word.
@@ -90,6 +107,29 @@ SECTION_TITLES = {
 #: in the file a person actually chose.
 GENERAL_TIER = -1
 HAND_TIER = -2
+
+#: What ``special=`` on a unit's marker may say, and where it sorts.
+#:
+#: The sorter DETECTS a general from ``attributes``, and that is right for the
+#: 31 units in Divide and Conquer that carry ``general_unit``. It is silent
+#: about everything else a mod treats as out of the ordinary: a bodyguard that
+#: is not flagged as a general, a hero, a one-off quest unit. Those units are
+#: exactly the ones a hand-organised EDU keeps at the head of a faction's run,
+#: and the sorter used to bury them among the tier 1 spearmen.
+#:
+#: So the classification is editable, per unit, from the ordering screen — with
+#: whatever was detected filled in, so agreeing with the tool costs nothing.
+#: ``none`` is a real value and not a blank: it means "I looked, and this unit
+#: is ordinary", which is how you overrule a detection you disagree with.
+SPECIAL_RANK: Dict[str, int] = {
+    "general": -1,
+    "bodyguard": -1,
+    "hero": 0,
+    "unique": 0,
+    "quest": 0,
+}
+SPECIAL_VALUES: Tuple[str, ...] = ("general", "bodyguard", "hero", "unique",
+                                   "quest", "none")
 
 #: A unit with no tier sorts after the tiered ones in its category rather than
 #: in front of them: an untiered unit is one nobody has classified yet, and
@@ -189,8 +229,29 @@ def section_of(u: edu_mod.Unit) -> Tuple[str, str]:
     return REBELS, ""
 
 
+def detected_special(u: edu_mod.Unit) -> str:
+    """What the unit's own lines say it is, before anyone edits the marker.
+
+    Only ``general`` is derivable: ``general_unit`` is a real EDU attribute the
+    engine reads. Everything else in :data:`SPECIAL_VALUES` is a judgement about
+    a roster that no game file records, which is why it is offered rather than
+    guessed.
+    """
+    if {"general_unit", "general_unit_upgrade"} & set(u.attributes):
+        return "general"
+    return ""
+
+
+def special_of(u: edu_mod.Unit) -> str:
+    """The unit's classification: its marker if it has one, else what was detected."""
+    want = (u.special or "").strip().lower()
+    if want in SPECIAL_VALUES:
+        return want
+    return detected_special(u)
+
+
 def is_general(u: edu_mod.Unit) -> bool:
-    return bool({"general_unit", "general_unit_upgrade"} & set(u.attributes))
+    return special_of(u) in ("general", "bodyguard")
 
 
 def category_rank(u: edu_mod.Unit) -> int:
@@ -199,9 +260,15 @@ def category_rank(u: edu_mod.Unit) -> int:
 
 
 def tier_rank(u: edu_mod.Unit) -> int:
-    """Which tier band a unit sorts in — generals lead their faction's run."""
-    if is_general(u):
-        return GENERAL_TIER
+    """Which tier band a unit sorts in.
+
+    Generals lead their faction's run; anything else marked special follows them
+    and still comes in front of tier 1. A unit marked ``none`` sorts on its tier
+    alone, whatever its attributes say.
+    """
+    rank = SPECIAL_RANK.get(special_of(u))
+    if rank is not None:
+        return rank
     return int(u.tier) if u.tier.isdigit() else UNTIERED
 
 
@@ -387,15 +454,99 @@ def apply_hand(text: str, hand: Optional[Dict[str, List[str]]]) -> str:
         for u in f.main_units)
 
 
+#: The marker keys the ordering screen may set on a unit.
+MARK_KEYS: Tuple[str, ...] = ("tier", "variant", "special")
+
+
+def apply_marks(text: str, marks: Optional[Dict[str, Dict[str, str]]]) -> Tuple[str, List[str]]:
+    """Write ``{unit type: {tier, variant, special}}`` onto the units named.
+
+    The three things the ordering screen edits, written the way every other
+    piece of this tool's metadata is: onto the unit's own ``;@m2gt`` line, above
+    its ``type``, where the engine skips it and the next run reads it back.
+
+    A key set to ``""`` is REMOVED rather than written blank — that is how you
+    take a classification off a unit again — and :func:`unittransfer.edu.set_marker`
+    deletes a marker that has nothing left on it, so a unit cleared of all three
+    comes out with no marker line at all rather than a bare prefix.
+
+    Returns the new text and which units were actually changed, so the plan can
+    say so rather than reporting a silent write.
+    """
+    want = {k: v for k, v in (marks or {}).items() if v}
+    if not want:
+        return text, []
+    f = edu_mod.parse_text(text)
+    out = [f.preamble]
+    touched: List[str] = []
+    for u in f.units:
+        m = want.get(u.type)
+        if not m:
+            out.append(u.raw)
+            continue
+        fields = {k: str(m.get(k, "") or "") for k in MARK_KEYS if k in m}
+        if not fields:
+            out.append(u.raw)
+            continue
+        raw = edu_mod.set_marker(u.raw, **fields)
+        if raw != u.raw:
+            touched.append(u.type)
+        out.append(raw)
+    return "".join(out), touched
+
+
 # ---------------------------------------------------------------------------
 # writing it back
 
 
-def banner(title: str) -> str:
+#: How a section banner is drawn. The defaults are what the real files use — a
+#: 96-column rule of hyphens with the section name centred in it — and every one
+#: of them is a matter of taste rather than of format, so all four are the user's.
+#: :data:`BANNER_RE` still has to read the result back, which is the one
+#: constraint: the line starts ``;``, the fill repeats at least twice, and the
+#: title sits between the two runs. Anything a mod already writes by hand is
+#: therefore still recognised, and a banner this tool writes is still a banner
+#: the next run will read.
+#: ``upper`` is OFF by default so the default output is byte for byte what this
+#: module wrote before the style existed. A section name comes out of the file's
+#: own banners, so forcing case would rewrite the author's spelling on a run
+#: nobody asked to change anything.
+BANNER_STYLE = {"width": BANNER_WIDTH, "fill": "-", "prefix": ";", "upper": False}
+
+
+def banner_style(style: Optional[Dict] = None) -> Dict:
+    """A complete style, with anything the caller left out filled in.
+
+    A fill that is not a single safe character falls back to a hyphen rather
+    than being rejected: this is a display choice arriving from a text box, and
+    a bad one must not be able to stop a cleanup.
+    """
+    out = dict(BANNER_STYLE)
+    for k, v in (style or {}).items():
+        if k in out and v is not None:
+            out[k] = v
+    try:
+        out["width"] = max(20, min(200, int(out["width"])))
+    except (TypeError, ValueError):
+        out["width"] = BANNER_WIDTH
+    fill = str(out["fill"] or "-")[:1]
+    out["fill"] = fill if fill in BANNER_FILL else "-"
+    prefix = str(out["prefix"] or ";")
+    out["prefix"] = (prefix if prefix[:1] == ";" and set(prefix) <= set(";" + BANNER_FILL)
+                     else ";")
+    out["upper"] = bool(out["upper"])
+    return out
+
+
+def banner(title: str, style: Optional[Dict] = None) -> str:
     """One section banner, in the shape the real files use."""
-    pad = max(4, BANNER_WIDTH - len(title) - 4)
+    s = banner_style(style)
+    text = title.upper() if s["upper"] else title
+    # the two spaces around the title are part of the width, and so is the prefix
+    pad = max(4, s["width"] - len(text) - len(s["prefix"]) - 2)
     left = pad // 2
-    return ";" + "-" * left + " " + title + " " + "-" * (pad - left)
+    return (s["prefix"] + s["fill"] * left + " " + text + " "
+            + s["fill"] * (pad - left))
 
 
 def _title(b: Block) -> str:
@@ -416,7 +567,8 @@ def _title(b: Block) -> str:
 
 
 def render(f: edu_mod.EduFile, blocks: List[Block],
-           *, banners: bool = True, tidy: bool = True) -> str:
+           *, banners: bool = True, tidy: bool = True,
+           style: Optional[Dict] = None) -> str:
     """The whole file: its own preamble, then the blocks in the given order."""
     from .codeview import _edu_tidy
 
@@ -433,7 +585,7 @@ def render(f: edu_mod.EduFile, blocks: List[Block],
     for b in blocks:
         title = _title(b)
         if banners and title != last:
-            out.append(banner(title) + "\n")
+            out.append(banner(title, style) + "\n")
         last = title
         body = _edu_tidy(b.body, {}) if tidy else b.body
         out.append(body if body.endswith("\n") else body + "\n")
@@ -458,6 +610,7 @@ class SortPlan:
     untiered: List[str] = field(default_factory=list)
     read_tiers: List[str] = field(default_factory=list)
     placed: List[str] = field(default_factory=list)
+    marked: List[str] = field(default_factory=list)
     sections: List[Tuple[str, int]] = field(default_factory=list)
 
     def touched(self) -> bool:
@@ -474,6 +627,7 @@ class SortPlan:
             "moved": self.moved[:200], "moved_count": len(self.moved),
             "untiered": self.untiered[:200], "untiered_count": len(self.untiered),
             "read_tiers": len(self.read_tiers), "placed": len(self.placed),
+            "marked": len(self.marked),
             "sections": [{"name": n, "units": c} for n, c in self.sections],
             "touched": self.touched(),
         }
@@ -498,6 +652,17 @@ def overview(mod) -> Dict:
     names = {k.lower(): v for k, v in (mod.faction_names or {}).items()}
     blocks = _split_blocks(f, harvest(text), names)
     ordered = order_blocks(blocks, group_order(blocks))
+    # the localised name, so the list reads as units rather than as type strings
+    names_of: Dict[str, str] = {}
+    try:
+        loc = mod.loc
+    except Exception:
+        loc = None
+    if loc is not None:
+        for u in f.main_units:
+            entry = loc.get(u.dictionary or u.type)
+            if entry is not None and getattr(entry, "name", ""):
+                names_of[u.type] = entry.name
 
     out: List[Dict] = []
     for b in ordered:
@@ -505,17 +670,45 @@ def overview(mod) -> Dict:
             out.append({"name": b.group, "units": []})
         out[-1]["units"].append({
             "type": b.type,
+            "name": names_of.get(b.type, ""),
             "tier": b.unit.tier,
             "variant": b.unit.variant,
+            # what the marker says, and — separately — what the unit's own lines
+            # say. The screen fills the drop-down in from the second when the
+            # first is empty, so agreeing with the tool costs no clicks and
+            # disagreeing with it is still one.
+            "special": b.unit.special,
+            "detected_special": detected_special(b.unit),
             "general": is_general(b.unit),
             "category": _CAT_NAME.get(category_rank(b.unit), "OTHER"),
             "kind": b.unit.kind(),
         })
-    return {"sections": out}
+    # What the drop-downs may offer: the standard set first, then whatever this
+    # mod's own units have added to it. The same rule as everywhere else in the
+    # toolkit — a value a mod uses is a value the mod may be offered — and it
+    # matters most on a mod that has never been cleaned up, where the units carry
+    # no markers at all and a list built only from them would be empty.
+    from .vocab import TIER, TIER_VARIANT
+
+    def _merged(base, seen):
+        out = list(base)
+        for v in sorted(seen):
+            if v and v not in out:
+                out.append(v)
+        return out
+
+    return {"sections": out,
+            "tiers": _merged(TIER, {u.tier for u in f.main_units if u.tier}),
+            "variants": _merged(TIER_VARIANT,
+                                {u.variant for u in f.main_units if u.variant}),
+            "specials": list(SPECIAL_VALUES),
+            "banner_style": banner_style(None)}
 
 
 def plan(mod, *, banners: bool = True, tidy: bool = True, group: bool = True,
-         tiers: bool = True, hand: Optional[Dict[str, List[str]]] = None) -> SortPlan:
+         tiers: bool = True, hand: Optional[Dict[str, List[str]]] = None,
+         marks: Optional[Dict[str, Dict[str, str]]] = None,
+         style: Optional[Dict] = None) -> SortPlan:
     """What a cleanup would do to this mod's EDU, without doing any of it."""
     from . import factions
 
@@ -545,6 +738,12 @@ def plan(mod, *, banners: bool = True, tidy: bool = True, group: bool = True,
         if read:
             p.read_tiers = sorted(read)
             staged = apply_tiers(staged, read)
+    # The tier, variant and classification edited on the ordering screen. They go
+    # on BEFORE the sort, because they are what the sort reads: setting a unit's
+    # tier and having it move in the same pass is the whole point of editing it
+    # there rather than opening the unit editor for one drop-down.
+    if marks:
+        staged, p.marked = apply_marks(staged, marks)
     if hand:
         staged = apply_hand(staged, hand)
         p.placed = sorted({t for types in hand.values() for t in types})
@@ -555,7 +754,7 @@ def plan(mod, *, banners: bool = True, tidy: bool = True, group: bool = True,
     blocks = _split_blocks(f, found, names)
     ordered = order_blocks(blocks, group_order(blocks)) if group else blocks
 
-    text = render(f, ordered, banners=banners, tidy=tidy)
+    text = render(f, ordered, banners=banners, tidy=tidy, style=style)
     if text == original:
         return p
 
@@ -574,6 +773,9 @@ def plan(mod, *, banners: bool = True, tidy: bool = True, group: bool = True,
 
     if p.read_tiers:
         p.changes.append(f"+ {len(p.read_tiers)} tier(s) read from the file's own banners")
+    if p.marked:
+        p.changes.append(f"+ {len(p.marked)} unit(s) given a tier, variant or "
+                         "classification from the ordering screen")
     if p.placed:
         p.changes.append(f"+ {len(p.placed)} unit(s) placed by hand, recorded so the "
                          "next cleanup keeps them there")

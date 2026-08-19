@@ -31,6 +31,17 @@
   .filters{width:210px;flex:0 0 210px;padding:12px;overflow:auto;border-right:1px solid var(--edge);background:var(--panel)}
   .filters h3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:16px 0 6px}
   .filters h3:first-child{margin-top:0}
+  /* A filter group folds shut. The heading is the control, so the whole line is
+     clickable and the caret only says which way it is pointing. */
+  .filters h3.filtfold{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+    padding:2px 4px;margin-left:-4px;margin-right:-4px;border-radius:5px}
+  .filters h3.filtfold:hover{background:var(--panel2);color:var(--fg)}
+  .filters h3.filtfold .fgc{font-size:9px;line-height:1;transition:transform .12s ease;
+    transform:rotate(90deg);flex:0 0 auto}
+  .filters h3.filtfold.shut .fgc{transform:rotate(0deg)}
+  .filters h3.filtfold .fgn{margin-left:auto;font-size:10px;color:var(--dim);
+    background:var(--panel2);border-radius:9px;padding:0 6px;letter-spacing:0}
+  .filters .fgbody.shut{display:none}
   .filters .opt{display:block;padding:2px 0;font-size:13px;cursor:pointer}
   .filters .opt input{vertical-align:middle;margin-right:6px}
   /* NB: no top padding on the scroll container — a scroll-container's top padding
@@ -528,7 +539,7 @@
      the one thing the row is telling you ("English — generic", "Gondor/General ✗").
      Half the width is plenty for a name over its type, and the freed space goes
      where the text actually is. */
-  .sndrow{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(150px,.6fr) 130px 100px minmax(180px,1.6fr) 46px;
+  .sndrow{display:grid;grid-template-columns:minmax(170px,.9fr) minmax(150px,.6fr) 130px 100px minmax(180px,1.6fr) 46px;
     gap:8px;align-items:center;padding:5px 10px;border-bottom:1px solid var(--edge)}
   .sndrow:last-child{border-bottom:none}
   .sndrow.hrow{background:var(--panel2);color:var(--dim);font-size:11px;text-transform:uppercase;
@@ -537,9 +548,16 @@
   .sndrow.dropping{background:rgba(224,108,108,.08);box-shadow:inset 3px 0 0 var(--bad)}
   .sndrow select{width:100%;padding:3px 6px;font-size:12px;min-width:0}
   .sndrow select:disabled{opacity:.55}
-  .sndrow .un{min-width:0}
-  .sndrow .un .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sndrow .un .ty{color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* the unit card beside the name — the voice bank is hundreds of rows of type
+     names, and a type name is the one thing about a unit nobody recognises */
+  .sndrow .un{min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .sndrow .un .uc{width:26px;height:34px;object-fit:contain;background:#0d0f13;
+    border-radius:4px;flex:0 0 26px}
+  .sndrow .un .uc.empty{display:inline-block;border:1px dashed var(--edge);background:none}
+  .sndrow .un .un2{min-width:0}
+  .sndrow .un .nm{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sndrow .un .ty{display:block;color:var(--dim);font-size:11px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
   .sndrow .now{color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sndrow .rm{display:flex;justify-content:center}
   /* ---- composer: the voice fieldset ---- */
@@ -881,7 +899,15 @@
   .caprow .numwrap{flex:0 0 auto}
   .caprow .x{flex:0 0 auto;padding:2px 7px;font-size:12px}
   /* a recruit pool: unit card, the four pool numbers, its requires clause */
-  .poolrow{display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--edge)}
+  /* A recruit pool is two lines: the unit and its numbers on top, the requires
+     clause underneath with the whole width to itself. See bldPoolRow. */
+  .poolrow{padding:6px 8px;border-bottom:1px solid var(--edge)}
+  .poolrow .prtop{display:flex;gap:8px;align-items:center}
+  .poolrow .prbot{display:flex;gap:8px;align-items:center;margin:5px 0 1px 42px;
+    padding-top:5px;border-top:1px dashed var(--edge)}
+  .poolrow .prbot .prk{flex:0 0 auto;font-size:9px;text-transform:uppercase;
+    letter-spacing:.5px;color:var(--dim)}
+  .poolrow .prbot .clausebar{flex:1;min-width:0}
   .poolrow:last-child{border-bottom:none}
   .poolrow.gone{opacity:.4}
   .poolrow img{width:34px;height:45px;object-fit:contain;background:#0d0f13;border-radius:4px;flex:0 0 34px}
@@ -895,7 +921,7 @@
   .poolrow .nums .numwrap{margin-top:2px;flex:0 0 auto}
   .poolrow .req{flex:1;min-width:80px;padding:3px 6px;font-size:11.5px;
     font-family:ui-monospace,Consolas,monospace}
-  .poolrow .acts{display:flex;gap:4px;flex:0 0 auto}
+  .poolrow .acts{display:flex;gap:4px;flex:0 0 auto;margin-left:auto}
   .poolrow .acts button{padding:3px 7px;font-size:11.5px}
   .poolrow.missing .who .un{color:var(--bad)}
   .bsec{margin-bottom:14px}
@@ -956,6 +982,77 @@
     display:flex;gap:6px;align-items:center}
   .bcreq>:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bcreq.changed{color:var(--accent)}
+  /* the Variant drop-down and its ＋, which swaps it for a text box */
+  .tiervar{display:flex;gap:6px;align-items:center}
+  .tiervar select,.tiervar input{flex:1;min-width:0}
+  .tiervar button{flex:0 0 auto;padding:5px 10px}
+  /* ---- Clean up the unit file: the ordering list and the banner sample ---- */
+  .eduband{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  .eduband label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--dim)}
+  .eduband label.chk{flex-direction:row;align-items:center;gap:6px}
+  .eduband input[type=number]{width:80px}
+  .eduband input{width:110px}
+  .edusample{margin:8px 0 6px;padding:7px 9px;background:#0d0f13;border:1px solid var(--edge);
+    border-radius:6px;overflow-x:auto}
+  .edusample code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+    white-space:pre;color:var(--dim)}
+  .edulist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2);overflow:hidden}
+  .edurow{display:grid;grid-template-columns:minmax(200px,1.4fr) 120px 130px 160px 110px;
+    gap:8px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--edge)}
+  .edurow:last-child{border-bottom:none}
+  .edurow.eduhd{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+  .edurow.placed{box-shadow:inset 3px 0 0 var(--accent)}
+  .edurow.drag{opacity:.5}
+  .edurow.over{outline:1px dashed var(--accent);outline-offset:-1px}
+  .edurow .euu{display:flex;align-items:center;gap:7px;min-width:0}
+  .edurow .euu .g{color:var(--dim);cursor:grab;flex:0 0 auto}
+  .edurow .euu img{width:24px;height:32px;object-fit:contain;background:#0d0f13;
+    border-radius:4px;flex:0 0 24px}
+  .edurow .eunm{min-width:0}
+  .edurow .eunm .nm{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .edurow .eunm .ty{display:block;font-size:10px;color:var(--dim);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .edurow .eun{min-width:0;display:flex;align-items:center;gap:5px}
+  .edurow .eun select{width:100%;min-width:0}
+  .edurow select.edited{border-color:var(--accent);color:var(--accent)}
+  .edurow .eun .count{flex:0 0 auto;font-size:9.5px}
+  .edurow .euk{font-size:10.5px}
+  /* ---- city and castle, side by side (bldCompareVariants) ---- */
+  .vcbtn{margin-left:auto;align-self:flex-start;font-size:13px;padding:8px 14px;
+    white-space:nowrap}
+  .vcbtn .badge.warn{background:var(--warn);color:#12151a;margin-left:4px}
+  .vchead{display:flex;align-items:center;gap:14px;margin:2px 0 10px}
+  .vchead .vcside{flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+    background:var(--panel2);border:1px solid var(--edge);border-radius:8px;padding:8px 10px}
+  .vchead .vcside b{font-size:14px}
+  .vchead .vcside code{color:var(--dim);font-size:11px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .vchead .vcvs{flex:0 0 auto;color:var(--accent);font-size:20px}
+  .vclv{margin-top:12px}
+  .vcbar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .vclist{border:1px solid var(--edge);border-radius:7px;background:var(--panel2);
+    overflow:hidden}
+  .vcrow{display:flex;gap:8px;align-items:center;padding:4px 8px;
+    border-bottom:1px solid var(--edge)}
+  .vcrow:last-child{border-bottom:none}
+  .vcrow.vchd{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+  .vcrow.gap{background:#221d13}
+  .vcrow .vcu{flex:1;min-width:0;display:flex;align-items:center;gap:7px}
+  .vcrow .vcu img{width:26px;height:34px;object-fit:contain;background:#0d0f13;
+    border-radius:4px;flex:0 0 26px}
+  .vcrow.vchd .vcu{padding-left:2px}
+  .vcrow .vcnm{min-width:0}
+  .vcrow .vcnm .nm{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .vcrow .vcnm .ty{display:block;font-size:10px;color:var(--dim);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .vcrow .vcw{flex:0 0 110px}
+  .vcrow .vcn{flex:0 0 150px;display:flex;gap:8px;font-size:11.5px;
+    font-family:ui-monospace,Consolas,monospace;color:var(--dim)}
+  .vcrow .vcn.off{opacity:.55}
+  .vcrow .vca{flex:0 0 110px;text-align:right}
+  .vcrow .vca button{padding:3px 8px;font-size:11.5px}
   /* ---- requires clauses ---- */
   .clausebar{display:flex;gap:8px;align-items:center;min-width:0}
   .clausebar .sum{background:none;border:none;padding:0;max-height:none;overflow:visible;
@@ -1326,7 +1423,7 @@
 </head>
 <body>
 <header>
-  <button id="navBtn" class="navbtn" title="Menu — switch module">
+  <button id="navBtn" class="navbtn" title="Menu: switch module">
     <span class="burger">☰</span><span id="navCur">Unit Transfer</span>
   </button>
   <button id="backBldBtn" style="display:none" title="Go back to the building you came from">← Back to building</button>
@@ -1346,7 +1443,7 @@
   <button id="tidyEduBtn" style="display:none" title="Group the whole unit file into sections and line its values up">🧹 Clean up unit file…</button>
   <button id="sndBtn" class="primary" style="display:none" title="Write the staged voice changes into this mod">Apply voice edits (0)</button>
   <label class="chk" id="unusedWrap" style="display:none"><input type="checkbox" id="unusedOnly"> unused only</label>
-  <button id="settingsBtn" title="Settings — Medieval II root folder, launcher, defaults">⚙ Settings</button>
+  <button id="settingsBtn" title="Settings: Medieval II root folder, launcher, defaults">⚙ Settings</button>
   <button id="logBtn" title="Log + undo">🕑 Log</button>
   <span class="count" id="count"></span>
 </header>
@@ -1376,7 +1473,7 @@
     </select>
     <h3>Faction</h3>
     <select id="facSort" style="width:100%;margin-bottom:6px"
-      title="Which of the two names factions are listed and sorted by — the other one goes in brackets">
+      title="Which of the two names factions are listed and sorted by. The other one goes in brackets.">
       <option value="name">A→Z by in-game name</option>
       <option value="code">A→Z by code name</option>
     </select>
@@ -1396,7 +1493,7 @@
   <aside class="filters" id="bldFilters" style="display:none">
     <h3>Culture (art)</h3>
     <select id="bldCulture" style="width:100%"
-      title="Building icons are per culture — this picks whose art the grid shows"></select>
+      title="Building icons are per culture, and this picks whose art the grid shows"></select>
     <h3>Settlement</h3>
     <div id="bldSettleFilter">
       <label class="opt"><input type="checkbox" value="city" class="bldset"> City</label>

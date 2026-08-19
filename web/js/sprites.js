@@ -134,9 +134,9 @@ function renderSprites(){
             Mark ${picked.length} done by hand</button>
           <button ${picked.length?'':'disabled'} onclick="sprMark(false)">Unmark</button>
           <span class="count">${s.done_total} marked done${s.todo
-            ?' — hidden along with models whose lines all resolve':''}</span>
+            ?', hidden along with models whose lines all resolve':''}</span>
         </div>
-        <div class="sprnote">Mounts need their own sprites — pick the <b>mount's</b> model,
+        <div class="sprnote">Mounts need their own sprites, so pick the <b>mount's</b> model,
           not the rider's; the game merges the two.</div>
         <div class="sprpick">${shown.length?shown.map(m=>`
           <label><input type="checkbox" ${s.picked.has(m.name)?'checked':''}
@@ -151,7 +151,7 @@ function renderSprites(){
             Nothing is written to disk for this method.</div>
           <textarea class="sprlua" readonly onclick="this.select()">${
             picked.length?picked.map(m=>`M2TWEOP.generateSprite("${m}")`).join('\n')
-            :'— pick one or more models above —'}</textarea>
+            :'Pick one or more models above.'}</textarea>
           <div class="sprrow"><button ${picked.length?'':'disabled'}
             onclick="sprCopyLua()">Copy to clipboard</button>
             <span class="count">Sprites land in ${sprExportDirs(s)}</span></div>`
@@ -160,7 +160,7 @@ function renderSprites(){
             <span class="count">CFG that launches the mod</span>
             <select onchange="sprSet('cfg',this.value)" style="max-width:340px">
               ${s.cfgs.length?s.cfgs.map(c=>`<option value="${esc(c)}" ${c===s.cfg?'selected':''}>${esc(c)}</option>`).join('')
-                :'<option value="">— none found —</option>'}
+                :'<option value="">None found</option>'}
             </select>
             <span class="sprtag ${cfgState==='on'?'on':'off'}">bypass ${esc(cfgState)}</span>
           </div>
@@ -181,7 +181,7 @@ function renderSprites(){
       <span class="count">${pending.length} waiting</span></h3>
       <div class="sprbody">
         ${s.have_nvcompress?'':`<div class="sprnote w-warn">nvcompress.exe is missing from
-          tools/nvtt — conversion can't run.</div>`}
+          tools/nvtt, so conversion can't run.</div>`}
         <div class="sprnote">${docPoints('Conversion runs here, start to finish.',[
           'TGA → DXT5 DDS → <code>.texture</code>.',
           `Installed into <code>${esc(s.install_dir)}</code>.`,
@@ -194,7 +194,7 @@ function renderSprites(){
         :`<div class="sprnote">Nothing waiting in ${sprExportDirs(s)}.
            Run step 1 first, then come back and hit Rescan.</div>`}
         ${s.pending.length>pending.length?`<div class="sprnote w-warn">
-          ${s.pending.length-pending.length} incomplete set(s) ignored — missing their
+          ${s.pending.length-pending.length} incomplete set(s) ignored, because they are missing their
           <code>.spr</code> or their sheets.</div>`:''}
         <div class="sprrow">
           <button class="primary" ${pending.length&&s.have_nvcompress?'':'disabled'}
@@ -219,7 +219,7 @@ function renderSprites(){
           that will never exist.</div>
         ${a.misnamed.length?`
           <div class="sprnote"><b class="w-warn">${a.misnamed_total}</b> line(s) point at nothing
-            while the file the generator produced <i>is</i> on disk — a one-click fix.</div>
+            while the file the generator produced <i>is</i> on disk. It is a one-click fix.</div>
           <div class="sprlist">
             <div class="r hrow"><span>Points at</span><span>Model</span><span>Faction</span></div>
             ${a.misnamed.slice(0,50).map(r=>`<div class="r"><span>${esc(r.path)}</span>
@@ -228,10 +228,10 @@ function renderSprites(){
           <div class="sprrow"><button class="primary" onclick="sprFixNames()">
             Repoint ${a.misnamed.length} line(s)</button>
             ${a.misnamed_total>a.misnamed.length?`<span class="count">of ${a.misnamed_total}
-              — run it again for the rest</span>`:''}</div>`
+              Run it again for the rest.</span>`:''}</div>`
         :'<div class="sprnote">No misnamed sprite lines.</div>'}
         ${a.missing?`<div class="sprnote w-warn">${a.missing} line(s) name a sprite
-          that isn't on disk at all — generate those models in step 1.</div>`:''}
+          that isn't on disk at all. Generate those models in step 1.</div>`:''}
         ${a.orphans?`<div class="sprnote">${a.orphans} sprite file(s) in
           <code>unit_sprites/</code> that no modeldb line names.</div>`:''}
       </div></div>`;
@@ -255,16 +255,16 @@ function sprResultHtml(r){
 }
 async function sprCopyLua(){
   const t=[...state.spr.picked].map(m=>`M2TWEOP.generateSprite("${m}")`).join('\n');
-  try{ await navigator.clipboard.writeText(t); toast('Copied — paste it into the EOP console.'); }
-  catch(e){ toast('Could not reach the clipboard — select the box and copy manually.'); }
+  try{ await navigator.clipboard.writeText(t); toast('Copied. Paste it into the EOP console.'); }
+  catch(e){ toast('Could not reach the clipboard. Select the box and copy manually.'); }
 }
 async function sprPrep(){
   const s=state.spr;
   const r=await api.post('/api/sprites/prep_apply',{mod:state.src,models:[...s.picked],
     method:'classic',cfg_path:s.cfg});
   if(r.error)return toast(r.error);
-  if(r.unknown?.length)toast(`${r.unknown.length} name(s) are not modeldb entries — skipped.`);
-  else toast(`Ready — run the mod, then come back to step 2.`);
+  if(r.unknown?.length)toast(`${r.unknown.length} name(s) are not modeldb entries, so they were skipped.`);
+  else toast(`Ready. Run the mod, then come back to step 2.`);
   await loadSprites();
 }
 async function sprRevert(){
@@ -292,7 +292,7 @@ async function sprWire(){
   const r=await api.post('/api/sprites/wire',{mod:state.src,models:last.models,
     duplicates:last.duplicates});
   if(r.error)return toast(r.error);
-  toast('Modeldb updated — undo is in the log.');
+  toast('Modeldb updated. Undo is in the log.');
   await loadSprites();
 }
 async function sprFixNames(){
@@ -302,7 +302,7 @@ async function sprFixNames(){
   for(const r of state.spr.audit.misnamed)(models[r.model]||(models[r.model]=[])).push(r.faction);
   const res=await api.post('/api/sprites/wire',{mod:state.src,models});
   if(res.error)return toast(res.error);
-  toast('Sprite lines repointed — undo is in the log.');
+  toast('Sprite lines repointed. Undo is in the log.');
   await loadSprites();
 }
 
@@ -312,7 +312,7 @@ function renderSounds(){
   if(!s.has_file){
     main.innerHTML=`<div class="empty">“${esc(state.src)}” has no
       <code>data/export_descr_sounds_units_voice.txt</code>.<br>
-      <span class="count">Without that file there is no voice bank to edit — units fall back
+      <span class="count">Without that file there is no voice bank to edit, so units fall back
       to the game's own.</span></div>`;
     sndBtn.textContent='Apply voice edits (0)'; sndBtn.disabled=true; return;
   }
@@ -362,7 +362,7 @@ function renderSounds(){
       <span class="grow"></span>
       ${s.tab==='orphans'?'':`<span class="count">Set all ${s.view.length} shown to copy</span>
       <select onchange="sndFilter('bulkDonor',this.value)" style="max-width:230px">
-        <option value="">— pick a unit —</option>
+        <option value="">Pick a unit</option>
         ${s.donors.map(d=>`<option value="${esc(d.name)}" ${d.name===s.bulkDonor?'selected':''}>${esc(d.name)} (${esc(d.accent)}/${esc(d['class'])})</option>`).join('')}
       </select>
       <button onclick="sndBulk()">Apply to shown</button>`}
@@ -376,13 +376,16 @@ export_descr_sounds_units_voice.txt stores it. Click a unit's name to look at it
     ${all.length?`<div class="sndlist">
       <div class="sndrow hrow"><span>Unit</span><span>In game now</span><span>Accent</span>
         <span>Class</span><span>Copy sounds from</span><span>Drop</span></div>
+      <!-- the unit card sits beside the name, the same picture the unit editor
+           and the recruitment lists show: a voice bank is 900 rows of type names,
+           and a type name is the one thing about a unit nobody recognises -->
       ${s.view.map(sndRowHtml).join('')}</div>`
      :'<div class="empty">No units match.</div>'}
     </div>
     ${s.cv?`<div id="sndCodeCol">${cvHtml(s.cv)}</div>`:''}
     </div>
     ${all.length>SND_CAP?`<div class="count" style="margin:10px 0">Showing the first
-      ${SND_CAP} of ${all.length} — narrow it down with the filters or the search box.</div>`:''}`;
+      ${SND_CAP} of ${all.length}. Narrow it down with the filters or the search box.</div>`:''}`;
   if(s.cv&&s.cv.loaded)cvWire(s.cv);
 }
 function sndRowHtml(u,i){
@@ -394,18 +397,20 @@ function sndRowHtml(u,i){
   let now;
   if(isOrphan) now=`<span class="w-warn">no such unit</span>`;
   else if(!has) now=u.edu_accent
-    ? (u.accent_valid?`<span class="count">${esc(u.edu_accent)} — generic</span>`
-                     :`<span class="w-bad" title="the EDU names an accent this mod's voice bank has no block for">${esc(u.edu_accent)} ✗</span>`)
-    : `<span class="w-warn" title="no accent line in the EDU at all">no accent</span>`;
+    ? (u.accent_valid?`<span class="count">${esc(u.edu_accent)}, generic</span>`
+                     :`<span class="w-bad" title="The EDU names an accent this mod's voice bank has no block for.">${esc(u.edu_accent)} ✗</span>`)
+    : `<span class="w-warn" title="No accent line in the EDU at all.">No accent</span>`;
   else now=(u.accent_conflict||u.class_conflict)
-    ? `<span class="w-bad" title="EDU says ${esc(u.edu_accent||'—')}/${esc(u.edu_class||'—')}, the bank has it in ${esc(u.accent)}/${esc(u['class'])} . The game follows the EDU, so these sounds never play">${esc(u.accent)}/${esc(u['class'])} ✗</span>`
+    ? `<span class="w-bad" title="EDU says ${esc(u.edu_accent||'none')}/${esc(u.edu_class||'none')}, the bank has it in ${esc(u.accent)}/${esc(u['class'])} . The game follows the EDU, so these sounds never play">${esc(u.accent)}/${esc(u['class'])} ✗</span>`
     : `<span class="count">${esc(u.accent)}/${esc(u['class'])}</span>`;
   if(isOrphan) return `<div class="sndrow ${dropping?'dropping':''}">
-    <div class="un"><div class="nm">${esc(u.name)}</div><div class="ty">voice entry only</div></div>
+    <div class="un"><span class="uc empty" title="No unit by this name exists, so it has no card."></span>
+      <span class="un2"><span class="nm">${esc(u.name)}</span>
+        <span class="ty">Voice entry only</span></span></div>
     <span class="now">${now}</span>
     <span class="count">${esc(u.accent)}</span><span class="count">${esc(u['class'])}</span>
-    <span class="count">—</span>
-    <span class="rm"><input type="checkbox" ${dropping?'checked':''} title="delete this entry from the voice bank"
+    <span class="count">None</span>
+    <span class="rm"><input type="checkbox" ${dropping?'checked':''} title="Delete this entry from the voice bank."
       onchange="sndToggleRemove(${i},this.checked)"></span></div>`;
   const donors=sndDonors(a,c);
   const sel=(cur,vals,key,blank)=>`<select onchange="sndPick(${i},'${key}',this.value)" ${dropping?'disabled':''}>
@@ -415,17 +420,20 @@ function sndRowHtml(u,i){
     data-label="unit" data-snd="${esc(u.type)}">
     <div class="un" onclick="sndCvShow('${q1(esc(u.type))}')"
       title="Show this unit's block in the code view">
-      <div class="nm">${esc(u.name||u.type)}</div><div class="ty">${esc(u.type)}</div></div>
+      <img class="uc" loading="lazy" onerror="iconRetry(this)"
+        src="${iconUrl(state.src,u.type)}" alt="">
+      <span class="un2"><span class="nm">${esc(u.name||u.type)}</span>
+        <span class="ty">${esc(u.type)}</span></span></div>
     <span class="now">${now}</span>
-    ${sel(a,s.accents,'accent','— accent —')}
-    ${sel(c,s.classes,'class','— class —')}
+    ${sel(a,s.accents,'accent','Pick an accent')}
+    ${sel(c,s.classes,'class','Pick a class')}
     <select onchange="sndPick(${i},'donor',this.value)" ${dropping?'disabled':''}
       title="${a&&c?`units with their own barks in ${esc(a)}/${esc(c)}`:'pick an accent and a class first'}">
-      <option value="">${a&&c?(has?'— keep its own sounds —':`— pick a unit (${donors.length}) —`):'— accent/class first —'}</option>
+      <option value="">${a&&c?(has?'Keep its own sounds':`Pick a unit (${donors.length})`):'Pick an accent and a class first'}</option>
       ${donors.map(d=>`<option value="${esc(d.name)}" ${d.name===(op.donor||'')?'selected':''}>${esc(d.name)}</option>`).join('')}
     </select>
     <span class="rm">${has?`<input type="checkbox" ${dropping?'checked':''}
-      title="remove this unit's voice entry from the bank" onchange="sndToggleRemove(${i},this.checked)">`:''}</span>
+      title="Remove this unit's voice entry from the bank." onchange="sndToggleRemove(${i},this.checked)">`:''}</span>
   </div>`;
 }
 /* ---- code view on the sounds screen ----
@@ -474,7 +482,7 @@ async function sndApply(){
   const bad=(r.errors||[]).length;
   modal.innerHTML=`<h2>Voice edits <span class="pill">${esc(state.src)}</span></h2>
     <div class="mbody">
-      ${bad?`<div class="warnbox">⚠ <b>${bad} row(s) can't be written</b> — nothing is applied
+      ${bad?`<div class="warnbox">⚠ <b>${bad} row(s) can't be written.</b> Nothing is applied
         until they are fixed or removed from the selection.<br>
         ${r.errors.map(e=>esc(e)).join('<br>')}</div>`:''}
       <div class="count" style="margin-bottom:8px">${docPoints(

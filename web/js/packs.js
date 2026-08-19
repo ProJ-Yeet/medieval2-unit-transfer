@@ -58,7 +58,7 @@ function packExportRender(){
           <span class="stext">${esc(w)}</span></div>`).join('')}
       </div>
       <div class="bnote">The zip is a miniature mod. Whoever you send it to opens the toolkit,
-        picks the mod they want the units in and hits <b>📦 Import pack…</b> — the import runs the
+        picks the mod they want the units in and hits <b>📦 Import pack…</b>. The import runs the
         same checks, renames and options a normal transfer does. Voices are not carried: an
         imported unit is given a voice from the receiving mod, which is the only kind that will
         actually play there.</div>
@@ -86,7 +86,7 @@ async function packWrite(){
   const rec=r.record;
   box.innerHTML=`<div class="sum" style="margin-top:10px">
     <div class="srow good"><span class="sicon">✓</span><span class="stext">
-      Wrote <code>${esc(rec.path)}</code> — ${rec.files} file(s), ${MBs(rec.bytes)}</span></div></div>`;
+      Wrote <code>${esc(rec.path)}</code>: ${rec.files} file(s), ${MBs(rec.bytes)}</span></div></div>`;
   toast(`Pack written: ${rec.path}`,5000);
 }
 
@@ -116,7 +116,7 @@ function packImportRender(){
         m.source_mod?` · made from <b>${esc(m.source_mod)}</b>`:''}${
         m.created?` on ${esc(m.created)}`:''}</div>
       ${r.has_manifest?'':`<div class="warnbox">This zip carries no <code>unitpack.json</code>.
-        It still looks like a mod, so it can still be imported — just be sure you know where
+        It still looks like a mod, so it can still be imported. Just be sure you know where
         it came from.</div>`}
       <div class="baselist" style="max-height:280px">${r.units.map(u=>`
         <div class="baserow">
@@ -126,7 +126,7 @@ function packImportRender(){
         </div>`).join('')||'<div class="caprow"><span class="count">This pack names no units.</span></div>'}</div>
       <div class="bnote">${r.entries.length} battle-model entr${r.entries.length===1?'y':'ies'} travel with them.
         Importing mounts the pack as a source mod and drops you in the normal transfer screen, so
-        name clashes, the base unit, ownership and every other option are asked there — nothing is
+        name clashes, the base unit, ownership and every other option are asked there. Nothing is
         written until you press Transfer.</div>
     </div>
     <div class="foot">
@@ -187,7 +187,7 @@ function renderCleanup(){
   document.getElementById('modal').innerHTML=`
     <h2>Clean up ${esc(a.mod)}’s battle_models.modeldb</h2>
     <div class="mbody">
-      <div class="count" style="margin-bottom:10px">${a.entry_count} entries scanned. Nothing is deleted —
+      <div class="count" style="margin-bottom:10px">${a.entry_count} entries scanned. Nothing is deleted:
         everything ticked is <b>moved</b> into the folder below, in the mod's own layout, so it can be
         pasted straight back. Undoable from 🕑 Log.</div>
 
@@ -198,10 +198,10 @@ function renderCleanup(){
           <button onclick="clPickTarget()">Browse…</button>
         </div>
         <div class="treebox">${esc(a.mod)}_unused\\
-  removed_battle_models.modeldb   <span style="color:var(--dim)">— only the entries that were removed</span>
-  removed_mounts.txt              <span style="color:var(--dim)">— the descr_mount.txt blocks that were removed</span>
-  data\\unit_models\\…              <span style="color:var(--dim)">— their meshes/textures, same paths as in the mod</span>
-  unused_files\\data\\unit_models\\… <span style="color:var(--dim)">— files no entry mentions at all</span></div>
+  removed_battle_models.modeldb   <span style="color:var(--dim)">only the entries that were removed</span>
+  removed_mounts.txt              <span style="color:var(--dim)">the descr_mount.txt blocks that were removed</span>
+  data\\unit_models\\…              <span style="color:var(--dim)">their meshes and textures, same paths as in the mod</span>
+  unused_files\\data\\unit_models\\… <span style="color:var(--dim)">files no entry mentions at all</span></div>
         <div class="count" style="margin-top:6px">Must be outside the mod, or the files never really leave it.</div>
       </fieldset>
 
@@ -214,10 +214,10 @@ function renderCleanup(){
       ${a.mentioned.length?`<div class="count">${a.mentioned.length} more entr${
         a.mentioned.length===1?'y is':'ies are'} used by no unit but named in another file
         (<code>${[...new Set(a.mentioned.map(m=>m.file))].slice(0,4).map(esc).join('</code>, <code>')}</code>)
-        — left alone.</div>`:''}
+        They are left alone.</div>`:''}
       ${a.mentioned_mounts.length?`<div class="count">${a.mentioned_mounts.length} mount${
         a.mentioned_mounts.length===1?' is':'s are'} ridden by no unit but still named in a
-        <code>descr_*.txt</code> — not offered above.</div>`:''}
+        <code>descr_*.txt</code>, so they are not offered above.</div>`:''}
       ${a.campaign_files.length?`<div class="count">Campaign files also read for
         <code>battle_model</code> references:
         <code>${a.campaign_files.map(esc).join('</code>, <code>')}</code>.</div>`:''}
@@ -250,9 +250,9 @@ function clLuaBox(a){
   const scanned=a.lua_files||0;
   if(!scanned) return '';
   if(!kept.length) return `<div class="count">Read <b>${scanned}</b> <code>.lua</code> script${
-    scanned===1?'':'s'} in the mod — none of them names a battle-model entry, so nothing was held back for that.</div>`;
+    scanned===1?'':'s'} in the mod. None of them names a battle-model entry, so nothing was held back for that.</div>`;
   const rows=kept.slice(0,60).map(m=>`<div class="frow"><span class="fp">${esc(m.entry)}</span><span class="fs">${
-    esc(m.file)}${m.in_comment?' — in a comment, still protected':''}</span></div>`).join('');
+    esc(m.file)}${m.in_comment?' (in a comment, and still protected)':''}</span></div>`).join('');
   return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--good)">
     <legend class="w-good">Protected by the mod's Lua scripts</legend>
     <div class="count"><b>${kept.length}</b> entr${kept.length===1?'y is':'ies are'} named by one of this mod's
@@ -265,7 +265,7 @@ function clLuaBox(a){
 }
 function clUnusedBody(){
   const c=state.clean,rows=c.a.unused;
-  if(!rows.length)return '<div class="count" style="margin-top:8px">Nothing — every entry is referenced. 🎉</div>';
+  if(!rows.length)return '<div class="count" style="margin-top:8px">Nothing. Every entry is referenced. 🎉</div>';
   return `<div class="count" style="margin-top:7px">No unit, mount or character in this mod names these.
       Their files move out too, unless an entry that stays also uses them.</div>
     <div class="clbar">
@@ -275,7 +275,7 @@ function clUnusedBody(){
       <input type="checkbox" ${c.entries.has(u.entry)?'checked':''}
         onchange="clPick('entries','${q1(esc(u.entry))}',this.checked)">
       <div class="grow"><span class="nm">${esc(u.entry)}</span>${u.copies>1?`
-        <span class="badge w-warn">×${u.copies} copies of this name — all go</span>`:''}
+        <span class="badge w-warn">×${u.copies} copies of this name, and all of them go</span>`:''}
         <div class="sub">${u.lods} LOD${u.lods===1?'':'s'} · ${u.skins} skin${u.skins===1?'':'s'} ·
           ${u.files.length} file${u.files.length===1?'':'s'} named, ${u.on_disk} on disk</div></div>
     </div>`).join('')}</div>`;
@@ -289,7 +289,7 @@ function clMergeBody(){
   return `<div class="count" style="margin-top:7px">
       Each of these is used only by a unit's <code>soldier</code> line and has a twin with the same
       footer (animations, skeletons, torch), so the line can point at the twin instead.
-      <b>Check each pair first</b> — the twin's meshes and textures are its own.</div>
+      <b>Check each pair first.</b> The twin's meshes and textures are its own.</div>
     <div class="clbar">
       <button onclick="clAll('merges',true)">Agree to all</button>
       <button onclick="clAll('merges',false)">None</button></div>
@@ -308,7 +308,7 @@ function clMergeBody(){
         <div class="sub">soldier of ${m.units.map(u=>userLink(u)).join(', ')}
           · ${m.lods} LOD${m.lods===1?'':'s'}, ${m.files.length} file${m.files.length===1?'':'s'}</div>
         ${risky?`<div class="sub w-warn">⚠ ${esc(m.units_without_upgrades.join(', '))}
-          list no armour_ug_models, so this entry IS what you see on the field — swapping it
+          list no armour_ug_models, so this entry IS what you see on the field. Swapping it
           changes how the unit looks.</div>`:''}
       </div></div>`;}).join('')}</div>`;
 }
@@ -330,7 +330,7 @@ function clInto(entry,into){
    one part of the cleanup that rewrites descr_mount.txt. */
 function clMountBody(){
   const c=state.clean,rows=c.a.unused_mounts;
-  if(!rows.length)return '<div class="count" style="margin-top:8px">None — every mount is ridden by a unit.</div>';
+  if(!rows.length)return '<div class="count" style="margin-top:8px">None. Every mount is ridden by a unit.</div>';
   return `<div class="count" style="margin-top:7px">No unit rides these, so their
       <code>descr_mount.txt</code> blocks do nothing. Ticking one removes the block and frees its
       modeldb entry if nothing else uses the model. Removed blocks are saved to
@@ -345,7 +345,7 @@ function clMountBody(){
         ${m.class?`<span class="badge">${esc(m.class)}</span>`:''}
         ${m.frees_model?`<span class="badge" style="color:var(--good);border-color:var(--good)">frees ${esc(m.model)}</span>`:''}
         <div class="sub">model <code>${esc(m.model||'(none)')}</code>${
-          m.in_db?'':' <span class="w-warn">— not in the modeldb</span>'}</div>
+          m.in_db?'':' <span class="w-warn">(not in the modeldb)</span>'}</div>
         ${!m.frees_model&&m.kept_by.length?`<div class="sub">its model stays: still used by
           ${esc(m.kept_by.join(', '))}</div>`:''}
         ${!m.frees_model&&!m.kept_by.length&&m.mentioned_in?`<div class="sub">its model stays:
@@ -354,9 +354,9 @@ function clMountBody(){
 }
 function clOrphanBody(){
   const c=state.clean,rows=c.a.orphans;
-  if(!rows.length)return '<div class="count" style="margin-top:8px">None — every file under unit_models is named by an entry.</div>';
+  if(!rows.length)return '<div class="count" style="margin-top:8px">None. Every file under unit_models is named by an entry.</div>';
   return `<div class="count" style="margin-top:7px">Files sitting in <code>data/unit_models</code> that
-      <b>no</b> modeldb entry names — removed ones or not. They go to
+      <b>no</b> modeldb entry names, removed or otherwise. They go to
       <code>unused_files\\</code> in the destination, paths mirrored.</div>
     <div class="clbar">
       <button onclick="clAll('orphans',true)">Select all</button>
@@ -439,11 +439,11 @@ async function clApply(){
       `and ${r.export_count} file(s) out of “${c.a.mod}”?\n\nThey are copied to:\n${r.target}\n\n`+
       `${r.merges.length?`${r.merges.length} unit soldier line(s) are repointed at their twin.\n\n`:''}`+
       `${r.mount_deletes.length?`${r.mount_deletes.length} mount(s) are removed from descr_mount.txt.\n\n`:''}`+
-      `Everything touched is backed up first — 🕑 Log → Undo puts it all back.`))return;
+      `Everything touched is backed up first. 🕑 Log → Undo puts it all back.`))return;
   const job=newJob();
   const res=await runJob(job,'Cleaning up…',
     `Copying ${r.export_count} file(s) out, then rewriting ${esc(c.a.mod)}’s modeldb.
-     Everything is backed up as it goes — 🕑 Log → Undo puts it all back.`,
+     Everything is backed up as it goes. 🕑 Log → Undo puts it all back.`,
     ()=>api.post('/api/bmdb/cleanup_apply',{...clPayload(),job,clear_strings_bin:clearBinOn()}));
   if(res.error){toast('Cleanup failed: '+res.error);renderCleanup();return;}
   closeModal();
@@ -462,13 +462,13 @@ function edDeleteDialog(){
       <fieldset><legend>Also remove</legend>
         <label class="chk"><input type="checkbox" id="dOptLoc" checked> its text entry
           (<code>${esc(e.d.dictionary)}</code>) from export_units.txt</label><br>
-        <label class="chk"><input type="checkbox" id="dOptModels"> its battle-model entries —
+        <label class="chk"><input type="checkbox" id="dOptModels"> its battle-model entries:
           only ones no other unit or mount uses</label><br>
         <label class="chk"><input type="checkbox" id="dOptAssets"> the mesh/texture files of those
           entries (only if nothing else references them)</label><br>
         <label class="chk"><input type="checkbox" id="dOptIcons"> its unit card and info card</label>
       </fieldset>
-      <div class="count">Everything removed is backed up first — 🕑 Log → Undo restores it byte-exact.</div>
+      <div class="count">Everything removed is backed up first. 🕑 Log → Undo restores it byte for byte.</div>
       <div id="edPreview"></div>
     </div>
     <div class="foot"><button onclick="renderEditor()">Cancel</button>

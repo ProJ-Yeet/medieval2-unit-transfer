@@ -79,7 +79,7 @@ function mpRender(){
           ${s.tab==='skel'?`<select onchange="mpSet('skel',this.value)" style="max-width:280px">
             <option value="">Every skeleton</option>
             ${s.skeletons.map(k=>`<option value="${esc(k.name)}" ${k.name===s.skel?'selected':''}
-              >${esc(k.name)} — ${k.entries} entr${k.entries===1?'y':'ies'}</option>`).join('')}
+              >${esc(k.name)}: ${k.entries} entr${k.entries===1?'y':'ies'}</option>`).join('')}
           </select>`:''}
           <input id="mpQ" placeholder="${s.tab==='skel'?'Narrow these…':'Search entries and skeletons…'}"
             value="${esc(s.q||'')}" oninput="mpSet('q',this.value)" style="flex:1">
@@ -93,7 +93,7 @@ function mpRender(){
             <span class="mu">${e.used_by?`${e.used_by} user${e.used_by===1?'':'s'}`
               :'<span class="w-warn">unused</span>'}</span>
           </div>`).join(''):'<div class="caprow"><span class="count">Nothing matches.</span></div>'}</div>
-        ${mpShown().length>400?`<div class="bnote">Showing the first 400 — narrow it down.</div>`:''}
+        ${mpShown().length>400?`<div class="bnote">Showing the first 400. Narrow it down.</div>`:''}
         <div class="bnote">The skeleton is what decides how the man moves. An entry with a
           different one will animate differently even if the meshes look the same.</div>`}
     </div>
@@ -113,7 +113,7 @@ function mpUnitBody(){
         <div><div class="bn">${esc(u.name)}</div>
           <div class="bs">${esc(u.type)}${u.soldier_model?` · <code>${esc(u.soldier_model)}</code>`:''}</div></div>
       </div>`).join('')||'<div class="caprow"><span class="count">No units match.</span></div>'}</div>
-    <div class="bnote">Takes that unit's whole <code>soldier</code> line — model, men, extras and mass —
+    <div class="bnote">Takes that unit's whole <code>soldier</code> line (model, men, extras and mass)
       not just the entry name. The men count is usually what you want to check afterwards.</div>`;
 }
 // Write one part back through the same path the boxes use, then reopen the form.
@@ -194,8 +194,8 @@ function gfChips(host,label,items){
       <span class="g">⠿</span><span class="${i===0?'first':''}">${esc(v)}</span>
       <button class="x" title="Remove ${esc(v)}"
         onclick="gfListRemove('${q1(esc(label))}',${i})">✕</button></span>`).join('')
-    ||'<span class="count">— empty —</span>'}
-    ${gone.map(v=>`<span class="chipd gone" title="Removed by you — click to put it back"
+    ||'<span class="count">Empty</span>'}
+    ${gone.map(v=>`<span class="chipd gone" title="Removed by you. Click to put it back."
       onclick="gfListRestore('${q1(esc(label))}','${q1(esc(v))}')">${esc(v)}</span>`).join('')}</div>`;
 }
 function gfListRestore(label,v){
@@ -240,10 +240,10 @@ function gfAttrWidget(host,label,cur){
   return `<div class="gfrow"><div style="flex:1;min-width:0">
     ${gfChips(host,label,have)}
     <div class="barrow">
-      <details class="drop"><summary>▾ Abilities — ${have.filter(a=>!isAI(a)).length} on</summary>
+      <details class="drop"><summary>▾ Abilities: ${have.filter(a=>!isAI(a)).length} on</summary>
         <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
           ${abilities.map(box).join('')}</div></div></details>
-      <details class="drop"><summary>▾ AI hints — ${have.filter(isAI).length} on</summary>
+      <details class="drop"><summary>▾ AI hints: ${have.filter(isAI).length} on</summary>
         <div class="dropbody"><div class="count" style="margin-bottom:6px">These change nothing about the
           unit itself; they tell the campaign AI what kind of unit it is looking at.</div>
           <div class="faclist" style="border:none;padding:0;max-height:none">${hints.map(box).join('')}</div>
@@ -253,7 +253,7 @@ function gfAttrWidget(host,label,cur){
       <button onclick="gfListAdd('${q1(esc(label))}')">Add</button>
     </div>
     ${unknown.length?`<div class="gfnote">Not in this mod’s usual set:
-      <b>${unknown.map(esc).join(', ')}</b> — kept as typed.</div>`:''}
+      <b>${unknown.map(esc).join(', ')}</b>, kept as typed.</div>`:''}
   </div></div>`;
 }
 // stat_pri_attr / stat_sec_attr / stat_ter_attr: same idea, but "empty" is the
@@ -266,7 +266,7 @@ function gfWeaponAttrWidget(host,label,cur){
   return `<div class="gfrow"><div style="flex:1;min-width:0">
     ${gfChips(host,label,have.length?have:[])}
     <div class="barrow">
-      <details class="drop"><summary>▾ Choose attributes — ${have.length} on</summary>
+      <details class="drop"><summary>▾ Choose attributes: ${have.length} on</summary>
         <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
           ${all.map(a=>facCheckRow(a,'',
             `gfWAttrToggle('${q1(esc(label))}','${q1(esc(a))}',this.checked)`,
@@ -276,7 +276,7 @@ function gfWeaponAttrWidget(host,label,cur){
         style="width:170px;font-size:12px;padding:3px 7px">
       <button onclick="gfListAdd('${q1(esc(label))}')">Add</button>
     </div>
-    ${have.length?'':'<div class="gfnote">None — the line is written as <code>no</code>.</div>'}
+    ${have.length?'':'<div class="gfnote">None, so the line is written as <code>no</code>.</div>'}
   </div></div>`;
 }
 function gfWAttrToggle(label,attr,on){
@@ -314,7 +314,7 @@ function gfFactionWidget(host,label,cur){
   return `<div class="gfrow"><div style="flex:1;min-width:0">
     ${gfChips(host,label,list)}
     <div class="barrow">
-      <details class="drop"><summary>▾ Choose factions — ${list.length} selected</summary>
+      <details class="drop"><summary>▾ Choose factions: ${list.length} selected</summary>
         <div class="dropbody"><div class="faclist" style="border:none;padding:0;max-height:none">
           ${all.map(f=>facCheckRow(f,gfFacName(host,f),
               `gfListToggle('${q1(esc(label))}','${q1(esc(f))}',this.checked)`,
@@ -376,12 +376,12 @@ function gfAddHtml(host){
     <span class="count">Add a line:</span>
     <select id="gfAddKey">${(list.length?list:missing).map(k=>{
       const sp=GF_FIELDS[k];
-      return `<option value="${esc(k)}">${esc(k)}${sp?' — '+esc(sp.t):''}</option>`;}).join('')
-      ||'<option value="">— the unit already has every known line —</option>'}</select>
+      return `<option value="${esc(k)}">${esc(k)}${sp?': '+esc(sp.t):''}</option>`;}).join('')
+      ||'<option value="">The unit already has every known line</option>'}</select>
     <button onclick="gfAdd()">Add</button>
     ${offCount<3?`<button onclick="gfAddOfficer()" title="Officers are extra men on top of the unit; up to three"
       >＋ Officer (${offCount}/3)</button>`:''}
-    ${here.length&&here.length!==missing.length?'<span class="count">— missing from this group</span>':''}
+    ${here.length&&here.length!==missing.length?'<span class="count">Missing from this group</span>':''}
   </div>`;
 }
 function gfAdd(){

@@ -89,7 +89,9 @@ function cvCreate(o){
     // comparing against it — see edCvUserEdited.
     auto:null,
     err:null, errLine:0, busy:false, edited:false, loaded:false, canRepair:false,
-    canTidy:false, timer:null, seq:0, applying:false};
+    canTidy:false, timer:null, seq:0, applying:false,
+    // the pane's own Ctrl+Z stack, see cvUndoInit
+    uPast:[], uFuture:[], uAt:'', uTimer:null};
   CV_LIVE[cv.uid]=cv;
   return cv;
 }
@@ -116,6 +118,7 @@ async function cvLoad(cv){
   cv.loaded=true;
   if(r.error){cv.err=r.error; return cv;}
   cvTakeView(cv,r);
+  cvUndoInit(cv);                 // this text is the record, not a step to go back to
   cv.base=cv.pristine=(r.full!=null?r.full:r.text);
   cv.note=r.note||''; cv.detail=r.detail||null;
   cv.canRepair=!!r.can_repair; cv.canTidy=!!r.can_tidy;
@@ -147,6 +150,7 @@ async function cvAutoTidy(cv){
   catch(e){ return cv; }
   if(!r||!r.ok)return cv;              // an untidy block is still a readable one
   cvTakeView(cv,r);
+  cvUndoInit(cv);                 // the tool lined it up, so it is where undo starts
   cv.base=cv.auto=(r.full!=null?r.full:r.text);
   cv.owns=true; cv.edited=false;
   return cv;
@@ -165,7 +169,7 @@ function cvHtml(cv){
       <span class="sp"></span>
       ${cv.canRepair?`<button title="Every string here is stored as its own length
 followed by that many characters. Change a path and the number beside it has to
-change too — this does that, and you can see it happen."
+change too. This does that, and you can see it happen."
         onclick="cvRepair(cvOf('${cv.uid}'))">⟲ Fix lengths</button>`:''}
       ${cv.canTidy?`<button class="${cvTidyOn()?'on':''}" title="Line every value up in
 one column, which is how this record now opens. Only the gap between a keyword
@@ -206,7 +210,7 @@ function cvStatus(cv){
   if(cv.err)return '<span class="w-bad">✗ this text can’t be read</span>';
   if(cv.readonly)return `what <code>${esc(cv.where)}</code> holds · read-only`;
   if(cv.busy)return 'checking…';
-  if(cv.edited)return '<span class="w-good">✓ reads back — saved exactly as typed</span>';
+  if(cv.edited)return '<span class="w-good">✓ Reads back, and is saved exactly as typed.</span>';
   // the pane is a promise about the bytes a save writes, so it owns up to the
   // one thing it changed on its own
   if(cv.auto&&cv.auto!==cv.pristine)
@@ -215,7 +219,7 @@ function cvStatus(cv){
 }
 function cvErrHtml(cv){
   if(!cv.err)return cv.note?`<div class="count">${esc(cv.note)}</div>`:'';
-  return `<div class="w-bad">✗ ${esc(cv.err)}${cv.errLine?` — line ${cv.errLine}`:''}
+  return `<div class="w-bad">✗ ${esc(cv.err)}${cv.errLine?` (line ${cv.errLine})`:''}
     <div class="count">Nothing is lost: fix the line, or undo your typing, and the
       boxes come straight back.</div></div>`;
 }
@@ -227,6 +231,7 @@ function cvWire(cv){
   ta.onscroll=()=>cvScroll(cv);
   if(!cv.readonly)ta.oninput=()=>{
     cv.text=ta.value; cv.busy=true; cv.err=null;
+    cvUndoTouch(cv);
     cvRedrawLines(cv); cvPaintStatus(cv);
     cvDebounce(cv,()=>cvParse(cv),250,'parse');
   };
@@ -353,15 +358,16 @@ function cvTook(cv,r,text){
    explicit and the corrected numbers appear on screen — nothing is fixed behind
    the user's back. */
 async function cvRepair(cv){
-  const text=cv.text;
+  const text=cv.text,before=cv.text;
   const r=await api.post('/api/codeview/repair',Object.assign(cvWho(cv),{text}));
   if(!r.ok){cv.err=r.error||'that could not be put right'; cv.errLine=r.line||0;
     cvPaintStatus(cv); cvPaintErrLine(cv); return;}
   cvTook(cv,r,r.text);
   const ta=document.getElementById('cvta-'+cv.uid);
   if(ta)ta.value=r.text;
+  cvUndoNote(cv,before);
   cvRedrawLines(cv);
-  toast('Lengths put right');
+  toast('Lengths put right.');
 }
 /* Re-column the record so its values line up. Pressed by hand this is an edit
    like any other: it goes through cvTook, so the boxes are re-read from it and
@@ -369,14 +375,16 @@ async function cvRepair(cv){
    between it and cvAutoTidy, which does the same rewriting when the record
    opens and is deliberately not the user's change. */
 async function cvTidy(cv){
+  const before=cv.text;
   const r=await api.post('/api/codeview/tidy',Object.assign(cvWho(cv),{text:cv.text}));
   if(!r.ok){cv.err=r.error||'that could not be tidied'; cv.errLine=r.line||0;
     cvPaintStatus(cv); cvPaintErrLine(cv); return;}
   cvTook(cv,r,r.text);
   const ta=document.getElementById('cvta-'+cv.uid);
   if(ta)ta.value=r.text;
+  cvUndoNote(cv,before);
   cvRedrawLines(cv);
-  toast('Lined up — save to keep it');
+  toast('Lined up. Save to keep it.');
 }
 /* ---- the two view settings, from the bar ----
    Turning tidying OFF cannot un-tidy text that has since been typed, so it does
@@ -401,6 +409,7 @@ async function cvCommentsToggle(cv){
   catch(e){ r=null; }
   if(!r||!r.ok){cvPaintStatus(cv); return;}
   cvTakeView(cv,r);
+  cvUndoInit(cv);                 // a different CUT of the same bytes, not an edit
   cvRepaintAll(cv);
 }
 function cvSetSetting(k,v){
@@ -429,6 +438,91 @@ function cvPaintErrLine(cv){
   if(d)d.classList.add('err');
 }
 
+/* ---- Ctrl+Z / Ctrl+Y inside the text pane ------------------------------
+   The pane is a textarea, so the browser had its own undo for it — until this
+   page took the keystroke away. undo.js listens on the document and, whenever
+   an editor is open, calls preventDefault and restores a snapshot of that
+   editor's BOXES. Typing in the pane is not in those snapshots, so Ctrl+Z there
+   did nothing at all: the browser's undo was suppressed and ours had nothing to
+   give back.
+
+   So the pane keeps its own stack of the text, in the same shape as undo.js's:
+   snapshots rather than commands, a run of typing coalescing into one step once
+   it stops. Two rules keep the two stacks from fighting.
+
+   * A text change nobody typed re-baselines the stack (`cvUndoInit`): the boxes
+     writing the text is the BOXES' step, and undo.js owns that one.
+   * An empty stack means "not mine" — the handler below returns without
+     touching the event, so undo.js runs next and takes back the box edit. Undo
+     therefore walks back through the pane's typing first and then out into the
+     editor around it, which is the order the edits were made in.
+
+   Nothing here writes to disk; this is the in-page working copy, exactly as in
+   undo.js. */
+const CV_UNDO_LIMIT=200;
+const CV_UNDO_QUIET=450;      // ms of no typing before a run becomes one step
+function cvUndoInit(cv){
+  clearTimeout(cv.uTimer); cv.uTimer=null;
+  cv.uPast=[]; cv.uFuture=[]; cv.uAt=cv.text;
+}
+// One step, from `before` to what the box holds now.
+function cvUndoNote(cv,before){
+  clearTimeout(cv.uTimer); cv.uTimer=null;
+  if(before==null||before===cv.text)return;
+  cv.uPast=cv.uPast||[]; cv.uFuture=cv.uFuture||[];
+  cv.uPast.push(before);
+  if(cv.uPast.length>CV_UNDO_LIMIT)cv.uPast.shift();
+  cv.uAt=cv.text; cv.uFuture.length=0;
+}
+// Still typing: the step is taken once the typing stops, so undo walks back a
+// word or a line rather than a letter.
+function cvUndoTouch(cv){
+  clearTimeout(cv.uTimer);
+  cv.uTimer=setTimeout(()=>{cv.uTimer=null; cvUndoNote(cv,cv.uAt);},CV_UNDO_QUIET);
+}
+const cvUndoCan=(cv,redo)=>!!(cv&&((redo?cv.uFuture:cv.uPast)||[]).length)
+  ||!!(cv&&!redo&&cv.uAt!=null&&cv.uAt!==cv.text);
+async function cvUndoStep(cv,redo){
+  cvUndoNote(cv,cv.uAt);                     // a half-typed run is a step too
+  const from=redo?cv.uFuture:cv.uPast, to=redo?cv.uPast:cv.uFuture;
+  if(!from||!from.length)return false;
+  to.push(cv.uAt);
+  const text=from.pop();
+  cv.uAt=cv.text=text;
+  const ta=document.getElementById('cvta-'+cv.uid);
+  if(ta){
+    const top=ta.scrollTop,left=ta.scrollLeft;
+    ta.value=text;
+    ta.scrollTop=top; ta.scrollLeft=left;    // undo must not throw you up the file
+  }
+  cv.busy=true; cv.err=null;
+  cvRedrawLines(cv); cvPaintStatus(cv);
+  await cvParse(cv);                          // the boxes follow the text, as ever
+  toast((redo?'↷ Redone':'↶ Undone')
+    +` in the text · ${cv.uPast.length} more to undo`,1400);
+  return true;
+}
+// The pane the caret is in, if it is in one that can be typed into.
+function cvFocusedPane(){
+  const el=document.activeElement;
+  if(!el||!el.id||el.id.indexOf('cvta-')!==0)return null;
+  const cv=cvOf(el.id.slice(5));
+  return (cv&&!cv.readonly&&cv.loaded)?cv:null;
+}
+/* Registered here, and codeview.js loads BEFORE undo.js, so this handler runs
+   first and can decide whether the keystroke is the pane's before the editor's
+   own undo ever sees it. */
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  const k=(e.key||'').toLowerCase();
+  if(k!=='z'&&k!=='y')return;
+  const cv=cvFocusedPane(); if(!cv)return;
+  const redo=(k==='y')||(k==='z'&&e.shiftKey);
+  if(!cvUndoCan(cv,redo))return;             // nothing of the pane's: let the editor have it
+  e.preventDefault(); e.stopImmediatePropagation();
+  cvUndoStep(cv,redo);
+});
+
 /* ---- a box was typed into ----
    The text is re-serialised by the server rather than patched here: the boxes
    only know values, and the file also has an order, an indent and comments that
@@ -448,6 +542,10 @@ async function cvRender(cv){
   cv.fields=r.fields||[]; cv.err=null; cv.busy=false;
   const box=document.getElementById('cvta-'+cv.uid);
   if(box&&document.activeElement!==box)box.value=cv.text;
+  // The boxes wrote this, so it is THEIR undo step, not the pane's. Re-baselining
+  // empties the pane's stack, and an empty stack is what hands Ctrl+Z back to the
+  // editor's own — see cvUndoStep.
+  cvUndoInit(cv);
   cvRedrawLines(cv); cvPaintStatus(cv);
 }
 

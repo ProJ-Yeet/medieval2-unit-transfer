@@ -186,7 +186,7 @@ function trFindingsHtml(d){
     `<div class="trfind w-warn">line ${f.line}: ${esc(f.message)}</div>`));
   if((d.missing_loc||[]).length) out.push(`<div class="trfind w-warn">${
     d.missing_loc.length} text key(s) are not in export_VnVs.txt (${
-    d.missing_loc.slice(0,4).map(esc).join(', ')}${d.missing_loc.length>4?'…':''}) —
+    d.missing_loc.slice(0,4).map(esc).join(', ')}${d.missing_loc.length>4?'…':''}).
     a character who reaches that level crashes the character screen. Type the words
     beside the key below, or save and they are created with the key as
     placeholder text.</div>`);
@@ -196,8 +196,8 @@ function trFindingsHtml(d){
 function trHeaderHtml(w, d){
   const types = d.character_types || ['family'];
   return `<section class="trsec">
-    <div class="trsechead">Header <span class="count">the order of these lines is
-      what the engine reads — this editor keeps it</span></div>
+    <div class="trsechead">Header <span class="count">The order of these lines is
+      what the engine reads, and this editor keeps it</span></div>
     <div class="trgrid">
       <label class="lbl" data-label="name">Name</label>
       <input data-label="name" value="${esc(w.name)}" ${state.tr.adding?'':'disabled'}
@@ -207,8 +207,8 @@ function trHeaderHtml(w, d){
         <select onchange="trSet('characters',[this.value])">${
           types.map(c=>`<option ${c===(w.characters[0]||'family')?'selected':''}>${
             esc(c)}</option>`).join('')}</select>
-        ${w.characters.length>1?`<div class="trhint w-warn">this trait lists ${
-          esc(w.characters.join(', '))}, and the engine reads only the first — use
+        ${w.characters.length>1?`<div class="trhint w-warn">This trait lists ${
+          esc(w.characters.join(', '))}, and the engine reads only the first. Use
           <code>all</code> with a condition in the trigger instead</div>`:''}
       </div>
       <label class="lbl" data-label="hidden">Hidden</label>
@@ -235,10 +235,10 @@ function trHeaderHtml(w, d){
 function trLevelsHtml(w, d){
   return `<section class="trsec">
     <div class="trsechead">Levels
-      <span class="count">a character climbs these as points accumulate; the game
+      <span class="count">A character climbs these as points accumulate. The game
         shows the highest one whose threshold is met (9 is the engine's limit)</span></div>
     ${w.levels.map((lv,i)=>trLevelHtml(lv,i,d)).join('')
-      || '<div class="count" style="padding:6px">No levels — this trait can never be seen.</div>'}
+      || '<div class="count" style="padding:6px">No levels, so this trait can never be seen.</div>'}
     ${w.levels.length<9?`<button class="trgadd" onclick="trAddLevel()">＋ Add level</button>`:''}
   </section>`;
 }
@@ -257,7 +257,7 @@ function trLevelHtml(lv, i, d){
         placeholder="${esc(hint||'none')}"
         oninput="trSetLevel(${i},'${k}',this.value.trim())">
       ${tag ? `<input class="trtext" value="${esc(trLocText(d, tag))}"
-        placeholder="${trHasKey(d, tag)?'':'not in export_VnVs.txt yet — type the words'}"
+        placeholder="${trHasKey(d, tag)?'':'Not in export_VnVs.txt yet. Type the words.'}"
         title="What the player reads. Saved into data/text/export_VnVs.txt."
         oninput="trSetLoc('${q1(esc(tag))}',this.value)">` : ''}
     </div>`;
@@ -317,7 +317,7 @@ function trTriggersHtml(d){
   if(state.tr.adding) return `<section class="trsec">
     <div class="trsechead">Triggers</div>
     <div class="count" style="padding:6px">Create the trait first, then add the
-      triggers that give it — a trigger cannot name a trait the file has not
+      triggers that give it. A trigger cannot name a trait the file has not
       defined yet.</div></section>`;
   return `<section class="trsec">
     <div class="trsechead">Triggers <span class="count">${d.trigs.length

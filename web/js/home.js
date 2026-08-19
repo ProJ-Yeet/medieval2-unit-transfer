@@ -125,10 +125,10 @@ function homePrefsHtml(){
         <div>
           <label class="chk" style="gap:6px">Faction names lead with
             <select id="prefFacSort" onchange="homePref(this)">
-              <option value="name" ${s.faction_sort!=='code'?'selected':''}>the in-game name</option>
-              <option value="code" ${s.faction_sort==='code'?'selected':''}>the EDU code</option>
+              <option value="name" ${s.faction_sort!=='code'?'selected':''}>The in-game name</option>
+              <option value="code" ${s.faction_sort==='code'?'selected':''}>The EDU code</option>
             </select></label>
-          <span class="count">the other one follows in brackets</span>
+          <span class="count">The other one follows in brackets</span>
         </div>
       </div>
     </span>
@@ -161,7 +161,7 @@ function homeResumeHtml(){
   return `<div class="homeresume">
     <span class="count">Last time you were in</span>
     <button class="primary" onclick="homeGo('${q1(esc(mod))}','${esc(d.id)}')">
-      ${d.icon} ${esc(d.name)}${mod?` — ${esc(mod)}`:''} →</button>
+      ${d.icon} ${esc(d.name)}${mod?`: ${esc(mod)}`:''} →</button>
   </div>`;
 }
 
@@ -193,7 +193,7 @@ function homeModulesHtml(m, r){
     if(!s) return '';
     const why = s.ready
       ? (s.partial.length ? `works, but this mod has no ${s.partial.join(', ')}` : d.hint)
-      : `needs ${s.missing.join(', ')} — this mod has none`;
+      : `needs ${s.missing.join(', ')}, and this mod has none`;
     return `<button class="hcmod${s.ready?'':' off'}" title="${esc(why)}"
       onclick="homeGo('${q1(esc(m.name))}','${esc(d.id)}')">
       <span class="ic">${d.icon}</span><span class="nm">${esc(d.name)}</span>
@@ -216,7 +216,7 @@ function homeFileRow(f){
   const mark = {present:'<span class="w-good">✓</span>',
                 compiled:'<span class="w-good">✓</span>',
                 empty:'<span class="w-warn">○</span>',
-                missing:f.required?'<span class="w-bad">✗</span>':'<span class="count">—</span>',
+                missing:f.required?'<span class="w-bad">✗</span>':'<span class="count">·</span>',
                 unreadable:'<span class="w-bad">!</span>'}[f.state] || '';
   const size = f.state === 'missing' ? ''
     : f.folder ? `${f.size} item${f.size===1?'':'s'}` : homeSize(f.size);

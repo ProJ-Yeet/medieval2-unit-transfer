@@ -38,7 +38,8 @@ If you read one thing, read this.
 ### The rebrand
 
 The app, the launcher, the window title, the README and the release naming all
-say **Medieval 2 GUI Toolkit**. The GitHub repo keeps its old name.
+say **Medieval 2 GUI Toolkit**, and so does the GitHub repo (see the
+correction pass below).
 `Launch-Unit-Transfer.bat` is kept as a forwarder, so an existing shortcut
 still works. Navigation moved into a burger menu with every module in one
 registry, and there is a credits screen.
@@ -196,6 +197,130 @@ showed they were wrong about the format — two of those serialisers write files
 the engine will not load. Art that lives inside the game's `.pack` archives is
 never reported as missing, because the toolkit cannot see inside them and "not
 shipped here" is not the same as "missing".
+
+---
+
+---
+
+## The correction pass
+
+Everything above shipped, was used, and came back with a list. This is that
+list, folded into the same release rather than held over for a point version:
+nothing here is a new direction, all of it is 2.0.0 finished properly.
+
+### The repository is now `medieval2-gui-toolkit`
+
+The one thing 2.0.0 deliberately left alone. The old address forwards, so an
+existing clone, bookmark or release link still resolves.
+
+### Undo, in the one place it never worked
+
+**Ctrl+Z and Ctrl+Y now work inside the Code View.** They never did: the page
+takes the keystroke away from the browser whenever an editor is open, and the
+snapshots it restores are of the *boxes*, which is not where you typed. So the
+browser's own undo was suppressed and the toolkit's had nothing to give back.
+
+The pane keeps its own stack now, in the same shape as the rest: a run of typing
+folds into one step once it stops, and an *empty* stack hands the keystroke back
+to the editor around it. Undo therefore walks back through what you typed in the
+text and then out into the boxes, in the order you made the changes.
+
+### The left-hand filters fold
+
+Every group in every sidebar — Group by, Faction, Category, Class, Era in the
+unit modes, and Culture, Settlement, Shows, Religion, Faction in Buildings — is
+now a heading you can click shut. On a mod with sixty factions the first heading
+was the only one you could see without scrolling. A folded group that still has
+something ticked says so with a count, so a filter can never hide rows out of
+sight.
+
+### The writing
+
+A full pass over every string the UI shows. **Roughly 300 em dashes doing a full
+stop's job are gone**, and every label, heading, button, option and note now
+opens on a capital. The four dashes left are number ranges, which is what an en
+dash is for.
+
+---
+
+### Unit Editor
+
+- **"Open file location" opens the file's folder.** It was opening Documents.
+  Windows wants `explorer /select,"<path>"` as one command string; passing it as
+  an argument list quotes the whole switch the moment the path contains a space,
+  Explorer fails to parse it, and falls back to the default folder. Every real
+  mod path has a space in it, so it failed every time.
+- **A ＋ beside Variant.** The variant list is built from what the mod's own
+  units already use, so a mod that has never had one offered an empty drop-down
+  and a note telling you to go and hand-edit the unit file — in the tool that
+  exists to replace hand-editing it. Type the first one here; it joins the list
+  for every other unit.
+- **Abilities merged into Weapons.** The Abilities tab held two lines while
+  Weapons beside it carried nine. What a unit can do and what it does it with is
+  one question; the tab is now **Weapons & abilities**, with `attributes` and
+  `mount_effect` leading it.
+
+### Clean up the unit file
+
+- **The comment breakers are yours.** The section banner is the only line the
+  cleanup authors, so its width, its rule character, what it starts with and
+  whether it is capitalised are now four boxes with a live sample above the
+  preview. The defaults are byte for byte what 2.0.0 wrote.
+- **The ordering screen is a list, not a row of chips.** Every unit gets a row
+  with the three things the sorter actually reads beside it: **tier**,
+  **variant** and **classification**, each a drop-down, each written onto the
+  unit's own `;@m2gt` marker where the next run reads it back.
+- **The classification arrives filled in.** Generals are detected from the
+  unit's own `attributes`, and that reading is what the box shows, marked
+  *detected* — so agreeing with the tool costs nothing and overruling it costs
+  one click. A bodyguard or a hero that carries no such attribute is not
+  detectable, which is exactly why the box is editable: `bodyguard`, `hero`,
+  `unique`, `quest` and `none` all lead a faction's run the way a general does.
+- Dragging a unit to place it by hand still works, and still outranks all of it.
+- Setting a value repaints **one row**, not the roster. Divide and Conquer's 916
+  units with three drop-downs each took the best part of a second to rebuild, so
+  the box you had just used was replaced under the pointer.
+
+### Buildings
+
+- **City and castle, side by side.** A settlement building is two lines in the
+  EDB with nothing tying them together, so they drift. The new **⇄ Compare city
+  / castle** button at the top right of the building editor puts the two halves
+  in one table, tier by tier, and marks every unit as trained by **both** halves
+  or by one. **⇄ Mirror** closes a single gap; **⇄ Mirror all** closes every gap
+  in the line. Nothing is written until you Save, and a row mirrored into the
+  twin appears under *Also changing* first.
+  A `requires` clause that differs is not counted as a divergence — a city
+  clause names the city factions and a castle clause names the castle ones —
+  and neither are different pool numbers, which are usually deliberate. Both are
+  still shown.
+- **The three recruitment numbers have one set of names everywhere**: **Initial
+  Pool**, **Replenish Rate**, **Max Pool**. They were labelled by shape
+  ("start / per turn / max"), and every screen spelt it differently.
+- **The recruitment row is two lines.** The unit and its numbers on top, the
+  `requires` clause underneath with the full width of the panel. The clause is
+  the only thing on that row with no natural width, and it was being squeezed
+  into whatever the fixed columns left over.
+- **The comparison table's header lines up with its columns.** The header cells
+  carried none of the classes that set the column widths.
+- **Editing a field updates the Code View.** Every other editor tells the pane
+  when a box changes; this one never did, so cost, culture, name, a clause and a
+  pool's numbers all changed the working copy while the text beside it went on
+  showing the file.
+- **The faction sort is a toggle, not an entry in the list it sorts.** Choosing
+  "sort by unit count" closed the drop-down, so the sorted list only appeared
+  when you opened it again.
+- **A repaint aimed at a form that is not on screen no longer throws.** Every
+  panel that takes the dialog over leaves the building form out of the document,
+  and the throw came out of an onclick — so it killed that click and everything
+  after it, which from the outside is the tool freezing. The stale-state paths
+  around the settlement filter and the level list are closed with it.
+
+### Unit Sounds
+
+Every row shows the **unit's card** beside its name. A voice bank is hundreds of
+rows of type names, and a type name is the one thing about a unit nobody
+recognises.
 
 ---
 

@@ -80,7 +80,7 @@ async function openComposer(types){
       <div class="mbody"><div class="trnote w-warn">${docPoints(
         `Reading “${esc(state.dst)}” failed, so there is nothing to build the transfer against.`,
         [`<code>${esc(''+(e&&e.message||e))}</code>`,
-         'Nothing has been written — this is the step before any file is touched.',
+         'Nothing has been written yet. This is the step before any file is touched.',
          'If the tool is no longer running, start it again and retry.'])}</div></div>
       <div class="foot"><button onclick="closeModal()">Close</button>
         <button class="primary" onclick="openComposer(${JSON.stringify(types)})">Retry</button></div>`;
@@ -139,7 +139,7 @@ async function renderComposer(){
   // the guided field editor lays its boxes out in rows — give it the same room
   // the unit editor gets, instead of the default 640px dialog
   m.className=gfMode()==='guided'?'modal wide':'modal';
-  m.innerHTML=`<h2>${batch?`Batch transfer — ${composerList.length} units`
+  m.innerHTML=`<h2>${batch?`Batch transfer: ${composerList.length} units`
       :sameMod?`New unit from “${esc(u.name)}”`
       :rep?`Replace “${esc(c.base_type)}” with “${esc(u.name)}”`
       :`Transfer “${esc(u.name)}”`} <span class="pill">${
@@ -176,9 +176,9 @@ async function renderComposer(){
        ${hasCrew?`<div class="optnames"><span class="k">Crew</span>${crwBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:modelChecks(u.crew,crwOn,c)}</div>`:''}
        ${hasProj?`<div class="optnames"><span class="k">Projectile</span>${proj.map(o=>`<span class="chip">${esc(o)}</span>`).join('')}${projBase?`<span class="frombase">${insteadMsg(c.base_type)} stats (its projectile)</span>`:'→ added to descr_projectile.txt, effects blanked'}</div>`:''}
        ${hasEng?`<div class="optnames"><span class="k">Siege engine</span><span class="chip">${esc(eng)}</span>${engBase?`<span class="frombase">${insteadMsg(c.base_type)}</span>`:engMounted?`→ added to descr_mounted_engines.txt with its reference points${engClass?`; its <code>class ${esc(engClass)}</code> descr_engine_skeleton.txt entry is added only if ${esc(state.dst)} lacks it`:''}`:`→ added to descr_engines.txt + descr_engine_skeleton.txt, with its meshes/bone maps/collision/reference points, the textures baked into those meshes, and its engine animations`}</div>`:''}
-       <div class="count" style="margin-top:5px">An unticked group keeps its source name, which must already exist in ${esc(state.dst)} — or take it from ${rep?`“${esc(c.base_type)}”`:'the base'} above.</div>
+       <div class="count" style="margin-top:5px">An unticked group keeps its source name, which must already exist in ${esc(state.dst)}. Or take it from ${rep?`“${esc(c.base_type)}”`:'the base'} above.</div>
      </fieldset>
-     ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine — <code>${esc(eng)}</code></legend>
+     ${engOn&&c.include_engine!==false?`<fieldset><legend>Siege engine: <code>${esc(eng)}</code></legend>
        <div class="count">Copied: the <code>${engMounted?'descr_mounted_engines.txt':'descr_engines.txt'}</code> block${engGroups.length?` (${engGroups.length} model group${engGroups.length>1?'s':''}: ${engGroups.map(esc).join(', ')})`:''}
          ${engMounted?`and the <code>reference_points</code> file it names.`
          :`, ${engGroups.length?`each group's animation entry, `:''}every mesh / bone map / collision /
@@ -196,19 +196,19 @@ async function renderComposer(){
          `So the default keeps the destination's file, and the imported engine may then wear its skin.`,
          'Preview lists them and lets you flip that.'])}</div>`}
        <div class="count" style="margin-top:5px">Vanilla files the engine uses aren't copied. If ${esc(state.dst)} overrides
-         one, its version wins and may not match — the preview flags those.</div>
+         one, its version wins and may not match. The preview flags those.</div>
        <div class="count" style="margin-top:5px">Not ported: effect / particle / sound references and
-         <code>crew_animations</code> names — check those exist in ${esc(state.dst)}.</div>
+         <code>crew_animations</code> names, so check those exist in ${esc(state.dst)}.</div>
      </fieldset>`:''}
      <fieldset><legend>What this transfer creates in ${esc(state.dst)}</legend>
        <div class="radio-row">
          <label><input type="radio" name="tmode" value="new" ${modeOf(c)==='new'?'checked':''}>
-           <b>A new unit</b> — its own entry, name and icons</label>
+           <b>A new unit</b>: its own entry, name and icons</label>
          <label><input type="radio" name="tmode" value="base" ${modeOf(c)==='base'?'checked':''}>
-           <b>A new unit based on an existing one</b> — a new entry that inherits a destination
+           <b>A new unit based on an existing one</b>: a new entry that inherits a destination
            unit's stats, cost, ownership and era</label>
          <label><input type="radio" name="tmode" value="replace" ${modeOf(c)==='replace'?'checked':''}>
-           <b>Replace an existing unit</b> — no new entry: a destination unit keeps its name and
+           <b>Replace an existing unit</b>: no new entry, so a destination unit keeps its name and
            stats, and gets “${esc(u.name)}”’s models</label>
        </div>
        <div id="baseArea" style="margin-top:8px;${modeOf(c)==='new'?'display:none':''}">
@@ -239,9 +239,9 @@ async function renderComposer(){
        <div class="count">“${esc(c.base_type)}” keeps its own cards unless you tick these. An imported
          card replaces its file, under its own name and faction folders.</div>
        <label class="chk" style="margin-top:6px"><input type="checkbox" id="optImpCard" ${c.import_card?'checked':''}>
-         Unit card ${u.has_card?'':'<span class="count">— the source has none</span>'}</label>
+         Unit card ${u.has_card?'':'<span class="count">(the source has none)</span>'}</label>
        <label class="chk" style="margin-left:12px"><input type="checkbox" id="optImpInfo" ${c.import_info_card?'checked':''}>
-         Unit info card ${u.has_info?'':'<span class="count">— the source has none</span>'}</label>
+         Unit info card ${u.has_info?'':'<span class="count">(the source has none)</span>'}</label>
        <div class="count" style="margin-top:6px">Stats are imported one at a time with the
          <span class="ibadge">B</span> buttons in <b>Edit fields</b>.</div>
      </fieldset>`:''}`}
@@ -261,7 +261,7 @@ async function renderComposer(){
          '<b>Off (default):</b> a copy in every faction folder the unit is owned by, plus the merc '
            +'folders as a fallback. No pinning needed.'])}</div>
      </fieldset>
-     <fieldset><legend>Edit fields — every EDU field (edits apply as overrides)</legend>
+     <fieldset><legend>Edit fields: every EDU field, edited as overrides</legend>
        ${sameMod?'':fromBasePanel(c,u)}
        <div class="fieldbar">
          <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
@@ -429,14 +429,14 @@ function fromBasePanel(c,u){
   // The armour-upgrade models are only a choice when replacing: a base template
   // leaves them with the transferred unit, since the new unit IS that unit.
   if(rep) rows+=row('upgrade_from','Armour upgrades',
-    `<code>armour_ug_models</code> — the models it wears once its armour is upgraded`,
+    `<code>armour_ug_models</code>: the models it wears once its armour is upgraded`,
     'Independent of the Soldier row. The game renders the upgrade entry for the '
     +'unit\'s armour level, so leaving this on Source while the soldier line comes '
     +'from the base puts the source\'s model back on screen at that level. It does '
     +'not change how the unit animates: only the soldier entry does that.');
   return `<div class="basefrom${on?'':' off'}">
     <div class="bftitle">Take from ${on?`<b>${esc(c.base_type)}</b>`
-      :(rep?'the replaced unit — pick one first':'the base unit — pick one first')}</div>
+      :(rep?'the replaced unit. Pick one first.':'the base unit. Pick one first.')}</div>
     ${rows}</div>`;
 }
 /* ---------- voice / sound ----------
@@ -467,7 +467,7 @@ function soundFieldset(c,u){
   const locked=!!d.accent;
   const radio=(v,label,note,off)=>`<label class="chk${off?' off':''}">
     <input type="radio" name="sndmode" value="${v}" ${c.sound_mode===v?'checked':''} ${off?'disabled':''}>
-    ${label}${note?` <span class="count">— ${note}</span>`:''}</label>`;
+    ${label}${note?` <span class="count">${note}</span>`:''}</label>`;
   if(!ds.has_file)return `<fieldset><legend>Voice / sound</legend>
     <div class="count">“${esc(state.dst)}” has no voice bank
       (<code>export_descr_sounds_units_voice.txt</code>), so there is nothing to copy into.
@@ -490,32 +490,32 @@ function soundFieldset(c,u){
     ${locked&&!vals.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:''}</select>`;
   let body='';
   if(d.mode==='keep')
-    body=`<div class="count" style="margin-top:6px">“${esc(d.name)}” keeps the barks it already has —
+    body=`<div class="count" style="margin-top:6px">“${esc(d.name)}” keeps the barks it already has,
       the voice bank isn't touched. Pick “another unit” to give it a different voice.</div>`;
   else if(c.sound_mode==='none')
     body=`<div class="count" style="margin-top:6px">No entry is written and
       <code>accent</code> / <code>voice_type</code> stay as the source unit had them. The unit still
-      speaks — it just uses its class's generic barks.</div>`;
+      speaks. It just uses its class's generic barks.</div>`;
   else if(d.blocked==='nobase')
     body=`<div class="count w-warn" style="margin-top:6px">No base unit picked yet, so there is no
       voice to copy. Pick one above, or switch to “another unit”.</div>`;
   else if(d.blocked==='silent')
     body=`<div class="count w-warn" style="margin-top:6px">“${esc(d.name)}” has no barks of its own
-      in ${esc(state.dst)} — nothing to copy. Pick another unit${
+      in ${esc(state.dst)}, so there is nothing to copy. Pick another unit${
       c.sound_mode==='base'?' for the voice':''}.</div>`;
   else body=`<div class="sndpick">
-      <span class="count">Accent</span>${pick('snd_accent',acc,ds.accents||[],'— any —')}
-      <span class="count">Class</span>${pick('snd_class',cls,ds.classes||[],'— any —')}
+      <span class="count">Accent</span>${pick('snd_accent',acc,ds.accents||[],'Any')}
+      <span class="count">Class</span>${pick('snd_class',cls,ds.classes||[],'Any')}
       ${locked?`<span class="lockicon" title="${esc(why)}">🔒 locked</span>`:
-        `<span class="count">these two just filter the list below</span>`}
+        `<span class="count">These two just filter the list below</span>`}
     </div>
     ${c.sound_mode==='unit'?`<div class="sndpick">
       <span class="count">Sound from</span>
       <select onchange="cmpSndPick('sound_donor',this.value)" style="flex:1;max-width:340px">
-        <option value="">— pick a unit (${donors.length} with their own barks) —</option>
+        <option value="">Pick a unit (${donors.length} with their own barks)</option>
         ${donors.map(x=>`<option value="${esc(x.name)}" ${x.name===c.sound_donor?'selected':''}>${esc(x.name)} (${esc(x.accent)}/${esc(x['class'])})</option>`).join('')}
       </select>
-      ${c.sound_donor?`<button onclick="cmpSndPick('sound_donor','')" title="unlock the accent and class filters">✕</button>`:''}
+      ${c.sound_donor?`<button onclick="cmpSndPick('sound_donor','')" title="Unlock the accent and class filters.">✕</button>`:''}
     </div>`:''}
     ${locked?`<div class="sndlocked count">🔒 <b>${esc(d.name)}</b>’s sounds are copied to
       <b>${esc(c.new_type||u.type)}</b> in <b>${esc(d.accent)} / ${esc(d.cls)}</b>, with
@@ -551,7 +551,7 @@ function switchUnit(t){state.editing=t;renderComposer();}
 const destFacLabel=f=>facTwoNames(f,(state.destData?.faction_names||{})[f]);
 function renderBaseList(){
   const u=state.data.units.find(x=>x.type===state.editing); const c=cfgFor(state.editing);
-  const dd=state.destData; if(!dd){baseList.innerHTML='<div class="count" style="padding:8px">loading destination…</div>';return;}
+  const dd=state.destData; if(!dd){baseList.innerHTML='<div class="count" style="padding:8px">Loading destination…</div>';return;}
   const rawQ=document.getElementById('baseSearch')?.value||'';
   c.base_q=rawQ;                       // survive composer re-renders
   const qq=rawQ.toLowerCase();
@@ -571,7 +571,7 @@ function renderBaseList(){
     && (!qq||x.name.toLowerCase().includes(qq)||x.type.toLowerCase().includes(qq))).slice(0,120);
   baseList.innerHTML=cands.map(x=>`<div class="baserow ${x.type===c.base_type?'sel':''}" onclick="pickBase('${q1(esc(x.type))}')">
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.dst,x.type)}"><div><div class="bn">${esc(x.name)}</div><div class="bs">${esc(x.type)}</div></div></div>`).join('')
-    ||`<div class="count" style="padding:8px">No ${esc(u.kind||u.category||'')} units in destination match — the ${esc(donorRole(c))} must be the same unit type.</div>`;
+    ||`<div class="count" style="padding:8px">No ${esc(u.kind||u.category||'')} units in destination match. The ${esc(donorRole(c))} must be the same unit type.</div>`;
 }
 function pickBase(t){const c=cfgFor(state.editing);c.base_type=t;
   // full re-render: the soldier toggle and the "using base's" hints only become
@@ -681,7 +681,7 @@ function renderAllFields(type){
     const isInh=inh.has(key);
     const why=lk?lk.why
       :isInh?`${isReplace(c)?'Kept from':'Inherited from the base unit'} ${c.base_type}.`
-      :dup?'This field appears more than once in the unit — edit this one in the EDU directly.'
+      :dup?'This field appears more than once in the unit. Edit this one in the EDU directly.'
       :(GF_FIELDS[key]&&GF_FIELDS[key].t?GF_FIELDS[key].t+'. '+gfPlainDoc(key):'');
     return `<div class="afrow${dup?' dup':''}" data-label="${esc(label)}">
       <label>${qm(why,label)}${esc(label)}${
@@ -723,8 +723,8 @@ Not switchable: ${why}.">B</span><span class="bwhy">${why}</span>`;
   const on=cur===c._orig[label];
   return `<button type="button" class="ibadge${on?'':' off'}" data-b="${esc(label)}"
     onclick="toggleBaseField('${q1(esc(label))}')"
-    title="${on?`${rep?'keeping':'using'} ${esc(c.base_type)}'s value — click to ${rep?'import':'keep'} ${esc(state.editing)}'s own (${esc(src)})`
-              :`${rep?'imported from':'using'} ${esc(state.editing)}${rep?'':"'s own value"} — click to go back to ${esc(c.base_type)}'s (${esc(c._orig[label])})`}">B</button>`;
+    title="${on?`${rep?'Keeping':'Using'} ${esc(c.base_type)}'s value. Click to ${rep?'import':'keep'} ${esc(state.editing)}'s own (${esc(src)}).`
+              :`${rep?'Imported from':'Using'} ${esc(state.editing)}${rep?'':"'s own value"}. Click to go back to ${esc(c.base_type)}'s (${esc(c._orig[label])}).`}">B</button>`;
 }
 function toggleBaseField(label){
   const c=cfgFor(state.editing);
@@ -778,18 +778,18 @@ function cleanerBoxHtml(what){
   return `<label class="chk cleanerbox" style="margin-right:auto" title="Deletes data/text/export_${kind}s.txt.strings.bin in the mod being written to. That is the compiled copy of export_${kind}s.txt; until it is gone the game keeps showing the OLD ${kind} text. It is rebuilt on the next launch. This is a setting, so it applies to every transfer, save, voice change and cleanup.">
     <input type="checkbox" ${clearBinOn()?'checked':''} onchange="setClearBin(this.checked)">
     Clear the <b>${kind}-text cache</b> afterwards
-    <span class="count">— setting, applies to every job</span></label>`;
+    <span class="count">A setting, so it applies to every job</span></label>`;
 }
 async function setClearBin(on){
   state.settings=await api.post('/api/settings',{clear_strings_bin:on});
   toast(on?'Unit-text cache will be cleared after every job.'
-          :'Unit-text cache left alone — new unit text may not show in game.');
+          :'Unit-text cache left alone, so new unit text may not show in game.');
 }
 // what a job's response says about the clear, appended to its toast
 function binMsg(r){
   const b=r&&r.strings_bin; if(!b)return '';
   if(b.deleted)return '  · unit-text cache cleared';
-  if(b.missing)return '';           // nothing was there — not worth a mention
+  if(b.missing)return '';           // nothing was there, so not worth a mention
   return `  · cache not cleared: ${b.error||'?'}`;
 }
 
@@ -908,7 +908,7 @@ function unitLimitBanner(){
     “${esc(state.dst)}” ${now?`already has ${p.current}`:`will have ${p.projected}`} units in
     export_descr_unit.txt
     (vanilla M2TW caps at ${VANILLA_UNIT_LIMIT}${p.add?`; this transfer adds ${p.add}`:''}).
-    ${p.eop?`<div class="sub">Its ${p.eop} M2TWEOP unit${p.eop===1?'':'s'} don't count — they load from the extender.${p.eopAdd?` This transfer adds ${p.eopAdd} more.`:''}</div>`:''}
+    ${p.eop?`<div class="sub">Its ${p.eop} M2TWEOP unit${p.eop===1?'':'s'} don't count, because they load from the extender.${p.eopAdd?` This transfer adds ${p.eopAdd} more.`:''}</div>`:''}
     <div class="sub">Past ${VANILLA_UNIT_LIMIT}, unmodified M2TW crashes. With M2TWEOP / EOP it's fine.</div>
     <div class="acts">
       ${hasEop?`<button onclick="allToEop()">Write these as M2TWEOP units instead</button>`:''}
@@ -967,7 +967,7 @@ async function restartServer(){
         'The replacement server has not answered in 45 seconds.',
         ['If a console window opened, the reason will be in it.',
          'Otherwise start the tool again with Launch-Medieval2-GUI-Toolkit.bat.',
-         'Nothing was written to your mods — a restart only touches this tool.'])}</div></div>
+         'Nothing was written to your mods. A restart only touches this tool.'])}</div></div>
         <div class="foot"><button class="primary" onclick="location.reload()">Try this page again</button></div>`;
       return;
     }
@@ -1023,8 +1023,8 @@ function assetConflictUI(type,r){
         r.reroute_dir?`<span class="w-good">Relocating ${r.relocated_count} file(s) →
           <code>${esc(r.reroute_dir)}/</code>, so those have no conflict.</span>`:''])}</div>
       <div class="radio-row" style="margin-top:6px">
-        <label><input type="radio" name="ac" value="mod_folder" ${c.asset_conflict==='mod_folder'?'checked':''}> Own folder — <code>${esc(modFolderName())}/</code> <b class="w-good">(default)</b></label>
-        <label><input type="radio" name="ac" value="reroute" ${c.asset_conflict==='reroute'?'checked':''}> Reroute — choose a folder under <code>unit_models/</code></label>
+        <label><input type="radio" name="ac" value="mod_folder" ${c.asset_conflict==='mod_folder'?'checked':''}> Own folder: <code>${esc(modFolderName())}/</code> <b class="w-good">(default)</b></label>
+        <label><input type="radio" name="ac" value="reroute" ${c.asset_conflict==='reroute'?'checked':''}> Reroute: choose a folder under <code>unit_models/</code></label>
         <label><input type="radio" name="ac" value="use_existing" ${c.asset_conflict==='use_existing'?'checked':''}> Keep the destination’s files</label>
         <label><input type="radio" name="ac" value="overwrite" ${c.asset_conflict==='overwrite'?'checked':''}> Overwrite with the source’s (backed up, undoable)</label>
       </div>
@@ -1045,7 +1045,7 @@ function assetConflictUI(type,r){
         </div>
       </div>
       ${reloc?`<div class="count" style="margin-top:6px">Files keep their folder structure, and the new modeldb entries point at the new paths.</div>`:''}
-      ${aDiff.length&&!reloc?`<div class="flist">${aDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B${x.src_size===x.dst_size?' — same size, different bytes':''}</span></div>`).join('')}</div>`:''}
+      ${aDiff.length&&!reloc?`<div class="flist">${aDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B${x.src_size===x.dst_size?' (same size, different bytes)':''}</span></div>`).join('')}</div>`:''}
     </fieldset>`;
   }
   // --- icons: located by faction folder + dictionary, so they can't be relocated
@@ -1074,8 +1074,8 @@ function assetConflictUI(type,r){
          <b class="${eDiff.length?'w-warn':''}">${eDiff.length}</b> differ.`,
         `Each mesh has its texture paths baked in, so they can't be relocated.`])}</div>
       ${eDiff.length?`<div class="radio-row" style="margin-top:6px">
-        <label><input type="radio" name="ec" value="use_existing" ${c.engine_conflict!=='overwrite'?'checked':''}> Keep the destination’s <b class="w-good">(default)</b> — the imported engine may wear its skin</label>
-        <label><input type="radio" name="ec" value="overwrite" ${c.engine_conflict==='overwrite'?'checked':''}> Overwrite — also re-skins ${esc(state.dst)}’s own engines</label>
+        <label><input type="radio" name="ec" value="use_existing" ${c.engine_conflict!=='overwrite'?'checked':''}> Keep the destination’s <b class="w-good">(default)</b>. The imported engine may wear its skin.</label>
+        <label><input type="radio" name="ec" value="overwrite" ${c.engine_conflict==='overwrite'?'checked':''}> Overwrite, which also re-skins ${esc(state.dst)}’s own engines</label>
       </div>
       <div class="flist">${eDiff.map(x=>`<div class="frow"><span class="fp">${esc(x.rel)}</span><span class="fs">src ${x.src_size}B vs dest ${x.dst_size}B</span></div>`).join('')}</div>`:''}
     </fieldset>`;
@@ -1099,7 +1099,7 @@ function assetConflictUI(type,r){
       <legend class="${skel.some(x=>x.action==='vanilla')?'w-warn':''}">Engine skeletons (<code>descr_engine_skeleton.txt</code>)</legend>
       <div class="count">An entry ${esc(state.dst)} already has is reused as-is, never overwritten.</div>
       <div class="flist">${skel.map(x=>`<div class="frow"><span class="fp">${esc(x.name)}</span><span class="fs ${
-        x.action==='vanilla'?'w-warn':x.action==='add'?'w-good':''}">${esc(x.action)} — ${esc(x.detail)}</span></div>`).join('')}</div>
+        x.action==='vanilla'?'w-warn':x.action==='add'?'w-good':''}">${esc(x.action)}: ${esc(x.detail)}</span></div>`).join('')}</div>
     </fieldset>`;
   }
   return html;
@@ -1225,7 +1225,7 @@ function eopUI(type,r){
   if(r.replace_type) return `<fieldset class="assetconf" style="margin-top:10px;border-color:var(--edge)">
     <legend>Which file this unit is written to</legend>
     <div class="count">It replaces <b>${esc(r.replace_type)}</b> where it already is${
-      r.eop_file?` — <span class="path">${esc(r.eop_file)}</span>`:' in <code>export_descr_unit.txt</code>'}.
+      r.eop_file?` in <span class="path">${esc(r.eop_file)}</span>`:' in <code>export_descr_unit.txt</code>'}.
       Nothing moves, and the ${VANILLA_UNIT_LIMIT}-unit cap is untouched.</div></fieldset>`;
   if(!r.dest_has_eop && !r.source_is_eop) return '';
   const auto=r.source_is_eop?'M2TWEOP unit file (the source unit is one)':'export_descr_unit.txt';
@@ -1281,7 +1281,7 @@ function wireConflict(type){const c=cfgFor(type);
   if(rf&&state.src!==state.dst)rf.style.display=c.on_conflict==='rename'?'':'none';
 }
 
-const PROG_ICON={pending:'·',current:'⟳',done:'✓',error:'✗',skipped:'–'};
+const PROG_ICON={pending:'·',current:'⟳',done:'✓',error:'✗',skipped:'~'};
 const PROG_CLS={current:'w-warn',done:'w-good',error:'w-bad',skipped:''};
 function renderProgress(types,status){
   const done=status.filter(s=>s==='done'||s==='error'||s==='skipped').length;
@@ -1295,7 +1295,7 @@ function renderProgress(types,status){
     <div class="mbody">
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="count" style="margin:8px 0 12px">${done} of ${types.length} done
-        ${curIdx>=0?` — <b>${esc(types[curIdx])}</b>`:''}</div>
+        ${curIdx>=0?`: <b>${esc(types[curIdx])}</b>`:''}</div>
       <div class="proglist">${rows}</div>
     </div>`;
 }
@@ -1320,7 +1320,7 @@ function jobPaint(pct,label){
   const f=document.getElementById('jobFill'); if(!f)return;
   f.style.width=Math.max(0,Math.min(100,pct))+'%';
   document.getElementById('jobPct').textContent=pct+'%';
-  document.getElementById('jobStep').textContent=label?'— '+label:'';
+  document.getElementById('jobStep').textContent=label||'';
 }
 async function runJob(job,title,note,run){
   let done=false;
@@ -1343,7 +1343,7 @@ async function doApply(){
     if(r.base_error){toast(`${t}: ${r.base_error}`);state.editing=t;renderComposer();return;}
     if(r.option_error){toast(`${t}: ${r.option_error}`);state.editing=t;renderComposer();return;}
     if(r.unit_conflict && !cfgFor(t)._resolved){ state.editing=t;renderComposer();await doPreview();
-      toast(`“${t}” exists in destination — choose rename / overwrite / skip, then Apply again.`);
+      toast(`“${t}” already exists in the destination. Choose rename, overwrite or skip, then Apply again.`);
       cfgFor(t)._resolved=true; return; }
   }
   let ok=0,skip=0,last=null;

@@ -11,9 +11,9 @@ function openNewUnitPicker(){
   const modal=document.getElementById('modal');
   const d=state.data||{};
   modal.className='modal';
-  modal.innerHTML=`<h2>New unit — pick the unit to build it from</h2>
+  modal.innerHTML=`<h2>New unit: pick the unit to build it from</h2>
     <div class="mbody">
-      <div class="count" style="margin-bottom:8px">The new unit copies the one you pick — same models, icons
+      <div class="count" style="margin-bottom:8px">The new unit copies the one you pick: same models, icons
         and stats under a new <code>type</code> and <code>dictionary</code>. Nothing is duplicated on disk, and
         you can change any field in the next step.</div>
       <input id="nuSearch" placeholder="Filter units…" style="width:100%" oninput="renderNewUnitList()">
@@ -78,7 +78,7 @@ async function openSettings(){
   const ign=s.unit_limit_ignored||[];
   const ignHtml=ign.length
     ? ign.map(m=>`<div class="ovr"><span><code>${esc(m)}</code></span><button onclick="reenableLimit('${q1(esc(m))}')">Re-enable warning</button></div>`).join('')
-    : '<div class="count">None — the 500-unit-limit warning is active for every mod.</div>';
+    : '<div class="count">None. The 500-unit-limit warning is active for every mod.</div>';
   document.getElementById('modal').innerHTML=`<h2>Settings</h2>
     <div class="mbody">
       <fieldset><legend>Medieval II root folder</legend>
@@ -101,28 +101,28 @@ async function openSettings(){
            'On any failure it comes back with the reason and stays put.',
            'Everything is logged to <code>config\\\\server.log</code> either way. Checks only: <code>py app.py --check</code>'])}</div>
         <div style="margin-top:8px"><button onclick="restartServer()">↻ Restart now to apply it</button>
-          <span class="count">stops the tool and starts it again on the same address — this page comes back
+          <span class="count">Stops the tool and starts it again on the same address, so this page comes back
           by itself</span></div>
         <div style="margin-top:8px"><button class="danger" onclick="quitServer()">⏻ Quit server</button>
-          <span class="count">stops the tool (needed when running silently)</span></div>
+          <span class="count">Stops the tool (needed when running silently)</span></div>
       </fieldset>
       <fieldset><legend>Something went wrong?</legend>
         <div class="count" style="margin-bottom:8px">Everything the tool does is recorded, and the log is where
           both halves of that live: what was written (and the way back out of it), and the detailed diagnostic
           file to send along if the tool did something you didn't expect.</div>
         <div><button onclick="closeModal();openLog()">🕑 Open the log</button>
-          <span class="count">the diagnostic download moved in there</span></div>
+          <span class="count">The diagnostic download moved in there</span></div>
       </fieldset>
       <fieldset><legend>Transfer defaults</legend>
         <label class="chk"><input type="checkbox" id="soldierBaseChk" ${s.soldier_from_base?'checked':''} onchange="saveSoldierBase()">
           Use the base unit's <b>soldier</b> line by default</label>
-        <div class="count" style="margin-top:6px">Start the <b>Soldier</b> row on <b>Base</b>, so the destination unit's model and projectile are used instead of the transferred unit's. Applies to both modes that have a base unit — building a new unit on one, and replacing one (there the base <i>is</i> the unit being replaced, so its own model and animations stay). Still switchable per unit.</div>
+        <div class="count" style="margin-top:6px">Start the <b>Soldier</b> row on <b>Base</b>, so the destination unit's model and projectile are used instead of the transferred unit's. Applies to both modes that have a base unit: building a new unit on one, and replacing one (there the base <i>is</i> the unit being replaced, so its own model and animations stay). Still switchable per unit.</div>
       </fieldset>
       <fieldset><legend>Unit-text cache</legend>
         <label class="chk"><input type="checkbox" id="clearBinChk" ${s.clear_strings_bin===false?'':'checked'} onchange="saveClearBin()">
           Clear <code>export_units.txt.strings.bin</code> after every transfer / edit / cleanup</label>
-        <div class="count" style="margin-top:6px">The game reads that compiled cache instead of <code>export_units.txt</code>, and only rebuilds it when it's missing — so until it is deleted a new or renamed unit keeps showing its <b>old</b> text. Deleting costs nothing: the next launch writes a fresh one.</div>
-        <div class="count" style="margin-top:6px">It is the only file this touches, and it is the same setting as the box at the bottom of every Apply dialog. (It replaced <code>Full Cleaner.bat</code>, which also deleted mod files the game never rebuilds — that script is still in the app folder if you want it.)</div>
+        <div class="count" style="margin-top:6px">The game reads that compiled cache instead of <code>export_units.txt</code>, and only rebuilds it when it's missing, so until it is deleted a new or renamed unit keeps showing its <b>old</b> text. Deleting costs nothing: the next launch writes a fresh one.</div>
+        <div class="count" style="margin-top:6px">It is the only file this touches, and it is the same setting as the box at the bottom of every Apply dialog. (It replaced <code>Full Cleaner.bat</code>, which also deleted mod files the game never rebuilds. That script is still in the app folder if you want it.)</div>
       </fieldset>
       <fieldset><legend>Unit-limit warning (500 vanilla cap)</legend>
         <div class="count" style="margin-bottom:8px">Mods where the ${VANILLA_UNIT_LIMIT}-unit warning is suppressed (you confirmed M2TWEOP / EOP is in use):</div>
@@ -160,8 +160,8 @@ async function loadEopDirs(){
   if(!r||r.error){box.innerHTML=`<span class="w-bad">${esc((r&&r.error)||'could not read')}</span>`;return;}
   const explicit=r.configured.length>0;
   const rows=(explicit?r.configured:r.detected).map(d=>`<div class="ovr"><span><code>${esc(d)}</code></span>${
-    explicit?`<button onclick="removeEopDir('${q1(esc(d))}')">Remove</button>`:'<span class="count">auto-detected</span>'}</div>`).join('');
-  box.innerHTML=(rows||'<div class="count">No EOP folder found or set — this mod\'s units all live in export_descr_unit.txt.</div>')
+    explicit?`<button onclick="removeEopDir('${q1(esc(d))}')">Remove</button>`:'<span class="count">Auto-detected</span>'}</div>`).join('');
+  box.innerHTML=(rows||'<div class="count">No EOP folder found or set, so this mod\'s units all live in export_descr_unit.txt.</div>')
     +`<div class="count" style="margin-top:8px"><b>${r.eop_count}</b> M2TWEOP unit(s) in <b>${r.files.length}</b> file(s);
       <b>${r.edu_count}</b> unit(s) in export_descr_unit.txt.</div>`
     +(r.files.length?`<div class="flist" style="margin-top:6px">${r.files.slice(0,40).map(f=>`<div class="frow"><span class="fp">${esc(f)}</span></div>`).join('')}${
@@ -179,7 +179,7 @@ async function addEopDir(){
   await eopApi({dirs});
   await refreshMods(state.src,state.dst);
   loadEopDirs();
-  toast('EOP folder saved — the mod’s units were re-read.');
+  toast('EOP folder saved. The mod’s units were re-read.');
 }
 async function removeEopDir(dir){
   const cur=await eopApi({});
@@ -196,7 +196,7 @@ async function saveRoot(){const root=document.getElementById('rootInput').value.
 async function autoDetectRoot(){
   rootStatus.textContent='Looking up the registry…';
   const r=await api.get('/api/detect_med2_root');
-  if(!r.path){rootStatus.innerHTML='<span class="w-bad">Not found in the registry — install not detected. Type or paste the path instead.</span>';return;}
+  if(!r.path){rootStatus.innerHTML='<span class="w-bad">Not found in the registry, so the install was not detected. Type or paste the path instead.</span>';return;}
   document.getElementById('rootInput').value=r.path;
   await saveRoot();
 }
@@ -278,7 +278,7 @@ function renderLog(){
     </div>
     <div class="foot">
       <button onclick="downloadDiag()" title="The tool's own detailed log: which files it read and parsed, what it found, every file written, backed up, copied or deleted, and what you did along the way (mode opened, mod picked, record opened, field changed). Nothing personal is in it. It holds mod names, values from your mod files, and paths inside your Medieval II folder.">💾 Save diagnostic log</button>
-      <span class="count">send it along if the tool did something you didn't expect</span>
+      <span class="count">Send it along if the tool did something you didn't expect</span>
       <button onclick="closeModal()">Close</button></div>`;
 }
 function logItemHtml(e){
@@ -306,11 +306,11 @@ async function doRevert(id){
   const e=(state.logView.entries||[]).find(x=>x.id===id); if(!e){toast('Log entry not found');return;}
   // counted by the server, which is the only place that has the whole log
   const newer=e.newer_count||0;
-  if(!newer){toast('Already at this stage — nothing newer to undo.');return;}
+  if(!newer){toast('Already at this stage. There is nothing newer to undo.');return;}
   if(!confirm(`Revert “${e.dest}” to its state right after this transfer?\n\n`+
       `This undoes ${newer} newer transfer(s) to “${e.dest}” (newest first). `+
       `All backed-up files (EDU, localisation, modeldb, overwritten textures) are restored byte-exact and moved-in files are removed.`)) return;
   const r=await api.post('/api/revert',{id});
   if(r.error){toast('Revert error: '+r.error);return;}
-  toast(`Reverted to this stage — undid ${r.count} transfer(s) ✓`);
+  toast(`Reverted to this stage. ${r.count} transfer(s) undone ✓`);
   state.destData=null; openLog(); if(state.data)loadSource();}

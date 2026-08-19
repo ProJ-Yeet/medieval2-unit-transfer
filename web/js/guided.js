@@ -241,7 +241,7 @@ const GF_FIELDS={
     doc:gfDoc('The unit’s big battlefield banner, from <code>descr_banners_new.xml</code>.',[
       'It also decides the mini-banners for experience and weapon/armour upgrades.',
       'The list is the <code>&lt;FactionBanners&gt;</code> section of that file, so it is this '
-        +'mod’s own — vanilla declares four, all named <code>main_…</code>.',
+        +'mod’s own. Vanilla declares four, all named <code>main_…</code>.',
       'Ships have no line: they never appear on the battlefield.']),
     parts:[gfC('banner','banner_faction',{w:3})]},
   'banner holy':{t:'Holy-war banner',opt:1,syn:'<banner>',
@@ -254,7 +254,7 @@ const GF_FIELDS={
   'banner unit':{t:'Unit banner',opt:1,syn:'<banner>',
     doc:gfDoc('Optional and rare. A per-unit banner override.',[
       'The list is the <code>&lt;UnitSpecificBanners&gt;</code> section of '
-        +'<code>descr_banners_new.xml</code> — the crusading orders live here.',
+        +'<code>descr_banners_new.xml</code>. The crusading orders live here.',
       'Leave the line out and the unit flies its faction banner.']),
     parts:[gfC('banner','banner_unit',{w:3})]},
 
@@ -347,7 +347,7 @@ const GF_FIELDS={
       'Side-to-side then front-to-back, in close order then in loose order.']),
     parts:[gfN('Close ↔',{min:0,max:200,step:0.1,dec:1,help:'Side-to-side spacing between men in metres, close order.'}),
       gfN('Close ↕',{min:0,max:200,step:0.1,dec:1,help:'Front-to-back spacing between ranks in metres, close order.'}),
-      gfN('Loose ↔',{min:0,max:200,step:0.1,dec:1,help:'Side-to-side spacing in loose order — always wider than close.'}),
+      gfN('Loose ↔',{min:0,max:200,step:0.1,dec:1,help:'Side-to-side spacing in loose order. It is always wider than close order.'}),
       gfN('Loose ↕',{min:0,max:200,step:0.1,dec:1,help:'Front-to-back spacing in loose order.'}),
       gfN('Ranks',{min:1,max:50,help:'How many ranks deep the unit forms up by default. Pikes use 8; most infantry 3–4.'}),
       gfS('Formation','formation_main',{w:2,
@@ -403,7 +403,7 @@ const GF_FIELDS={
       '<b>Defence skill</b> is his parrying, and is <b>not</b> used when he is shot at.',
       '<b>Shield</b> only counts against attacks from the front or the left.']),
     parts:[gfN('Armour',{min:0,max:255,help:'Armour factor. Counts against every kind of attack. Halved by an <code>ap</code> weapon.'}),
-      gfN('Defence skill',{min:0,max:255,help:'Parrying skill. Ignored when the man is shot at — armour and shield are all that protect him then.'}),
+      gfN('Defence skill',{min:0,max:255,help:'Parrying skill. It is ignored when the man is shot at: armour and shield are all that protect him then.'}),
       gfN('Shield',{min:0,max:255,help:'Shield factor. Only applies to attacks from the front or the left, which is why flanking works.'}),
       gfS('Hit sound','armour_sound',{w:2,help:'What it sounds like when the man is hit: <code>flesh</code>, <code>leather</code> or <code>metal</code>. Cosmetic.'})]},
   'stat_armour_ex':{t:'Defence (extended)',opt:1,
@@ -417,9 +417,9 @@ const GF_FIELDS={
       gfN('Armour 1',{min:0,max:255,help:'Armour at the first upgrade level.'}),
       gfN('Armour 2',{min:0,max:255,help:'Armour at the second upgrade level.'}),
       gfN('Armour 3',{min:0,max:255,help:'Armour at the third upgrade level.'}),
-      gfN('Defence skill',{min:0,max:255,help:'As in the normal line — not used against missiles.'}),
+      gfN('Defence skill',{min:0,max:255,help:'As in the normal line. It is not used against missiles.'}),
       gfN('Shield melee',{min:0,max:255,help:'Shield factor against melee attacks from the front or left.'}),
-      gfN('Shield missile',{min:0,max:255,help:'Shield factor against missile fire — the split this longer line exists for.'}),
+      gfN('Shield missile',{min:0,max:255,help:'Shield factor against missile fire. This is the split the longer line exists for.'}),
       gfS('Hit sound','armour_sound',{w:2})]},
   'stat_sec_armour':{t:'Vehicle / animal defence',syn:'armour, defence skill, hit sound',
     doc:gfDoc('The defence of the attached artillery piece, wagon or animal.',[
@@ -461,9 +461,9 @@ const GF_FIELDS={
       'Negative is a penalty.',
       'A desert unit has a positive sand value and a negative snow one.']),
     parts:[gfN('Scrub',{min:-100,max:100,help:'Modifier while fighting on scrub.'}),
-      gfN('Sand',{min:-100,max:100,help:'Modifier on sand — positive for desert troops.'}),
-      gfN('Forest',{min:-100,max:100,help:'Modifier in forest — positive for woodsmen, negative for close formations.'}),
-      gfN('Snow',{min:-100,max:100,help:'Modifier in snow — positive for northern troops.'})]},
+      gfN('Sand',{min:-100,max:100,help:'Modifier on sand. Positive for desert troops.'}),
+      gfN('Forest',{min:-100,max:100,help:'Modifier in forest. Positive for woodsmen, negative for close formations.'}),
+      gfN('Snow',{min:-100,max:100,help:'Modifier in snow. Positive for northern troops.'})]},
   'stat_charge_dist':{t:'Charge distance',syn:'<metres>',
     doc:gfDoc('How far out from the enemy the unit breaks into its charge.',[
       'Bigger means it starts running sooner.',
@@ -548,9 +548,15 @@ const GF_SECTIONS=[
     'banner faction','banner holy','banner unit']},
   {id:'men',t:'Men & mounts',keys:['soldier','officer','mount','ship','engine','mounted_engine',
     'animal','stat_health','stat_stl','move_speed_mod','armour_ug_levels','armour_ug_models']},
-  {id:'abil',t:'Abilities',keys:['attributes','mount_effect']},
-  {id:'weapons',t:'Weapons',keys:['stat_pri','stat_pri_attr','stat_pri_ex','stat_sec','stat_sec_attr',
-    'stat_sec_ex','stat_ter','stat_ter_attr','stat_ter_ex']},
+  /* Abilities used to be a group of its own, holding two lines: `attributes` and
+     `mount_effect`. Two cards is not a tab — it sat there half empty while the
+     Weapons tab beside it carried nine — and the two are read together anyway,
+     because what a unit can DO and what it does it WITH are the same question.
+     They lead the group: `attributes` is the widest-reaching line on the unit
+     and belongs at the top of whatever tab it is on. */
+  {id:'weapons',t:'Weapons & abilities',
+   keys:['attributes','mount_effect','stat_pri','stat_pri_attr','stat_pri_ex',
+    'stat_sec','stat_sec_attr','stat_sec_ex','stat_ter','stat_ter_attr','stat_ter_ex']},
   {id:'defence',t:'Defence & morale',keys:['stat_pri_armour','stat_armour_ex','stat_sec_armour',
     'stat_mental','formation','stat_charge_dist','stat_fire_delay','stat_heat','stat_ground']},
   {id:'cost',t:'Recruitment',keys:['stat_cost','recruit_priority_offset','crusading_upkeep_modifier',
@@ -774,28 +780,28 @@ function gfWarnings(host){
   const extras=['ship','engine','mounted_engine','animal'].filter(has);
   if(extras.length>1)extras.forEach(k=>add(k,
     'A unit can only use one of <code>ship</code>, <code>engine</code>, <code>mounted_engine</code> and '
-    +'<code>animal</code> — this one has <b>'+extras.join('</b>, <b>')+'</b>.','bad'));
+    +'<code>animal</code>. This one has <b>'+extras.join('</b>, <b>')+'</b>.','bad'));
 
   ['stat_pri','stat_sec','stat_ter'].forEach(k=>{
     if(!has(k))return;
     const p=parts(k); if(p.length<11)return;
     const atk=num(p[0]),proj=(p[2]||'').toLowerCase(),rng=num(p[3]),ammo=num(p[4]),wt=(p[5]||'').toLowerCase();
-    if(atk!==null&&atk>63)add(k,'Attack <b>'+esc(p[0])+'</b> is above the engine’s cap of 63 — it will behave as 63.');
+    if(atk!==null&&atk>63)add(k,'Attack <b>'+esc(p[0])+'</b> is above the engine’s cap of 63, so it will behave as 63.');
     const missile=(wt==='missile'||wt==='thrown'||wt==='siege_missile');
-    if(missile&&proj==='no')add(k,'Weapon type is <b>'+esc(wt)+'</b> but the projectile is <code>no</code> — it will never fire.');
-    if(!missile&&proj!=='no'&&proj)add(k,'A projectile is set but the weapon type is <b>'+esc(wt||'—')+'</b>; only missile/thrown/siege_missile weapons fire.');
-    if(missile&&!rng)add(k,'Missile weapon with range 0 — it cannot reach anything.');
-    if(missile&&!ammo)add(k,'Missile weapon with 0 ammunition — it fires nothing.');
+    if(missile&&proj==='no')add(k,'Weapon type is <b>'+esc(wt)+'</b> but the projectile is <code>no</code>, so it will never fire.');
+    if(!missile&&proj!=='no'&&proj)add(k,'A projectile is set but the weapon type is <b>'+esc(wt||'none')+'</b>. Only missile, thrown and siege_missile weapons fire.');
+    if(missile&&!rng)add(k,'Missile weapon with range 0, so it cannot reach anything.');
+    if(missile&&!ammo)add(k,'Missile weapon with 0 ammunition, so it fires nothing.');
     if(proj&&proj!=='no'&&!gfHas(gfDefined(host,'projectile'),p[2])&&gfDefined(host,'projectile').length)
       add(k,'Projectile <code>'+esc(p[2])+'</code> is not defined in this mod’s <code>descr_projectile.txt</code>.','bad');
     if(p.length>=12&&(p[9]||'').trim()&&!/^[A-Za-z_][\w]*$/.test(p[9].trim()))
-      add(k,'The 12-value form puts the fire effect in slot 10 — <code>'+esc(p[9])+'</code> does not look like an effect name.');
+      add(k,'The 12-value form puts the fire effect in slot 10, and <code>'+esc(p[9])+'</code> does not look like an effect name.');
   });
   if(has('stat_pri')&&has('stat_sec')){
     const w=x=>((parts(x)[5])||'').toLowerCase();
     const missileSec=['missile','thrown'].indexOf(w('stat_sec'))>=0;
     if(missileSec&&['missile','thrown','siege_missile'].indexOf(w('stat_pri'))<0)
-      add('stat_sec','A missile weapon has to be the <b>primary</b> one — the engine ignores a secondary bow.');
+      add('stat_sec','A missile weapon has to be the <b>primary</b> one. The engine ignores a secondary bow.');
   }
   if(has('stat_ter')!==has('stat_ter_attr'))
     add(has('stat_ter')?'stat_ter':'stat_ter_attr','A third weapon needs <b>all</b> of stat_ter and stat_ter_attr, or the engine drops it.');
@@ -851,7 +857,7 @@ function gfWarnings(host){
     // field 2-man scout and monster units that work perfectly well — only a unit
     // with no men at all is definitely wrong.
     const men=num(parts('soldier')[1]);
-    if(men!==null&&men<1)add('soldier','A unit with no men — nothing will be recruited.','bad');
+    if(men!==null&&men<1)add('soldier','A unit with no men, so nothing will be recruited.','bad');
   }
   if(has('ownership')&&!csv(val('ownership')).length)
     add('ownership','No owner. No faction can recruit this unit, and its unit card has no faction folder to live in.','bad');
@@ -899,7 +905,7 @@ function gfRender(host){
     const hits=groups[s.id].filter(l=>gfReal(warns[l]).length);
     // the badge names the fields, not just how many — a bare "3 things to look
     // at" makes you open all three sections to find out which
-    const why=hits.length?hits.join(', ')+' — hover or click the section to read them':'';
+    const why=hits.length?hits.join(', ')+'. Hover or click the section to read them.':'';
     return `<button class="${!q&&gf.tab===s.id?'on':''}" onclick="gfTab('${s.id}')">${esc(s.t)}
       <span class="n">${n}</span>${hits.length?`<span class="bad" title="${esc(why)}">▲ ${hits.length}</span>`:''}</button>`;
   }).join('');
@@ -909,7 +915,7 @@ function gfRender(host){
       <div class="gfsum" id="gfSum">${gfSumHtml(host,warns)}</div>
       ${heading}
       ${shown.length?gfRows(host,shown,warns)
-        :'<div class="gfempty">Nothing in this group. The unit has no such lines — add one below.</div>'}
+        :'<div class="gfempty">Nothing in this group. The unit has no such lines, so add one below.</div>'}
       ${gfAddHtml(host)}
     </div>
     ${gfDatalists(host)}</div>`;
@@ -970,7 +976,7 @@ function gfCard(host,label,warns){
     ${spec?qmSpec(key,null):''}
     <span class="t">${esc(title)}</span>
     <span class="k">${esc(label)}</span>
-    ${spec&&spec.opt?'<span class="count" title="The engine works without this line">optional</span>':''}
+    ${spec&&spec.opt?'<span class="count" title="The engine works without this line">Optional</span>':''}
     ${lk?`<span class="ibadge" title="${esc(lk.why)}">🔒</span>`:host.badge(label,cur)}
     <span class="sp"></span>
     ${(!gone&&!lk&&GF_ACTIONS[key])?GF_ACTIONS[key](label,cur):''}
@@ -995,7 +1001,7 @@ function gfCard(host,label,warns){
       <input data-gfraw="${esc(label)}" value="${esc(cur)}" spellcheck="false"
         class="${changed?'changed':''}"></div>`:'';
   const doc=(spec&&gf.help.has(label))?`<div class="gfdoc">${spec.doc||''}</div>`:'';
-  const empty=(parsed&&parsed.empty&&!gone)?'<div class="gfnote">This line is empty — fill it in and it gets written.</div>':'';
+  const empty=(parsed&&parsed.empty&&!gone)?'<div class="gfnote">This line is empty. Fill it in and it gets written.</div>':'';
   return `<div class="gfcard${changed?' changed':''}${gone?' gone':''}" data-card="${esc(label)}">
     ${head}${doc}${body}${empty}${raw}
     <div data-warn="${esc(label)}">${gfNotes(warns[label])}</div></div>`;
@@ -1031,7 +1037,7 @@ function gfPartChanged(host,label,spec,parsed){
   const whole=host.changed(label);
   const norm=v=>(v==null?'':''+v).trim();
   return i=>{
-    if(!was||!was.ok||!parsed.ok)return whole;   // can't line them up — mark the lot
+    if(!was||!was.ok||!parsed.ok)return whole;   // can't line them up, so mark the lot
     return norm(parsed.parts[i])!==norm(was.parts[i]);
   };
 }
@@ -1055,7 +1061,7 @@ function gfParts(host,label,spec,parsed){
       const opts=gfV(host,p.v);
       const list=opts.indexOf(v)<0?[v].concat(opts):opts;
       ctl=`<select ${attr}${aria} class="${chc.trim()}">${list.map(o=>`<option value="${esc(o)}"${
-        o===v?' selected':''}>${o===''?(p.optional?'— none —':'—'):esc(o)}</option>`).join('')}</select>`;
+        o===v?' selected':''}>${o===''?(p.optional?'None':'(unset)'):esc(o)}</option>`).join('')}</select>`;
     }else if(p.type==='combo'){
       // A model name is the one combo where the datalist is not enough: it is
       // 2000-odd entries and the thing you actually know is how the man should
@@ -1127,7 +1133,7 @@ function gfTipHtml(key,i){
     return `<div class="tt">${esc(spec.t)}</div>
       <div class="tk">${esc(key)}${spec.syn?'  '+esc(spec.syn):''}</div>
       <div class="tb">${spec.doc||''}</div>
-      ${spec.opt?'<div class="tf">Optional — the engine works without this line.</div>':''}`;
+      ${spec.opt?'<div class="tf">Optional. The engine works without this line.</div>':''}`;
   }
   const p=(spec.parts||[])[+i]; if(!p)return '';
   const range=[];
@@ -1138,10 +1144,10 @@ function gfTipHtml(key,i){
     if(p.step&&p.step!==1)range.push(`steps of ${p.step}`);
   }
   return `<div class="tt">${esc(p.pl)}${p.optional?' <span class="topt">optional</span>':''}</div>
-    <div class="tk">${esc(key)} — value ${(+i)+1} of ${spec.parts.length}</div>
+    <div class="tk">${esc(key)}, value ${(+i)+1} of ${spec.parts.length}</div>
     <div class="tb">${p.help||spec.doc||''}</div>
-    ${range.length?`<div class="tf">▴▾ and the ↑/↓ keys step within ${range.join(', ')} —
-      hold Shift for ×10, or hold the button down to repeat. Typing is never clamped.</div>`:''}`;
+    ${range.length?`<div class="tf">▴▾ and the ↑/↓ keys step within ${range.join(', ')}.
+      Hold Shift for ×10, or hold the button down to repeat. Typing is never clamped.</div>`:''}`;
 }
 let gfTipEl=null;
 function gfTipShow(el){

@@ -109,7 +109,7 @@ function edCvBlocked(){
   const cv=state.ed&&state.ed.cv;
   if(!cv||!cv.err)return '';
   return 'The code view can’t be read: '+cv.err+
-    ' — fix the line (or undo your typing) before saving.';
+    ' Fix the line, or undo your typing, before saving.';
 }
 /* ---- what each touched bmdb entry sends ----
    Texture paths go by faction + kind, never by span index: ticking a faction on
@@ -166,7 +166,7 @@ function renderEditor(){
         <div class="count">${esc(d.type)} · dictionary <code>${esc(d.dictionary)}</code>
           · ${d.models.length} model entr${d.models.length===1?'y':'ies'}</div>
         <div class="count">${d.eop
-          ? `M2TWEOP unit — saves are written to <code>${esc(d.eop_file)}</code>, not to export_descr_unit.txt.`
+          ? `M2TWEOP unit. Saves are written to <code>${esc(d.eop_file)}</code>, not to export_descr_unit.txt.`
           : 'Defined in <code>data/export_descr_unit.txt</code>.'}</div></div>
     </div>
     <div class="tabs">${tab('identity','Identity & text')}${tab('fields','EDU fields')}
@@ -336,7 +336,7 @@ function edIdentity(){
     <label>Displayed name<input id="edName" value="${esc(e.loc.name)}"></label>
     <label>Short description (unit card tooltip)<textarea id="edShort">${esc(e.loc.descr_short)}</textarea></label>
     <label>Description (info card)<textarea id="edDescr" style="min-height:150px">${esc(e.loc.descr)}</textarea></label>
-    <div class="count" style="margin-top:4px">The description is stored on a single line — any
+    <div class="count" style="margin-top:4px">The description is stored on a single line, so any
       new line or tab you type becomes <code>\\n</code> / <code>\\t</code> when you click away.</div>
     ${edTierBox()}
     <fieldset style="margin-top:12px"><legend>Mercenary</legend>
@@ -395,7 +395,7 @@ function edIdentity(){
       ${edCardVariants('card','Unit cards on disk')}
       ${edCardVariants('info','Info cards on disk')}
       ${(e.cardSrc||e.infoSrc)?`<div class="count w-good" style="margin-top:8px">
-        Staged — nothing is written until you hit Save.</div>`:''}
+        Staged. Nothing is written until you hit Save.</div>`:''}
     </fieldset>
   </div>`;
 }
@@ -445,7 +445,7 @@ function edRevealBtn(kind){
 Import one and save, and this opens the folder it lands in.">Open file location</button>`;
   const many=((state.ed.d.icon_variants||{})[kind]||[]).length>1;
   return `<button title="Show ${esc(rel)} in the file manager.
-${many?'This unit has more than one distinct picture — the list below has the rest.'
+${many?'This unit has more than one distinct picture. The list below has the rest.'
       :'Every faction folder that has one shares this picture.'}"
     onclick="edReveal('${q1(esc(rel))}')">Open file location</button>`;
 }
@@ -473,15 +473,39 @@ function edSetTier(k,v){const e=state.ed;
   edStale(); edRenderTab();
 }
 function edTierBox(){
+  const e=state.ed;
   const tier=edTierVal('tier'),variant=edTierVal('tier_variant');
-  const opts=(list,cur)=>['<option value=""></option>'].concat(
-    (list||[]).map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`)
-  ).join('');
-  const v=gfVocabFor(state.ed.mod)||{};
+  // A value typed through ＋ is not in the mod's list until the mod is read
+  // again, so it is added to the list here. Without this the drop-down came back
+  // with nothing selected and the new variant looked like it had been thrown
+  // away — it was still staged, which is worse than losing it outright.
+  const opts=(list,cur)=>{
+    const all=(list||[]).slice();
+    if(cur&&all.indexOf(cur)<0)all.push(cur);
+    return ['<option value=""></option>'].concat(
+      all.map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}${
+        (list||[]).indexOf(v)<0?' (new)':''}</option>`)).join('');
+  };
+  const v=gfVocabFor(e.mod)||{};
+  /* The variant list is the mod's OWN vocabulary — every value any of its units
+     already uses, read back out of the markers the tool wrote (vocab.py's
+     `_marker_values`). So a mod that has never had a variant offers an empty
+     drop-down, and the note underneath used to answer that with "type one in the
+     unit file", which means leaving the toolkit to hand-edit the file it exists
+     to replace. ＋ is that first value, typed here: it goes onto this unit, and
+     from the next read of the mod it is in the list for every other one. */
+  const adding=!!e.tierNewVar;
   return `<fieldset style="margin-top:12px"><legend>Tier <span class="pill">toolkit only</span></legend>
     <div class="two">
       <div><label>Tier<select id="edTier">${opts(v.tier,tier)}</select></label></div>
-      <div><label>Variant<select id="edTierVar">${opts(v.tier_variant,variant)}</select></label></div>
+      <div><label>Variant<span class="tiervar">${adding
+        ? `<input id="edTierVarNew" placeholder="A name for the new variant"
+             value="${esc(variant)}" autofocus>
+           <button title="Keep this variant" onclick="edTierVarAdd(false)">✓</button>`
+        : `<select id="edTierVar">${opts(v.tier_variant,variant)}</select>
+           <button title="Add a variant this mod has never used before.
+It goes onto this unit, and joins the list for every other one."
+             onclick="edTierVarAdd(true)">＋</button>`}</span></label></div>
     </div>
     <div class="count" style="margin-top:6px">${docPoints(
       'The game never reads this. It is the toolkit’s own note about the unit.',[
@@ -489,9 +513,16 @@ function edTierBox(){
         '(<code>;@m2gt tier=3 variant=aor</code>), so the engine skips it and no mod file changes shape.',
       'It exists so <b>Clean up the unit file</b> can group the roster by tier the way a '+
         'hand-organised <code>export_descr_unit.txt</code> is.',
-      'A value that is in no list can still be used. Type one in the unit file and it joins '+
-        'this mod’s list.'])}</div>
+      'The list holds every variant this mod already uses. <b>＋</b> adds one it does not.'])}</div>
   </fieldset>`;
+}
+// ＋ opens the box; ✓ closes it again. The value is written on every keystroke,
+// so a variant typed and never confirmed is still the unit's.
+function edTierVarAdd(on){
+  state.ed.tierNewVar=!!on;
+  edRenderTab();
+  const el=document.getElementById('edTierVarNew');
+  if(el){el.focus(); el.select();}
 }
 function edClearIcon(key){state.ed[key]=''; edRenderTab();}
 function edToggleMerc(on){
@@ -518,6 +549,16 @@ function edWireIdentity(){
   if(t)t.onchange=()=>edSetTier('tier',t.value);
   const tv=document.getElementById('edTierVar');
   if(tv)tv.onchange=()=>edSetTier('tier_variant',tv.value);
+  // the typed-in variant writes as it is typed, and must not redraw the box it
+  // is being typed into — so it sets the value directly rather than via edSetTier
+  const tn=document.getElementById('edTierVarNew');
+  if(tn)tn.oninput=()=>{
+    const w=state.ed; w.tierEdit=w.tierEdit||{};
+    const v=tn.value.trim().replace(/\s+/g,'_');
+    if(v===(w.d.tier_variant||''))delete w.tierEdit.tier_variant;
+    else w.tierEdit.tier_variant=v;
+    edStale();
+  };
 }
 
 /* ---- every EDU field, editable, with a real delete ----
@@ -528,7 +569,7 @@ function edWireIdentity(){
 const LIST_FIELDS=new Set(['ownership','era 0','era 1','era 2']);
 function edFields(){
   const cv=state.ed.cv;
-  return `<fieldset><legend>EDU fields — edited in place</legend>
+  return `<fieldset><legend>EDU fields, edited in place</legend>
     <div class="fieldbar">
       <input id="fieldFilter" placeholder="Filter fields…" oninput="filterFields()">
       ${gfToggleHtml()}${edCvToggleHtml()}
@@ -621,11 +662,11 @@ function edRawFields(){
       ${rmBtn(label,gone)}</div>`;
   }).join('');
   return `<div class="allfields" id="allFields">${rows}</div>
-    <div class="count" style="margin-top:6px">✕ removes the whole line — clearing a value
+    <div class="count" style="margin-top:6px">✕ removes the whole line. Clearing a value
       leaves an empty field, which the game still reads.</div>
     <div class="prow" style="margin-top:8px;grid-template-columns:var(--plw) 1fr auto">
       <span class="pl">${qm('Fields the EDU understands that this unit has no line for. Adding one writes a fresh line with an empty value.','Add a missing field')}Add a missing field</span>
-      <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">— none missing —</option>'}</select>
+      <select id="edAddKey">${missing.map(k=>`<option>${esc(k)}</option>`).join('')||'<option value="">Nothing missing</option>'}</select>
       <button onclick="edAddField()">Add</button>
     </div>`;
 }
@@ -744,11 +785,11 @@ function edCompare(){
   return `<div class="frm">
     ${edCmpHead(m)}
     <div class="cmpbar">
-      <input class="q" id="cmpQ" placeholder="Filter by stat — attack, morale, cost…"
+      <input class="q" id="cmpQ" placeholder="Filter by stat: attack, morale, cost…"
         value="${esc(e.cmpQ||'')}">
       <label class="chk"><input type="checkbox" id="cmpSame" ${e.cmpSame?'checked':''}>
         show the stats they share</label>
-      <span class="count">Both columns are editable — <b>Save changes</b> writes both units.</span>
+      <span class="count">Both columns are editable. <b>Save changes</b> writes both units.</span>
     </div>
     ${fields.length?fields.map(edCmpSection).join('')
       :`<div class="count">${q?'Nothing matches that filter.'
@@ -824,8 +865,8 @@ function edChips(label,items,extra,opt){
       ${(extra||(()=>''))(v,i)}
       <button class="${o.cls==='ug'?'xup':'x'}" title="Remove ${esc(v)}"
         onclick="${o.rm?o.rm(i,v):`edListRemove('${q1(esc(label))}',${i})`}">✕</button>
-    </span>`).join('')||'<span class="count">— empty —</span>'}
-    ${gone.map(v=>`<span class="chipd gone" title="Removed by you — click to put it back"
+    </span>`).join('')||'<span class="count">Empty</span>'}
+    ${gone.map(v=>`<span class="chipd gone" title="Removed by you. Click to put it back."
       onclick="edListRestore('${q1(esc(label))}','${q1(esc(v))}')">${esc(v)}</span>`).join('')}</div>`;
 }
 function edListRestore(label,v){
@@ -867,7 +908,7 @@ function edFactionField(label,cur){
   return `<div style="flex:1;min-width:0">
     ${edChips(label,list)}
     <div class="barrow">
-      <details class="drop"><summary>▾ Choose factions — ${list.length} selected</summary>
+      <details class="drop"><summary>▾ Choose factions: ${list.length} selected</summary>
         <div class="dropbody"><div class="barrow" style="margin:0 0 6px">
           <button onclick="edListSet('${q1(esc(label))}',${JSON.stringify(edFactionList()).replace(/"/g,'&quot;')})">All</button>
           <button onclick="edListSet('${q1(esc(label))}',[])">None</button>
@@ -897,9 +938,9 @@ function edArmourField(label,cur){
     <div class="barrow">
       <button class="ugadd${open?' on':''}" onclick="edUgOpen()"
         title="Add an armour upgrade tier">${open?'−':'＋'}</button>
-      <span class="count">position = upgrade level${levels.length?` · armour_ug_levels: ${esc(levels.join(', '))}`:''}${
+      <span class="count">Position = upgrade level${levels.length?` · armour_ug_levels: ${esc(levels.join(', '))}`:''}${
         levels.length&&levels.length!==models.length
-          ? ` <span class="w-warn">— ${levels.length} level(s) for ${models.length} model(s)</span>`:''}</span>
+          ? ` <span class="w-warn">${levels.length} level(s) for ${models.length} model(s)</span>`:''}</span>
     </div>
     ${edUgPanel()}</div>`;
 }
@@ -933,7 +974,7 @@ function edUgPanel(){
   return `<div class="ugpanel">
     <div class="ugmodes">
       ${btn('clone','1 · Repeat the last tier',
-        'Name the last entry again as the next tier. The unit gains the armour upgrade in its stats while its model stays exactly as it was — no new modeldb entry is made.')}
+        'Name the last entry again as the next tier. The unit gains the armour upgrade in its stats while its model stays exactly as it was. No new modeldb entry is made.')}
       ${btn('unit','2 · Take a unit’s upgrades',
         'Read another unit’s armour_ug_models and import the tiers you tick.')}
       ${btn('browse','3 · Pick an existing entry',
@@ -1008,7 +1049,7 @@ function edUgCloneLast(){
   e.ug=null; edRenderTab(); edPreview();
   const lv=csv(edFieldVal('armour_ug_levels')).slice(-1)[0];
   toast(`“${last}” repeated as the next tier${lv?` (armour level ${lv})`:''} `
-       +`— upgrades the stats, same model.`,4200);
+       +`It upgrades the stats and keeps the same model.`,4200);
 }
 // Where a cloned tier comes from and what it gets called: `<stem>_ug<n>`, with n
 // walked up until nothing in the mod (or pending) has that name.
@@ -1044,7 +1085,7 @@ function edUgUnitBody(){
     :!u.donor?''
     :!u.donor.models.length
       ?`<div class="count w-warn" style="margin-top:9px"><b>${esc(u.unit)}</b> has no
-        <code>armour_ug_models</code>${u.donor.soldier?` — its body model is
+        <code>armour_ug_models</code>${u.donor.soldier?`. Its body model is
         <code>${esc(u.donor.soldier)}</code>, which mode 3 can add`:''}.</div>`
     :`<div class="count" style="margin-top:9px">Tiers of <b>${esc(u.unit)}</b> to import:</div>
       <div class="uglist">${u.donor.models.map((m,i)=>{
@@ -1053,13 +1094,13 @@ function edUgUnitBody(){
           <input type="checkbox" ${u.pick[i]?'checked':''}
             onchange="state.ed.ug.pick[${i}]=this.checked">
           <span class="nm">${esc(m)}</span>
-          <span class="count">level ${esc(u.donor.levels[i]||'—')}${
-            dup?' · already a tier — imports as a repeat'
+          <span class="count">level ${esc(u.donor.levels[i]||'none')}${
+            dup?' · already a tier, so it imports as a repeat'
               :known?'':' · <span class="w-warn">not in this mod’s modeldb</span>'}</span>
         </label>`;}).join('')}</div>
       <div class="barrow">
         <button class="primary" onclick="edUgTakeUnit()">Add ticked tier(s)</button>
-        <span class="count">appended after the tiers this unit already has</span>
+        <span class="count">Appended after the tiers this unit already has</span>
       </div>`;
   const rows=edUgUnitRows();          // sets u._n, so the count renders first time
   return `<input id="ugSearch" style="width:100%" placeholder="Filter units…"
@@ -1158,10 +1199,10 @@ function edUgBrowseHits(){
       const dup=have.has(n);
       return `<div class="ugrow" onclick="edUgAddOne('${q1(esc(n))}')">
         <span class="nm">${esc(n)}</span>
-        <span class="count">${dup?'already a tier — click to repeat it'
+        <span class="count">${dup?'Already a tier. Click to repeat it.'
                                  :'click to add as the next tier'}</span>
       </div>`;}).join('')
-      ||'<div class="ugrow have"><span class="count">no entry matches</span></div>'}</div>
+      ||'<div class="ugrow have"><span class="count">No entry matches</span></div>'}</div>
     <div class="count" style="margin-top:6px">${hits.length} of ${all.length} entr${
       all.length===1?'y':'ies'}${hits.length>shown.length
         ? ` · showing the first ${shown.length}, keep typing`:''}</div>`;
@@ -1270,7 +1311,7 @@ function edModels(){
   const e=state.ed,d=e.d;
   const pending=e.newModels.map((n,i)=>`<div class="pending">
       <button class="x" onclick="edDropNew(${i})" title="Discard">✕</button>
-      <b>${esc(n.name)}</b> — new entry cloned from
+      <b>${esc(n.name)}</b>: new entry cloned from
       <a class="ulink" onclick="edJumpModel('${q1(esc(n.clone_from))}')">${esc(n.clone_from)}</a>
       ${n.assign_to?` → <code>${esc(n.assign_to)}</code>`:''}
       ${n._tier?' <span class="count">· next armour tier</span>':''}
@@ -1287,7 +1328,7 @@ function edModelCard(m,idx){
   const e=state.ed;
   if(m.missing) return `<div class="mentry"><div class="mhead">
       <span class="mn w-bad">${esc(m.name)}</span>
-      <span class="count">missing from this mod's modeldb${m.slots.length?` · ${m.slots.map(esc).join(', ')}`:''}</span>
+      <span class="count">Missing from this mod's modeldb${m.slots.length?` · ${m.slots.map(esc).join(', ')}`:''}</span>
     </div></div>`;
   const open=!!e.open[m.name];
   const me=e.mEdits[m.name]||{};
@@ -1324,7 +1365,7 @@ battle_models.modeldb stores it, beside the boxes."
       </div>
       <div class="prow" style="grid-template-columns:var(--plw) 1fr"><span class="pl"></span>
         <span id="edmns${idx}" class="count">${edNameHint(m,me.new_name||m.name)}</span></div>
-      <div class="count" style="margin-top:5px">Skeletons: ${m.skeletons.map(esc).join(', ')||'—'}</div>
+      <div class="count" style="margin-top:5px">Skeletons: ${m.skeletons.map(esc).join(', ')||'none'}</div>
       ${edFolderBox(m)}
       <div class="psec">Meshes (LODs)</div>${meshes||'<div class="count">none</div>'}
       ${edDefaultTextures(m)}
@@ -1368,9 +1409,9 @@ function edNameHint(m,val){
   if(v===m.name)return 'unchanged';
   if(/\s/.test(v))return '<span class="w-bad">✗ entry names cannot contain spaces</span>';
   if(e.d.model_names.includes(v)||e.newModels.some(n=>n.name===v))
-    return '<span class="w-bad">✗ taken — another entry in this mod already has that name</span>';
+    return '<span class="w-bad">✗ Taken. Another entry in this mod already has that name.</span>';
   const n=(m.used_by||[]).length+1;
-  return `<span class="w-good">✓ available</span> — ${n} unit reference${n===1?'':'s'} will be
+  return `<span class="w-good">✓ Available.</span> ${n} unit reference${n===1?'':'s'} will be
     rewritten to match across the whole EDU`;
 }
 
@@ -1425,7 +1466,7 @@ descr_sm_factions.txt. The modeldb still names it, so the record is kept.">not a
 function edFacUniquePanel(m,f,v,kinds){
   const cur=v.facs[f]||{};
   return `<div class="facuniq">
-    <div class="count" style="margin-bottom:4px"><b>${esc(edFacLabel(f))}</b> — leave a box empty
+    <div class="count" style="margin-bottom:4px"><b>${esc(edFacLabel(f))}</b>. Leave a box empty
       to fall back to the default above.</div>
     ${kinds.map(k=>{const own=cur[k]&&cur[k]!==v.defs[k];
       return `<div class="prow" style="grid-template-columns:calc(var(--plw) - 10px) 1fr auto">
@@ -1447,7 +1488,7 @@ function edFacAll(name,on){
   if(!on&&m.factions.length){
     // one record has to survive: an entry with no faction skin can't be drawn
     me.factions=[ (me.factions||m.factions)[0] ];
-    toast('Kept one faction — a battle model needs at least one skin');
+    toast('Kept one faction. A battle model needs at least one skin.');
   } else if(on){
     const all=(e.d.all_factions||[]).slice();
     (me.factions||m.factions).forEach(f=>{if(!all.includes(f))all.push(f);});
@@ -1478,12 +1519,12 @@ function edFolderBox(m){
   const folders=f.folders||[...new Set((f.mesh_dirs||[]).concat(f.texture_dirs||[]))];
   const ext=f.external_dirs||[];
   const extNote=ext.length?`<div class="count" style="margin-top:4px">Attachment textures live
-    in ${ext.map(d=>`<span class="fpath">data/${esc(d)}</span>`).join(', ')} — a shared set,
+    in ${ext.map(d=>`<span class="fpath">data/${esc(d)}</span>`).join(', ')}: a shared set,
     so it is left where it is.</div>`:'';
   const head=f.standardized
     ? `<b>Model folder</b> <span class="fpath">data/${esc(f.base)}</span>
        <div class="count" style="margin-top:3px">Meshes here, textures in its
-         <code>${TEX_SUBDIR}/</code> — one folder.</div>${extNote}`
+         <code>${TEX_SUBDIR}/</code>, one folder.</div>${extNote}`
     : `<b class="w-warn">⚠ No single model folder</b>
        <div class="count" style="margin-top:3px">This entry's files are spread across
          ${folders.length} folder(s):
@@ -1501,7 +1542,7 @@ function edFolderBox(m){
 }
 function edFolderCheckHtml(m,chk){
   if(chk.error)return `<div class="count w-bad" style="margin-top:6px">${esc(chk.error)}</div>`;
-  if(!chk.moves.length)return `<div class="count w-good" style="margin-top:6px">Nothing to move —
+  if(!chk.moves.length)return `<div class="count w-good" style="margin-top:6px">Nothing to move.
     every file is already where <span class="fpath">data/${esc(chk.target_rel)}</span> wants it.</div>`;
   const missing=chk.moves.filter(x=>x.missing);
   const shared=chk.shared_entries||[];
@@ -1516,7 +1557,7 @@ function edFolderCheckHtml(m,chk){
       ${shared.map(n=>`<code>${esc(n)}</code>`).join(', ')}.<br>
       Moving without updating them leaves those entries pointing at the old files.</div>
       <div class="barrow">
-        <button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',true)">Edit and move anyway — update all ${shared.length}</button>
+        <button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',true)">Edit and move anyway, updating all ${shared.length}</button>
         <button onclick="edFolderApply('${q1(esc(m.name))}',false)">Move only this entry</button>
       </div>`
     :`<div class="barrow"><button class="primary" onclick="edFolderApply('${q1(esc(m.name))}',false)">Move the files</button></div>`}
@@ -1603,11 +1644,11 @@ function edNewModelForm(){
     if(k==='officer')slots.push(l==='officer'?'officer#1':l);});
   const arm=(e.d.fields.find(([l])=>l==='armour_ug_models')||[])[1];
   if(arm)arm.split(',').forEach((_x,i)=>slots.push('armour_ug_models#'+(i+1)));
-  const file=(v)=>v?esc(v):'<span class="count">not set — the clone’s file is kept</span>';
+  const file=(v)=>v?esc(v):'<span class="count">Not set, so the clone’s file is kept.</span>';
   return `<div class="newmodel">
     <b>New model entry cloned from <code>${esc(f.clone_from)}</code></b>
     <div class="count" style="margin-top:3px">Sprites, the faction (ownership) texture records and the
-      footer — animations/skeletons and torch — are copied from that entry, so the new model stays valid.</div>
+      footer (animations, skeletons and torch) are copied from that entry, so the new model stays valid.</div>
     <div class="fbrow"><span class="k">Entry name</span>
       <input value="${esc(f.name)}" oninput="edForm('name',this.value)"><span></span></div>
     <div class="fbrow"><span class="k">Copy files into</span>
@@ -1630,7 +1671,7 @@ function edNewModelForm(){
     </div>
     <div class="fbrow"><span class="k">Point EDU slot at it</span>
       <select onchange="edForm('assign_to',this.value)">
-        ${slots.map(s=>`<option value="${esc(s)}" ${f.assign_to===s?'selected':''}>${s?esc(s):'— don’t change the unit —'}</option>`).join('')}
+        ${slots.map(s=>`<option value="${esc(s)}" ${f.assign_to===s?'selected':''}>${s?esc(s):'Don’t change the unit'}</option>`).join('')}
       </select><button class="primary" onclick="edAddNewModel()">${
         f._editing===undefined?'Add entry':'Save entry'}</button></div>
   </div>`;
@@ -1699,7 +1740,7 @@ function edPlanHtml(r,stale){
       cls==='bad'?'✗':cls==='warn'?'!':'·'}</span><span class="stext">${esc(x)}</span></div>`).join('');
   return `<div class="sum" style="margin-top:10px">
     <div class="srow shead"><span class="sicon">✎</span><span class="stext">Pending changes${
-      stale?' <span class="w-warn">— edited since this preview, press Preview again</span>':''}</span></div>
+      stale?' <span class="w-warn">Edited since this preview. Press Preview again.</span>':''}</span></div>
     ${li('',r.changes.length?r.changes:['no changes'])}
     ${r.files_written.length?`<div class="srow"><span class="sicon">💾</span><span class="stext">writes ${
       r.files_written.map(f=>`<span class="path">${esc(f)}</span>`).join(', ')}</span></div>`:''}

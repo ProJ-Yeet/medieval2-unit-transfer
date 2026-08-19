@@ -367,6 +367,75 @@ function saveFilters(){                       // debounced: ticking is a burst
 function filtersChanged(){saveFilters();render();}
 async function ensureDest(){ if(!state.destData||state.destData.mod!==state.dst){state.destData=await api.get('/api/units?mod='+encodeURIComponent(state.dst));} return state.destData; }
 
+/* ---------- the filter sidebar folds ----------
+   Every mode's sidebar is a run of <h3> headings with that group's controls
+   under each one, and on a mod with sixty factions the first heading is the only
+   one you can see without scrolling. So each heading becomes the control that
+   folds its own group, exactly as the group headers in the unit grid already do
+   (see toggleGroup), and which ones are shut is remembered across runs like the
+   rest of the panel.
+
+   The grouping is read off the markup rather than written into it: a heading
+   owns every element after it up to the next heading. That means a sidebar can
+   gain a group without anyone remembering to wrap it, and it is why one function
+   covers the unit sidebar and the buildings sidebar alike.
+
+   `.fgn` carries "3" when a group has something ticked, so a filter that is
+   hiding rows can never be folded out of sight without saying so. */
+function wireFilterFolds(){
+  document.querySelectorAll('aside.filters').forEach(aside=>{
+    if(aside.dataset.folds)return;                 // already wrapped
+    aside.dataset.folds='1';
+    const kids=[...aside.children];
+    let head=null,run=[];
+    const close=()=>{
+      if(!head)return;
+      const body=document.createElement('div');
+      body.className='fgbody';
+      head.after(body);
+      run.forEach(el=>body.appendChild(el));
+      const key=aside.id+':'+head.textContent.trim();
+      head.classList.add('filtfold');
+      head.dataset.fg=key;
+      head.innerHTML=`<span class="fgc">▶</span><span class="fgt">${
+        esc(head.textContent.trim())}</span><span class="fgn"></span>`;
+      head.onclick=()=>toggleFilterFold(key);
+      run=[];
+    };
+    kids.forEach(el=>{
+      if(el.tagName==='H3'){close(); head=el;}
+      else if(head)run.push(el);
+    });
+    close();
+  });
+  paintFilterFolds();
+}
+const filterFolded=()=>(state.settings.filters_folded||[]);
+function toggleFilterFold(key){
+  const shut=new Set(filterFolded());
+  if(shut.has(key))shut.delete(key); else shut.add(key);
+  state.settings.filters_folded=[...shut];
+  api.post('/api/settings',{filters_folded:state.settings.filters_folded});
+  paintFilterFolds();
+}
+// How many boxes a group has ticked, so a folded group still owns up to filtering.
+function filterFoldCount(body){
+  return body.querySelectorAll('input[type=checkbox]:checked').length;
+}
+function paintFilterFolds(){
+  const shut=new Set(filterFolded());
+  document.querySelectorAll('aside.filters h3.filtfold').forEach(h=>{
+    const body=h.nextElementSibling;
+    if(!body||!body.classList.contains('fgbody'))return;
+    const off=shut.has(h.dataset.fg);
+    h.classList.toggle('shut',off);
+    body.classList.toggle('shut',off);
+    const n=filterFoldCount(body);
+    const tag=h.querySelector('.fgn');
+    if(tag)tag.textContent=n?String(n):'';
+    h.title=off?'Click to open this group.':'Click to fold this group shut.';
+  });
+}
 function buildFilter(id,values,key,useLabel){
   const box=document.getElementById(id);
   // factions are listed under whichever name is leading, so the A→Z the user
@@ -375,8 +444,9 @@ function buildFilter(id,values,key,useLabel){
                      :(values||[]);
   box.innerHTML=list.map(v=>`<label class="opt"><input type="checkbox" value="${esc(v)}" ${
     state.sel[key].has(v)?'checked':''}>${esc(useLabel?facLabel(v):v)}</label>`).join('')
-    ||'<span class="count">—</span>';
-  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);filtersChanged();});
+    ||'<span class="count">None</span>';
+  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const s=state.sel[key];cb.checked?s.add(cb.value):s.delete(cb.value);filtersChanged();paintFilterFolds();});
+  paintFilterFolds();
 }
 /* ---------- burger menu ----------
    The single registry of modules. Everything the menu shows — and the header
@@ -452,7 +522,7 @@ function findingsHtml(key,list,onopen){
     <button class="findtog" onclick="findingsToggle('${q1(esc(key))}')">
       ${open?'▾':'▸'} ${n} thing${n===1?'':'s'} to look at</button>
     ${open?`<div class="findlist">${rows}</div>`
-          :'<div class="count">the marked rows below, or open this to read them</div>'}
+          :'<div class="count">The marked rows below, or open this to read them.</div>'}
   </div>`;
 }
 function findingsToggle(key){state.findOpen[key]=!state.findOpen[key]; render();}
@@ -490,6 +560,7 @@ function syncNav(){
     b.classList.toggle('on',b.dataset.mode===host));
 }
 function wire(){
+  wireFilterFolds();
   navModes.innerHTML=MODES.filter(m=>!m.sub).map(m=>`<button class="navitem" data-mode="${m.id}">
       <span class="ic">${m.icon}</span>
       <span><span class="nm">${esc(m.name)}</span><span class="hint">${esc(m.hint)}</span></span>
@@ -597,7 +668,7 @@ function applyMode(persist){
                     :anc?'Search ancillaries and types…'
                     :mnr?'Search this file…'
                     :fac?'Search factions…':'Search…';
-  document.title=modeDef(state.mode).name+' — Medieval 2 GUI Toolkit';
+  document.title=modeDef(state.mode).name+' · Medieval 2 GUI Toolkit';
   if(one&&state.selMode)toggleSelMode();
   // A single-mod mode mirrors the destination onto the source, but the pick the
   // user made in Transfer is remembered rather than overwritten — both in
@@ -723,7 +794,7 @@ function cardHtml(u){
     <div class="tick">✓</div>
     <img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}" alt="">
     <div class="meta"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.type)}</div>
-    <div>${u.eop?`<span class="badge eop" title="M2TWEOP unit — defined in ${esc(u.eop_file||'an EOP unit file')}, not in export_descr_unit.txt">EOP</span>`:''}${u.mercenary?'<span class="badge merc">merc</span>':''}<span class="badge">${esc(u.kind||u.category||'?')}</span>${u.class?`<span class="badge cls">${esc(u.class)}</span>`:''}</div></div></div>`;
+    <div>${u.eop?`<span class="badge eop" title="M2TWEOP unit, defined in ${esc(u.eop_file||'an EOP unit file')} rather than in export_descr_unit.txt">EOP</span>`:''}${u.mercenary?'<span class="badge merc">merc</span>':''}<span class="badge">${esc(u.kind||u.category||'?')}</span>${u.class?`<span class="badge cls">${esc(u.class)}</span>`:''}</div></div></div>`;
 }
 function onCard(type){
   if(state.selMode){ if(state.selected.has(type))state.selected.delete(type); else state.selected.add(type);
@@ -742,17 +813,17 @@ const cssq=s=>s.replace(/"/g,'\\"');
 function openDrawer(type){
   const u=state.data.units.find(x=>x.type===type); if(!u)return;
   const d=document.getElementById('drawer');
-  const eras=['0','1','2'].filter(e=>(u.eras[e]||[]).length).map(e=>({0:'Early',1:'High',2:'Late'}[e])).join(', ')||'—';
+  const eras=['0','1','2'].filter(e=>(u.eras[e]||[]).length).map(e=>({0:'Early',1:'High',2:'Late'}[e])).join(', ')||'none';
   d.innerHTML=`<button class="close" onclick="drawer.classList.remove('open')">×</button>
     <div class="dh"><img onerror="iconRetry(this)" src="${iconUrl(state.src,u.type)}"><div><h2>${esc(u.name)}</h2><div class="sub">${esc(u.type)}</div></div></div>
     ${u.has_info?`<div class="infowrap"><div class="k">Info card</div><img onerror="this.parentElement.style.display='none'" src="${iconUrl(state.src,u.type,'info')}"></div>`:''}
     <div class="body">
       ${row('Dictionary',esc(u.dictionary))}
-      ${row('Ownership',u.ownership.map(f=>`<span class="chip">${esc(facLabel(f))}</span>`).join('')||'—')}
-      ${row('Category / Class',esc(u.kind||u.category||'—')+' / '+esc(u.class||'—'))}
+      ${row('Ownership',u.ownership.map(f=>`<span class="chip">${esc(facLabel(f))}</span>`).join('')||'none')}
+      ${row('Category / Class',esc(u.kind||u.category||'none')+' / '+esc(u.class||'none'))}
       ${row('Eras',eras)}
-      ${row('Battle models',u.models.map(m=>`<span class="chip">${esc(m)}</span>`).join('')||'—')}
-      ${row('Officers / Mount',(u.officers.map(o=>`<span class="chip">${esc(o)}</span>`).join('')||'—')+(u.mount?`  mount: <span class="chip">${esc(u.mount)}</span>`:''))}
+      ${row('Battle models',u.models.map(m=>`<span class="chip">${esc(m)}</span>`).join('')||'none')}
+      ${row('Officers / Mount',(u.officers.map(o=>`<span class="chip">${esc(o)}</span>`).join('')||'none')+(u.mount?`  mount: <span class="chip">${esc(u.mount)}</span>`:''))}
       ${(u.engine||u.mounted_engine)?row('Siege engine',`<span class="chip">${esc(u.engine||u.mounted_engine)}</span>${u.mounted_engine&&!u.engine?' <span class="count">(mounted)</span>':''}${(u.engine_groups||[]).length?`<span class="count"> · groups: ${(u.engine_groups||[]).map(esc).join(', ')}</span>`:''}`):''}
       <button class="primary" style="width:100%;margin-top:6px" onclick="drawer.classList.remove('open');openComposer(['${q1(esc(u.type))}'])">Transfer to “${esc(state.dst)}” →</button>
     </div>`;
@@ -774,19 +845,19 @@ async function openCredits(){
     <div style="padding:16px;line-height:1.7">
       <div style="margin-bottom:14px">
         <div class="lbl" style="margin-bottom:4px">Built on the work of</div>
-        <b>Mylae</b> — the
+        <b>Mylae</b>, for the
         <a href="https://github.com/Machiavello-1441/m2tw-editor" target="_blank"
            style="color:var(--accent2)">M2TW Editor</a>, whose modules this toolkit adapts and builds on.
       </div>
       <div style="margin-bottom:14px">
         <div class="lbl" style="margin-bottom:4px">Special thanks</div>
-        <b>Gigantus</b> and the <b>TWCenter</b> community — for the guides that
+        <b>Gigantus</b> and the <b>TWCenter</b> community, for the guides that
         taught everyone, this tool included, how these files actually work.
       </div>
       <div style="margin-bottom:14px">
         <div class="lbl" style="margin-bottom:4px">Thanks</div>
         <a href="https://www.twcenter.net/ubs/medieval-2-total-war-modding-tool.26/" target="_blank"
-           style="color:var(--accent2)">Fynn’s Medieval II Total War Modding Tool</a> — for the motivation.
+           style="color:var(--accent2)">Fynn’s Medieval II Total War Modding Tool</a>, for the motivation.
       </div>
       <div>
         <div class="lbl" style="margin-bottom:4px">Testing</div>

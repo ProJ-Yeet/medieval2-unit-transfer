@@ -58,7 +58,7 @@ function renderBmdb(){
   main.innerHTML=bmdbTabsHtml('data/unit_models/battle_models.modeldb')+`<div class="dbhead">
       <h2>${esc(state.src)} · ${state.bmdb.names} battle-model entries</h2>
       <span class="count">${nUnused} referenced by nothing${
-        nUnused?' — <b class="w-warn">🧹 Clean up BMDB…</b> moves them out':''}${
+        nUnused?'. <b class="w-warn">🧹 Clean up BMDB…</b> moves them out.':''}${
         dupes?` · ${dupes} duplicate entry block${dupes===1?'':'s'} share a name with another`:''}</span>
     </div>
     ${rows.length?`<div class="dblist">${rows.map(bmdbRow).join('')}</div>`
@@ -67,12 +67,12 @@ function renderBmdb(){
 }
 function bmdbRow(e){
   const use=e.unused?'<span class="w-warn">nothing references it</span>'
-    :e.mentioned_in?`<span class="count">no unit uses it — ${e.mentioned_in_lua
+    :e.mentioned_in?`<span class="count">No unit uses it. ${e.mentioned_in_lua
         ?'named by a <b class="w-good">Lua script</b>':'only named in'} <code>${esc(e.mentioned_in)}</code></span>`
     :`${esc(e.used_by.slice(0,4).join(', '))}${e.use_count>4?` +${e.use_count-4} more`:''}`;
   return `<div class="dbrow ${e.unused?'unused':''}" data-name="${esc(e.name)}">
     <span class="en">${esc(e.name)}${e.copies>1?`<span class="badge w-warn" style="margin-left:5px"
-      title="the modeldb holds this name ${e.copies} times">×${e.copies}</span>`:''}</span>
+      title="The modeldb holds this name ${e.copies} times.">×${e.copies}</span>`:''}</span>
     <span class="use">${use}</span>
     <span class="nums">${e.lods} LOD${e.lods===1?'':'s'} · ${e.skins} skin${e.skins===1?'':'s'}</span>
   </div>`;
@@ -240,7 +240,7 @@ function edEntryUsers(m){
   return `<div class="bsec edusers"><h4>
       <button class="usertog" onclick="edToggleUsers()">${edUsersOpen()?'▾':'▸'}
         Used by <span class="n">${all.length}</span></button>
-      ${all.length?'<span class="count">every unit, mount and file that names this entry</span>'
+      ${all.length?'<span class="count">Every unit, mount and file that names this entry</span>'
                   :'<span class="count w-warn">nothing in the mod references it</span>'}
       ${edUsersOpen()&&all.length>8?`<input class="mini" style="margin-left:auto;max-width:200px"
         placeholder="Filter…" value="${esc(state.ed.usersQ||'')}"
@@ -250,7 +250,7 @@ function edEntryUsers(m){
       const u=index[w.toLowerCase()];
       return `<div class="ucell ${other?'plain':''}"
         ${other?'':`onclick="openUnitTab('${q1(esc(w))}')" title="Open ${esc(w)} in a new tab"`}>
-        ${other?'<div class="ic none">—</div>'
+        ${other?'<div class="ic none">none</div>'
                :`<img loading="lazy" onerror="iconRetry(this)" src="${iconUrl(state.ed.mod,w)}" alt="">`}
         <div class="un">${esc(u?u.name:short(w))}</div>
         <div class="ut">${esc(other?w.split(':')[0]:(u?(u.kind||u.category||w):w))}</div>

@@ -804,7 +804,7 @@ other way too — all 48 keywords the real files use were already ours).
   is a different file family which its own parser destroys — 0 of 32 round-trip —
   so the `descr_sounds_*.txt` **coverage gap is recorded, not closed**.
 
-## Phase 14 — Bug-fix and polish pass (seven sessions)
+## Phase 14 — Bug-fix and polish pass (nine sessions)
 
 One batch of defects and small features from real use of the finished modules,
 plus the leftovers `merge/audit-codebase.md` recorded and did not fix. Nothing
@@ -817,7 +817,8 @@ an item or find it already fixed, but may not drop one silently.
 - **Effort:** XL overall; each sub-phase below is one session with its own exit.
 - **Ordering:** 14a first — it is the only sub-phase holding a broken core flow.
   The rest can be reordered freely. (14g was 14c's last item until it was measured
-  at 115 hits and given a session of its own.)
+  at 115 hits and given a session of its own. 14i came after the release, from
+  using it.)
 
 ### 14a — Loading, mod switching, and the two Transfer failures ✅ (done 2026-08-18)
 
@@ -1429,6 +1430,109 @@ behind mod-set churn, and take the ~20 lines of §6 safe removals.
   byte-exact, so assert the round-trip and not just the feature — and
   `test_web_modules`, which is the only thing between a new shared widget and a
   silent name collision in the one global scope.
+
+### 14i — The post-release correction pass ✅ (done 2026-08-20)
+
+The list that came back from actually using v2.0.0. Ten items, no new direction,
+**folded into the 2.0.0 release notes rather than given a version of its own** —
+the user asked for it that way, so the tag, `__version__` and the release page
+all stay 2.0.0 and `merge/RELEASE_2_0_0.md` gained a "The correction pass"
+section. A future round asked for as its own version is 2.0.1.
+
+- **Goal:** finish 2.0.0 properly. Two real defects, one freeze, seven pieces of
+  polish, a repo rename and a writing sweep.
+
+**Outcome.**
+
+*The repo.* `ProJ-Yeet/medieval2-unit-transfer` → `ProJ-Yeet/medieval2-gui-toolkit`,
+description rewritten, `origin` re-pointed. GitHub forwards the old address, so
+nothing published breaks. The only in-tree references were STATE.md and
+HANDOFF.md; the app itself never linked to its own repo.
+
+*Two defects, one cause each.*
+
+- **"Open file location" opened Documents.** `folder_dialog.reveal` passed
+  `["explorer", "/select,<path>"]` as a LIST, and `subprocess.list2cmdline`
+  wraps the whole `/select,C:\Some Folder\x.tga` token in quotes as soon as the
+  path holds a space. Explorer cannot parse the switch then and falls back to
+  the default folder. Every real mod path has a space in it, so it failed 100%
+  of the time and looked like "the button does nothing useful". It is one
+  command STRING now with the path quoted inside the switch, plus `normpath`
+  because Explorer will not follow forward slashes. Verified against a real DaC
+  card path: Explorer lands on `…/Divide_and_Conquer_EUR/data/ui`.
+- **Ctrl+Z did nothing in the Code View.** undo.js listens on the document and,
+  whenever an editor is open, calls `preventDefault` and restores a snapshot of
+  that editor's BOXES. Typing in the pane is in no such snapshot, so the
+  browser's own textarea undo was suppressed and ours had nothing to give back.
+  The pane keeps its own stack now (`cvUndoInit` / `cvUndoNote` / `cvUndoStep`),
+  same shape as undo.js's: snapshots, a run of typing coalescing into one step
+  after 450 ms of quiet. Two rules keep the stacks from fighting — a text change
+  nobody typed re-baselines the pane's stack, and an EMPTY stack means "not
+  mine", so the handler returns without touching the event and undo.js runs
+  next. Undo therefore walks back through the typing and then out into the form,
+  in the order the edits were made. codeview.js loads before undo.js, which is
+  what makes the ordering work.
+
+*The freeze.* `bldRenderBody` threw `Cannot set properties of null` whenever a
+panel that takes the modal over (Add units, the per-unit comparison, the new
+city/castle comparison) was on screen and something changed the working copy.
+The throw came out of an onclick, so it killed that click and everything after
+it — from the outside, the tool stops responding. `bldTouched` now returns early
+for `cmp`, `vc` or any `stash`; `bldRenderBody` returns early with no `#bldBody`
+at all. The stale-`state.bld` paths went with it: the settlement filter's
+handler reads the live object rather than the one captured when it was wired,
+and `bldSetView` / `bldFacSortToggle` / `bldPoolFacPick` / `bldCapList` go
+through a guarded `bldRedrawLevel()`.
+
+*Everything else.*
+
+| item | where |
+|---|---|
+| Folding sidebar groups, persisted, with a ticked-count badge | `core.js` `wireFilterFolds`, read off the markup so a new `<h3>` folds without being wrapped by hand |
+| ＋ beside the tier Variant | `editor.js` `edTierVarAdd`; the typed value is kept in the list as `(new)` or the drop-down comes back empty and the staged value looks lost |
+| Abilities merged into **Weapons & abilities** | `guided.js` `GF_SECTIONS`; two cards was never a tab |
+| Editable comment breakers | `edusort.banner_style` / `banner(title, style)`; width, fill, prefix, capitals, live sample in the dialog. `upper` defaults OFF so the default output is byte for byte what 2.0.0 wrote |
+| The ordering screen as a unit LIST with tier / variant / **classification** | `edusort.js` rewritten; `apply_marks` writes them onto `;@m2gt`; `overview` sends `detected_special` so the box arrives filled in |
+| **⇄ Compare city / castle** | `buildings.variant_compare` + `GET /api/buildings/variants`; the panel, per-unit ⇄ Mirror and ⇄ Mirror all in `buildings.js` |
+| One set of names for the three pool numbers | `POOL_LABEL` / `POOL_SHORT` in `buildings.js`, used by every screen that shows them |
+| Two-line recruitment rows | `.poolrow .prtop` / `.prbot`; the `requires` clause is the only thing on that row with no natural width |
+| The comparison header lines up | the header cells carried none of the classes that set the column widths |
+| The building Code View follows field edits | `bldCvFollow()` from `bldDirtyNote` and `bldTouched`; this editor was the only adopter that never called `cvFromGui` |
+| Faction sort as a toggle | it was an entry in the drop-down it sorts, so choosing it closed the list |
+| Unit cards on the voice rows | `sprites.js` `sndRowHtml` |
+| ~300 clause-joining em dashes → 0 | every `web/js` module and `index.html`; four number ranges kept, and the lower-case keeps are file names, `and`/`or` clause tokens and inline fragments |
+
+**New surface.** `GET /api/buildings/variants?mod=&line=&culture=`;
+`marks` and `style` on `POST /api/edu/sort/plan|apply`; the `special=` marker key
+on `;@m2gt`, read through `edusort.special_of` and detected by
+`edusort.detected_special`.
+
+**Measured.** DaC `barracks` against `castle_barracks`: 3 units on one side only,
+411 with different pool numbers across 414 shared units — which is why "differs"
+is reported per FIELD and a `requires` mismatch is not counted as a divergence.
+A city clause names the city factions and a castle clause names the castle ones,
+so a single yes/no would have flagged the whole roster and meant nothing.
+
+**Risk that bit.** The ordering screen repaints ONE row on a drop-down change,
+not the roster: 916 units × 3 drop-downs took ~690 ms to rebuild, so the box you
+had just used was replaced under the pointer. 11 ms after.
+
+**Two defects the new suite found in the new work**, both in the banner style
+and both the same shape — a writer that can draw something its reader cannot
+read. `BANNER_RE` only ever matched a rule of HYPHENS, so a banner drawn with
+`=` or `#`, or with a prefix of `;;`, was unreadable to the next run: it would
+be carried as an ordinary comment AND a fresh one written above it, and the file
+would gain a banner every pass. The reader takes the whole `BANNER_FILL` set
+now, which also picks up the `;===== GONDOR INFANTRY =====` a mod wrote by hand.
+And `width` was off by one against the line it produced (96 in, 95 out) —
+inherited from the constant it replaced. `BANNER_WIDTH` is 95 now and the
+arithmetic is exact, so the default output is byte for byte what it always was
+*and* the number means what it says.
+
+`tests/test_variants_and_marks.py`, 82 checks: the comparison from both sides on
+every installed pair, every banner style round-tripping through `BANNER_RE`,
+seven nonsense styles falling back rather than raising, and a marked cleanup
+reaching disk on both real mods with no unit gaining or losing a field.
 
 ## Phase 15 — 3D model viewer (two sessions)
 

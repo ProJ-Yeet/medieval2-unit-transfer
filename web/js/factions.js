@@ -168,7 +168,7 @@ function facFindingsHtml(d){
   const out = (d.findings||[]).map(f =>
     `<div class="trfind w-warn">line ${f.line}: ${esc(f.message)}</div>`);
   if((d.missing_loc||[]).length) out.push(`<div class="trfind w-warn">
-    There is no <code>{${esc(d.loc_tag)}}</code> entry in ${esc(d.loc_file)} — this
+    There is no <code>{${esc(d.loc_tag)}}</code> entry in ${esc(d.loc_file)}, so this
     faction shows its slot name in game. Type its name beside the slot below, or
     save and the key is created with the slot as placeholder text.</div>`);
   return out.join('');
@@ -181,8 +181,8 @@ function facFormHtml(d){
     ? d.locEdits[d.loc_tag] : ((d.loc||{})[d.loc_tag] || '');
   return `<section class="trsec">
     <div class="trsechead">The faction
-      <span class="count">the line order here is what all 90 real factions
-        measured write — an added line goes to its place in it</span></div>
+      <span class="count">The line order here is what all 90 real factions
+        measured write, so an added line goes to its place in it</span></div>
     <div class="trgrid">
       <label class="lbl" data-label="name">Slot</label>
       <div class="trkey">
@@ -197,7 +197,7 @@ every 'requires factions' clause point at it, so it is not renamed here.">
       </div>
       ${d.modifier ? `<label class="lbl">Head modifier</label>
         <div><input value="${esc(d.modifier)}" disabled>
-        <div class="trhint count">carried on the <code>faction</code> line itself;
+        <div class="trhint count">Carried on the <code>faction</code> line itself;
           edited in the code view</div></div>` : ''}
       ${facPick(d, 'culture', 'Culture', v.cultures)}
       ${facPick(d, 'religion', 'Religion', v.religions)}
@@ -208,7 +208,7 @@ every 'requires factions' clause point at it, so it is not renamed here.">
   </section>
   <section class="trsec">
     <div class="trsechead">Art and banners
-      <span class="count">symbol lines name .CAS strat MODELS, not textures; a
+      <span class="count">Symbol lines name .CAS strat MODELS, not textures. A
         loading logo normally lives inside the game's .pack archives, so "not
         found" here is not "missing"</span></div>
     ${facPictures(d)}
@@ -226,7 +226,7 @@ every 'requires factions' clause point at it, so it is not renamed here.">
       ${(v.yes_no||[]).map(k => facYesNo(d, k)).join('')}
       ${facPick(d, 'has_family_tree', 'has_family_tree', v.family_tree)}
     </div>
-    <div class="trhint count">has_family_tree is not a yes/no — 24 of the 90 real
+    <div class="trhint count">has_family_tree is not a yes/no: 24 of the 90 real
       factions measured say <code>teutonic</code>, and a checkbox would have
       written <code>no</code> over every one of them.</div>
   </section>
@@ -250,7 +250,7 @@ function facPick(d, key, label, options, optional){
   const cur = d.w[key] || '', opts = options || [];
   return `<label class="lbl" data-label="${key}">${esc(label)}</label>
     <div><select data-label="${key}" onchange="facSet('${key}',this.value)">
-      ${optional?`<option value=""${cur?'':' selected'}>— none —</option>`:''}
+      ${optional?`<option value=""${cur?'':' selected'}>None</option>`:''}
       ${opts.map(o => `<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('')}
       ${cur && !opts.includes(cur)
         ? `<option value="${esc(cur)}" selected>${esc(cur)} (not in this mod)</option>` : ''}
@@ -309,7 +309,7 @@ function facMovies(d){
   const keys = ['intro_movie','victory_movie','defeat_movie','death_movie'];
   const any = keys.some(k => d.had.has(k) || facHas(d, k));
   if(!any) return `<section class="trsec">
-    <div class="trsechead">Movies <span class="count">this faction has none —
+    <div class="trsechead">Movies <span class="count">This faction has none, and
       63% of the real factions measured do</span></div>
     <button class="trgadd" onclick="facAddGroup('movies')">＋ Add the four movie lines</button>
   </section>`;
@@ -323,17 +323,17 @@ function facHorde(d){
   const v = d.vocab || {}, keys = v.horde_keys || [];
   const any = keys.some(k => d.had.has(k) || facHas(d, k));
   if(!any) return `<section class="trsec">
-    <div class="trsechead">Horde <span class="count">this faction has none</span></div>
+    <div class="trsechead">Horde <span class="count">This faction has none</span></div>
     <button class="trgadd" onclick="facAddGroup('horde')">＋ Make this a horde faction</button>
   </section>`;
   const units = d.w.horde_units || [];
   return `<section class="trsec">
     <div class="trsechead">Horde
-      <span class="count">the eight settings only mean anything together</span></div>
+      <span class="count">The eight settings only mean anything together</span></div>
     <div class="trgrid">${keys.map(k => facBox(d, k, k)).join('')}</div>
     <div class="treffects">
       <div class="trsechead" style="margin:8px 0 0">Horde units
-        <span class="count">${units.length} — what it spawns when it loses its
+        <span class="count">${units.length}: what it spawns when it loses its
           last settlement</span></div>
       ${units.map((u,k)=>`<div class="treff" data-label="horde_unit#${k+1}">
         <input class="trattr" value="${esc(u)}" list="facUnits" placeholder="unit type"

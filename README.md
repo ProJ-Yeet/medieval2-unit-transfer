@@ -272,6 +272,43 @@ instead of two. Click any unit to open its editor:
 Every save is previewed first and backed up, so **🕑 Log → Undo** reverts an edit
 or a deletion byte-exact, exactly like a transfer.
 
+### 🧹 Clean up the unit file
+
+The whole-file counterpart to editing one unit. `export_descr_unit.txt` has no
+required order, so a file worked on for years ends up with units wherever there
+was room; this puts the whole thing into the shape a hand-organised EDU has —
+generals first, then one contiguous run per faction, sub-sectioned by comment
+banners, with every value lined up in a column.
+
+Three rules make that safe to run on a 35 000-line file:
+
+- **It splices, it never re-emits.** A unit's block moves as the verbatim lines
+  it already was. The only bytes this authors are the section banners.
+- **It prefers the order already in the file**, so a file already in shape comes
+  back byte for byte and a second run is a no-op.
+- **The preview is refused outright** if the result is not purely a reordering:
+  same units, same field lines, not one comment lost, all checked before a byte
+  reaches disk. One backup, one log entry, one Undo.
+
+**Clean up** is what to do and what it would change. The four section-banner
+settings live here — width, the rule character, what the line starts with, and
+whether the name is capitalised — with a live sample above the preview. The
+defaults are what the tool has always written.
+
+**Order and tiers** is the roster as a list, one row per unit, with the three
+things the sorter actually reads beside it:
+
+| | |
+|---|---|
+| **Tier** | what the unit sorts by inside its faction's run. Tiers stated by the file's own banners (907 of Divide and Conquer's 916 units sit under one) are read in and filled in for you |
+| **Variant** | a free label of your own — `aor`, `quest`, whatever the mod distinguishes |
+| **Classification** | what makes a unit lead its faction's run. Generals are detected from the unit's own `attributes` and the box says **detected**; a bodyguard, hero, unique or quest unit that carries no such attribute is not detectable, which is why you can say so here |
+
+All three are stored as a comment above the unit's `type` line
+(`;@m2gt tier=2 variant=aor special=bodyguard`), so the engine skips them, no mod
+file changes shape, and the next run reads them straight back. Dragging a unit
+onto another still places it by hand, and a hand placement outranks all of it.
+
 ## Guided vs raw fields
 
 An EDU line is a comma-separated tuple whose meaning is entirely positional.
@@ -623,13 +660,16 @@ The grid lists the lines as pictures. Open one and you get a tab per level with:
 - **Upgrade path** — the whole line drawn as a graph, and what this level
   upgrades into (see below)
 - **Recruitment** — every `recruit_pool` on the level, as a row *or* a card grid
-  with the unit's picture and its pool stats underneath: starting points, points
-  gained per turn, the cap, starting experience, and the conditions on that pool.
-  Add units, remove them, retune the numbers, and filter the list down to what
-  one faction can train. **Points per turn** carries a greyed reading of what the
-  number actually means — `0.066667` is *"= 15 turns"* — and its ▲▼ move it by a
-  whole turn at a time rather than by a fraction (▲ from 15 turns gives
-  `0.071429`, i.e. 14)
+  with the unit's picture and its pool stats underneath: **Initial Pool**,
+  **Replenish Rate**, **Max Pool**, starting experience, and the conditions on
+  that pool. Those three names are the same on every screen that shows the
+  numbers. Add units, remove them, retune the numbers, and filter the list down
+  to what one faction can train. **Replenish Rate** carries a greyed reading of
+  what the number actually means — `0.066667` is *"= 15 turns"* — and its ▲▼
+  move it by a whole turn at a time rather than by a fraction (▲ from 15 turns
+  gives `0.071429`, i.e. 14). Each row is two lines: the unit and its numbers on
+  top, the `requires` clause underneath with the full width of the panel, since
+  a real clause names half a dozen factions and a settlement level
 - **Other capabilities** — `law_bonus`, `armour`, `wall_level`, `agent` and the
   rest, each with a note on what it does and what its number means
 
@@ -682,11 +722,38 @@ Three buttons on every recruit pool:
   Already there? It says so instead of adding a second copy.
 - **⇅** adds the unit to every tier above this one that hasn't got it.
 - **≡** opens **the same unit everywhere it is recruited** — one row per pool
-  across every building line in the mod, with its start / per-turn / max /
-  experience side by side and editable in place. A value that disagrees with what
+  across every building line in the mod, with its Initial Pool, Replenish Rate,
+  Max Pool and experience side by side and editable in place. A value that disagrees with what
   most of the other pools use is marked **odd**, which is usually the one you
   came to find. Rows in other buildings are staged and written with everything
   else.
+
+### City and castle, side by side
+
+A settlement building is written as **two** lines in the EDB with nothing tying
+them together — `barracks` and `castle_barracks` are as unrelated to the file as
+any two buildings in it — so over years of edits they drift apart. **⇄ Compare
+city / castle**, top right of the building editor, is the reading you would
+otherwise do by eye:
+
+- The two halves in one table, **tier by tier**, using the same pairing the
+  Checks panel uses (marker-free names, falling back to position).
+- Every unit marked as trained by **both** halves or by one of them, with each
+  side's four numbers beside it.
+- **⇄ Mirror** on a one-sided unit copies it into the half that is missing it.
+  **⇄ Mirror every gap** does the whole line at once, tier by tier.
+- Three filters: only the gaps (what you came for), gaps plus units whose
+  *numbers* disagree, or every unit.
+
+A `requires` clause that differs between the halves is **not** counted as a
+divergence — a city clause names the city factions and a castle clause names the
+castle ones — and neither are different pool numbers, which are usually
+deliberate. Both are still shown. Measured on Divide and Conquer's barracks pair:
+3 units on one side only, and 411 of the 414 shared units differing in at least
+one number, which is exactly why presence and numbers are counted apart.
+
+Nothing is written until you Save the building. A row mirrored into the twin is
+staged like every other cross-line edit and appears in **Also changing** first.
 
 **＋ Add unit** carries the same reach: the starting numbers are fields in the
 dialog now (rather than a fixed 1 / 0.5 / 2 / 0 you had to correct afterwards),
