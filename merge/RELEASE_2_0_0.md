@@ -200,8 +200,6 @@ shipped here" is not the same as "missing".
 
 ---
 
----
-
 ## The correction pass
 
 Everything above shipped, was used, and came back with a list. This is that
