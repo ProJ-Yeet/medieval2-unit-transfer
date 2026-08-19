@@ -1,14 +1,20 @@
 # STATE — Medieval 2 GUI Toolkit V2
-_Updated: 2026-08-19 · v1.9.9 (unreleased changes) · after 14f_
+_Updated: 2026-08-19 · **v2.0.0 released** · after 14f_
 
 ## Next up
-**PHASE 14 IS COMPLETE — 14a through 14g, all seven.** The suite is green:
-**54 of 54 modules** (14f added `test_unit_view`, 25 checks over 8233 real pool
-rows; 14e added `test_edusort`, 56).
+**PHASE 14 IS COMPLETE — 14a through 14g, all seven — and v2.0.0 IS PUBLISHED.**
+The suite is green: **54 of 54 modules** (14f added `test_unit_view`, 25 checks
+over 8233 real pool rows; 14e added `test_edusort`, 56).
 
-**Everything from Phase 0 to Phase 14 is in the working tree and still
-uncommitted and unreleased.** That is now the biggest thing outstanding, and it
-is a lot of work to be sitting on one machine.
+Phases 0–14 are committed (`65fb9e5`), pushed, tagged `v2.0.0` and released with
+the 53.7 MB portable zip:
+<https://github.com/ProJ-Yeet/medieval2-unit-transfer/releases/tag/v2.0.0>
+
+**The 2.0.0 numbering overrode a locked decision, on purpose.** The old rule
+reserved 2.0.0 for the Campaign Map Editor; the user was shown the conflict and
+chose to override, because 1.9.9 shipped a unit-transfer tool and 2.0.0 is a
+different program. **The Campaign Map Editor is now 3.0.0.** ROADMAP.md's Locked
+decisions section carries the reasoning; don't re-propose the old rule.
 
 **The next phase is 15** (3D model viewer), and it **needs an upstream sync
 first** — Phase 14 ported nothing, so it never needed one, but 15 does. See
