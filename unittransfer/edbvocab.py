@@ -109,9 +109,16 @@ def regions(mod, hidden_names=()) -> List[dict]:
         <rebel type that spawns there>
         <r> <g> <b>             (its colour on the map image)
         <resources, comma separated — trade AND hidden, mixed>
-        <farming level>
-        <unknown/level>
+        <triumph value>
+        <base farming level>
         religions { catholic 7 elven 5 … }
+
+    The two bare numbers used to be written down here the other way round, and
+    the file itself settles it: across vanilla's 112 regions the first is 5 on
+    all but two records while the second runs 1–6 with a real spread, which is
+    a fertility level and not a score. Both test mods write 5 and 1 for every
+    region, so neither could have told them apart. Nothing reads either value
+    yet — the region inspector of the campaign map editor is what will.
 
     The resource line is the interesting one, and it mixes the two kinds: a name
     declared on the EDB's ``hidden_resources`` line is a hidden resource, and

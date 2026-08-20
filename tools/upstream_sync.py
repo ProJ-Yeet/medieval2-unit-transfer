@@ -150,18 +150,22 @@ RULES: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
     (r"^src/lib/modeldb(Codec|Store)\.js$", "audit", ("13",),
      "their modeldb codec vs our modeldb.py — we own this format"),
 
-    # --- phase 14: 3D, textures, sprites ---
+    # --- phase 15: 3D model viewer, textures ---
+    # These said 14 until 2026-08-20. The manifest was written before ROADMAP.md
+    # renumbered: 14 is the bug-fix pass that shipped as 2.0.0, the viewer moved
+    # to 15 and the campaign map to 16. A phase number that names the wrong phase
+    # is worse than none, because `sync` prints it beside every changed file.
     (r"^src/lib/(casCodec|ms3dCodec|textureCodec|textureLoader|tgaEncoder)\.js$",
-     "port-concept", ("14",), "binary mesh/texture codecs — cross-check vs the Blender addon"),
-    (r"^src/components/assets/", "port-concept", ("14",), "3D model + texture viewer"),
+     "port-concept", ("15",), "binary mesh/texture codecs — cross-check vs the Blender addon"),
+    (r"^src/components/assets/", "port-concept", ("15",), "3D model + texture viewer"),
 
-    # --- phase 15: campaign map ---
+    # --- phase 16: campaign map ---
     (r"^src/components/map/|^src/pages/(CampaignMap|CampaignManager|CampaignSettings)|"
-     r"^src/components/campaigns?/", "port-concept", ("15",),
+     r"^src/components/campaigns?/", "port-concept", ("16",),
      "campaign map + descr_strat — the flagship phase"),
-    (r"^src/lib/(mapLayerStore|autoGroundTypes|tgaLoader)\.js$", "port-concept", ("15",),
+    (r"^src/lib/(mapLayerStore|autoGroundTypes|tgaLoader)\.js$", "port-concept", ("16",),
      "map layer handling"),
-    (r"^src/components/minorfiles/stratmap/", "port-concept", ("15",), "strat map characters"),
+    (r"^src/components/minorfiles/stratmap/", "port-concept", ("16",), "strat map characters"),
 
     # --- phase 5: home / file discovery ---
     (r"^src/components/home/|^src/pages/Home\.jsx$", "port-concept", ("5",),

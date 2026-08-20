@@ -3,8 +3,8 @@
   "remote": "upstream-editor",
   "ref": "refs/upstream/editor/main",
   "clone_url": "https://github.com/Machiavello-1441/m2tw-editor.git",
-  "reviewed_sha": "b4768d51efc3e079bed7559f30e46e504d99b2eb",
-  "reviewed_date": "2026-08-14"
+  "reviewed_sha": "e6e69820dbf2655703123200e299743a1e44e07e",
+  "reviewed_date": "2026-08-20"
  },
  "dispositions": {
   "port-concept": "rebuild the idea in our stack; a change here may mean the format knowledge changed",
@@ -331,7 +331,7 @@
   "src/components/assets/Mesh3DPreview.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "3D model + texture viewer",
    "status": "triaged",
@@ -341,7 +341,7 @@
   "src/components/assets/ModelPanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "3D model + texture viewer",
    "status": "triaged",
@@ -351,7 +351,7 @@
   "src/components/assets/ModelViewer.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "3D model + texture viewer",
    "status": "triaged",
@@ -361,7 +361,7 @@
   "src/components/assets/ModelViewerSidebar.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "3D model + texture viewer",
    "status": "triaged",
@@ -379,7 +379,7 @@
   "src/components/assets/TexturePanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "3D model + texture viewer",
    "status": "triaged",
@@ -389,7 +389,7 @@
   "src/components/campaign/CampaignCard.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -399,7 +399,7 @@
   "src/components/campaign/CampaignForm.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -409,7 +409,7 @@
   "src/components/campaigns/CampaignDescriptionsEditor.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -419,7 +419,7 @@
   "src/components/campaigns/CampaignEditor.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -838,7 +838,7 @@
   "src/components/map/CampaignDescriptionsStrings.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -848,7 +848,7 @@
   "src/components/map/CampaignEventsTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -858,17 +858,17 @@
   "src/components/map/CharactersTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
    "first_seen": "7cab442",
-   "notes": ""
+   "notes": "2026-08-20 sync: a new character is inserted after the last existing character OF THE SAME FACTION rather than at the head of the item list — in descr_strat a character belongs to the faction block it sits in, so list order is file order. Phase 16a's writer has the same constraint."
   },
   "src/components/map/CoastlineTracer.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -878,7 +878,7 @@
   "src/components/map/DisastersTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -888,7 +888,7 @@
   "src/components/map/FactionsCampaignTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -898,7 +898,7 @@
   "src/components/map/FamilyTreeTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -908,7 +908,7 @@
   "src/components/map/Map3DPreview.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -918,7 +918,7 @@
   "src/components/map/MapCanvas.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -928,7 +928,7 @@
   "src/components/map/MapLayerPanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -938,7 +938,7 @@
   "src/components/map/MapPaintToolbar.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -948,7 +948,7 @@
   "src/components/map/MapPixelTooltip.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -958,7 +958,7 @@
   "src/components/map/MapValidationPanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -968,7 +968,7 @@
   "src/components/map/NewRegionForm.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -978,7 +978,7 @@
   "src/components/map/NewRegionPaintWizard.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -988,7 +988,7 @@
   "src/components/map/OsmBackground.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -998,7 +998,7 @@
   "src/components/map/OsmRegionSearch.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1016,7 +1016,7 @@
   "src/components/map/PositionPickerButton.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1026,7 +1026,7 @@
   "src/components/map/RegionColorDetector.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1036,17 +1036,17 @@
   "src/components/map/RegionEditorPanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
    "first_seen": "7cab442",
-   "notes": ""
+   "notes": "2026-08-20 sync: he swapped the labels on descr_regions' two bare numbers — first is the triumph value, second the base farming level (he had them the other way round). MEASURED AND CONFIRMED against vanilla's 112 regions: first is 5 on 110 of them, second spreads 1–6. Our edbvocab.regions docstring had the same error and is corrected. Phase 16c's region inspector needs this."
   },
   "src/components/map/ReligionsEditor.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1088,7 +1088,7 @@
   "src/components/map/StratOverlay.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1098,7 +1098,7 @@
   "src/components/map/StratPanel.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1108,7 +1108,7 @@
   "src/components/map/additionalParsers.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1118,7 +1118,7 @@
   "src/components/map/campaignEventsParser.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1128,7 +1128,7 @@
   "src/components/map/campaignImporter.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1138,7 +1138,7 @@
   "src/components/map/disastersParser.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1148,7 +1148,7 @@
   "src/components/map/factionMoviesParser.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1158,7 +1158,7 @@
   "src/components/map/mapLayerConstants.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1168,7 +1168,7 @@
   "src/components/map/mapValidator.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1178,7 +1178,7 @@
   "src/components/map/paintPresets.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1204,17 +1204,17 @@
   "src/components/map/stratParser.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
    "first_seen": "7cab442",
-   "notes": ""
+   "notes": "2026-08-20 sync: a fort's comment moved OUT of the fort line (inline `;;;;; text`) onto its own `;;; text` line above it, and he reads both on parse. His serialiser also now appends a new fort after the last fort/watchtower already in the region block rather than before the block's closing brace. For phase 16a: expect a comment line above a fort, and treat the inline form as legacy input we must still read."
   },
   "src/components/map/tgaExporter.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1224,7 +1224,7 @@
   "src/components/map/tgaLoader.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -1367,7 +1367,7 @@
   "src/components/minorfiles/stratmap/StratMapCharTab.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "strat map characters",
    "status": "triaged",
@@ -1377,7 +1377,7 @@
   "src/components/minorfiles/stratmap/StratModelPreview.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "strat map characters",
    "status": "triaged",
@@ -1387,7 +1387,7 @@
   "src/components/minorfiles/stratmap/stratCharParser.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "strat map characters",
    "status": "triaged",
@@ -2309,7 +2309,7 @@
   "src/lib/casCodec.js": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
    "status": "triaged",
@@ -2319,7 +2319,7 @@
   "src/lib/mapLayerStore.js": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "map layer handling",
    "status": "triaged",
@@ -2349,7 +2349,7 @@
   "src/lib/ms3dCodec.js": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
    "status": "triaged",
@@ -2393,7 +2393,7 @@
   "src/lib/textureCodec.js": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
    "status": "triaged",
@@ -2403,7 +2403,7 @@
   "src/lib/textureLoader.js": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
    "status": "triaged",
@@ -2413,7 +2413,7 @@
   "src/lib/tgaEncoder.js": {
    "disposition": "port-concept",
    "phases": [
-    "14"
+    "15"
    ],
    "reason": "binary mesh/texture codecs — cross-check vs the Blender addon",
    "status": "triaged",
@@ -2481,7 +2481,7 @@
   "src/pages/CampaignManager.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -2491,17 +2491,17 @@
   "src/pages/CampaignMap.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
    "first_seen": "7cab442",
-   "notes": ""
+   "notes": "2026-08-20 sync: painting reworked — the pixel buffer is mutated in place and the bitmap rebuilt on a 120 ms debounce instead of per frame, because a full-buffer copy plus createImageBitmap at 60 fps was the freeze. React-specific, but 16b faces the same arithmetic."
   },
   "src/pages/CampaignSettings.jsx": {
    "disposition": "port-concept",
    "phases": [
-    "15"
+    "16"
    ],
    "reason": "campaign map + descr_strat — the flagship phase",
    "status": "triaged",
@@ -2512,7 +2512,7 @@
    "disposition": "port-concept",
    "phases": [
     "10",
-    "15"
+    "16"
    ],
    "reason": "descr_character / names",
    "status": "triaged",
@@ -2690,6 +2690,22 @@
    "status": "triaged",
    "first_seen": "7cab442",
    "notes": ""
+  },
+  "src/components/newmap/HeightmapAdjustPanel.jsx": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "e6e6982",
+   "notes": "out-of-scope (New Map Editor), but it states a format fact worth keeping for phase 16a: an M2TW heightmap carries elevation in R and G and sea/water level in B, so any adjustment touches R and G only. Verify against the TWCenter index before leaning on it."
+  },
+  "src/lib/osmTiles.js": {
+   "disposition": "out-of-scope",
+   "phases": [],
+   "reason": "V2 out of scope — future expansion only",
+   "status": "triaged",
+   "first_seen": "e6e6982",
+   "notes": "out-of-scope: the only two importers are newmap/OsmTagOverlayEditor.jsx and pages/NewMapEditor.jsx, and the New Map Editor is out of V2. It is Overpass bbox-splitting arithmetic, not M2TW format knowledge."
   }
  }
 }
