@@ -1,4 +1,4 @@
-# Medieval 2 GUI Toolkit v2.0.1 — every picture in the tool can be replaced
+# Medieval 2 GUI Toolkit v2.0.1
 
 2.0.0 could swap exactly one picture: a unit's card, through the unit editor's
 own import. Everything else the tool draws — info cards, building art, ancillary
