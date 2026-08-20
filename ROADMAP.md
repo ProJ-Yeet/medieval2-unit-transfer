@@ -58,6 +58,7 @@ running the test suite, and running `graphify update .`.
 | 12 | EDB upgrades | M | ✅ done |
 | 13 | EDU + Sounds audit | S | ✅ done |
 | 14 | Bug-fix and polish pass | XL | ✅ done (14a–14g) |
+| 14j | Replace any picture (v2.0.1) | S | ✅ done |
 | 15 | 3D model viewer | L | 2 (15a, 15b) |
 | 16 | Campaign Map Editor — flagship, LAST | XL | 5+ (16a–16e) |
 
@@ -1533,6 +1534,59 @@ arithmetic is exact, so the default output is byte for byte what it always was
 every installed pair, every banner style round-tripping through `BANNER_RE`,
 seven nonsense styles falling back rather than raising, and a marked cleanup
 reaching disk on both real mods with no unit gaining or losing a field.
+
+### 14j — Replace any picture ✅ (done 2026-08-20, released as v2.0.1)
+
+- **Goal:** every picture the tool draws can be replaced in place and can say
+  where it lives, the way the unit card already could — with a warning when the
+  resolutions do not match.
+
+**The way in is the `<img>`'s own `src`.** Every picture on every screen is
+painted through `/icon` or `/building_icon`, and that URL is a complete
+description of the question the server answered. So the page hands the URL
+straight back and `unittransfer/images.py` re-resolves it. That is what made
+this small: one dialog and one engine cover unit cards, info cards, ancillary
+pictures, faction art, the Minor Files pips and settlement cards, and building
+icons, instead of five per-screen imports.
+
+**Outcome.**
+
+- New `unittransfer/images.py` (`locate` / `plan` / `apply` / `reveal_target`)
+  and `web/js/images.js`; routes `POST /api/image/plan|replace|reveal`. The
+  write goes through the same backup + log record as every other job, so it is
+  in the log and undoes like a transfer.
+- **Two ways in.** A delegated right-click menu on any `<img>` whose src is one
+  of the two routes — which is what covers the thumbnails in lists and grids —
+  and a ✎ plus a button pair on the screens where the picture is the subject
+  (card variants, ancillary, faction art, the building editor's Art pane, and
+  the Minor Files pips, where the pip itself is the button).
+- **The resolution check**, which is what was actually asked for: the confirm
+  dialog puts both pictures side by side at the size each really is and names
+  both sizes when they differ. A warning and never a refusal — a mod is free to
+  change what size its own art is.
+- **A unit card fans out to every faction folder that holds one**, reusing
+  `edit._unit_icon_files`, falling back to the ownership fan-out `_plan_icon_import`
+  computes when the unit has no card yet. Replacing only the folder the preview
+  resolved would leave the rest stale — which is the same fact the card-variant
+  list exists to make visible.
+- **Borrowed art creates rather than overwrites.** A building icon or ancillary
+  picture the mod does not own is served out of the vanilla UI; a replacement
+  writes the mod's *first* copy at the path the game looks for, and the dialog
+  says so. That is the "drop a .tga in to override it" the building browser had
+  been telling people to do by hand.
+- **`.png`/`.jpg` → 32-bit `.tga`**, and a same-stem sibling in the other native
+  extension is removed so two files cannot answer to one name. Backed up first.
+- **`Function(...)` rather than `window[name]`** for the panel re-render hook: a
+  top-level `const` in a classic script lands in the global lexical scope, not
+  on `window`, so `bldRenderBodyNow` was invisible to a property lookup.
+- A bare `addEventListener` at the top level of a module file breaks the two
+  node-driven tests, which stub `document`/`window` but not the global. It is
+  `document.addEventListener` now.
+
+`tests/test_images.py`, 53 checks — it builds its own folder of pictures rather
+than borrowing a mod's, so everything but the unit-card fan-out runs with no
+game installed. The last section drives the real server over HTTP with the exact
+JSON the page sends.
 
 ## Phase 15 — 3D model viewer (two sessions)
 

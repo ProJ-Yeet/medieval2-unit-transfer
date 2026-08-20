@@ -203,7 +203,15 @@ function anFormHtml(w, d){
       <span class="count">The order of these lines is what every real EDA writes, and
         this editor keeps it</span></div>
     <div class="anhead">
-      <img class="anbig" src="${anImgUrl(w.image)}" alt="" onerror="iconRetry(this)">
+      <div class="anpicbox">
+        <div class="icowrap">
+          <img class="anbig" src="${anImgUrl(w.image)}" alt="" onerror="iconRetry(this)"
+            title="Replace this picture"
+            onclick="imgPick('${q1(esc(anImgUrl(w.image)))}','anPaint')">
+          ${imgEditBtn(anImgUrl(w.image),'anPaint')}
+        </div>
+        ${imgWhereBtn(anImgUrl(w.image),'Where is it?')}
+      </div>
       <div class="trgrid" style="flex:1">
         <label class="lbl" data-label="name">Name</label>
         <div class="trkey">

@@ -335,6 +335,26 @@
     line-height:1.4;background:var(--panel);border:1px solid var(--edge);
     border-radius:5px;color:var(--dim);opacity:.85}
   .icoedit:hover{opacity:1;color:var(--accent);border-color:var(--accent)}
+  /* ---- replacing a picture (js/images.js) ----
+     The menu is the same two items everywhere, so it is styled once here rather
+     than per screen. It is appended to <body> and positioned in script, because
+     a picture in a grid has no container that could hold a menu without being
+     clipped by the grid's own overflow. */
+  .imgmenu{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--edge);
+    border-radius:7px;padding:4px;display:flex;flex-direction:column;min-width:170px;
+    box-shadow:0 8px 22px rgba(0,0,0,.45)}
+  .imgmenu button{text-align:left;border:0;background:none;padding:6px 9px;border-radius:5px;
+    font-size:12px}
+  .imgmenu button:hover{background:var(--panel2);color:var(--accent)}
+  /* before beside after, at the size each actually is — a card that is about to
+     be replaced by something four times its resolution should LOOK wrong here */
+  .imgcmp{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .imgcmp figure{margin:0;flex:1 1 200px;min-width:180px;text-align:center}
+  .imgcmp img{max-width:100%;max-height:190px;object-fit:contain;background:#0d0f13;
+    border:1px solid var(--edge);border-radius:6px}
+  .imgcmp figcaption{margin-top:6px;font-size:11.5px;line-height:1.55}
+  .imgcmp figcaption .count{display:block;overflow-wrap:anywhere}
+  .imgarrow{color:var(--dim);font-size:20px;flex:0 0 auto}
   /* every DISTINCT card on disk, and who shares each one */
   .cardvars{margin-top:12px}
   .cardvars>.k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
@@ -344,7 +364,13 @@
     border:1px solid var(--edge);border-radius:7px;padding:6px;background:var(--panel2)}
   .cardvarlist img{width:56px;height:74px;object-fit:contain;background:#0d0f13;
     border-radius:4px;flex:0 0 56px}
+  /* the picture is wrapped now so the ✎ can sit on it, and the wrapper is what
+     the row's flex sizes — the img inside it is already fixed at 56px */
+  .cardvarlist .icowrap{flex:0 0 56px}
+  .cardvarlist .icoedit{top:3px;left:3px;padding:0 4px;font-size:11px}
   .cardvarlist figcaption{max-width:260px;font-size:11px}
+  .cardvarlist figcaption .sprrow{margin-top:5px}
+  .cardvarlist figcaption .sprrow button{padding:2px 7px;font-size:11px}
   .cardvarlist figcaption .count{display:block;overflow-wrap:anywhere;margin-bottom:4px}
   .cardvarlist .tags{display:flex;flex-wrap:wrap;gap:3px}
   .mentry{border:1px solid var(--edge);border-radius:8px;margin-bottom:10px;background:var(--panel2)}
@@ -859,6 +885,8 @@
   .bart .small img{width:104px;height:83px}
   .bart .large img{width:260px;height:212px}
   .bart figcaption{font-size:10px;color:var(--dim);margin-top:4px}
+  .bart figcaption .sprrow{margin-top:5px;justify-content:center}
+  .bart figcaption .sprrow button{padding:2px 6px;font-size:10.5px}
   /* ---- number boxes with ▲▼ ----
      Every number in this screen is one a modder nudges rather than retypes — a
      cost, a build time, a recruit rate — so each gets a stepper. The buttons are
@@ -1359,6 +1387,10 @@
   .anhead{display:flex;gap:12px;align-items:flex-start}
   .anbig{width:96px;height:96px;object-fit:contain;flex:0 0 auto;
     background:var(--panel2);border:1px solid var(--edge);border-radius:6px}
+  /* the picture, the ✎ on it, and "Where is it?" under it — one column, so the
+     buttons never push the fields beside it out of line */
+  .anpicbox{flex:0 0 auto;display:flex;flex-direction:column;gap:5px;align-items:stretch}
+  .anpicbox button:not(.icoedit){padding:3px 7px;font-size:11px}
 
   /* ---- Minor Files: five files behind one tab strip ---- */
   .mftabs{display:flex;gap:6px;align-items:center;padding:10px 0 0;
@@ -1377,6 +1409,8 @@
   .mfpip{width:32px;height:32px;object-fit:contain;flex:0 0 32px;
     border:1px solid var(--edge);border-radius:3px;background:var(--panel2)}
   .mfpip.gone{visibility:hidden}
+  .mfpip.act{cursor:pointer;transition:border-color .1s}
+  .mfpip.act:hover{border-color:var(--accent2)}
   .mfnoart{flex:0 0 32px;text-align:center;color:var(--dim);font-size:11px}
   .mfnames{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;
     line-height:1.45;resize:vertical}
@@ -1396,6 +1430,8 @@
     border:1px solid var(--edge);border-radius:6px}
   .facpics figcaption{font-size:11px;color:var(--dim);text-align:center;max-width:110px}
   .facpics figcaption .count{display:block;font-size:9.5px;overflow-wrap:anywhere}
+  .facpics figcaption .sprrow{margin-top:5px;justify-content:center}
+  .facpics figcaption .sprrow button{padding:2px 6px;font-size:10.5px}
 
   /* ---- Strings: the file list, then that file's entries ---- */
   .strwrap{display:flex;gap:14px;align-items:flex-start;padding-top:12px}
@@ -1547,6 +1583,7 @@
 <script src="js/minorfiles.js"></script>
 <script src="js/factions.js"></script>
 <script src="js/edusort.js"></script>
+<script src="js/images.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

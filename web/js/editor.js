@@ -412,13 +412,19 @@ function edCardVariants(kind,title){
     <div class="k">${esc(title)} <span class="count">${rows.length} different
       picture${rows.length===1?'':'s'} across ${rows.reduce((n,r)=>n+r.factions.length,0)}
       faction folder${rows.reduce((n,r)=>n+r.factions.length,0)===1?'':'s'}</span></div>
-    <div class="cardvarlist">${rows.map(r=>`<figure>
-      <img loading="lazy" onerror="iconRetry(this)"
-        src="/icon?mod=${enc(e.mod)}&kind=modfile&rel=${enc(r.rel)}" alt="">
+    <div class="cardvarlist">${rows.map(r=>{
+      // one variant is ONE file, so it can be swapped on its own — which is the
+      // point of the list: the whole reason it exists is that these differ
+      const url=`/icon?mod=${enc(e.mod)}&kind=modfile&rel=${enc(r.rel)}`;
+      return `<figure>
+      <div class="icowrap"><img loading="lazy" onerror="iconRetry(this)"
+        title="Replace this picture" onclick="imgPick('${q1(esc(url))}','edRenderTab')"
+        src="${url}" alt="">${imgEditBtn(url,'edRenderTab')}</div>
       <figcaption>
         <span class="count">${esc(r.rel)}</span>
         <span class="tags">${r.factions.map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</span>
-      </figcaption></figure>`).join('')}</div></div>`;
+        ${imgRow(url,'edRenderTab')}
+      </figcaption></figure>`;}).join('')}</div></div>`;
 }
 
 // The faction folders an imported card would land in: this save's ownership if it

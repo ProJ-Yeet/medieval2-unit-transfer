@@ -1,15 +1,19 @@
 # STATE — Medieval 2 GUI Toolkit V2
-_Updated: 2026-08-20 · **v2.0.0 released, then corrected in place** · after 14i_
+_Updated: 2026-08-20 · **v2.0.1 released** · after 14j_
 
 ## Next up
-**PHASE 14 IS COMPLETE — 14a through 14i — and v2.0.0 IS PUBLISHED.**
-The suite is green: **55 of 55 modules** (14i added `test_variants_and_marks`,
-82 checks; 14f added `test_unit_view`, 25 over 8233 real pool rows; 14e added
-`test_edusort`, 56).
+**PHASE 14 IS COMPLETE — 14a through 14j — and v2.0.1 IS PUBLISHED.**
+The suite is green: **56 of 56 modules** (14j added `test_images`, 53 checks;
+14i added `test_variants_and_marks`, 82; 14f added `test_unit_view`, 25 over
+8233 real pool rows; 14e added `test_edusort`, 56).
 
-Phases 0–14 are committed, pushed, tagged `v2.0.0` and released with the
+Phases 0–14 are committed, pushed, tagged `v2.0.1` and released with the
 portable zip:
-<https://github.com/ProJ-Yeet/medieval2-gui-toolkit/releases/tag/v2.0.0>
+<https://github.com/ProJ-Yeet/medieval2-gui-toolkit/releases/tag/v2.0.1>
+
+**14j is a SUBRELEASE of its own** (`v2.0.1`, `merge/RELEASE_2_0_1.md`), unlike
+14i which was folded into 2.0.0. The user asked for it as one: it is a feature,
+not a correction. Read memory `release-numbering` before picking the next number.
 
 **The repo is `medieval2-gui-toolkit` now** (14i). GitHub forwards the old
 address, so an existing clone or release link still resolves, but write the new
@@ -27,9 +31,11 @@ chose to override, because 1.9.9 shipped a unit-transfer tool and 2.0.0 is a
 different program. **The Campaign Map Editor is now 3.0.0.** ROADMAP.md's Locked
 decisions section carries the reasoning; don't re-propose the old rule.
 
-**The next phase is 15** (3D model viewer), and it **needs an upstream sync
-first** — Phase 14 ported nothing, so it never needed one, but 15 does. See
-Upstream below.
+**The next phase is 15** (3D model viewer). Its **upstream sync is done**
+(2026-08-20, reviewed SHA `e6e6982`): all 19 of his new commits are campaign-map
+and New Map Editor work, none of it in Phase 15's file set, so 15 can start.
+One `descr_regions` correction came out of the sync and is applied. See Upstream
+below.
 
 ### What 14i did
 The list that came back from actually using 2.0.0. Ten items, no new direction.
@@ -68,6 +74,41 @@ New server surface: `GET /api/buildings/variants` (one line beside its twin,
 tier by tier) and `marks` / `style` on `/api/edu/sort/plan|apply`. New marker
 key `special=` on `;@m2gt`, read by `edusort.special_of`.
 
+### What 14j did
+**Every picture the tool draws can be replaced in place, and every picture can
+say where it lives on disk.** Before this, one picture in the whole toolkit
+could be swapped: the unit card, through the editor's own staged import.
+
+**What made it small is that the page hands back the `<img>`'s own `src`.**
+Every picture on every screen is painted through `/icon` or `/building_icon`,
+and that URL is a complete description of the question the server answered — so
+one engine (`unittransfer/images.py`) and one dialog (`web/js/images.js`) cover
+unit cards, info cards, ancillary pictures, faction art, the Minor Files pips
+and settlement cards, and building icons.
+
+Two ways in: a delegated **right-click** menu on any `<img>` served by those two
+routes (which is what reaches the thumbnails in lists and grids), and a **✎ plus
+a button pair** on the screens where the picture is the subject.
+
+The **resolution warning** is the thing that was asked for: the confirm dialog
+puts both pictures side by side at the size each really is and names both sizes
+when they differ. A warning, never a refusal. Three more rules fall out of the
+formats: a `.png`/`.jpg` is re-encoded as a 32-bit `.tga`; a same-stem sibling
+in the other native extension is removed so two files cannot answer to one name;
+and **a unit card fans out to every faction folder that holds one**, because the
+game looks it up under the *player's* faction folder.
+
+**Borrowed art creates rather than overwrites.** A building icon or ancillary
+picture the mod does not own is served out of the vanilla UI, so a replacement
+writes the mod's *first* copy at the path the game looks for — which is the
+"drop a .tga in to override it" the building browser had only ever said in a
+tooltip.
+
+New server surface: `POST /api/image/plan | /replace | /reveal`. The write goes
+through the same backup + log record as every other job, so it is in the log and
+undoes like a transfer. `tests/test_images.py`, 53 checks, builds its own folder
+of pictures — only the fan-out section needs a mod installed.
+
 ### What 14f did
 The unit view was already the screen that gathered every building line training
 one unit; what it could not do was any of the things you go there to do.
@@ -93,7 +134,8 @@ underneath. Both fixed; see ROADMAP.md's 14f outcome.
 | Prose sweep | done | 19 note blocks in `buildings/transfer/editor/sprites.js` rewritten as lead + points via a shared `docPoints()` in core.js |
 | 13 — EDU + Sounds audit | done | `merge/audit-edu-sounds.md`; measured over 1756 real units; **nothing adopted from their code**, banners rederived from the mod's own file, two silent rewrites of ours fixed |
 | EDB corpus follow-up | done | `#` annotation lines no longer read as capabilities (3 parsers + regression case); the `plugins` and upgrade-clause sweeps no longer depend on which mods are installed; `merge/audit-edb.md` corrected |
-| 14 — bug-fix and polish pass | **done** | 14a–14i |
+| 14 — bug-fix and polish pass | **done** | 14a–14j |
+| 14j — replace any picture | done | **v2.0.1.** `unittransfer/images.py` + `web/js/images.js`; `POST /api/image/plan\|replace\|reveal`. Right-click any image anywhere, or the ✎ where a picture is the subject. Resolution mismatch warned (never refused), `.png` → `.tga`, unit cards fanned out to every faction folder, borrowed vanilla art creating the mod's first copy. `test_images` 53/53 |
 | 14i — the post-release correction pass | done | repo renamed to `medieval2-gui-toolkit`; Code View Ctrl+Z/Y; folding sidebars; "Open file location" fixed (Explorer arg quoting); ＋ on tier Variant; Abilities folded into **Weapons & abilities**; editable banner format + the ordering screen as a unit list with tier/variant/**classification**; **⇄ Compare city / castle** (`/api/buildings/variants`); **Initial Pool / Replenish Rate / Max Pool** everywhere; two-line recruit rows; building Code View follows field edits; faction sort as a toggle; unit cards on voice rows; ~300 em dashes → 0. Folded into the 2.0.0 release notes, not a new version |
 | 14f — EDB unit view, twin compare | done | Requires editable from the unit side, a per-TIER **Twin** column (239 divergences in DaC, 0 in Reforged) with `⇄` to close one, a read-only `pools` code view, the recruitment numbers named, BMDB → **BMDB + Sprites Editor**, Minor Files art. Two shared-machinery bugs fixed. `test_unit_view` 25/25 |
 | 14g — the second prose sweep | done | 21 clause-joining dashes → **0**, four documented keeps. 6 of the old 115 hits' causes were defects in `tools/prose_check.py` itself, not in the writing |
@@ -160,9 +202,24 @@ failure on a regression (memory `unit-transfer-test-mods`).
   `tests/test_web_modules.py`.
 
 ## Upstream
-reference tool reviewed SHA **b4768d5** (2026-08-14). Sync before Phase 15 —
-Phase 14 ports nothing, so it needs no sync.
-`merge/PORT_MANIFEST.json` is authoritative; all 12 phase-13 files now carry their
+reference tool reviewed SHA **e6e6982** (2026-08-20). **The Phase 15 sync is
+done** — the write-up is the newest entry in `merge/SYNC_LOG.md`.
+
+All 19 of his commits since b4768d5 land in the campaign map editor or the New
+Map Editor, so **nothing had to be ported to keep 2.0.0 correct**, and Phase 15
+(the 3D model viewer) can start without waiting on anything of his. One
+correction came out of it and is applied: `descr_regions`' two bare numbers are
+**triumph value then base farming level**, not farming level then unknown —
+measured over vanilla's 112 regions, not taken on his word, because both test
+mods write 5 and 1 everywhere and cannot tell the two apart. Three facts for
+Phase 16 are banked in the manifest's `notes`.
+
+**Phase numbers in the manifest were off by one and are fixed.** It was written
+before the 2026-08-18 renumber, so 46 map files said 15 (they are 16) and 10
+model/texture files said 14 (they are 15). `upstream_sync.py`'s RULES table is
+corrected too, so new files land on the right number.
+
+`merge/PORT_MANIFEST.json` is authoritative; all 12 phase-13 files carry their
 audit verdict in `notes`.
 
 ## Open questions for the user

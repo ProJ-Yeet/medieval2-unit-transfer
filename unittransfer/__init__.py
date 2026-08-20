@@ -26,6 +26,9 @@ Package layout:
                    nothing references, and export the dead weight out of the mod
   pack.py          unit packs: units in a zip for someone else's machine. A pack
                    IS a mod, so importing one is an ordinary transfer out of it
+  images.py        replacing any picture the UI shows: an `/icon` or
+                   `/building_icon` URL back to the file on disk, where a
+                   replacement goes, and the resolution check before it is written
   server.py        local web UI (Stage 2)
 
 Design rule: transfers APPEND verbatim source entries to the destination rather than
@@ -36,4 +39,4 @@ units together — so every feature is EOP-aware by default. Only the *write* si
 distinguishes them, via :func:`unittransfer.eop.compose`.
 """
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"

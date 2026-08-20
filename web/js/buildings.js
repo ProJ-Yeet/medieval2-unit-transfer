@@ -297,6 +297,19 @@ culture either, so another vanilla culture's picture is standing in.">falling ba
     vanilla art from another culture</span>`;
   return '<span class="w-warn">No art anywhere. Showing a placeholder.</span>';
 }
+/* One of the two art panes in the building editor, with the swap on it.
+   "Drop a .tga in to override it" is what `bldArtWhose` has been telling people
+   to do by hand since the browser was written — this is that, done here: the ✎
+   writes the mod's own copy at the path the fallback message names. */
+function bldArtFig(size,level,caption,source){
+  const url=bldIcon(level,size);
+  return `<figure class="${size}">
+    <div class="icowrap"><img onerror="iconRetry(this)" src="${url}"
+      title="Replace this picture" onclick="imgPick('${q1(esc(url))}','bldRenderBodyNow')">
+      ${imgEditBtn(url,'bldRenderBodyNow')}</div>
+    <figcaption>${caption}<br>${bldArtWhose(source)}
+      ${imgRow(url,'bldRenderBodyNow')}</figcaption></figure>`;
+}
 function bldArtBadge(a){
   if(a.borrowed)return `<span class="src vanilla"
     title="This mod has no ${esc(state.bld.culture)} art for this building, so its ${esc(a.culture)} art is shown instead."
@@ -713,12 +726,9 @@ function bldRenderBody(lv,orig){
   body.innerHTML=`
     <div class="bsec"><h4>Art <span class="count">Culture: ${esc(b.culture||'none')}</span></h4>
       <div class="bart">
-        <figure class="small"><img onerror="iconRetry(this)" src="${bldIcon(orig.name,'small')}">
-          <figcaption>#${esc(b.culture)}_${esc(orig.name)}.tga<br>
-            ${bldArtWhose(art.small)}</figcaption></figure>
-        <figure class="large"><img onerror="iconRetry(this)" src="${bldIcon(orig.name,'large')}">
-          <figcaption>#${esc(b.culture)}_${esc(orig.name)}_constructed.tga<br>
-            ${bldArtWhose(art.large)}</figcaption></figure>
+        ${bldArtFig('small',orig.name,`#${esc(b.culture)}_${esc(orig.name)}.tga`,art.small)}
+        ${bldArtFig('large',orig.name,
+          `#${esc(b.culture)}_${esc(orig.name)}_constructed.tga`,art.large)}
         <div style="flex:1;min-width:180px">
           <div class="bnote">Cultures with art for this level:</div>
           <div class="tags" style="margin-top:5px">${Object.keys(orig.art).length

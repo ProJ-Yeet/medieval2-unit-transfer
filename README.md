@@ -898,7 +898,10 @@ puts it in.
 
 The badge in the corner of each picture says which of those you are looking at,
 and the **Missing its own art** filter lists the buildings the mod ships nothing
-for at all.
+for at all. Either icon can be replaced from the building editor's Art pane —
+and replacing one the mod is borrowing writes the mod's first copy at step 1's
+path, which is how it stops borrowing (see
+[Replacing pictures](#replacing-pictures)).
 
 ### Non-destructive by construction
 
@@ -982,6 +985,57 @@ The 500-unit warning counts only what is in `export_descr_unit.txt`. EOP units a
 listed separately and never counted, because being outside that file is the whole
 point of them.
 
+## Replacing pictures
+
+Every picture the tool draws can be replaced in place, and every picture can
+tell you where it lives on disk. Two ways in:
+
+- **Right-click any image**, anywhere in the tool, for **Replace image…** and
+  **Open file location** — including the thumbnails in lists and grids that have
+  no room for a button.
+- **A ✎ on the picture, and a pair of buttons under it**, on the screens where
+  the picture is what you came to edit: the unit editor's card variants, the
+  ancillary editor, the faction editor's art, the building editor's small and
+  large icons, and the pips and settlement cards in Minor Files (there the pip
+  itself is the button — those tables have no room for two more).
+
+Picking a file opens a confirm dialog that shows both pictures side by side at
+the size each really is, and says exactly what is about to happen:
+
+- **the resolution warning.** The game does not rescale UI art, so a 512x512
+  file dropped in for an 80x24 card is drawn stretched or cropped into the same
+  box. It is a warning and never a refusal — a mod is free to change what size
+  its own art is, as long as it is told what it is doing.
+- **the conversion note.** A `.png` or `.jpg` is re-encoded as a 32-bit `.tga`,
+  because the engine reads only `.tga`/`.dds` — one copied in under the right
+  *name* would sit there and never render. A picked `.tga`/`.dds` is copied byte
+  for byte.
+- **every path it will write**, under the mod's own `data/`, each marked
+  *overwritten* or *created*.
+
+Two things it does that a plain file copy would not:
+
+- **A unit card fans out to every faction folder that holds one.** The game
+  looks a card up under the *player's* faction folder, so one card is routinely
+  the same picture copied into ten of them. Replacing only the one the preview
+  happened to resolve would leave the other nine showing the old art to anyone
+  playing those factions.
+- **Art the mod is borrowing from the game creates the mod's first copy.** Most
+  mods ship only the building icons they changed (see
+  [Building icons](#building-icons)). Replacing one of the borrowed ones writes
+  a new file at the path the game looks for, rather than pretending to overwrite
+  something the mod does not own — and the dialog says so.
+
+A same-name file in the other native extension is removed when it would
+otherwise still win the lookup, and every file is backed up first, so the whole
+thing is one Undo away like any other job.
+
+**Open file location** points the file manager at the file that is actually
+showing, wherever it lives — including the unpacked vanilla UI, because "which
+file am I looking at" is the question and the answer being outside your mod is
+the interesting part. With nothing there yet, it opens the folder one would be
+created in.
+
 ## Features
 
 - **Faction-wise browser** — units grouped by owning faction, with real faction
@@ -1000,6 +1054,13 @@ point of them.
   just looks different. Officers and armour-upgrade models come across by
   default (each can be left alone), the unit card and info card are opt-in, and
   any single stat can be imported one at a time with the `B` buttons
+- **Replace any picture in the tool** — right-click any image for **Replace
+  image…** and **Open file location**, or use the ✎ on the screens where the
+  picture is the subject. A confirm dialog puts the old and new side by side,
+  **warns when the resolutions differ**, converts a `.png` to the `.tga` the
+  engine reads, fans a unit card out to every faction folder that holds one, and
+  backs everything up for one Undo (see
+  [Replacing pictures](#replacing-pictures))
 - **Per-field editor** — override any single EDU field on the way in, in a
   **guided** view that gives every value in a line its own labelled box, a
   drop-down of what the mod actually accepts and a live check of what the engine
@@ -1176,6 +1237,13 @@ pools is a copy, is idempotent, and leaves no dangling `and`. Both skip that hal
 (rather than failing) when `node` isn't on PATH; node is not a dependency of the
 tool itself.
 
+`tests/test_images.py` builds its own mod folder of pictures rather than
+borrowing one, so the picture-replacement rules — the URL and path refusals, the
+resolution warning both ways round, the `.png` conversion, the extension-swap
+cleanup, and a write undone byte for byte — are pinned without an install. Only
+the unit-card fan-out needs a real mod's EDU, and it skips if there is none. The
+last section drives the real server over HTTP with the exact JSON the page sends.
+
 ## Logs & troubleshooting
 
 Every run is logged to `config/server.log` (and, if that folder isn't writable,
@@ -1233,7 +1301,8 @@ open, and print the address.
   (`luascan.py`), the mod-wide modeldb audit and cleanup (`bmdb.py`), the sprite
   generation/conversion pipeline (`sprites.py`), the unit-pack format
   (`pack.py` — export to a zip, and mount someone else's as a source mod), the
-  guided field editor's per-mod value lists (`vocab.py`), and the local HTTP
+  guided field editor's per-mod value lists (`vocab.py`), the picture-replacement
+  engine behind every ✎ in the UI (`images.py`), and the local HTTP
   server
 - `web/` — the browser UI
 - `tools/nvtt/` — NVIDIA Texture Tools 2.0 (`nvcompress.exe` + its DLLs, ~1 MB),

@@ -13,6 +13,14 @@ API
   POST /api/browse_folder        -> {title} -> {path}  (native OS folder dialog)
   POST /api/reveal               -> {mod, rel} -> show that file in the OS file
                                     manager. Mod-relative only.
+  POST /api/image/plan           -> {mod, url, src} -> what the picture behind an
+                                    /icon or /building_icon URL is, where a
+                                    replacement lands, and every warning about it
+                                    (resolution mismatch above all)
+  POST /api/image/replace        -> the same, applied — backups + undo included
+  POST /api/image/reveal         -> "Open file location" for that same URL, which
+                                    can land outside the mod when the art is the
+                                    game's own
   GET  /api/mods                 -> [{name, root, pack}]  (scanned under
                                     med2_root/mods, plus any mounted unit pack)
 
@@ -190,7 +198,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import bmdb, buildings, cleaner, codeview, config, edit, modfiles, sounds
-from . import ancillaries, edusort, factions, minorfiles, sprites, strings, traits, triggers
+from . import ancillaries, edusort, factions, images, minorfiles, sprites, strings, traits, triggers
 from . import eop as _eop
 from . import logutil
 from .logutil import log, setup as setup_logging
@@ -1396,6 +1404,37 @@ class Handler(BaseHTTPRequestHandler):
                 from .folder_dialog import reveal
                 return self._json({"ok": reveal(str(target)),
                                    "path": str(target)})
+            if u.path in ("/api/image/plan", "/api/image/replace",
+                          "/api/image/reveal"):
+                # "Replace this picture" for any art the page shows. The body
+                # carries the very URL the <img> was given, because that is the
+                # only thing the page reliably knows about a picture it did not
+                # resolve itself; `images.parse_url` refuses anything that is
+                # not one of the two image routes, and every path it hands back
+                # is resolved under the mod's own data folder.
+                name = body.get("mod") or ""
+                if name not in self.registry.names():
+                    return self._err(404, "unknown mod")
+                mod = self.registry.get(name)
+                van = config.get_vanilla_ui_root()
+                try:
+                    if u.path == "/api/image/plan":
+                        return self._json(images.plan(
+                            mod, body.get("url") or "", body.get("src") or "", van))
+                    if u.path == "/api/image/reveal":
+                        spot = images.reveal_target(mod, body.get("url") or "", van)
+                        if spot["ok"]:
+                            from .folder_dialog import reveal
+                            spot["ok"] = reveal(spot["path"])
+                            if not spot["ok"]:
+                                spot["error"] = "that folder could not be opened"
+                        return self._json(spot)
+                    out = images.apply(
+                        mod, body.get("url") or "", body.get("src") or "", van)
+                except ValueError as exc:
+                    return self._json({"ok": False, "error": str(exc)})
+                self.registry.invalidate(name)  # the art on disk changed under us
+                return self._json(out)
             if u.path == "/api/eop_dirs":
                 return self._json(self._eop_dirs(body))
             if u.path == "/api/browse_file":
