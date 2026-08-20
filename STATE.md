@@ -1,11 +1,20 @@
 # STATE — Medieval 2 GUI Toolkit V2
-_Updated: 2026-08-20 · **v2.0.1 released** · after 14j_
+_Updated: 2026-08-20 · **v2.1.0 released** · after 15d_
 
 ## Next up
+**PHASE 15 IS COMPLETE — 15a, 15b, 15c and 15d — and v2.1.0 IS PUBLISHED.**
+The 3D model viewer works end to end, is committed, pushed, tagged `v2.1.0` and
+released with the portable zip. Notes: `merge/RELEASE_2_1_0.md`.
+
+**Phase 16 is the Campaign Map Editor**, the flagship, and it gates 3.0.0. Run
+the upstream sync before 16a — `map/` is where he is actively working.
+
 **PHASE 14 IS COMPLETE — 14a through 14j — and v2.0.1 IS PUBLISHED.**
-The suite is green: **56 of 56 modules** (14j added `test_images`, 53 checks;
-14i added `test_variants_and_marks`, 82; 14f added `test_unit_view`, 25 over
-8233 real pool rows; 14e added `test_edusort`, 56).
+The suite is green: **58 of 58 modules** (15b added `test_viewer3d_http`,
+22 checks after 15c; 15a added `test_mesh`, 38 checks after 15d;
+14j added `test_images`, 53 checks; 14i added `test_variants_and_marks`, 82;
+14f added `test_unit_view`, 25 over 8233 real pool rows; 14e added `test_edusort`,
+56).
 
 Phases 0–14 are committed, pushed, tagged `v2.0.1` and released with the
 portable zip:
@@ -31,11 +40,265 @@ chose to override, because 1.9.9 shipped a unit-transfer tool and 2.0.0 is a
 different program. **The Campaign Map Editor is now 3.0.0.** ROADMAP.md's Locked
 decisions section carries the reasoning; don't re-propose the old rule.
 
-**The next phase is 15** (3D model viewer). Its **upstream sync is done**
-(2026-08-20, reviewed SHA `e6e6982`): all 19 of his new commits are campaign-map
-and New Map Editor work, none of it in Phase 15's file set, so 15 can start.
-One `descr_regions` correction came out of the sync and is applied. See Upstream
-below.
+**Phase 15's upstream sync is done** (2026-08-20, reviewed SHA `e6e6982`): all
+19 of his new commits are campaign-map and New Map Editor work, none of it in
+Phase 15's file set. One `descr_regions` correction came out of the sync and is
+applied. See Upstream below.
+
+### What 15c did — the viewer against the addon
+15b's viewer drew models, and drew several of them wrong. Every fault here was
+settled against `Reference/Medieval-2-Toolkit/` (Mylae's Blender addon) and
+against the mods' own bytes, not by eye.
+
+**A model is painted from the two textures GLUED SIDE BY SIDE, and the UVs
+address the pair.** A modeldb entry names a main texture and an attachment
+texture per faction, and the game treats them as **one image twice as wide** —
+main on the left, attachment on the right — which is what the mesh's single UV
+set is written against. u 0..1 is the main sheet, u 1..2 is the attachment
+sheet, and the pair **tiles infinitely** outside that.
+
+**15c got the SPACE right and the STORAGE wrong — see 15d.** The file does not
+store `u` in that range: it normalises over the pair (main 0..0.5, attachment
+0.5..1) and IWTE doubles it on the way into Blender. 15c passed the file's own
+`u` through to a shader that halves it again, so every model sampled a squeezed
+stripe of one sheet. `_read_streams` doubles `u` on read now.
+
+So the viewer glues the two into one texture (`v3Atlas`, a 2048x1024 canvas for
+the usual 1024 skins, power-of-two so WebGL will repeat it), samples at
+`u * 0.5` with REPEAT on both axes, and that is the whole of it. **No code
+chooses a sheet for a part and nothing is normalised into 0..1.**
+
+This corrects a wrong first attempt in this same session, and the corrections
+are worth keeping because both mistakes are easy to make again:
+
+- **Choosing a sheet per group is wrong**, even though the addon's material
+  split (`__main` / `__attach`) makes it look right. One group's art can CROSS
+  the boundary — 124 groups in TATR do, e.g. `mount_eastern_armoured_horse`'s
+  `Body` at u 0.41..1.38 — and any per-group rule has to put the whole of it
+  on one sheet and be wrong about the rest.
+- **Shifting an attachment group's u by -1 to sample a separate texture is
+  also wrong**, for the same reason and because it throws the tiling away.
+  UVs really do run outside the two tiles: in TATR alone **112 groups have
+  u below zero and 268 have v outside 0..1**. The atlas handles all of it for
+  free; a per-group shift cannot.
+
+An entry with no attachment sheet, or one the mod does not ship, gets the main
+sheet in both halves — the same fallback the addon's exporter uses for an empty
+attach slot (`attach_name = plan['attach'][1] or main_name`).
+
+`mesh._classify_sheets` still records `"main"` / `"attach"` / `"both"` per
+group, but it is a LABEL for the part list, not a rendering instruction, and it
+is computed the way the shader samples (`u mod 2`) so it cannot disagree with
+the picture. Verified by drawing a model's UV mesh onto the glued pair at
+`u * 0.5`: every triangle lands on its own art, face on face in the left half
+and shoulder cape on cape cloth in the right.
+
+**Models were mirrored — shield arm and sword arm swapped.** M2TW is
+**left-handed** (right +X, up +Y, forward +Z; Direct3D), and 15b handed those
+coordinates straight to a right-handed camera. Measured from the models: a
+horse's head sits at +Z and its tail at -Z, and on a soldier `shield0` sits at
+-X with `primaryactive0` at +X — shield in the left hand, weapon in the right,
+so the model's own right is +X and a figure facing the camera was showing its
+right side on the viewer's right. `uModel` negates X. For a mirror the
+inverse-transpose normals want is the matrix itself, so `mat3(uModel)` stays.
+
+**What the two group name strings ARE, settled rather than guessed.** One TATR
+mesh has a group type that is IWTE's own unanswered prompt, saved verbatim into
+the file: _"enter a group type: cloak"_ / _"enter a group flag (0 for required,
+1 for optional.)"_. So the first string is the group TYPE, the second is the
+MESH NAME, and the uint32 15b called a variant marker is **required/optional**.
+That is exactly the addon's `objectname__comment__opt` — IWTE joins the two
+with `__` and appends `__opt` when the flag is 1. The parts panel now folds by
+type (case-folded: nineteen meshes across the two mods spell the same part
+`Arms` and `arms` in ONE file), spells the engine's fixed equipment vocabulary
+out from the addon's `PART_PREFIXES` ("Secondary weapon — drawn", not
+`secondaryactive0`), tags parts the mesh flags optional, and starts with
+`shieldpassive*` and `secondaryactive*` switched off — the same call the
+addon's importer makes in `hideVariations`.
+
+**Randomize variations**, a button at the top of the panel: a variant per part
+and a coin toss on the optional ones, which is what the game does filling a
+unit out of one model.
+
+**The V axis was NOT wrong** — 15b had it right, and this was checked properly
+this time rather than by a luminance heuristic: drawing the head groups' UV
+boxes on a Lossarnach noble's sheet puts them exactly on the faces painted
+along the sheet's TOP edge (v 0.00..0.10), and the same for every body and
+skirt group. `v=0` is the top. Flipped, the model renders as garbage.
+
+**The backdrop is an environment, not a flat near-black.** One `v3Env()`
+function — sky above, warm ground below, a bright band at the horizon — paints
+the background AND lights the model, which is the part of an HDRI that matters
+for an inspection viewer without shipping a megabyte of `.hdr` and a decoder.
+Plus a mid-tone curve, because unit art is sRGB and a linear multiply of 0.5
+lands far darker than half-lit looks: dark armour on a dark field was a viewer
+of silhouettes. **Turntable is now "Rotate" and starts OFF.**
+
+`test_viewer3d_http` is 22/22 (the payload now has to say which sheet each
+group draws from and whether it is optional); `test_mesh` was 34/34 here, with
+its UV assertion widened from `[0,1]` to the two u tiles — which passed
+vacuously, because nothing was reaching the second tile yet. 15d is what made
+that assertion bite.
+
+### What 15d did — two decode bugs the user caught in Blender
+Both were found the same way and it is the way to find the next one: the user
+opened the same models in Blender through Mylae's addon and put its picture
+beside the viewer's. Neither bug was visible as "broken" — both looked like a
+viewer that sort of worked.
+
+**The UVs were squeezed into one sheet, and every part wore the wrong art.**
+The file normalises `u` over the two-sheet PAIR: main is 0..0.5, attachment is
+0.5..1, tiling with period 1. Everyone downstream of IWTE speaks the DOUBLED
+version of that (main 0..1, attachment 1..2), which is the space the addon
+enforces in `export_checks.checkUVSpace` and the space 15c wrote the viewer
+against — so the file's own `u` met the shader's `u * 0.5` and halved twice.
+`mesh._read_streams` doubles `u` on read, so everything this tool hands out is
+in the addon's space and nothing else had to change. Measured before believing
+it: across 900 TATR models, **1,092 of the 1,179 weapon and shield groups sit
+in u 0.5..1** — the half an attachment sheet exists for — with bodies, heads
+and beards packed into 0..0.5. Verified by drawing each group's triangles onto
+the glued pair: face on face, scabbard on scabbard.
+
+Side effect worth knowing: `_classify_sheets` was labelling **every** group
+`"main"` before this, because nothing ever passed u 1. The part list's "attach
+sheet" / "both sheets" tags only started telling the truth here.
+
+**The packed normals are `D3DCOLOR`, not signed bytes.** Unsigned, biased around
+127.5 (`b / 255 * 2 - 1`), stored **z-y-x** with a pad byte last. Read as signed
+bytes over 127 in x-y-z order — 15a's guess, and the obvious one — the vectors
+come back 0.74..1.43 long with **half of them pointing away from their own
+faces** (mean dot -0.11). That is what the dark blotches and hard seams were.
+Decoded properly: unit length to within 0.004, mean dot **+0.897** against the
+face normals computed from the positions, 4 of 6,783 opposed.
+
+`test_mesh`'s normal-length bound was **0.9..1.2, which the broken decode passed
+at 1.08** — it is 0.98..1.02 now. Also added: the reference horse must use both
+u tiles (catches forgetting to double, and doubling twice), and its saddle must
+classify `main`, its rear barding cloth `attach`, its body `both`.
+
+**The lesson for the next format bug:** a plausible decode that renders
+something is the dangerous case. Both of these were settled by measuring the
+decode against a second source — the face normals the positions imply, and the
+addon's own UV convention — not by looking at the canvas.
+
+### What 15b did
+**`web/js/viewer3d.js` draws the model, in plain WebGL, with no library.** The
+user chose that over vendoring three.js: a static textured model needs one
+shader, an orbit camera and a texture bind, and 600 KB of someone else's dist/
+in a project whose whole point is that it has no build step is a bad trade.
+About 400 lines, and the only maths in it is perspective and look-at.
+
+**Three routes, all in `server._model_route`:** `/api/model` (the picker — LODs
+and skins, and which of them the mod actually ships), `/api/model/geometry`
+(one LOD as a binary payload) and `/model_texture` (one skin as a PNG).
+
+**The geometry goes over as ONE binary blob, not JSON.** `mesh.geometry_payload`
+writes `"M2GT"`, a JSON header for the structure, then the arrays raw, padded so
+the floats stay 4-byte aligned — the page views each one in place with no copy
+and no parse. JSON would have been about six times the bytes.
+
+**Two real bugs were found by looking at pixels rather than at the screen**, and
+both would have shipped as "the viewer sort of works":
+
+- **The V axis was upside down.** WebGL's habit is to flip an uploaded image
+  because OpenGL puts v=0 at the bottom; M2TW is a Direct3D game and puts it at
+  the top. Flipping sent 62% of a real horse's vertices onto empty black space.
+  Measured by sampling the texture at the mesh's own UVs: mean luminance 48
+  against 16, pure black 2% against 62%.
+- **The camera orbited the wrong axis.** I had assumed Z-up. **Models are
+  Y-up** — across six DaC soldiers the `Head` group's centroid sits ~1.4 above
+  the `Legs` group's in Y and level in X and Z. Orbiting Z lays every man in
+  the game on his side. Now written into `mesh.py`'s docstring so nobody
+  re-derives it.
+
+**The variant problem is the thing that makes this UI worth having.** A model
+carries several heads, helmets and shields and the game picks one per soldier;
+drawing them all puts nine helmets on one orc. `gundabad_pale_uruk_new2` has 27
+groups and the viewer draws **12** — one per part, the rest offered in
+drop-downs. Verified in the browser against the real DOM.
+
+**Skins are deduplicated rather than listed per faction** (`mesh.entry_view`).
+Entries routinely list 29 factions against one texture; 29 identical rows told
+you nothing. One row per distinct skin, labelled "portugal (Remnants of Angmar)
++28 more". _15c changed what a "skin" is — see below._
+
+**`icons.py` grew two things** both of which everything else can now use:
+`.texture` files unwrap to DDS through `sprites.texture_to_dds` before Pillow
+sees them, and `png_bytes(src, max_side)` shrinks on the way out (a 2048 skin
+served at 1024 is 4 MB instead of 16, and `max_side` is part of the cache key).
+
+Verified in the real app, not just in tests: the button on a real DaC model
+card, the viewer opening from it, 4 distinct skins each loading a different
+1024² texture, wireframe drawing with no GL error, and the model card restored
+on close.
+
+### What 15a did
+**`unittransfer/mesh.py` reads a battle model, and the read is falsifiable.**
+`read_mesh(path)` returns a `MeshFile`: one shared vertex pool (positions,
+normals, UVs), the groups that index into it, the bone names, and the LOD block's
+name. `probe(path)` tells a `.mesh` from a `.cas` without decoding either.
+
+**Two things ROADMAP.md said about this phase were wrong, and the plan followed
+the files instead.** There is no loader to port: the Blender addon in
+`Reference/Medieval-2-Toolkit/` never parses a model, it writes an IWTE task
+file and shells out to `IWTE.exe` (`tasks/iwte_run.py`). And upstream's
+`src/lib/casCodec.js` — the "port-concept" entry in the manifest — documents
+`.mesh` as "uint32 version, uint32 submesh count, 32-byte vertices", which
+matches no real file and cannot parse one. **A `.mesh` is a
+boost::serialization binary archive**, which is why: boost writes a class
+descriptor the first time it meets a type and only the class id afterwards, so
+the same record is two bytes longer on its first appearance and no fixed-stride
+reader can work. The format is written up in full at the top of `mesh.py` —
+group table, the eleven vertex stream types with their strides, the bone table —
+and that docstring is the spec now, because nothing else is.
+
+**What proves it: reaching the bone table.** One wrong stride anywhere before it
+puts the table outside the short window it is looked for in, and the count read
+there lands on nonsense. **4,700 of the 4,702 `.mesh` files in the two test mods
+decode** — every unit model, mount, settlement piece and siege engine in Divide
+and Conquer (3,500 of 3,500) and Third Age Reforged (1,200 of 1,202) — plus the
+seven reference templates. The two exceptions are sky domes that hold SEVERAL
+models one after another; they are refused by name rather than half-read.
+
+**There are two vertex formats, and finding the second one cost the most time.**
+A skinned model (soldiers, mounts, settlements) packs normal, tangent and
+binormal into three signed bytes and a pad; a static one (siege engines, sky
+domes) writes them as three floats — same stream type numbers, four bytes a
+vertex against twelve. The archive header is four words in the first and three
+in the second. Neither is announced anywhere, so `_read_header` and
+`_resolve_stride` both try the alternatives and keep whichever leaves the rest
+of the file readable. **A sweep of one folder will not find this**: everything
+under `unit_models` is the skinned form, and `data/siege_engines` is the only
+place in either mod that is not.
+
+**What is NOT decoded** is the block that closes the file: a per-LOD material and
+attachment record, 519 bytes in every unit model. Its name is read
+(`characterlod0`), its length is on `MeshFile.trailer`, and nothing the viewer
+draws is inside it.
+
+**`.cas` was asked for and did not land, and that was the agreed fallback.**
+`probe` identifies one and `read_mesh` refuses it by name, but there is no `.cas`
+geometry reader. It is not a variant of `.mesh` — it opens with the float `3.2`
+and is a whole 3ds-max scene export: frame rate, key times, a node hierarchy
+(`Scene Root`, then bones), animation tracks, then the mesh, then the material,
+with `textures\…\.tga` in the last 60 bytes. That is a second job the size this
+one was, and it belongs to **16e**, where the roadmap always had the strat
+preview. The reconnaissance is written down at the bottom of `mesh.py` so 16e
+starts from something.
+
+**For 15b:** the geometry is renderer-ready as it stands. Indices are GLOBAL
+into one pool, so a group is a face range, not a mesh of its own — draw the pool
+once and issue one index range per group. Several groups share a group TYPE
+(`Body`/`horse_body_01`, `_02`, `_03`) and are variants of one part, and drawing
+all of them at once stacks three heads on one soldier: pick one variant per part.
+`MeshGroup.flag` is not that — 15c showed it is required/optional — and
+`MeshGroup.sheets` LABELS which of the entry's two textures a group's art
+lands on, without being a rendering instruction: the two are glued into one
+image and the UVs pick by themselves.
+Textures need no new code — `sprites.texture_to_dds()` then Pillow reads DXT1,
+DXT3 and DXT5 out of a real `.texture` at 1024² and 2048², which is the whole
+texture path. `tools/meshdump.py` is the debugging tool: `--sweep <folder>` over
+a mod, `--raw <file>` on one that will not open.
 
 ### What 14i did
 The list that came back from actually using 2.0.0. Ten items, no new direction.
@@ -134,6 +397,9 @@ underneath. Both fixed; see ROADMAP.md's 14f outcome.
 | Prose sweep | done | 19 note blocks in `buildings/transfer/editor/sprites.js` rewritten as lead + points via a shared `docPoints()` in core.js |
 | 13 — EDU + Sounds audit | done | `merge/audit-edu-sounds.md`; measured over 1756 real units; **nothing adopted from their code**, banners rederived from the mod's own file, two silent rewrites of ours fixed |
 | EDB corpus follow-up | done | `#` annotation lines no longer read as capabilities (3 parsers + regression case); the `plugins` and upgrade-clause sweeps no longer depend on which mods are installed; `merge/audit-edb.md` corrected |
+| 15a — the model decoder | **done** | `unittransfer/mesh.py` + `tools/meshdump.py`. A `.mesh` is a **boost::serialization archive**, reverse-engineered from the files: neither the Blender addon (it shells out to IWTE) nor upstream's `casCodec.js` (its spec matches no real file) could be ported. **4,700 of 4,702 models decode** (the 2 are multi-model sky domes, refused by name), proven by reaching the bone table. Two vertex formats: skinned packs normals to bytes, static writes floats. `.cas` NOT decoded — a whole 3ds-max scene format, handed to 16e. `test_mesh` 34/34 |
+| 15b — the viewer | **done** | `web/js/viewer3d.js`, hand-rolled WebGL (no three.js, user's call). `/api/model`, `/api/model/geometry` (binary payload, not JSON), `/model_texture`. **View model** on the shared model card. Parts, variant pickers, skins, LODs. Models are **Y-up**, not Z-up — caught by measuring group centroids. `test_viewer3d_http` 21/21 |
+| 15c — the viewer against the addon | **done** | Four faults, all settled against Mylae's Blender addon and the mods' bytes. The main and attachment textures are **glued side by side into one image** and the UVs address the pair — sample at `u * 0.5` with REPEAT, never choose a sheet per group (124 groups straddle the boundary) and never normalise into 0..1 (112 groups have u < 0, 268 have v outside 0..1). Models were **mirrored** — M2TW is left-handed, so `uModel` negates X. The two group strings are **type** and **mesh name** and the uint32 is **required/optional**, proven by an IWTE prompt left in a TATR mesh; parts fold by type with the addon's equipment vocabulary. Procedural-HDRI backdrop and lighting, **Randomize variations**, Turntable renamed **Rotate** and off by default. The V axis was already right. `test_viewer3d_http` 22/22 |
 | 14 — bug-fix and polish pass | **done** | 14a–14j |
 | 14j — replace any picture | done | **v2.0.1.** `unittransfer/images.py` + `web/js/images.js`; `POST /api/image/plan\|replace\|reveal`. Right-click any image anywhere, or the ✎ where a picture is the subject. Resolution mismatch warned (never refused), `.png` → `.tga`, unit cards fanned out to every faction folder, borrowed vanilla art creating the mod's first copy. `test_images` 53/53 |
 | 14i — the post-release correction pass | done | repo renamed to `medieval2-gui-toolkit`; Code View Ctrl+Z/Y; folding sidebars; "Open file location" fixed (Explorer arg quoting); ＋ on tier Variant; Abilities folded into **Weapons & abilities**; editable banner format + the ordering screen as a unit list with tier/variant/**classification**; **⇄ Compare city / castle** (`/api/buildings/variants`); **Initial Pool / Replenish Rate / Max Pool** everywhere; two-line recruit rows; building Code View follows field edits; faction sort as a toggle; unit cards on voice rows; ~300 em dashes → 0. Folded into the 2.0.0 release notes, not a new version |

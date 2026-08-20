@@ -414,6 +414,49 @@ share would otherwise push the thing you came to edit off the screen), and
 clicking a unit opens it in a **new browser tab**, so following "this model is
 also used by X" never costs you the edits in the tab you are in.
 
+### View model
+
+**View model** on any model card draws the thing itself. It reads the `.mesh`
+the entry names, in the browser, with the faction skin painted on: drag to turn
+it, wheel to zoom, right-drag to pan. It is on the card in both the Unit Editor
+and this mode, because it is the same card.
+
+Three things it tells you that the file paths cannot:
+
+* **Which parts a model is really made of.** The panel lists them — Body, Head,
+  Helmet, Shield, the weapon — with the triangle count of each, and a checkbox
+  to take any of them off. Parts the model only puts on some soldiers are marked
+  *optional*, and a part whose art lives on the attachment texture says so.
+* **What the variants look like.** A model usually carries several heads, several
+  helmets and several shields, and the game picks one per soldier at random. The
+  viewer picks one too and offers the rest in a drop-down, so you can see what a
+  mod actually shipped rather than a man wearing nine helmets at once.
+  **Randomize variations** rolls the lot at once, the way the game fills a unit
+  out of the one model.
+* **Which skins are really different.** An entry commonly lists twenty-nine
+  factions against one pair of textures. The skin picker has one row per distinct
+  pair, labelled with a faction that uses it and how many others share it, so
+  four rows means four skins rather than twenty-nine of the same one.
+
+A skin is a *pair*: every faction on an entry gets a main texture and an
+attachment texture, and the game paints from both at once — it lays them side by
+side as one image twice as wide, and the model's UVs run across the pair, main in
+the left half and attachments in the right. The viewer does the same, so a
+scabbard or a cape whose art lives on the attachment sheet comes out in its own
+colours instead of wearing whatever happened to sit at those coordinates on the
+main one.
+
+**Level of detail** switches between the LODs the entry lists, and any the mod
+does not actually ship is greyed out and says so — which makes this a quick way
+to find an entry pointing at a file that is not there. A file that cannot be read
+puts the reason on the canvas in words instead of showing an empty box.
+
+The model stands in a simple environment — sky above, ground below — which both
+lights it and sits behind it, because game armour is dark and a dark model on a
+dark field is a silhouette. **Rotate** turns it slowly on the spot, **Wireframe**
+is there for looking at topology, and **Recentre** puts the camera back if you
+lose the model off-screen.
+
 ### 🧹 Clean up BMDB
 
 M2TW loads the whole modeldb into memory, so entries and meshes nothing uses
@@ -1054,6 +1097,14 @@ created in.
   just looks different. Officers and armour-upgrade models come across by
   default (each can be left alone), the unit card and info card are opt-in, and
   any single stat can be imported one at a time with the `B` buttons
+- **View a model in 3D** — **View model** on any model card draws the `.mesh`
+  the entry names, with its faction skin on it, in the browser: both of the
+  faction's textures, main and attachment, the way the game paints them. Orbit
+  it, take parts off, and step through the head/helmet/shield variants the game
+  picks between per soldier, or roll the lot with **Randomize variations**. The
+  skin picker lists one row per distinct texture *pair*, so an entry naming one
+  for twenty-nine factions reads as one skin, not twenty-nine (see
+  [View model](#view-model))
 - **Replace any picture in the tool** — right-click any image for **Replace
   image…** and **Open file location**, or use the ✎ on the screens where the
   picture is the subject. A confirm dialog puts the old and new side by side,
@@ -1243,6 +1294,31 @@ resolution warning both ways round, the `.png` conversion, the extension-swap
 cleanup, and a write undone byte for byte — are pinned without an install. Only
 the unit-card fan-out needs a real mod's EDU, and it skips if there is none. The
 last section drives the real server over HTTP with the exact JSON the page sends.
+
+`tests/test_mesh.py` covers the battle-model decoder. Its core runs with no game
+installed: the seven template meshes under `Reference/TWCenter/` ship with this
+repo, and they pin the group table, the shared vertex pool, the bone names and
+the LOD ordering. The rest is a sweep over whatever mod is installed, which is
+the check that matters — a wrong stride in a binary format looks fine on one
+file and falls over on the thousandth. It deliberately reads outside
+`unit_models` as well: settlement pieces (the same format with no skeleton) and
+siege engines (a second vertex format, normals as floats rather than packed
+bytes) are where the format's variations actually live. It also pins what
+happens to a file that is not a model at all, or holds several models at once:
+a sentence saying which, never a hang.
+
+`tests/test_viewer3d_http.py` drives the viewer's three calls over a real server
+— the entry's LODs and skins, one LOD as the binary payload, one skin as a PNG.
+It builds a throwaway mod with **this repo's own reference model planted at the
+path the entry names**, so it knows exactly how many vertices and triangles
+should come back. Half the suite is the refusals: an entry that is not there, a
+LOD the mod does not ship, a file that will not decode, and a skin path pointing
+outside the mod — each has to answer with the right status and a sentence.
+
+`python tools/meshdump.py <file.mesh>` prints a model's groups, size and bones;
+`--sweep <folder>` runs the decoder over a whole mod and reports the first
+failure of each kind. That is the thing to run when the viewer will not open a
+file.
 
 ## Logs & troubleshooting
 

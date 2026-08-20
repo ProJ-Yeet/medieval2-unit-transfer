@@ -29,6 +29,9 @@ Package layout:
   images.py        replacing any picture the UI shows: an `/icon` or
                    `/building_icon` URL back to the file on disk, where a
                    replacement goes, and the resolution check before it is written
+  mesh.py          decode a battle model (.mesh) to geometry the viewer can draw
+                   — a boost::serialization archive, reverse-engineered from the
+                   files themselves because nothing we hold documents it
   server.py        local web UI (Stage 2)
 
 Design rule: transfers APPEND verbatim source entries to the destination rather than
@@ -39,4 +42,4 @@ units together — so every feature is EOP-aware by default. Only the *write* si
 distinguishes them, via :func:`unittransfer.eop.compose`.
 """
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"

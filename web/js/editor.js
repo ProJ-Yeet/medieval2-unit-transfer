@@ -1355,6 +1355,10 @@ function edModelCard(m,idx){
       <span class="grow count">${m.slots.map(esc).join(', ')
         ||(e.bmdb?'<span class="w-warn">nothing references it</span>':'referenced by this unit')}
         · ${m.lods.length} LOD${m.lods.length===1?'':'s'} · ${facs.length} skin${facs.length===1?'':'s'}</span>
+      <button title="Draw this model — its parts, its variants and the skin each
+faction gets. Reads the .mesh the entry names."
+        onclick="event.stopPropagation();v3Open('${q1(esc(e.mod||state.src))}','${q1(esc(m.name))}')"
+        >View model</button>
       ${open&&!e.bmdb?`<button class="${cvOn?'on':''}" title="Show this entry exactly as
 battle_models.modeldb stores it, beside the boxes."
         onclick="event.stopPropagation();edModelCv('${q1(esc(m.name))}')">&lt;/&gt;</button>`:''}

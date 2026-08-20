@@ -34,12 +34,15 @@ class IconCache:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def _key(self, src: Path) -> Path:
+    def _key(self, src: Path, max_side: int = 0) -> Path:
         try:
             mtime = src.stat().st_mtime_ns
         except OSError:
             mtime = 0
-        h = hashlib.sha1(f"{src}|{mtime}".encode("utf-8")).hexdigest()[:20]
+        # `max_side` is part of the key: the same file served whole and served
+        # shrunk are two different answers, and one must not be handed out for
+        # the other.
+        h = hashlib.sha1(f"{src}|{mtime}|{max_side}".encode("utf-8")).hexdigest()[:20]
         return self.cache_dir / f"{h}.png"
 
     def is_cached(self, src: Optional[Path]) -> bool:
@@ -76,7 +79,13 @@ class IconCache:
             pass
         return data
 
-    def png_bytes(self, src: Optional[Path]) -> bytes:
+    def png_bytes(self, src: Optional[Path], max_side: int = 0) -> bytes:
+        """This file as PNG bytes, cached on disk.
+
+        ``max_side`` shrinks anything bigger than it, keeping the aspect ratio.
+        Unit art is small and passes 0; a model's texture is up to 2048 square
+        and the viewer draws it a few hundred pixels tall, so it asks for less.
+        """
         if src is None or not Path(src).exists():
             # Not a fault: mods ship the art they changed and leave the rest to
             # the game's own files. The caller says which unit it was asking
@@ -86,12 +95,12 @@ class IconCache:
                 log.debug("ICON   listed but missing on disk: %s", src)
             return _BLANK_PNG
         src = Path(src)
-        cached = self._key(src)
+        cached = self._key(src, max_side)
         hit = _read_cached(cached)
         if hit is not None:
             return hit
         started = time.perf_counter()
-        data = _decode_to_png(src)
+        data = _decode_to_png(src, max_side)
         log.debug("ICON   converted %s -> %d bytes of PNG in %.0f ms", src, len(data),
                   (time.perf_counter() - started) * 1000)
         # Write atomically: concurrent requests for the same uncached icon must
@@ -164,12 +173,30 @@ def _draw_placeholder(width: int, height: int) -> bytes:
     return buf.getvalue()
 
 
-def _decode_to_png(src: Path) -> bytes:
+def _openable(src: Path):
+    """What to hand Pillow for this file.
+
+    A model's texture is a ``.texture``: the game's own 48-byte header with a
+    plain DDS behind it, which Pillow cannot open by itself. ``sprites`` already
+    owns that container both ways, so unwrapping is one call and every caller of
+    this module can render one.
+    """
+    if src.suffix.lower() != ".texture":
+        return src
+    from . import sprites
+    return io.BytesIO(sprites.texture_to_dds(src.read_bytes()))
+
+
+def _decode_to_png(src: Path, max_side: int = 0) -> bytes:
     try:
-        with Image.open(src) as im:
+        with Image.open(_openable(src)) as im:
             im.load()
             if im.mode != "RGBA":
                 im = im.convert("RGBA")
+            if max_side and max(im.size) > max_side:
+                scale = max_side / max(im.size)
+                im = im.resize((max(1, round(im.width * scale)),
+                                max(1, round(im.height * scale))), Image.LANCZOS)
             buf = io.BytesIO()
             im.save(buf, "PNG")
             return buf.getvalue()

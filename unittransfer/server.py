@@ -198,7 +198,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import bmdb, buildings, cleaner, codeview, config, edit, modfiles, sounds
-from . import ancillaries, edusort, factions, images, minorfiles, sprites, strings, traits, triggers
+from . import ancillaries, edusort, factions, images, mesh, minorfiles, sprites, strings, traits, triggers
 from . import eop as _eop
 from . import logutil
 from .logutil import log, setup as setup_logging
@@ -1341,6 +1341,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._diag()
             if u.path == "/icon":
                 return self._icon(q)
+            if u.path in ("/api/model", "/api/model/geometry", "/model_texture"):
+                return self._model_route(u.path, q)
             return self._err(404, "not found")
         except KeyError as e:
             # an unknown mod / unit / model entry is a 404, not a server fault
@@ -2180,6 +2182,58 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, data, "image/png", {"X-Icon-Source": source})
         except Exception:
             pass
+
+    #: A model's own texture can be 2048x2048, and the viewer draws it on a
+    #: soldier a few hundred pixels tall. Halving the big ones costs nothing to
+    #: look at and takes a 16 MB upload down to 4.
+    MODEL_TEXTURE_MAX = 1024
+
+    def _model_route(self, path: str, q):
+        """The three things the 3D viewer asks for.
+
+        ``/api/model`` is the picker: which LODs and skins the entry has and
+        which of them are actually in this mod. ``/api/model/geometry`` is one
+        decoded LOD as the binary payload :func:`mesh.geometry_payload` builds.
+        ``/model_texture`` is a skin as a PNG.
+
+        A model that will not decode answers 400 with the decoder's own
+        sentence, because that sentence is the useful part — the viewer puts it
+        on screen rather than showing an empty box.
+        """
+        name = (q.get("mod") or [None])[0]
+        if not name or name not in self.registry.names():
+            return self._err(404, "unknown mod")
+        mod = self.registry.get(name)
+
+        if path == "/model_texture":
+            # `rel` comes from the entry we just served, but it is still a path
+            # out of a mod's own file, so it is resolved and then checked to be
+            # under data/ — the same rule /icon's `rel` routes follow.
+            src = factions.picture_path(mod, (q.get("rel") or [""])[0])
+            return self._send(200, self.registry.icons.png_bytes(
+                src, self.MODEL_TEXTURE_MAX), "image/png")
+
+        entry = mod.modeldb.by_name().get((q.get("entry") or [""])[0].lower())
+        if entry is None:
+            return self._err(404, f"no model entry {(q.get('entry') or [''])[0]!r}"
+                                  f" in {name}")
+        if path == "/api/model":
+            return self._json(mesh.entry_view(entry, mod.data))
+
+        lod = int((q.get("lod") or ["0"])[0] or 0)
+        rels = entry.mesh_files()
+        if not 0 <= lod < len(rels):
+            return self._err(404, f"{entry.name} has no LOD {lod}")
+        src = factions.picture_path(mod, rels[lod])
+        if src is None or not src.is_file():
+            return self._err(404, f"{rels[lod]} is not in {name} — the mod "
+                                  f"references it but does not ship it")
+        try:
+            decoded = mesh.read_mesh(src)
+        except mesh.MeshError as e:
+            return self._err(400, str(e))
+        return self._send(200, mesh.geometry_payload(decoded),
+                          "application/octet-stream")
 
     def _icon(self, q):
         # Icons must NEVER 500: a failed response paints a broken-image glyph in

@@ -59,7 +59,7 @@ running the test suite, and running `graphify update .`.
 | 13 | EDU + Sounds audit | S | ✅ done |
 | 14 | Bug-fix and polish pass | XL | ✅ done (14a–14g) |
 | 14j | Replace any picture (v2.0.1) | S | ✅ done |
-| 15 | 3D model viewer | L | 2 (15a, 15b) |
+| 15 | 3D model viewer (v2.1.0) | L | ✅ done (15a–15d) |
 | 16 | Campaign Map Editor — flagship, LAST | XL | 5+ (16a–16e) |
 
 Dependency shape: 1 and 2 are independent; 3 gates 4; 4 gates every editor
@@ -1588,26 +1588,56 @@ than borrowing a mod's, so everything but the unit-card fan-out runs with no
 game installed. The last section drives the real server over HTTP with the exact
 JSON the page sends.
 
-## Phase 15 — 3D model viewer (two sessions)
+## Phase 15 — 3D model viewer ✅ (done 2026-08-20, released as v2.1.0)
 
 - **Goal:** A working in-browser viewer for unit `.mesh` models (their
-  ModelViewer is broken; fix the approach or reimplement from the Blender
-  addon's loader).
-- **Preconditions:** Phase 3; Blender addon in `Reference/Medieval-2-Toolkit/`
-  as format ground truth; Phase 2 manifest for their `ms3dCodec`/`casCodec`
-  findings.
-- **Files:** **15a:** `unittransfer/mesh.py` (decode .mesh → JSON/typed-array
-  geometry + texture refs, from the addon's reader) + tests against real mod
-  meshes. **15b:** `web/js/viewer3d.js` + vendored `three.min.js` (~600 KB,
-  ours to vendor — the "no dist/" rule is about *their* repo) + API endpoint;
-  entry points from BMDB and Unit Editor ("view model").
+  ModelViewer is broken).
+- **Preconditions:** Phase 3. **Both "ground truth" references named here were
+  wrong, and 15a proved it** — see below; there was nothing to port and the
+  format came out of the files themselves.
+- **Files:** **15a:** `unittransfer/mesh.py` + `tools/meshdump.py` + tests.
+  **15b:** `web/js/viewer3d.js` + API endpoint; entry points from BMDB and Unit
+  Editor ("view model").
 - **Effort:** L.
 - **Exit criteria:** any soldier/mount model in the test mods renders with
   diffuse texture, correct origin and orbit controls; wrong-format files fail
   with a message, not a hang; decode covered by tests.
-- **Risks:** their JS mesh parser guesses ("attempting to parse anyway") — the
-  Blender addon is the trustworthy reference; skinning/skeleton display is out
-  of scope (static pose is enough for V2).
+- **Risks:** skinning/skeleton display is out of scope (static pose is enough
+  for V2).
+
+**PHASE 15 IS DONE (2026-08-20), RELEASED AS v2.1.0** — 15a the decoder,
+15b the viewer, 15c the pass against the Blender addon, 15d the two decode
+corrections the user caught by loading the same models in Blender (the halved
+`u`, and the packed normals). Notes in `merge/RELEASE_2_1_0.md`.
+Two corrections to what this phase assumed:
+
+- **The Blender addon has no loader to port.** It writes an IWTE task file and
+  shells out to `IWTE.exe` (`tasks/iwte_run.py`); its only binary code is DDS
+  header poking. It is not a format reference for `.mesh` at all.
+- **Their `casCodec.js` cannot parse a real file.** It documents `.mesh` as
+  "uint32 version, uint32 submesh count, 32-byte vertices". Every real `.mesh`
+  opens `16 00 00 00 "serialization::archive"` — it is a **boost::serialization
+  binary archive**, and the class-descriptor-on-first-use rule means no
+  fixed-stride reader can work. The format is written up in full at the top of
+  `unittransfer/mesh.py`; that docstring is the spec now.
+
+4,700 of the 4,702 models in both test mods decode, plus the reference
+templates — settlement meshes (no skeleton) and siege engines (a second vertex
+format, normals as floats rather than packed bytes) included. The 2 that do not
+are sky domes holding several models back to back, refused by name.
+
+**15b** is `web/js/viewer3d.js` (hand-rolled WebGL), `server._model_route`'s
+three endpoints, and **View model** on the shared model card. Exit criteria met:
+soldier and mount models render with their diffuse texture, correct origin and
+orbit controls; a wrong-format or missing file answers with a sentence and the
+right status code; the decode is covered by `test_mesh` (34) and the routes by
+`test_viewer3d_http` (21). Two facts about the format came out of building it and
+are recorded in `mesh.py`: **models are Y-up**, and UVs follow the **Direct3D**
+convention (v=0 at the top), not OpenGL's. `.cas` is **not** decoded: it is a
+3ds-max scene export, not a `.mesh` variant, and it moves to **16e** with the
+reconnaissance recorded in `mesh.py`. **15b uses hand-rolled WebGL, not a
+vendored three.js** (user's decision, 2026-08-20): a static textured model needs
+little of what three.js offers, and it keeps the no-build-step rule intact.
 
 ## Phase 16 — Campaign Map Editor — flagship, LAST (5+ sessions)
 
@@ -1636,6 +1666,11 @@ JSON the page sends.
     all matching regions highlight; localised names throughout. Exit: resource,
     religion-majority and owner queries work on both test mods.
   - **16e — 3D strat preview:** fix navigation/origin using Phase 15's viewer.
+    **This sub-phase now owns the `.cas` decoder**, which 15a did not land: a
+    strat model is a 3ds-max scene export (float `3.2`, frame rate, key times,
+    a node hierarchy, animation tracks, then the mesh and its material), not a
+    `.mesh` variant. What is known about it is at the bottom of
+    `unittransfer/mesh.py`; `probe()` already tells the two formats apart.
     Exit: settlement/character strat models render and orbit correctly.
 - **Future expansion (V2.1+, not V2):** mercenary-pool view/edit by region and
   faction (data layer lands in 16a; UI deferred).
